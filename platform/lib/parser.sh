@@ -37,7 +37,7 @@ platform_dispatch_command() {
 
   source "$command_file"
 
-  if ! declare -F "$command_function" > /dev/null; then
+  if ! declare -F "$command_function" >/dev/null; then
     platform_log_error "Invalid command implementation: $command"
     platform_log_error "Expected function: $command_function"
     exit 1
@@ -55,4 +55,5 @@ platform_show_fallback_help() {
   echo "Available commands:"
   echo "  version    Show CLI version"
   echo "  help       Show help"
+  echo "  doctor     Validate the platform environment"
 }

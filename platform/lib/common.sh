@@ -7,6 +7,7 @@ CONFIG_FILE="$PLATFORM_ROOT/config/deja-platform.conf"
 
 # Bibliotecas
 source "$PLATFORM_ROOT/lib/log.sh"
+source "$PLATFORM_ROOT/lib/validator.sh"
 
 # Configuração
 if [[ -f "$CONFIG_FILE" ]]; then
