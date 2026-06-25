@@ -1,53 +1,22 @@
 #!/usr/bin/env bash
 
-###############################################################################
-# Deja Platform CLI
-#
-# Main entry point
-###############################################################################
+set -e
 
-set -euo pipefail
+BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-PLATFORM_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$BASE_DIR/config/deja-platform.conf"
+source "$BASE_DIR/lib/common.sh"
+source "$BASE_DIR/commands/version.sh"
 
-source "${PLATFORM_HOME}/lib/common.sh"
-
-main() {
-    local command="${1:-}"
-
-    case "${command}" in
-        version)
-            shift
-            source "${PLATFORM_HOME}/commands/version.sh"
-            version_main "$@"
-            ;;
-
-        "")
-            show_help
-            ;;
-
-        *)
-            echo "Unknown command: ${command}"
-            echo
-            show_help
-            exit 1
-            ;;
-    esac
-}
-
-show_help() {
-    cat <<EOF
-Deja Platform CLI
-
-Usage:
-
-    platform <command>
-
-Commands:
-
-    version     Show platform information
-
-EOF
-}
-
-main "$@"
+case "${1:-}" in
+    version|--version|-v)
+        platform_version
+        ;;
+    *)
+        echo "Deja Platform CLI"
+        echo ""
+        echo "Uso:"
+        echo "  platform version"
+        exit 1
+        ;;
+esac
