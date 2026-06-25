@@ -1,22 +1,11 @@
 #!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
-BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PLATFORM_BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLATFORM_ROOT="$(cd "$PLATFORM_BIN_DIR/.." && pwd)"
 
-source "$BASE_DIR/config/deja-platform.conf"
-source "$BASE_DIR/lib/common.sh"
-source "$BASE_DIR/commands/version.sh"
+source "$PLATFORM_ROOT/lib/common.sh"
+source "$PLATFORM_ROOT/lib/parser.sh"
 
-case "${1:-}" in
-    version|--version|-v)
-        platform_version
-        ;;
-    *)
-        echo "Deja Platform CLI"
-        echo ""
-        echo "Uso:"
-        echo "  platform version"
-        exit 1
-        ;;
-esac
+platform_parse "$@"

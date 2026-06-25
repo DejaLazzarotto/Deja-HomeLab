@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-platform_version() {
-    echo "$PLATFORM_NAME"
-    echo "Version: $PLATFORM_VERSION"
+platform_cmd_version() {
+  platform_log_success "Deja Platform CLI"
+  platform_log_info "Version: ${PLATFORM_VERSION}"
 }

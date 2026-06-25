@@ -1,10 +1,18 @@
 #!/usr/bin/env bash
 
-platform_error() {
-    echo "Erro: $1" >&2
-    exit 1
-}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLATFORM_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-platform_info() {
-    echo "$1"
-}
+CONFIG_FILE="$PLATFORM_ROOT/config/deja-platform.conf"
+
+# Bibliotecas
+source "$PLATFORM_ROOT/lib/log.sh"
+
+# Configuração
+if [[ -f "$CONFIG_FILE" ]]; then
+    source "$CONFIG_FILE"
+else
+    platform_log_error "Configuration file not found:"
+    platform_log_error "$CONFIG_FILE"
+    exit 1
+fi
