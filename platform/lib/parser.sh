@@ -39,8 +39,8 @@ platform_dispatch_command() {
     exit 1
   fi
 
-  command_file="$(platform_command_file "$command")"
-  command_function="$(platform_command_function "$command")"
+  command_file="$(platform_get_command_file "$command")"
+  command_function="$(platform_get_command_function "$command")"
 
   if [[ ! -f "$command_file" ]]; then
     platform_log_error "Command file not found: $command_file"
@@ -70,7 +70,7 @@ platform_show_fallback_help() {
   local description
 
   for command in $(platform_list_commands); do
-    description="$(platform_command_description "$command")"
-    printf "  %-10s %s\n" "$command" "$description"
+    description="$(platform_get_command_description "$command")"
+    printf "  %-12s %s\n" "$command" "$description"
   done
 }

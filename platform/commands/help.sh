@@ -7,8 +7,12 @@ platform_cmd_help() {
   echo "  platform <command>"
   echo ""
   echo "Available commands:"
-  echo "  version    Show CLI version"
-  echo "  help       Show help"
-  echo "  doctor     Validate the platform environment"
-  echo "  modules    List registered platform modules"
+
+  local command
+  local description
+
+  for command in $(platform_list_commands); do
+    description="$(platform_get_command_description "$command")"
+    printf "  %-12s %s\n" "$command" "$description"
+  done
 }
