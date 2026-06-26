@@ -16,6 +16,8 @@ source "$PLATFORM_ROOT/lib/module-registry.sh"
 source "$PLATFORM_ROOT/lib/module-api.sh"
 source "$PLATFORM_ROOT/lib/module-loader.sh"
 
+source "$PLATFORM_ROOT/lib/module-lifecycle.sh"
+
 # Configuração
 if [[ -f "$CONFIG_FILE" ]]; then
     source "$CONFIG_FILE"
@@ -29,4 +31,6 @@ fi
 platform_register_builtin_commands
 
 # Módulos
+platform_set_module_lifecycle_stage "discover"
 platform_load_modules
+platform_bootstrap_modules
