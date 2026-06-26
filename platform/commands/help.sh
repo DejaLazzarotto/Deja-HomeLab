@@ -9,4 +9,6 @@ platform_cmd_help() {
   echo "Available commands:"
   echo "  version    Show CLI version"
   echo "  help       Show help"
+  echo "  doctor     Validate the platform environment"
+  echo "  modules    List registered platform modules"
 }

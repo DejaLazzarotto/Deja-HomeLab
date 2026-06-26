@@ -4,34 +4,46 @@ platform_parse() {
   local command="${1:-help}"
   shift || true
 
+  command="$(platform_normalize_command "$command")"
+
   platform_dispatch_command "$command" "$@"
+}
+
+platform_normalize_command() {
+  local command="${1:-help}"
+
+  case "$command" in
+    --help|-h)
+      echo "help"
+      ;;
+    --version|-v)
+      echo "version"
+      ;;
+    *)
+      echo "$command"
+      ;;
+  esac
 }
 
 platform_dispatch_command() {
   local command="$1"
   shift || true
 
-  local command_file="$PLATFORM_ROOT/commands/${command}.sh"
-  local command_function="platform_cmd_${command}"
+  local command_file
+  local command_function
 
-  case "$command" in
-    --help|-h)
-      command="help"
-      command_file="$PLATFORM_ROOT/commands/help.sh"
-      command_function="platform_cmd_help"
-      ;;
-
-    --version|-v)
-      command="version"
-      command_file="$PLATFORM_ROOT/commands/version.sh"
-      command_function="platform_cmd_version"
-      ;;
-  esac
-
-  if [[ ! -f "$command_file" ]]; then
+  if ! platform_command_exists "$command"; then
     platform_log_error "Unknown command: $command"
     echo ""
     platform_show_fallback_help
+    exit 1
+  fi
+
+  command_file="$(platform_command_file "$command")"
+  command_function="$(platform_command_function "$command")"
+
+  if [[ ! -f "$command_file" ]]; then
+    platform_log_error "Command file not found: $command_file"
     exit 1
   fi
 
@@ -53,7 +65,12 @@ platform_show_fallback_help() {
   echo "  platform <command>"
   echo ""
   echo "Available commands:"
-  echo "  version    Show CLI version"
-  echo "  help       Show help"
-  echo "  doctor     Validate the platform environment"
+
+  local command
+  local description
+
+  for command in $(platform_list_commands); do
+    description="$(platform_command_description "$command")"
+    printf "  %-10s %s\n" "$command" "$description"
+  done
 }

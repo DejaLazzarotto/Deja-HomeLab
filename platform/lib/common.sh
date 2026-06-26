@@ -9,6 +9,9 @@ CONFIG_FILE="$PLATFORM_ROOT/config/deja-platform.conf"
 source "$PLATFORM_ROOT/lib/log.sh"
 source "$PLATFORM_ROOT/lib/validator.sh"
 
+source "$PLATFORM_ROOT/lib/command-registry.sh"
+source "$PLATFORM_ROOT/lib/command-loader.sh"
+
 source "$PLATFORM_ROOT/lib/module-registry.sh"
 source "$PLATFORM_ROOT/lib/module-loader.sh"
 
@@ -20,6 +23,9 @@ else
     platform_log_error "$CONFIG_FILE"
     exit 1
 fi
+
+# Comandos internos
+platform_register_builtin_commands
 
 # Módulos
 platform_load_modules
