@@ -9,13 +9,19 @@ CONFIG_FILE="$PLATFORM_ROOT/config/deja-platform.conf"
 source "$PLATFORM_ROOT/lib/log.sh"
 source "$PLATFORM_ROOT/lib/validator.sh"
 
+# Kernel
+source "$PLATFORM_ROOT/lib/context.sh"
+source "$PLATFORM_ROOT/lib/context-api.sh"
+source "$PLATFORM_ROOT/lib/service-api.sh"
+
+# Command System
 source "$PLATFORM_ROOT/lib/command-registry.sh"
 source "$PLATFORM_ROOT/lib/command-loader.sh"
 
+# Module System
 source "$PLATFORM_ROOT/lib/module-registry.sh"
 source "$PLATFORM_ROOT/lib/module-api.sh"
 source "$PLATFORM_ROOT/lib/module-loader.sh"
-
 source "$PLATFORM_ROOT/lib/module-lifecycle.sh"
 
 # Configuração
@@ -26,6 +32,9 @@ else
     platform_log_error "$CONFIG_FILE"
     exit 1
 fi
+
+# Inicialização do Kernel
+platform_context_init
 
 # Comandos internos
 platform_register_builtin_commands
