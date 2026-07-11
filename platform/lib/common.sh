@@ -13,6 +13,8 @@ source "$PLATFORM_ROOT/lib/validator.sh"
 source "$PLATFORM_ROOT/lib/context.sh"
 source "$PLATFORM_ROOT/lib/context-api.sh"
 source "$PLATFORM_ROOT/lib/service-api.sh"
+source "$PLATFORM_ROOT/lib/runtime-api.sh"
+source "$PLATFORM_ROOT/lib/metadata-api.sh"
 
 # Command System
 source "$PLATFORM_ROOT/lib/command-registry.sh"
