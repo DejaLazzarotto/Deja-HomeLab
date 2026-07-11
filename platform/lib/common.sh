@@ -23,6 +23,7 @@ source "$PLATFORM_ROOT/lib/command-loader.sh"
 # Module System
 source "$PLATFORM_ROOT/lib/module-registry.sh"
 source "$PLATFORM_ROOT/lib/module-api.sh"
+source "$PLATFORM_ROOT/lib/manifest-loader.sh"
 source "$PLATFORM_ROOT/lib/module-loader.sh"
 source "$PLATFORM_ROOT/lib/module-lifecycle.sh"
 
