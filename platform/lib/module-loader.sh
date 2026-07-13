@@ -19,39 +19,29 @@ platform_load_legacy_modules() {
 }
 
 platform_load_framework_module() {
-  local module_dir="$1"
-  local manifest="${module_dir}/module.conf"
-  local module_name
-  local module_enabled
+  local module_name="${1:-}"
+  local module_dir
   local module_entrypoint
   local entrypoint
 
-  [[ -f "$manifest" ]] || return 0
+  if [[ -z "$module_name" ]]; then
+    platform_log_error "Module name is required"
+    return 1
+  fi
 
-  platform_read_module_manifest "$manifest" || return 1
+  platform_is_module_manifest_registered "$module_name" || {
+    platform_log_error "Module manifest is not registered: $module_name"
+    return 1
+  }
 
-  platform_manifest_registry_register \
-    "$MODULE_NAME" \
-    "$MODULE_VERSION" \
-    "$MODULE_DESCRIPTION" \
-    "$MODULE_AUTHOR" \
-    "$MODULE_API_VERSION" \
-    "$MODULE_ENTRYPOINT" \
-    "$MODULE_DEPENDENCIES" \
-    "$MODULE_ENABLED" \
-    "$manifest" \
-    "$module_dir" || return 1
+  platform_is_module_enabled "$module_name" || return 0
 
-  module_name="$MODULE_NAME"
-
-  module_enabled="$(
-    platform_manifest_registry_get "$module_name" enabled
+  module_dir="$(
+    platform_get_module_directory "$module_name"
   )" || return 1
 
-  [[ "$module_enabled" == "false" ]] && return 0
-
   module_entrypoint="$(
-    platform_manifest_registry_get "$module_name" entrypoint
+    platform_get_module_entrypoint "$module_name"
   )" || return 1
 
   entrypoint="${module_dir}/${module_entrypoint}"
@@ -65,14 +55,13 @@ platform_load_framework_module() {
 }
 
 platform_load_framework_modules() {
-  local modules_dir="$1"
-  local module_dir
+  local module_name
 
-  for module_dir in "$modules_dir"/*; do
-    [[ -d "$module_dir" ]] || continue
+  while IFS= read -r module_name; do
+    [[ -n "$module_name" ]] || continue
 
-    platform_load_framework_module "$module_dir" || return 1
-  done
+    platform_load_framework_module "$module_name" || return 1
+  done < <(platform_list_registered_manifests)
 }
 
 platform_load_modules() {
@@ -80,6 +69,14 @@ platform_load_modules() {
 
   [[ -d "$modules_dir" ]] || return 0
 
+  #
+  # Compatibilidade temporária com módulos legados.
+  # Será removida quando toda a plataforma utilizar manifests.
+  #
   platform_load_legacy_modules "$modules_dir" || return 1
-  platform_load_framework_modules "$modules_dir" || return 1
+
+  #
+  # Framework Modules
+  #
+  platform_load_framework_modules || return 1
 }

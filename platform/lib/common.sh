@@ -26,6 +26,7 @@ source "$PLATFORM_ROOT/lib/module-api.sh"
 source "$PLATFORM_ROOT/lib/manifest-loader.sh"
 source "$PLATFORM_ROOT/lib/manifest-registry.sh"
 source "$PLATFORM_ROOT/lib/manifest-api.sh"
+source "$PLATFORM_ROOT/lib/manifest-discovery.sh"
 source "$PLATFORM_ROOT/lib/dependency-api.sh"
 source "$PLATFORM_ROOT/lib/dependency-resolver.sh"
 source "$PLATFORM_ROOT/lib/module-loader.sh"
@@ -46,7 +47,14 @@ platform_context_init
 # Comandos internos
 platform_register_builtin_commands
 
-# Módulos
+# Descoberta dos manifests
 platform_set_module_lifecycle_stage "discover"
+platform_discover_manifests
+
+# Carregamento dos módulos
+platform_set_module_lifecycle_stage "load"
 platform_load_modules
+
+# Bootstrap dos módulos
+platform_set_module_lifecycle_stage "bootstrap"
 platform_bootstrap_modules
