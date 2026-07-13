@@ -48,12 +48,16 @@ platform_context_init
 platform_register_builtin_commands
 
 # Descoberta dos manifests
+# Descoberta dos manifests
 platform_set_module_lifecycle_stage "discover"
-platform_discover_manifests
+platform_discover_manifests || exit 1
+
+# Resolução das dependências
+platform_resolve_dependencies || exit 1
 
 # Carregamento dos módulos
 platform_set_module_lifecycle_stage "load"
-platform_load_modules
+platform_load_modules || exit 1
 
 # Bootstrap dos módulos
 platform_set_module_lifecycle_stage "bootstrap"

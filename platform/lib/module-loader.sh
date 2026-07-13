@@ -29,6 +29,11 @@ platform_load_framework_module() {
     return 1
   fi
 
+  platform_is_module_resolved "$module_name" || {
+    platform_log_error "Module is not resolved: $module_name"
+    return 1
+  }
+
   platform_is_module_manifest_registered "$module_name" || {
     platform_log_error "Module manifest is not registered: $module_name"
     return 1
@@ -61,7 +66,7 @@ platform_load_framework_modules() {
     [[ -n "$module_name" ]] || continue
 
     platform_load_framework_module "$module_name" || return 1
-  done < <(platform_list_registered_manifests)
+  done < <(platform_list_resolved_modules)
 }
 
 platform_load_modules() {

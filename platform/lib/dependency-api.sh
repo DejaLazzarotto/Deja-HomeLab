@@ -6,12 +6,6 @@
 # Public Kernel API
 # ==========================================================
 
-#
-# Retorna a lista de dependências declaradas por um módulo.
-#
-# Saída:
-#   uma dependência por linha
-#
 platform_get_module_dependencies_list() {
     local module="${1:-}"
     local dependencies
@@ -34,13 +28,6 @@ platform_get_module_dependencies_list() {
     done
 }
 
-#
-# Informa se o módulo possui dependências declaradas.
-#
-# Retornos:
-#   0 = possui dependências
-#   1 = não possui dependências ou ocorreu erro
-#
 platform_module_has_dependencies() {
     local module="${1:-}"
     local dependencies
@@ -55,9 +42,6 @@ platform_module_has_dependencies() {
     [[ -n "$dependencies" ]]
 }
 
-#
-# Valida se todas as dependências declaradas estão registradas.
-#
 platform_validate_module_dependencies() {
     local module="${1:-}"
     local dependencies
@@ -86,4 +70,28 @@ platform_validate_module_dependencies() {
     done <<< "$dependencies"
 
     return 0
+}
+
+platform_resolve_dependencies() {
+    platform_dependency_resolver_run
+}
+
+platform_list_resolved_modules() {
+    platform_dependency_resolver_list
+}
+
+platform_is_module_resolved() {
+    local module="${1:-}"
+    local resolved_module
+
+    if [[ -z "$module" ]]; then
+        platform_log_error "Module name not informed."
+        return 1
+    fi
+
+    while IFS= read -r resolved_module; do
+        [[ "$resolved_module" == "$module" ]] && return 0
+    done < <(platform_list_resolved_modules)
+
+    return 1
 }
