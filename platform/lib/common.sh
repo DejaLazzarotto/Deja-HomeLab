@@ -26,6 +26,7 @@ source "$PLATFORM_ROOT/lib/module-api.sh"
 source "$PLATFORM_ROOT/lib/manifest-loader.sh"
 source "$PLATFORM_ROOT/lib/manifest-registry.sh"
 source "$PLATFORM_ROOT/lib/manifest-api.sh"
+source "$PLATFORM_ROOT/lib/dependency-api.sh"
 source "$PLATFORM_ROOT/lib/module-loader.sh"
 source "$PLATFORM_ROOT/lib/module-lifecycle.sh"
 
