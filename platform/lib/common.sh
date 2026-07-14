@@ -32,6 +32,7 @@ source "$PLATFORM_ROOT/lib/dependency-resolver.sh"
 source "$PLATFORM_ROOT/lib/module-state.sh"
 source "$PLATFORM_ROOT/lib/module-loader.sh"
 source "$PLATFORM_ROOT/lib/module-lifecycle.sh"
+source "$PLATFORM_ROOT/lib/module-lifecycle-manager.sh"
 
 # Configuração
 if [[ -f "$CONFIG_FILE" ]]; then
@@ -59,6 +60,7 @@ platform_resolve_dependencies || exit 1
 # Carregamento dos módulos
 platform_set_module_lifecycle_stage "load"
 platform_load_modules || exit 1
+platform_module_lifecycle_bootstrap_all || return 1
 
 # Bootstrap dos módulos
 platform_set_module_lifecycle_stage "bootstrap"
