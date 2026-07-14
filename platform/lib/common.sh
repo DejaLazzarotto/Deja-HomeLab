@@ -29,6 +29,7 @@ source "$PLATFORM_ROOT/lib/manifest-api.sh"
 source "$PLATFORM_ROOT/lib/manifest-discovery.sh"
 source "$PLATFORM_ROOT/lib/dependency-api.sh"
 source "$PLATFORM_ROOT/lib/dependency-resolver.sh"
+source "$PLATFORM_ROOT/lib/module-state.sh"
 source "$PLATFORM_ROOT/lib/module-loader.sh"
 source "$PLATFORM_ROOT/lib/module-lifecycle.sh"
 
@@ -43,7 +44,7 @@ fi
 
 # Inicialização do Kernel
 platform_context_init
-
+platform_module_state_reset
 # Comandos internos
 platform_register_builtin_commands
 

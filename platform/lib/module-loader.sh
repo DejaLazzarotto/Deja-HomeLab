@@ -14,7 +14,7 @@ platform_load_legacy_modules() {
       continue
     fi
 
-    source "$module"
+    source "$module" || return 1
   done
 }
 
@@ -56,7 +56,9 @@ platform_load_framework_module() {
     return 1
   fi
 
-  source "$entrypoint"
+  source "$entrypoint" || return 1
+
+  platform_module_state_set "$module_name" "LOADED"
 }
 
 platform_load_framework_modules() {

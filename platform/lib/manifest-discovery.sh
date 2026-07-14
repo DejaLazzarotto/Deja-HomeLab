@@ -19,6 +19,7 @@ platform_manifest_exists_on_disk() {
 platform_discover_manifest() {
   local module_dir="${1:-}"
   local manifest_file
+  local module_name
 
   if [[ -z "$module_dir" ]]; then
     platform_log_error "Module directory is required"
@@ -34,6 +35,8 @@ platform_discover_manifest() {
 
   platform_read_module_manifest "$manifest_file" || return 1
 
+  module_name="$MODULE_NAME"
+
   platform_register_module_manifest \
     "$MODULE_NAME" \
     "$MODULE_VERSION" \
@@ -44,7 +47,9 @@ platform_discover_manifest() {
     "${MODULE_DEPENDENCIES:-}" \
     "$MODULE_ENABLED" \
     "$manifest_file" \
-    "$module_dir"
+    "$module_dir" || return 1
+
+  platform_module_state_set "$module_name" "DISCOVERED"
 }
 
 platform_discover_manifests() {

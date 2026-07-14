@@ -29,7 +29,7 @@ platform_dependency_resolver_reset() {
 # O módulo não será adicionado novamente caso já esteja presente.
 #
 platform_dependency_resolver_add() {
-    local module="$1"
+    local module="${1:-}"
     local existing
 
     [[ -z "$module" ]] && return 1
@@ -39,6 +39,11 @@ platform_dependency_resolver_add() {
     done
 
     PLATFORM_RESOLVED_MODULES+=("$module")
+
+    #
+    # O módulo foi oficialmente resolvido pelo algoritmo DFS.
+    #
+    platform_module_state_set "$module" "RESOLVED"
 }
 
 #

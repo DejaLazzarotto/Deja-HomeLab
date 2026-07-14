@@ -54,20 +54,25 @@ platform_validate_module_dependencies() {
 
     dependencies="$(platform_get_module_dependencies_list "$module")" || return 1
 
-    [[ -z "$dependencies" ]] && return 0
+    if [[ -n "$dependencies" ]]; then
+        while IFS= read -r dependency; do
+            [[ -z "$dependency" ]] && continue
 
-    while IFS= read -r dependency; do
-        [[ -z "$dependency" ]] && continue
+            if ! platform_list_registered_manifests |
+                grep -Fxq -- "$dependency"; then
 
-        if ! platform_list_registered_manifests |
-            grep -Fxq -- "$dependency"; then
+                platform_log_error \
+                    "Module dependency is not registered: ${module} -> ${dependency}"
 
-            platform_log_error \
-                "Module dependency is not registered: ${module} -> ${dependency}"
+                return 1
+            fi
+        done <<< "$dependencies"
+    fi
 
-            return 1
-        fi
-    done <<< "$dependencies"
+    #
+    # Dependências validadas com sucesso.
+    #
+    platform_module_state_set "$module" "VALIDATED"
 
     return 0
 }
