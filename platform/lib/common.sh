@@ -40,9 +40,12 @@ source "$PLATFORM_ROOT/lib/module-extension-registry.sh"
 source "$PLATFORM_ROOT/lib/module-extension-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/module-service-registry.sh"
 source "$PLATFORM_ROOT/lib/module-service-dispatcher.sh"
+source "$PLATFORM_ROOT/lib/module-service-api.sh"
+
 source "$PLATFORM_ROOT/lib/module-capability-registry.sh"
 source "$PLATFORM_ROOT/lib/module-capability-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/capability-api.sh"
+
 source "$PLATFORM_ROOT/lib/module-lifecycle-manager.sh"
 
 # Configuração
