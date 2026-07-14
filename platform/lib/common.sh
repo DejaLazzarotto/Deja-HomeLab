@@ -36,6 +36,8 @@ source "$PLATFORM_ROOT/lib/module-event-registry.sh"
 source "$PLATFORM_ROOT/lib/module-event-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/module-hook-registry.sh"
 source "$PLATFORM_ROOT/lib/module-hook-dispatcher.sh"
+source "$PLATFORM_ROOT/lib/module-extension-registry.sh"
+source "$PLATFORM_ROOT/lib/module-extension-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/module-lifecycle-manager.sh"
 
 # Configuração
@@ -52,10 +54,11 @@ platform_context_init
 platform_module_state_reset
 platform_module_event_reset
 platform_module_event_dispatcher_init
+platform_module_extension_registry_reset
+
 # Comandos internos
 platform_register_builtin_commands
 
-# Descoberta dos manifests
 # Descoberta dos manifests
 platform_set_module_lifecycle_stage "discover"
 platform_discover_manifests || exit 1
