@@ -40,6 +40,7 @@ source "$PLATFORM_ROOT/lib/module-extension-registry.sh"
 source "$PLATFORM_ROOT/lib/module-extension-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/module-service-registry.sh"
 source "$PLATFORM_ROOT/lib/module-service-dispatcher.sh"
+source "$PLATFORM_ROOT/lib/module-capability-registry.sh"
 source "$PLATFORM_ROOT/lib/module-lifecycle-manager.sh"
 
 # Configuração
@@ -57,6 +58,7 @@ platform_module_state_reset
 platform_module_event_reset
 platform_module_event_dispatcher_init
 platform_module_extension_registry_reset
+platform_module_capability_registry_reset
 
 # Comandos internos
 platform_register_builtin_commands
