@@ -42,6 +42,57 @@ platform_dependency_resolver_add() {
 }
 
 #
+# Verifica se um manifesto está registrado.
+#
+platform_dependency_resolver_manifest_exists() {
+    local expected_module="$1"
+    local registered_module
+
+    [[ -z "$expected_module" ]] && return 1
+
+    while IFS= read -r registered_module; do
+        [[ -z "$registered_module" ]] && continue
+
+        if [[ "$registered_module" == "$expected_module" ]]; then
+            return 0
+        fi
+    done < <(platform_list_registered_manifests)
+
+    return 1
+}
+
+#
+# Valida a integridade estrutural do grafo de dependências.
+#
+# Todas as dependências declaradas devem apontar para módulos
+# existentes antes que qualquer travessia DFS seja iniciada.
+#
+platform_dependency_resolver_validate_graph() {
+    local module
+    local dependencies
+    local dependency
+
+    while IFS= read -r module; do
+        [[ -z "$module" ]] && continue
+
+        dependencies="$(platform_get_module_dependencies "$module")" || return 1
+
+        for dependency in $dependencies; do
+            [[ -z "$dependency" ]] && continue
+
+            if ! platform_dependency_resolver_manifest_exists "$dependency"; then
+                platform_log_error \
+                    "Module '$module' declares unknown dependency '$dependency'."
+
+                return 1
+            fi
+        done
+    done < <(platform_list_registered_manifests)
+
+    return 0
+}
+
+#
 # Marca um módulo como completamente visitado.
 #
 platform_dependency_resolver_mark_visited() {
@@ -195,14 +246,15 @@ platform_dependency_resolver_visit() {
 #
 # Executa a resolução topológica de todos os módulos registrados.
 #
-# A ordem final não depende da ordem em que os manifests foram
-# descobertos. Cada módulo é inserido somente depois de todas
-# as suas dependências.
+# Antes da DFS, todo o grafo é validado para garantir que nenhuma
+# dependência aponta para um módulo inexistente.
 #
 platform_dependency_resolver_run() {
     local module
 
     platform_dependency_resolver_reset
+
+    platform_dependency_resolver_validate_graph || return 1
 
     while IFS= read -r module; do
         [[ -z "$module" ]] && continue
