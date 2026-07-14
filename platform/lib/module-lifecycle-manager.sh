@@ -12,13 +12,14 @@
 # Executa o bootstrap individual de um módulo.
 #
 # O módulo deve estar no estado LOADED.
-# Quando o bootstrap for concluído, seu estado será atualizado
-# automaticamente para BOOTSTRAPPED.
+# Quando o bootstrap e seus eventos forem concluídos, seu estado
+# será atualizado automaticamente para BOOTSTRAPPED.
 #
 platform_module_lifecycle_bootstrap_module() {
     local module="${1:-}"
     local current_state
     local bootstrap_function
+    local bootstrap_exit_code
 
     if [[ -z "$module" ]]; then
         platform_log_error "Module name not informed for bootstrap."
@@ -37,13 +38,34 @@ platform_module_lifecycle_bootstrap_module() {
         return 1
     fi
 
+    if ! platform_module_event_emit "module.before_bootstrap" "$module"; then
+        platform_log_error \
+            "Module before-bootstrap event failed: $module"
+        return 1
+    fi
+
     bootstrap_function="platform_module_${module//-/_}_bootstrap"
 
     if declare -F "$bootstrap_function" >/dev/null 2>&1; then
-        "$bootstrap_function" || {
+        "$bootstrap_function"
+        bootstrap_exit_code=$?
+
+        if [[ "$bootstrap_exit_code" -ne 0 ]]; then
             platform_log_error "Module bootstrap failed: $module"
-            return 1
-        }
+
+            platform_module_event_emit \
+                "module.bootstrap_failed" \
+                "$module" \
+                "$bootstrap_exit_code" || true
+
+            return "$bootstrap_exit_code"
+        fi
+    fi
+
+    if ! platform_module_event_emit "module.after_bootstrap" "$module"; then
+        platform_log_error \
+            "Module after-bootstrap event failed: $module"
+        return 1
     fi
 
     platform_module_state_set "$module" "BOOTSTRAPPED" || return 1
