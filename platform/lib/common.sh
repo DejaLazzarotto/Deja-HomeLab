@@ -38,6 +38,8 @@ source "$PLATFORM_ROOT/lib/module-hook-registry.sh"
 source "$PLATFORM_ROOT/lib/module-hook-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/module-extension-registry.sh"
 source "$PLATFORM_ROOT/lib/module-extension-dispatcher.sh"
+source "$PLATFORM_ROOT/lib/module-service-registry.sh"
+source "$PLATFORM_ROOT/lib/module-service-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/module-lifecycle-manager.sh"
 
 # Configuração
