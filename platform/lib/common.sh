@@ -34,6 +34,8 @@ source "$PLATFORM_ROOT/lib/module-loader.sh"
 source "$PLATFORM_ROOT/lib/module-lifecycle.sh"
 source "$PLATFORM_ROOT/lib/module-event-registry.sh"
 source "$PLATFORM_ROOT/lib/module-event-dispatcher.sh"
+source "$PLATFORM_ROOT/lib/module-hook-registry.sh"
+source "$PLATFORM_ROOT/lib/module-hook-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/module-lifecycle-manager.sh"
 
 # Configuração
