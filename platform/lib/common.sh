@@ -19,6 +19,7 @@ source "$PLATFORM_ROOT/lib/metadata-api.sh"
 # Command System
 source "$PLATFORM_ROOT/lib/command-registry.sh"
 source "$PLATFORM_ROOT/lib/command-loader.sh"
+source "$PLATFORM_ROOT/lib/module-command-api.sh"
 
 # Module System
 source "$PLATFORM_ROOT/lib/module-registry.sh"
@@ -41,11 +42,9 @@ source "$PLATFORM_ROOT/lib/module-extension-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/module-service-registry.sh"
 source "$PLATFORM_ROOT/lib/module-service-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/module-service-api.sh"
-
 source "$PLATFORM_ROOT/lib/module-capability-registry.sh"
 source "$PLATFORM_ROOT/lib/module-capability-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/capability-api.sh"
-
 source "$PLATFORM_ROOT/lib/module-lifecycle-manager.sh"
 
 # Configuração
@@ -64,7 +63,6 @@ platform_module_event_reset
 platform_module_event_dispatcher_init
 platform_module_extension_registry_reset
 platform_module_capability_registry_reset
-
 
 # Comandos internos
 platform_register_builtin_commands
