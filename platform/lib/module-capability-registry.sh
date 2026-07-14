@@ -9,6 +9,7 @@
 #
 
 declare -gA PLATFORM_MODULE_CAPABILITY_MODULES=()
+declare -gA PLATFORM_MODULE_CAPABILITY_FUNCTIONS=()
 declare -ga PLATFORM_MODULE_CAPABILITY_NAMES=()
 
 #
@@ -16,6 +17,7 @@ declare -ga PLATFORM_MODULE_CAPABILITY_NAMES=()
 #
 platform_module_capability_registry_reset() {
     PLATFORM_MODULE_CAPABILITY_MODULES=()
+    PLATFORM_MODULE_CAPABILITY_FUNCTIONS=()
     PLATFORM_MODULE_CAPABILITY_NAMES=()
 }
 
@@ -25,15 +27,18 @@ platform_module_capability_registry_reset() {
 platform_module_capability_register() {
     local module="${1:-}"
     local capability="${2:-}"
+    local function="${3:-}"
     local registered_module
 
     [[ -z "$module" ]] && return 1
     [[ -z "$capability" ]] && return 1
+    [[ -z "$function" ]] && return 1
 
     registered_module="${PLATFORM_MODULE_CAPABILITY_MODULES[$capability]:-}"
 
     if [[ -n "$registered_module" ]]; then
-        if [[ "$registered_module" == "$module" ]]; then
+        if [[ "$registered_module" == "$module" ]] &&
+            [[ "${PLATFORM_MODULE_CAPABILITY_FUNCTIONS[$capability]:-}" == "$function" ]]; then
             return 0
         fi
 
@@ -44,6 +49,7 @@ platform_module_capability_register() {
     fi
 
     PLATFORM_MODULE_CAPABILITY_MODULES["$capability"]="$module"
+    PLATFORM_MODULE_CAPABILITY_FUNCTIONS["$capability"]="$function"
     PLATFORM_MODULE_CAPABILITY_NAMES+=("$capability")
 }
 
@@ -55,7 +61,8 @@ platform_module_capability_exists() {
 
     [[ -z "$capability" ]] && return 1
 
-    [[ -n "${PLATFORM_MODULE_CAPABILITY_MODULES[$capability]:-}" ]]
+    [[ -n "${PLATFORM_MODULE_CAPABILITY_MODULES[$capability]:-}" ]] &&
+        [[ -n "${PLATFORM_MODULE_CAPABILITY_FUNCTIONS[$capability]:-}" ]]
 }
 
 #
@@ -82,6 +89,19 @@ platform_module_capability_get_module() {
     platform_module_capability_exists "$capability" || return 1
 
     printf '%s\n' "${PLATFORM_MODULE_CAPABILITY_MODULES[$capability]}"
+}
+
+#
+# Retorna a função responsável pela Capability.
+#
+platform_module_capability_get_function() {
+    local capability="${1:-}"
+
+    [[ -z "$capability" ]] && return 1
+
+    platform_module_capability_exists "$capability" || return 1
+
+    printf '%s\n' "${PLATFORM_MODULE_CAPABILITY_FUNCTIONS[$capability]}"
 }
 
 #
