@@ -38,9 +38,16 @@ platform_module_lifecycle_bootstrap_module() {
         return 1
     fi
 
-    if ! platform_module_event_emit "module.before_bootstrap" "$module"; then
+    if ! platform_module_event_emit \
+        "module.before_bootstrap" \
+        "$module" \
+        "$current_state" \
+        "starting" \
+        "Module bootstrap is starting."; then
+
         platform_log_error \
             "Module before-bootstrap event failed: $module"
+
         return 1
     fi
 
@@ -56,15 +63,24 @@ platform_module_lifecycle_bootstrap_module() {
             platform_module_event_emit \
                 "module.bootstrap_failed" \
                 "$module" \
-                "$bootstrap_exit_code" || true
+                "$current_state" \
+                "failed" \
+                "Module bootstrap exited with code $bootstrap_exit_code." || true
 
             return "$bootstrap_exit_code"
         fi
     fi
 
-    if ! platform_module_event_emit "module.after_bootstrap" "$module"; then
+    if ! platform_module_event_emit \
+        "module.after_bootstrap" \
+        "$module" \
+        "BOOTSTRAPPED" \
+        "success" \
+        "Module bootstrap completed successfully."; then
+
         platform_log_error \
             "Module after-bootstrap event failed: $module"
+
         return 1
     fi
 
