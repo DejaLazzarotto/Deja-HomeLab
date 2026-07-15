@@ -189,6 +189,54 @@ platform_module_config_yaml_cache_get() {
 }
 
 #
+# Invalida todas as configurações YAML armazenadas para
+# um módulo específico.
+#
+# O módulo também deixa de ser considerado carregado,
+# permitindo que seu arquivo YAML seja processado novamente.
+#
+# Argumentos:
+#
+#   $1 - Nome do módulo.
+#
+# Retorno:
+#
+#   0 - Invalidação concluída.
+#   1 - Nome do módulo não informado.
+#
+platform_module_config_yaml_cache_invalidate_module() {
+    local module="${1:-}"
+    local cache_key
+    local module_prefix
+
+    if [[ -z "$module" ]]; then
+        platform_log_error \
+            "Module name not informed for YAML configuration cache invalidation."
+        return 1
+    fi
+
+    module_prefix="${module}"$'\x1f'
+
+    for cache_key in "${!PLATFORM_MODULE_CONFIG_YAML_CACHE_VALUES[@]}"; do
+        if [[ "$cache_key" == "$module_prefix"* ]]; then
+            unset 'PLATFORM_MODULE_CONFIG_YAML_CACHE_VALUES[$cache_key]'
+        fi
+    done
+
+    unset 'PLATFORM_MODULE_CONFIG_YAML_CACHE_LOADED_MODULES[$module]'
+}
+
+#
+# Invalida globalmente o cache de configuração YAML.
+#
+# Todas as configurações e todos os estados de carregamento
+# são removidos.
+#
+platform_module_config_yaml_cache_invalidate_all() {
+    platform_module_config_yaml_cache_reset
+}
+
+#
 # Carrega uma única vez o arquivo YAML de um módulo.
 #
 # Formato suportado nesta fase:
@@ -203,7 +251,7 @@ platform_module_config_yaml_cache_get() {
 # Retorno:
 #
 #   0 - Processo de carregamento concluído.
-#   1 - Argumentos inválidos.
+#   1 - Argumentos inválidos ou falha no armazenamento.
 #
 # A ausência do arquivo não é tratada como erro do cache.
 # O módulo será marcado como carregado para impedir novas
@@ -267,4 +315,65 @@ platform_module_config_yaml_cache_load() {
             "$yaml_key" \
             "$yaml_value" || return 1
     done < "$config_file"
+}
+
+#
+# Recarrega explicitamente a configuração YAML de um módulo.
+#
+# A configuração atualmente armazenada é invalidada antes
+# que o arquivo seja processado novamente.
+#
+# Argumentos:
+#
+#   $1 - Nome do módulo.
+#   $2 - Caminho completo do arquivo YAML.
+#
+# Retorno:
+#
+#   0 - Recarga concluída.
+#   1 - Argumentos inválidos ou falha no carregamento.
+#
+platform_module_config_yaml_cache_reload() {
+    local module="${1:-}"
+    local config_file="${2:-}"
+
+    if [[ -z "$module" ]]; then
+        platform_log_error \
+            "Module name not informed for YAML configuration cache reload."
+        return 1
+    fi
+
+    if [[ -z "$config_file" ]]; then
+        platform_log_error \
+            "YAML configuration file not informed for cache reload: module=$module"
+        return 1
+    fi
+
+    platform_module_config_yaml_cache_invalidate_module "$module" \
+        || return 1
+
+    platform_module_config_yaml_cache_load \
+        "$module" \
+        "$config_file"
+}
+
+#
+# Atualiza o cache YAML de um módulo.
+#
+# Esta função representa a API interna de refresh e constitui
+# o ponto de integração preparado para futuros mecanismos de
+# hot reload.
+#
+# Argumentos:
+#
+#   $1 - Nome do módulo.
+#   $2 - Caminho completo do arquivo YAML.
+#
+platform_module_config_yaml_cache_refresh() {
+    local module="${1:-}"
+    local config_file="${2:-}"
+
+    platform_module_config_yaml_cache_reload \
+        "$module" \
+        "$config_file"
 }
