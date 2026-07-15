@@ -162,6 +162,12 @@ platform_resolve_module_config() {
 # Registra os providers oficiais disponibilizados pelo Kernel.
 #
 platform_register_builtin_module_config_providers() {
+    if ! platform_module_config_provider_registry_has "yaml"; then
+        platform_module_config_provider_registry_register \
+            "yaml" \
+            "platform_module_config_provider_yaml_resolve"
+    fi
+
     if ! platform_module_config_provider_registry_has "kernel"; then
         platform_module_config_provider_registry_register \
             "kernel" \
