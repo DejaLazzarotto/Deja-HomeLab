@@ -19,13 +19,19 @@ platform_module_event_reset() {
 
 #
 # Verifica se um evento pertence ao contrato interno
-# de eventos do Module Lifecycle.
+# de eventos da plataforma.
 #
 platform_module_event_is_supported() {
     local event="${1:-}"
 
     case "$event" in
-        module.before_bootstrap|module.after_bootstrap|module.bootstrap_failed)
+        module.before_bootstrap|\
+        module.after_bootstrap|\
+        module.bootstrap_failed|\
+        module.config.loaded|\
+        module.config.invalidated|\
+        module.config.reloaded|\
+        module.config.refreshed)
             return 0
             ;;
         *)

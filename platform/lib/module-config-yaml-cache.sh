@@ -223,7 +223,16 @@ platform_module_config_yaml_cache_invalidate_module() {
         fi
     done
 
-    unset 'PLATFORM_MODULE_CONFIG_YAML_CACHE_LOADED_MODULES[$module]'
+        unset 'PLATFORM_MODULE_CONFIG_YAML_CACHE_LOADED_MODULES[$module]'
+
+    if declare -F platform_module_event_emit >/dev/null; then
+        platform_module_event_emit \
+            "module.config.invalidated" \
+            "$module" \
+            "" \
+            "success" \
+            "YAML configuration cache invalidated." || return 1
+    fi
 }
 
 #
@@ -315,6 +324,15 @@ platform_module_config_yaml_cache_load() {
             "$yaml_key" \
             "$yaml_value" || return 1
     done < "$config_file"
+
+        if declare -F platform_module_event_emit >/dev/null; then
+        platform_module_event_emit \
+            "module.config.loaded" \
+            "$module" \
+            "" \
+            "success" \
+            "YAML configuration loaded." || return 1
+    fi
 }
 
 #
@@ -352,9 +370,18 @@ platform_module_config_yaml_cache_reload() {
     platform_module_config_yaml_cache_invalidate_module "$module" \
         || return 1
 
-    platform_module_config_yaml_cache_load \
+        platform_module_config_yaml_cache_load \
         "$module" \
-        "$config_file"
+        "$config_file" || return 1
+
+    if declare -F platform_module_event_emit >/dev/null; then
+        platform_module_event_emit \
+            "module.config.reloaded" \
+            "$module" \
+            "" \
+            "success" \
+            "YAML configuration reloaded." || return 1
+    fi
 }
 
 #
@@ -375,5 +402,14 @@ platform_module_config_yaml_cache_refresh() {
 
     platform_module_config_yaml_cache_reload \
         "$module" \
-        "$config_file"
+        "$config_file" || return 1
+
+    if declare -F platform_module_event_emit >/dev/null; then
+        platform_module_event_emit \
+            "module.config.refreshed" \
+            "$module" \
+            "" \
+            "success" \
+            "YAML configuration refreshed." || return 1
+    fi
 }
