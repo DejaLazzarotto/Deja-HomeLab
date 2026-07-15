@@ -46,9 +46,8 @@ source "$PLATFORM_ROOT/lib/module-capability-registry.sh"
 source "$PLATFORM_ROOT/lib/module-capability-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/capability-api.sh"
 source "$PLATFORM_ROOT/lib/module-config-provider-registry.sh"
+source "$PLATFORM_ROOT/lib/module-config-yaml-cache.sh"
 source "$PLATFORM_ROOT/lib/module-config-provider-yaml.sh"
-source "$PLATFORM_ROOT/lib/module-config-provider-api.sh"
-source "$PLATFORM_ROOT/lib/module-config-provider-registry.sh"
 source "$PLATFORM_ROOT/lib/module-config-provider-api.sh"
 source "$PLATFORM_ROOT/lib/module-lifecycle-manager.sh"
 
@@ -68,6 +67,7 @@ platform_module_event_reset
 platform_module_event_dispatcher_init
 platform_module_extension_registry_reset
 platform_module_capability_registry_reset
+platform_module_config_yaml_cache_reset
 platform_module_config_provider_registry_reset
 
 # Providers internos
