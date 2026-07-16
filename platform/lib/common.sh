@@ -51,6 +51,9 @@ source "$PLATFORM_ROOT/lib/module-config-provider-registry.sh"
 source "$PLATFORM_ROOT/lib/module-config-yaml-cache.sh"
 source "$PLATFORM_ROOT/lib/module-config-provider-yaml.sh"
 source "$PLATFORM_ROOT/lib/module-config-provider-api.sh"
+source "$PLATFORM_ROOT/lib/module-config-observer-registry.sh"
+source "$PLATFORM_ROOT/lib/module-config-observer-dispatcher.sh"
+source "$PLATFORM_ROOT/lib/module-config-observer-api.sh"
 source "$PLATFORM_ROOT/lib/module-lifecycle-manager.sh"
 
 # Configuração
