@@ -12,12 +12,15 @@
 # Executa o bootstrap individual de um módulo.
 #
 # O módulo deve estar no estado LOADED.
-# Quando o bootstrap, seus eventos e Hooks forem concluídos,
-# seu estado será atualizado automaticamente para BOOTSTRAPPED.
+# Quando o registro de recursos, o bootstrap, seus eventos
+# e Hooks forem concluídos, seu estado será atualizado
+# automaticamente para BOOTSTRAPPED.
 #
 platform_module_lifecycle_bootstrap_module() {
     local module="${1:-}"
     local current_state
+    local resource_registration_function
+    local resource_registration_exit_code
     local bootstrap_function
     local bootstrap_exit_code
     local hook_exit_code
@@ -64,6 +67,28 @@ platform_module_lifecycle_bootstrap_module() {
             "Module before-bootstrap hook failed: $module"
 
         return "$hook_exit_code"
+    fi
+
+    #
+    # Executa o estágio opcional de publicação dos recursos
+    # pertencentes ao módulo.
+    #
+    # Convenção:
+    #
+    #   platform_module_<module>_register_resources
+    #
+    resource_registration_function="platform_module_${module//-/_}_register_resources"
+
+    if declare -F "$resource_registration_function" >/dev/null 2>&1; then
+        "$resource_registration_function"
+        resource_registration_exit_code=$?
+
+        if [[ "$resource_registration_exit_code" -ne 0 ]]; then
+            platform_log_error \
+                "Module resource registration failed: $module"
+
+            return "$resource_registration_exit_code"
+        fi
     fi
 
     bootstrap_function="platform_module_${module//-/_}_bootstrap"
