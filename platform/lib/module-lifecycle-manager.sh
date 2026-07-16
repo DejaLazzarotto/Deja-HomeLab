@@ -9,18 +9,105 @@
 #
 
 #
+# Executa o estágio opcional de publicação dos recursos
+# pertencentes a um módulo.
+#
+# Convenção oficial:
+#
+#   platform_module_<module>_register_resources
+#
+# Módulos legados que não implementam essa função permanecem
+# totalmente compatíveis e concluem o estágio com sucesso.
+#
+# Argumentos:
+#
+#   $1 - Nome do módulo.
+#   $2 - Estado atual do módulo.
+#
+platform_module_lifecycle_register_resources() {
+    local module="${1:-}"
+    local current_state="${2:-}"
+    local resource_registration_function
+    local resource_registration_exit_code
+
+    if [[ -z "$module" ]]; then
+        platform_log_error \
+            "Module name not informed for resource registration."
+
+        return 1
+    fi
+
+    if [[ -z "$current_state" ]]; then
+        platform_log_error \
+            "Module lifecycle state not informed for resource registration: $module"
+
+        return 1
+    fi
+
+    if ! platform_module_event_emit \
+        "module.before_register_resources" \
+        "$module" \
+        "$current_state" \
+        "starting" \
+        "Module resource registration is starting."; then
+
+        platform_log_error \
+            "Module before-register-resources event failed: $module"
+
+        return 1
+    fi
+
+    resource_registration_function="platform_module_${module//-/_}_register_resources"
+
+    if declare -F "$resource_registration_function" >/dev/null 2>&1; then
+        "$resource_registration_function"
+        resource_registration_exit_code=$?
+
+        if [[ "$resource_registration_exit_code" -ne 0 ]]; then
+            platform_log_error \
+                "Module resource registration failed: $module"
+
+            platform_module_event_emit \
+                "module.resource_registration_failed" \
+                "$module" \
+                "$current_state" \
+                "failed" \
+                "Module resource registration exited with code $resource_registration_exit_code." \
+                || true
+
+            return "$resource_registration_exit_code"
+        fi
+    fi
+
+    if ! platform_module_event_emit \
+        "module.after_register_resources" \
+        "$module" \
+        "$current_state" \
+        "success" \
+        "Module resource registration completed successfully."; then
+
+        platform_log_error \
+            "Module after-register-resources event failed: $module"
+
+        return 1
+    fi
+
+    return 0
+}
+
+#
 # Executa o bootstrap individual de um módulo.
 #
 # O módulo deve estar no estado LOADED.
-# Quando o registro de recursos, o bootstrap, seus eventos
-# e Hooks forem concluídos, seu estado será atualizado
-# automaticamente para BOOTSTRAPPED.
+#
+# Antes do bootstrap, o módulo passa pelo estágio oficial de
+# Resource Registration. Quando o registro de recursos, o
+# bootstrap, seus eventos e Hooks forem concluídos, seu estado
+# será atualizado automaticamente para BOOTSTRAPPED.
 #
 platform_module_lifecycle_bootstrap_module() {
     local module="${1:-}"
     local current_state
-    local resource_registration_function
-    local resource_registration_exit_code
     local bootstrap_function
     local bootstrap_exit_code
     local hook_exit_code
@@ -39,8 +126,14 @@ platform_module_lifecycle_bootstrap_module() {
     if [[ "$current_state" != "LOADED" ]]; then
         platform_log_error \
             "Module '$module' cannot be bootstrapped from state '$current_state'."
+
         return 1
     fi
+
+    platform_module_lifecycle_register_resources \
+        "$module" \
+        "$current_state" \
+        || return $?
 
     if ! platform_module_event_emit \
         "module.before_bootstrap" \
@@ -69,28 +162,6 @@ platform_module_lifecycle_bootstrap_module() {
         return "$hook_exit_code"
     fi
 
-    #
-    # Executa o estágio opcional de publicação dos recursos
-    # pertencentes ao módulo.
-    #
-    # Convenção:
-    #
-    #   platform_module_<module>_register_resources
-    #
-    resource_registration_function="platform_module_${module//-/_}_register_resources"
-
-    if declare -F "$resource_registration_function" >/dev/null 2>&1; then
-        "$resource_registration_function"
-        resource_registration_exit_code=$?
-
-        if [[ "$resource_registration_exit_code" -ne 0 ]]; then
-            platform_log_error \
-                "Module resource registration failed: $module"
-
-            return "$resource_registration_exit_code"
-        fi
-    fi
-
     bootstrap_function="platform_module_${module//-/_}_bootstrap"
 
     if declare -F "$bootstrap_function" >/dev/null 2>&1; then
@@ -105,7 +176,8 @@ platform_module_lifecycle_bootstrap_module() {
                 "$module" \
                 "$current_state" \
                 "failed" \
-                "Module bootstrap exited with code $bootstrap_exit_code." || true
+                "Module bootstrap exited with code $bootstrap_exit_code." \
+                || true
 
             return "$bootstrap_exit_code"
         fi
@@ -147,6 +219,8 @@ platform_module_lifecycle_bootstrap_module() {
 # Executa o bootstrap de todos os módulos resolvidos.
 #
 # A ordem fornecida pelo Dependency Resolver é preservada.
+# Cada módulo publica seus recursos imediatamente antes de seu
+# próprio bootstrap.
 #
 platform_module_lifecycle_bootstrap_all() {
     local module

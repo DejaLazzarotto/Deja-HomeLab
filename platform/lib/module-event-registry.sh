@@ -25,6 +25,9 @@ platform_module_event_is_supported() {
     local event="${1:-}"
 
     case "$event" in
+        module.before_register_resources|\
+        module.after_register_resources|\
+        module.resource_registration_failed|\
         module.before_bootstrap|\
         module.after_bootstrap|\
         module.bootstrap_failed|\
