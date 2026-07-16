@@ -77,9 +77,6 @@ platform_module_capability_registry_reset
 platform_module_config_yaml_cache_reset
 platform_module_config_provider_registry_reset
 
-# Providers internos
-platform_register_builtin_module_config_providers
-
 # Comandos internos
 platform_register_builtin_commands
 

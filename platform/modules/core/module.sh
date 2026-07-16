@@ -3,11 +3,11 @@
 platform_register_module "core"
 
 platform_register_module_command \
-  "core" \
-  "core:status" \
-  "$PLATFORM_ROOT/modules/core/commands/status.sh" \
-  "platform_cmd_core_status" \
-  "Show core module status"
+    "core" \
+    "core:status" \
+    "$PLATFORM_ROOT/modules/core/commands/status.sh" \
+    "platform_cmd_core_status" \
+    "Show core module status"
 
 #
 # Observa eventos de configuração recebidos pelo módulo core.
@@ -53,12 +53,38 @@ platform_module_core_configuration_observer() {
 }
 
 #
-# Publica os recursos do módulo core durante seu estágio oficial
-# de Resource Registration.
+# Publica os Configuration Providers internos do Kernel.
 #
-platform_module_core_register_resources() {
+# Esta função mantém o conhecimento sobre os providers builtin
+# encapsulado em sua API específica. O módulo core apenas define
+# o momento oficial em que esses recursos são publicados.
+#
+platform_module_core_register_configuration_providers() {
+    platform_register_builtin_module_config_providers
+}
+
+#
+# Publica os Configuration Observers pertencentes ao módulo core.
+#
+platform_module_core_register_configuration_observers() {
     platform_module_config_observer_register \
         "core" \
         "core.configuration" \
         "platform_module_core_configuration_observer"
+}
+
+#
+# Publica os recursos do módulo core durante seu estágio oficial
+# de Resource Registration.
+#
+# Cada categoria de recurso possui uma função dedicada. Esse
+# padrão poderá ser reutilizado nas próximas migrações sem
+# concentrar todos os registros diretamente neste contrato.
+#
+platform_module_core_register_resources() {
+    platform_module_core_register_configuration_providers \
+        || return 1
+
+    platform_module_core_register_configuration_observers \
+        || return 1
 }
