@@ -2,13 +2,6 @@
 
 platform_register_module "core"
 
-platform_register_module_command \
-    "core" \
-    "core:status" \
-    "$PLATFORM_ROOT/modules/core/commands/status.sh" \
-    "platform_cmd_core_status" \
-    "Show core module status"
-
 #
 # Observa eventos de configuração recebidos pelo módulo core.
 #
@@ -53,6 +46,18 @@ platform_module_core_configuration_observer() {
 }
 
 #
+# Publica os Commands pertencentes ao módulo core.
+#
+platform_module_core_register_commands() {
+    platform_module_command_register \
+        "core" \
+        "core:status" \
+        "$PLATFORM_ROOT/modules/core/commands/status.sh" \
+        "platform_cmd_core_status" \
+        "Show core module status"
+}
+
+#
 # Publica os Configuration Providers internos do Kernel.
 #
 # Esta função mantém o conhecimento sobre os providers builtin
@@ -82,6 +87,9 @@ platform_module_core_register_configuration_observers() {
 # concentrar todos os registros diretamente neste contrato.
 #
 platform_module_core_register_resources() {
+    platform_module_core_register_commands \
+        || return 1
+
     platform_module_core_register_configuration_providers \
         || return 1
 

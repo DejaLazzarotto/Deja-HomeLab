@@ -19,6 +19,10 @@
 # Módulos legados que não implementam essa função permanecem
 # totalmente compatíveis e concluem o estágio com sucesso.
 #
+# O estágio é executado somente uma vez por módulo durante o
+# ciclo atual do Kernel. Isso permite repetir o bootstrap após
+# falhas posteriores sem republicar recursos já registrados.
+#
 # Argumentos:
 #
 #   $1 - Nome do módulo.
@@ -42,6 +46,17 @@ platform_module_lifecycle_register_resources() {
             "Module lifecycle state not informed for resource registration: $module"
 
         return 1
+    fi
+
+    #
+    # O Resource Registration é executado somente uma vez por
+    # módulo durante o ciclo atual do Kernel.
+    #
+    # Caso o bootstrap tenha falhado depois da publicação dos
+    # recursos, uma nova tentativa não repetirá os registros.
+    #
+    if platform_module_resource_registration_state_is_completed "$module"; then
+        return 0
     fi
 
     if ! platform_module_event_emit \
@@ -91,6 +106,16 @@ platform_module_lifecycle_register_resources() {
 
         return 1
     fi
+
+    #
+    # O estágio somente é considerado concluído depois que:
+    #
+    #   1. a função de publicação retornou sucesso;
+    #   2. o evento after_register_resources foi emitido;
+    #   3. todos os listeners do evento concluíram com sucesso.
+    #
+    platform_module_resource_registration_state_mark_completed "$module" \
+        || return 1
 
     return 0
 }
