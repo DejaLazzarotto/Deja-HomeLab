@@ -24,7 +24,7 @@ platform_module_extension_has_provider() {
         return 1
     fi
 
-    [[ -n "${PLATFORM_MODULE_EXTENSION_PROVIDERS[$extension_point]+x}" ]]
+    platform_module_extension_provider_is_registered "$extension_point"
 }
 
 #

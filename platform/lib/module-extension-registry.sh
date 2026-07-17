@@ -53,6 +53,18 @@ platform_module_extension_is_registered() {
 }
 
 #
+# Verifica se um Provider está registrado para um
+# Extension Point.
+#
+platform_module_extension_provider_is_registered() {
+    local extension_point="${1:-}"
+
+    [[ -z "$extension_point" ]] && return 1
+
+    [[ -n "${PLATFORM_MODULE_EXTENSION_PROVIDERS[$extension_point]+x}" ]]
+}
+
+#
 # Registra um Provider para um Extension Point.
 #
 # Nesta fase, cada Extension Point aceita apenas um Provider.
@@ -82,7 +94,7 @@ platform_module_extension_register_provider() {
         return 1
     fi
 
-    if [[ -n "${PLATFORM_MODULE_EXTENSION_PROVIDERS[$extension_point]+x}" ]]; then
+    if platform_module_extension_provider_is_registered "$extension_point"; then
         platform_log_error "Extension provider already registered: $extension_point"
         return 1
     fi
@@ -112,7 +124,7 @@ platform_module_extension_get_provider() {
         return 1
     fi
 
-    if [[ -z "${PLATFORM_MODULE_EXTENSION_PROVIDERS[$extension_point]+x}" ]]; then
+    if ! platform_module_extension_provider_is_registered "$extension_point"; then
         platform_log_error "No provider registered for extension point: $extension_point"
         return 1
     fi
