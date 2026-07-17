@@ -12,7 +12,6 @@ source "$PLATFORM_ROOT/lib/validator.sh"
 # Kernel
 source "$PLATFORM_ROOT/lib/context.sh"
 source "$PLATFORM_ROOT/lib/context-api.sh"
-source "$PLATFORM_ROOT/lib/service-api.sh"
 source "$PLATFORM_ROOT/lib/runtime-api.sh"
 source "$PLATFORM_ROOT/lib/metadata-api.sh"
 
@@ -23,7 +22,6 @@ source "$PLATFORM_ROOT/lib/module-command-api.sh"
 
 # Module System
 source "$PLATFORM_ROOT/lib/module-registry.sh"
-source "$PLATFORM_ROOT/lib/module-api.sh"
 source "$PLATFORM_ROOT/lib/manifest-loader.sh"
 source "$PLATFORM_ROOT/lib/manifest-registry.sh"
 source "$PLATFORM_ROOT/lib/manifest-api.sh"
@@ -40,6 +38,7 @@ source "$PLATFORM_ROOT/lib/module-hook-registry.sh"
 source "$PLATFORM_ROOT/lib/module-hook-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/module-extension-registry.sh"
 source "$PLATFORM_ROOT/lib/module-extension-dispatcher.sh"
+source "$PLATFORM_ROOT/lib/module-extension-api.sh"
 source "$PLATFORM_ROOT/lib/module-service-registry.sh"
 source "$PLATFORM_ROOT/lib/module-service-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/module-service-api.sh"

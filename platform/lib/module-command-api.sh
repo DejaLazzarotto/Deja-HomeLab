@@ -17,7 +17,7 @@
 #   $4 - Nome da função de implementação
 #   $5 - Descrição opcional
 #
-platform_module_command_register() {
+platform_register_module_command() {
     local module="${1:-}"
     local command="${2:-}"
     local command_file="${3:-}"
@@ -55,7 +55,7 @@ platform_module_command_register() {
 #
 # Verifica se um comando está registrado.
 #
-platform_module_command_exists() {
+platform_has_module_command() {
     local command="${1:-}"
 
     if [[ -z "$command" ]]; then
@@ -68,7 +68,7 @@ platform_module_command_exists() {
 #
 # Retorna o módulo que registrou o comando.
 #
-platform_module_command_get_origin() {
+platform_get_module_command_origin() {
     local command="${1:-}"
 
     if [[ -z "$command" ]]; then
@@ -87,7 +87,7 @@ platform_module_command_get_origin() {
 #
 # Retorna a descrição pública do comando.
 #
-platform_module_command_get_description() {
+platform_get_module_command_description() {
     local command="${1:-}"
 
     if [[ -z "$command" ]]; then
@@ -109,7 +109,7 @@ platform_module_command_get_description() {
 # Quando um módulo for informado, somente os comandos pertencentes
 # a esse módulo serão retornados.
 #
-platform_module_command_list() {
+platform_list_module_commands() {
     local module="${1:-}"
     local command
     local command_origin
@@ -136,7 +136,7 @@ platform_module_command_list() {
 # Diferentemente do dispatcher da CLI, esta função nunca encerra
 # diretamente o processo. Falhas são comunicadas pelo código de retorno.
 #
-platform_module_command_execute() {
+platform_execute_module_command() {
     local command="${1:-}"
     local command_file
     local command_function

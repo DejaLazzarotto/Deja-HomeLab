@@ -49,7 +49,7 @@ platform_module_core_configuration_observer() {
 # Publica os Commands pertencentes ao módulo core.
 #
 platform_module_core_register_commands() {
-    platform_module_command_register \
+    platform_register_module_command \
         "core" \
         "core:status" \
         "$PLATFORM_ROOT/modules/core/commands/status.sh" \
