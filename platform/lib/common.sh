@@ -17,6 +17,7 @@ source "$PLATFORM_ROOT/lib/metadata-api.sh"
 
 # Command System
 source "$PLATFORM_ROOT/lib/command-registry.sh"
+source "$PLATFORM_ROOT/lib/command-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/command-loader.sh"
 source "$PLATFORM_ROOT/lib/module-command-api.sh"
 

@@ -133,13 +133,11 @@ platform_list_module_commands() {
 #
 # Executa um comando registrado.
 #
-# Diferentemente do dispatcher da CLI, esta função nunca encerra
-# diretamente o processo. Falhas são comunicadas pelo código de retorno.
+# A API pública apenas delega a execução ao Dispatcher interno.
+# Falhas são comunicadas exclusivamente pelo código de retorno.
 #
 platform_execute_module_command() {
     local command="${1:-}"
-    local command_file
-    local command_function
 
     if [[ -z "$command" ]]; then
         platform_log_error "Command name not informed for execution."
@@ -148,39 +146,5 @@ platform_execute_module_command() {
 
     shift || true
 
-    if ! platform_command_exists "$command"; then
-        platform_log_error "Command not registered: $command"
-        return 1
-    fi
-
-    command_file="$(platform_get_command_file "$command")"
-    command_function="$(platform_get_command_function "$command")"
-
-    if [[ -z "$command_file" ]]; then
-        platform_log_error "Command file not registered: $command"
-        return 1
-    fi
-
-    if [[ ! -f "$command_file" ]]; then
-        platform_log_error "Command file not found: $command_file"
-        return 1
-    fi
-
-    if [[ -z "$command_function" ]]; then
-        platform_log_error "Command function not registered: $command"
-        return 1
-    fi
-
-    source "$command_file" || {
-        platform_log_error "Failed to load command implementation: $command"
-        return 1
-    }
-
-    if ! declare -F "$command_function" >/dev/null; then
-        platform_log_error "Invalid command implementation: $command"
-        platform_log_error "Expected function: $command_function"
-        return 1
-    fi
-
-    "$command_function" "$@"
+    platform_command_dispatch "$command" "$@"
 }
