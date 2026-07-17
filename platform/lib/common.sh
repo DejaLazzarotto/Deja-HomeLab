@@ -36,8 +36,6 @@ source "$PLATFORM_ROOT/lib/module-loader.sh"
 source "$PLATFORM_ROOT/lib/module-lifecycle.sh"
 source "$PLATFORM_ROOT/lib/module-event-registry.sh"
 source "$PLATFORM_ROOT/lib/module-event-dispatcher.sh"
-source "$PLATFORM_ROOT/lib/module-config-observer-registry.sh"
-source "$PLATFORM_ROOT/lib/module-config-observer-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/module-hook-registry.sh"
 source "$PLATFORM_ROOT/lib/module-hook-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/module-extension-registry.sh"
@@ -94,8 +92,8 @@ platform_resolve_dependencies || exit 1
 # Carregamento dos módulos
 platform_set_module_lifecycle_stage "load"
 platform_load_modules || exit 1
-platform_module_lifecycle_bootstrap_all || return 1
 
 # Bootstrap dos módulos
 platform_set_module_lifecycle_stage "bootstrap"
-platform_bootstrap_modules
+platform_module_lifecycle_bootstrap_all || exit 1
+platform_bootstrap_modules || exit 1
