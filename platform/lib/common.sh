@@ -65,7 +65,7 @@ else
 fi
 
 # Inicialização do Kernel
-platform_context_init
+platform_module_command_registry_reset
 platform_module_state_reset
 platform_module_resource_registration_state_reset
 platform_module_event_reset

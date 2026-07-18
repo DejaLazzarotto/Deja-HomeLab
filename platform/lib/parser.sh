@@ -14,14 +14,14 @@ platform_parse() {
 
     command="$(platform_normalize_command "$command")"
 
-    if ! platform_command_exists "$command"; then
+    if ! platform_module_command_is_registered "$command"; then
         platform_log_error "Unknown command: $command"
         echo
         platform_show_fallback_help
         return 1
     fi
 
-    platform_command_dispatch "$command" "$@"
+    platform_module_command_dispatch "$command" "$@"
 }
 
 platform_normalize_command() {
@@ -55,7 +55,7 @@ platform_show_fallback_help() {
     while IFS= read -r command; do
         [[ -z "$command" ]] && continue
 
-        description="$(platform_get_command_description "$command")"
+        description="$(platform_module_command_get_description "$command")"
         printf "  %-12s %s\n" "$command" "$description"
-    done < <(platform_list_commands)
+    done < <(platform_module_command_registry_list)
 }

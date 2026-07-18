@@ -11,8 +11,8 @@ platform_cmd_help() {
   local command
   local description
 
-  for command in $(platform_list_commands); do
-    description="$(platform_get_command_description "$command")"
+  for command in $(platform_module_command_registry_list); do
+    description="$(platform_module_command_get_description "$command")"
     printf "  %-12s %s\n" "$command" "$description"
   done
 }

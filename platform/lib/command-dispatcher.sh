@@ -14,7 +14,7 @@
 # Esta função nunca encerra diretamente o processo.
 # Falhas são comunicadas exclusivamente pelo código de retorno.
 #
-platform_command_dispatch() {
+platform_module_command_dispatch() {
     local command="${1:-}"
     local command_file
     local command_function
@@ -26,13 +26,13 @@ platform_command_dispatch() {
 
     shift || true
 
-    if ! platform_command_exists "$command"; then
+    if ! platform_module_command_is_registered "$command"; then
         platform_log_error "Command not registered: $command"
         return 1
     fi
 
-    command_file="$(platform_get_command_file "$command")"
-    command_function="$(platform_get_command_function "$command")"
+    command_file="$(platform_module_command_get_file "$command")"
+    command_function="$(platform_module_command_get_function "$command")"
 
     if [[ -z "$command_file" ]]; then
         platform_log_error "Command file not registered: $command"

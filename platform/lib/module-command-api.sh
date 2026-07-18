@@ -44,7 +44,7 @@ platform_register_module_command() {
         return 1
     fi
 
-    platform_register_command \
+    platform_module_command_register \
         "$command" \
         "$command_file" \
         "$command_function" \
@@ -62,7 +62,7 @@ platform_has_module_command() {
         return 1
     fi
 
-    platform_command_exists "$command"
+    platform_module_command_is_registered "$command"
 }
 
 #
@@ -76,12 +76,12 @@ platform_get_module_command_origin() {
         return 1
     fi
 
-    if ! platform_command_exists "$command"; then
+    if ! platform_module_command_is_registered "$command"; then
         platform_log_error "Command not registered: $command"
         return 1
     fi
 
-    platform_get_command_origin "$command"
+    platform_module_command_get_origin "$command"
 }
 
 #
@@ -95,12 +95,12 @@ platform_get_module_command_description() {
         return 1
     fi
 
-    if ! platform_command_exists "$command"; then
+    if ! platform_module_command_is_registered "$command"; then
         platform_log_error "Command not registered: $command"
         return 1
     fi
 
-    platform_get_command_description "$command"
+    platform_module_command_get_description "$command"
 }
 
 #
@@ -122,12 +122,12 @@ platform_list_module_commands() {
             continue
         fi
 
-        command_origin="$(platform_get_command_origin "$command")"
+        command_origin="$(platform_module_command_get_origin "$command")"
 
         if [[ "$command_origin" == "$module" ]]; then
             printf '%s\n' "$command"
         fi
-    done < <(platform_list_commands)
+    done < <(platform_module_command_registry_list)
 }
 
 #
@@ -146,5 +146,5 @@ platform_execute_module_command() {
 
     shift || true
 
-    platform_command_dispatch "$command" "$@"
+    platform_module_command_dispatch "$command" "$@"
 }
