@@ -17,7 +17,7 @@ platform_parse() {
     if ! platform_module_command_is_registered "$command"; then
         platform_log_error "Unknown command: $command"
         echo
-        platform_show_fallback_help
+        platform_module_command_dispatch "help"
         return 1
     fi
 
@@ -38,24 +38,4 @@ platform_normalize_command() {
             printf '%s\n' "$command"
             ;;
     esac
-}
-
-platform_show_fallback_help() {
-    local command
-    local description
-
-    platform_log_info "Deja Platform CLI"
-
-    echo
-    echo "Usage:"
-    echo "  platform <command>"
-    echo
-    echo "Available commands:"
-
-    while IFS= read -r command; do
-        [[ -z "$command" ]] && continue
-
-        description="$(platform_module_command_get_description "$command")"
-        printf "  %-12s %s\n" "$command" "$description"
-    done < <(platform_module_command_registry_list)
 }
