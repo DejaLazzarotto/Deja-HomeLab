@@ -72,8 +72,7 @@ platform_module_core_register_configuration_providers() {
 # Publica os Configuration Observers pertencentes ao módulo core.
 #
 platform_module_core_register_configuration_observers() {
-    platform_module_config_observer_register \
-        "core" \
+    platform_register_module_config_observer \
         "core.configuration" \
         "platform_module_core_configuration_observer"
 }

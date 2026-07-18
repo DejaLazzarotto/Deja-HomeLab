@@ -46,6 +46,8 @@ source "$PLATFORM_ROOT/lib/module-service-api.sh"
 source "$PLATFORM_ROOT/lib/module-capability-registry.sh"
 source "$PLATFORM_ROOT/lib/module-capability-dispatcher.sh"
 source "$PLATFORM_ROOT/lib/capability-api.sh"
+source "$PLATFORM_ROOT/lib/module-config-registry.sh"
+source "$PLATFORM_ROOT/lib/module-config-api.sh"
 source "$PLATFORM_ROOT/lib/module-config-provider-registry.sh"
 source "$PLATFORM_ROOT/lib/module-config-yaml-cache.sh"
 source "$PLATFORM_ROOT/lib/module-config-provider-yaml.sh"
@@ -76,6 +78,7 @@ platform_module_hook_registry_reset
 platform_module_extension_registry_reset
 platform_module_service_registry_reset
 platform_module_capability_registry_reset
+platform_module_config_registry_reset
 platform_module_config_yaml_cache_reset
 platform_module_config_provider_registry_reset
 

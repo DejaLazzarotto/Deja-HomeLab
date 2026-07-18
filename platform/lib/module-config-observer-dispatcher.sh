@@ -63,18 +63,20 @@ platform_module_config_observer_dispatch() {
     platform_module_config_observer_event_is_supported \
         "$event" || return 1
 
-    for observer in "${PLATFORM_MODULE_CONFIG_OBSERVERS[@]}"; do
-        [[ -z "$observer" ]] && continue
+    while IFS= read -r observer; do
+    [[ -z "$observer" ]] && continue
 
-        callback="$(
-            platform_module_config_observer_registry_get_callback \
-                "$observer"
-        )" || return 1
+    callback="$(
+        platform_module_config_observer_registry_get_callback \
+            "$observer"
+    )" || return 1
 
-        declare -F "$callback" >/dev/null || return 1
+    declare -F "$callback" >/dev/null || return 1
 
-        "$callback" "$context" || return $?
-    done
+    "$callback" "$context" || return $?
+done < <(
+    platform_module_config_observer_registry_list
+)
 }
 
 #
