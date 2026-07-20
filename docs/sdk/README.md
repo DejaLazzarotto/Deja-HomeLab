@@ -21,6 +21,7 @@ Kernel implementation details are intentionally excluded.
 ## Architecture
 
 - Public Module SDK
+- SDK Reference
 - Module Development Guide
 - Module Lifecycle
 
