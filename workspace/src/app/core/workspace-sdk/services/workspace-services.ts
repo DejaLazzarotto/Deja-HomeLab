@@ -24,7 +24,7 @@ export class WorkspaceServiceNotFoundError extends Error {
 export class WorkspaceServiceCreationError extends Error {
   constructor(
     readonly serviceId: WorkspaceServiceId,
-    readonly cause: unknown,
+    override readonly cause: unknown,
   ) {
     super(`Workspace service creation failed: ${serviceId}`);
     this.name = 'WorkspaceServiceCreationError';

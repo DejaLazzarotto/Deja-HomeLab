@@ -7,6 +7,14 @@ import {
   WorkspaceRuntimeSnapshot,
 } from '../models/workspace-models';
 import { WorkspaceRegistries } from '../registries/workspace-registries';
+import {
+  WorkspaceRuntimeEventDispatcher,
+} from './workspace-runtime-event-dispatcher';
+import { WorkspaceRuntimeEvents } from './workspace-runtime-events';
+import {
+  WorkspaceRuntimeHookDispatcher,
+} from './workspace-runtime-hook-dispatcher';
+import { WorkspaceRuntimeHooks } from './workspace-runtime-hooks';
 
 /**
  * Erro lançado quando uma operação não é permitida
@@ -26,12 +34,14 @@ export class WorkspaceRuntimeStateError extends Error {
 }
 
 /**
- * Fundação oficial do Workspace Runtime.
+ * Runtime oficial do Workspace SDK.
  *
  * Responsabilidades:
  * - manter o estado do runtime;
+ * - controlar o ciclo de vida;
+ * - executar hooks de lifecycle;
+ * - emitir eventos de lifecycle;
  * - registrar manifestos de módulos;
- * - controlar inicialização, execução e encerramento;
  * - fornecer snapshots imutáveis;
  * - preservar independência de Angular.
  */
@@ -48,6 +58,10 @@ export class WorkspaceRuntime {
 
   constructor(
     readonly registries: WorkspaceRegistries = new WorkspaceRegistries(),
+    readonly events: WorkspaceRuntimeEventDispatcher =
+      new WorkspaceRuntimeEventDispatcher(),
+    readonly hooks: WorkspaceRuntimeHookDispatcher =
+      new WorkspaceRuntimeHookDispatcher(),
   ) {}
 
   getState(): WorkspaceRuntimeState {
@@ -58,15 +72,65 @@ export class WorkspaceRuntime {
     return this.context;
   }
 
-  initialize(context: WorkspaceRuntimeContext): void {
+  async initialize(context: WorkspaceRuntimeContext): Promise<void> {
     this.assertState('initialize', ['created', 'stopped']);
 
+    const previousState = this.state;
+
     this.state = 'initializing';
-    this.context = context;
-    this.initializedAt = new Date();
-    this.startedAt = undefined;
-    this.stoppedAt = undefined;
-    this.state = 'ready';
+
+    try {
+      await this.hooks.execute(
+        WorkspaceRuntimeHooks.BeforeInitialize,
+        {
+          runtimeContext: context,
+          operation: 'initialize',
+          data: {
+            previousState,
+            currentState: this.state,
+          },
+        },
+      );
+
+      await this.events.emit(
+        WorkspaceRuntimeEvents.BeforeInitialize,
+        {
+          previousState,
+          currentState: this.state,
+          context,
+        },
+      );
+
+      this.context = context;
+      this.initializedAt = new Date();
+      this.startedAt = undefined;
+      this.stoppedAt = undefined;
+      this.state = 'ready';
+
+      await this.events.emit(
+        WorkspaceRuntimeEvents.AfterInitialize,
+        {
+          previousState,
+          currentState: this.state,
+          context,
+        },
+      );
+
+      await this.hooks.execute(
+        WorkspaceRuntimeHooks.AfterInitialize,
+        {
+          runtimeContext: context,
+          operation: 'initialize',
+          data: {
+            previousState,
+            currentState: this.state,
+          },
+        },
+      );
+    } catch (error) {
+      await this.fail('initialize', error);
+      throw error;
+    }
   }
 
   registerManifest(manifest: WorkspaceModuleManifest): void {
@@ -101,33 +165,147 @@ export class WorkspaceRuntime {
     }
   }
 
-  start(): void {
+  async start(): Promise<void> {
     this.assertState('start', ['ready']);
 
-    this.startedAt = new Date();
-    this.stoppedAt = undefined;
-    this.state = 'running';
+    const previousState = this.state;
+
+    try {
+      await this.hooks.execute(WorkspaceRuntimeHooks.BeforeStart, {
+        runtimeContext: this.context,
+        operation: 'start',
+        data: {
+          previousState,
+          currentState: this.state,
+        },
+      });
+
+      await this.events.emit(WorkspaceRuntimeEvents.BeforeStart, {
+        previousState,
+        currentState: this.state,
+      });
+
+      this.startedAt = new Date();
+      this.stoppedAt = undefined;
+      this.state = 'running';
+
+      await this.events.emit(WorkspaceRuntimeEvents.AfterStart, {
+        previousState,
+        currentState: this.state,
+      });
+
+      await this.hooks.execute(WorkspaceRuntimeHooks.AfterStart, {
+        runtimeContext: this.context,
+        operation: 'start',
+        data: {
+          previousState,
+          currentState: this.state,
+        },
+      });
+    } catch (error) {
+      await this.fail('start', error);
+      throw error;
+    }
   }
 
-  stop(): void {
+  async stop(): Promise<void> {
     this.assertState('stop', ['ready', 'running']);
 
+    const previousState = this.state;
+
     this.state = 'stopping';
-    this.stoppedAt = new Date();
-    this.state = 'stopped';
+
+    try {
+      await this.hooks.execute(WorkspaceRuntimeHooks.BeforeStop, {
+        runtimeContext: this.context,
+        operation: 'stop',
+        data: {
+          previousState,
+          currentState: this.state,
+        },
+      });
+
+      await this.events.emit(WorkspaceRuntimeEvents.BeforeStop, {
+        previousState,
+        currentState: this.state,
+      });
+
+      this.stoppedAt = new Date();
+      this.state = 'stopped';
+
+      await this.events.emit(WorkspaceRuntimeEvents.AfterStop, {
+        previousState,
+        currentState: this.state,
+      });
+
+      await this.hooks.execute(WorkspaceRuntimeHooks.AfterStop, {
+        runtimeContext: this.context,
+        operation: 'stop',
+        data: {
+          previousState,
+          currentState: this.state,
+        },
+      });
+    } catch (error) {
+      await this.fail('stop', error);
+      throw error;
+    }
   }
 
-  reset(): void {
-    this.registries.clear();
-    this.context = undefined;
-    this.initializedAt = undefined;
-    this.startedAt = undefined;
-    this.stoppedAt = undefined;
-    this.state = 'created';
+  async reset(): Promise<void> {
+    const previousState = this.state;
+
+    try {
+      await this.hooks.execute(WorkspaceRuntimeHooks.BeforeReset, {
+        runtimeContext: this.context,
+        operation: 'reset',
+        data: {
+          previousState,
+          currentState: this.state,
+        },
+      });
+
+      await this.events.emit(WorkspaceRuntimeEvents.BeforeReset, {
+        previousState,
+        currentState: this.state,
+      });
+
+      this.registries.clear();
+      this.context = undefined;
+      this.initializedAt = undefined;
+      this.startedAt = undefined;
+      this.stoppedAt = undefined;
+      this.state = 'created';
+
+      await this.events.emit(WorkspaceRuntimeEvents.AfterReset, {
+        previousState,
+        currentState: this.state,
+      });
+
+      await this.hooks.execute(WorkspaceRuntimeHooks.AfterReset, {
+        operation: 'reset',
+        data: {
+          previousState,
+          currentState: this.state,
+        },
+      });
+    } catch (error) {
+      await this.fail('reset', error);
+      throw error;
+    }
   }
 
-  fail(): void {
+  async fail(operation: string, error?: unknown): Promise<void> {
+    const previousState = this.state;
+
     this.state = 'failed';
+
+    await this.events.emit(WorkspaceRuntimeEvents.Failed, {
+      previousState,
+      currentState: this.state,
+      operation,
+      error,
+    });
   }
 
   snapshot(): WorkspaceRuntimeSnapshot {
