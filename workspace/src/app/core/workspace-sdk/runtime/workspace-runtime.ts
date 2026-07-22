@@ -12,6 +12,18 @@ import {
 } from './workspace-runtime-event-dispatcher';
 import { WorkspaceRuntimeEvents } from './workspace-runtime-events';
 import {
+  WorkspaceRuntimeExtensionDispatcher,
+  WorkspaceRuntimeExtensionDispatchResult,
+} from './workspace-runtime-extension-dispatcher';
+import {
+  WorkspaceRuntimeExtension,
+  WorkspaceRuntimeExtensionId,
+  WorkspaceRuntimeExtensionPointId,
+} from './workspace-runtime-extension-point';
+import {
+  WorkspaceRuntimeExtensionRegistry,
+} from './workspace-runtime-extension-registry';
+import {
   WorkspaceRuntimeHookDispatcher,
 } from './workspace-runtime-hook-dispatcher';
 import { WorkspaceRuntimeHooks } from './workspace-runtime-hooks';
@@ -42,6 +54,7 @@ export class WorkspaceRuntimeStateError extends Error {
  * - executar hooks de lifecycle;
  * - emitir eventos de lifecycle;
  * - registrar manifestos de módulos;
+ * - registrar e executar Runtime Extensions;
  * - fornecer snapshots imutáveis;
  * - preservar independência de Angular.
  */
@@ -56,13 +69,20 @@ export class WorkspaceRuntime {
 
   private stoppedAt?: Date;
 
+  readonly extensionDispatcher: WorkspaceRuntimeExtensionDispatcher;
+
   constructor(
     readonly registries: WorkspaceRegistries = new WorkspaceRegistries(),
     readonly events: WorkspaceRuntimeEventDispatcher =
       new WorkspaceRuntimeEventDispatcher(),
     readonly hooks: WorkspaceRuntimeHookDispatcher =
       new WorkspaceRuntimeHookDispatcher(),
-  ) {}
+    readonly extensions: WorkspaceRuntimeExtensionRegistry =
+      new WorkspaceRuntimeExtensionRegistry(),
+  ) {
+    this.extensionDispatcher =
+      new WorkspaceRuntimeExtensionDispatcher(this.extensions);
+  }
 
   getState(): WorkspaceRuntimeState {
     return this.state;
@@ -163,6 +183,100 @@ export class WorkspaceRuntime {
     if (manifest.services?.length) {
       this.registries.services.registerMany(manifest.services);
     }
+  }
+
+  /**
+   * Registra uma Runtime Extension.
+   */
+  registerExtension(extension: WorkspaceRuntimeExtension): void {
+    this.assertState('registerExtension', [
+      'created',
+      'initializing',
+      'ready',
+    ]);
+
+    this.extensions.register(extension);
+  }
+
+  /**
+   * Registra múltiplas Runtime Extensions.
+   */
+  registerExtensions(
+    extensions: readonly WorkspaceRuntimeExtension[],
+  ): void {
+    this.assertState('registerExtensions', [
+      'created',
+      'initializing',
+      'ready',
+    ]);
+
+    this.extensions.registerMany(extensions);
+  }
+
+  /**
+   * Remove uma Runtime Extension.
+   */
+  unregisterExtension(
+    extensionId: WorkspaceRuntimeExtensionId,
+  ): boolean {
+    this.assertState('unregisterExtension', [
+      'created',
+      'initializing',
+      'ready',
+      'stopped',
+    ]);
+
+    return this.extensions.unregister(extensionId);
+  }
+
+  /**
+   * Executa as Runtime Extensions habilitadas de um ponto de extensão.
+   */
+  async dispatchExtensionPoint<
+    TPayload = unknown,
+    TResult = unknown,
+  >(
+    extensionPoint: WorkspaceRuntimeExtensionPointId,
+    payload: TPayload,
+  ): Promise<
+    readonly WorkspaceRuntimeExtensionDispatchResult<TResult>[]
+  > {
+    this.assertState('dispatchExtensionPoint', [
+      'ready',
+      'running',
+    ]);
+
+    return this.extensionDispatcher.dispatch<TPayload, TResult>(
+      extensionPoint,
+      payload,
+      this.context,
+    );
+  }
+
+  /**
+   * Executa um ponto de extensão e retorna apenas os valores
+   * produzidos pelos handlers.
+   */
+  async dispatchExtensionResults<
+    TPayload = unknown,
+    TResult = unknown,
+  >(
+    extensionPoint: WorkspaceRuntimeExtensionPointId,
+    payload: TPayload,
+  ): Promise<readonly TResult[]> {
+    this.assertState('dispatchExtensionResults', [
+      'ready',
+      'running',
+    ]);
+
+    return this.extensionDispatcher.dispatchResults<
+      TPayload,
+      TResult
+    >(
+      extensionPoint,
+      payload,
+      this.context,
+    );
   }
 
   async start(): Promise<void> {
@@ -271,6 +385,7 @@ export class WorkspaceRuntime {
       });
 
       this.registries.clear();
+      this.extensions.clear();
       this.context = undefined;
       this.initializedAt = undefined;
       this.startedAt = undefined;

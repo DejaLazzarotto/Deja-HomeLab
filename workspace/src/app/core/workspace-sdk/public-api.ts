@@ -8,17 +8,18 @@
  * por aplicações ou módulos externos.
  */
 
-export * from './contracts/workspace-contracts';
-
-export * from './models/workspace-models';
-
-export * from './registries/workspace-registry';
-export * from './registries/workspace-registries';
-
 export * from './runtime/workspace-runtime';
+
+export * from './runtime/workspace-runtime-registry';
+
 export * from './runtime/workspace-runtime-events';
 export * from './runtime/workspace-runtime-event-dispatcher';
+
 export * from './runtime/workspace-runtime-hooks';
 export * from './runtime/workspace-runtime-hook-dispatcher';
+
+export * from './runtime/workspace-runtime-extension-point';
+export * from './runtime/workspace-runtime-extension-registry';
+export * from './runtime/workspace-runtime-extension-dispatcher';
 
 export * from './services/workspace-services';

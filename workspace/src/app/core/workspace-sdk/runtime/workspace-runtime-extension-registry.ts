@@ -6,6 +6,10 @@ import {
   WorkspaceRuntimeExtensionId,
   WorkspaceRuntimeExtensionPointId,
 } from './workspace-runtime-extension-point';
+import {
+  WorkspaceRuntimeRegistry,
+  WorkspaceRuntimeRegistryDuplicateError,
+} from './workspace-runtime-registry';
 
 /**
  * Erro lançado quando uma extensão duplicada é registrada.
@@ -30,6 +34,9 @@ export class WorkspaceRuntimeExtensionNotFoundError extends Error {
 /**
  * Registry oficial de extensões do Workspace Runtime.
  *
+ * Utiliza WorkspaceRuntimeRegistry como infraestrutura genérica,
+ * preservando a API pública específica das Runtime Extensions.
+ *
  * Responsabilidades:
  * - registrar extensões;
  * - impedir identificadores duplicados;
@@ -38,59 +45,103 @@ export class WorkspaceRuntimeExtensionNotFoundError extends Error {
  * - preservar independência de Angular.
  */
 export class WorkspaceRuntimeExtensionRegistry {
-  private readonly extensions = new Map<
-    WorkspaceRuntimeExtensionId,
-    WorkspaceRuntimeExtension
+  private readonly registry = new WorkspaceRuntimeRegistry<
+    WorkspaceRuntimeExtension,
+    WorkspaceRuntimeExtensionId
   >();
 
+  /**
+   * Registra uma extensão.
+   *
+   * @throws WorkspaceRuntimeExtensionDuplicateError
+   * quando o identificador já estiver registrado.
+   */
   register(extension: WorkspaceRuntimeExtension): void {
-    if (this.extensions.has(extension.id)) {
-      throw new WorkspaceRuntimeExtensionDuplicateError(extension.id);
-    }
+    try {
+      this.registry.register(extension);
+    } catch (error) {
+      if (error instanceof WorkspaceRuntimeRegistryDuplicateError) {
+        throw new WorkspaceRuntimeExtensionDuplicateError(extension.id);
+      }
 
-    this.extensions.set(extension.id, extension);
+      throw error;
+    }
   }
 
+  /**
+   * Registra múltiplas extensões na ordem recebida.
+   */
   registerMany(extensions: readonly WorkspaceRuntimeExtension[]): void {
     for (const extension of extensions) {
       this.register(extension);
     }
   }
 
+  /**
+   * Substitui uma extensão existente ou registra uma nova extensão.
+   */
   replace(extension: WorkspaceRuntimeExtension): void {
-    this.extensions.set(extension.id, extension);
+    this.registry.tryUnregister(extension.id);
+    this.registry.register(extension);
   }
 
+  /**
+   * Remove uma extensão.
+   *
+   * @returns true quando a extensão existia e foi removida;
+   * false quando não estava registrada.
+   */
   unregister(extensionId: WorkspaceRuntimeExtensionId): boolean {
-    return this.extensions.delete(extensionId);
+    return this.registry.tryUnregister(extensionId) !== undefined;
   }
 
+  /**
+   * Remove todas as extensões pertencentes ao owner informado.
+   *
+   * @returns quantidade de extensões removidas.
+   */
   unregisterByOwner(owner: WorkspaceOwnerId): number {
-    const extensionIds = this.list()
+    const extensionIds = this.registry
+      .values()
       .filter((extension) => extension.owner === owner)
       .map((extension) => extension.id);
 
     for (const extensionId of extensionIds) {
-      this.extensions.delete(extensionId);
+      this.registry.tryUnregister(extensionId);
     }
 
     return extensionIds.length;
   }
 
+  /**
+   * Remove todas as extensões registradas.
+   */
   clear(): void {
-    this.extensions.clear();
+    this.registry.clear();
   }
 
+  /**
+   * Verifica se uma extensão está registrada.
+   */
   has(extensionId: WorkspaceRuntimeExtensionId): boolean {
-    return this.extensions.has(extensionId);
+    return this.registry.has(extensionId);
   }
 
+  /**
+   * Retorna uma extensão ou undefined.
+   */
   get(
     extensionId: WorkspaceRuntimeExtensionId,
   ): WorkspaceRuntimeExtension | undefined {
-    return this.extensions.get(extensionId);
+    return this.registry.find(extensionId);
   }
 
+  /**
+   * Retorna uma extensão obrigatória.
+   *
+   * @throws WorkspaceRuntimeExtensionNotFoundError
+   * quando a extensão não existir.
+   */
   require(extensionId: WorkspaceRuntimeExtensionId): WorkspaceRuntimeExtension {
     const extension = this.get(extensionId);
 
@@ -101,34 +152,50 @@ export class WorkspaceRuntimeExtensionRegistry {
     return extension;
   }
 
+  /**
+   * Retorna todas as extensões em ordem determinística.
+   */
   list(): readonly WorkspaceRuntimeExtension[] {
-    return this.sort([...this.extensions.values()]);
+    return this.sort([...this.registry.values()]);
   }
 
+  /**
+   * Retorna as extensões habilitadas de um ponto de extensão.
+   */
   listByExtensionPoint(
     extensionPoint: WorkspaceRuntimeExtensionPointId,
   ): readonly WorkspaceRuntimeExtension[] {
     return this.sort(
-      [...this.extensions.values()].filter(
-        (extension) =>
-          extension.extensionPoint === extensionPoint &&
-          (extension.enabled ?? true),
-      ),
+      this.registry
+        .values()
+        .filter(
+          (extension) =>
+            extension.extensionPoint === extensionPoint &&
+            (extension.enabled ?? true),
+        ),
     );
   }
 
+  /**
+   * Retorna a quantidade total de extensões ou a quantidade
+   * associada a um ponto de extensão.
+   */
   count(extensionPoint?: WorkspaceRuntimeExtensionPointId): number {
     if (extensionPoint === undefined) {
-      return this.extensions.size;
+      return this.registry.size;
     }
 
     return this.listByExtensionPoint(extensionPoint).length;
   }
 
+  /**
+   * Ordena extensões por prioridade e, em caso de empate,
+   * pelo identificador.
+   */
   private sort(
-    extensions: WorkspaceRuntimeExtension[],
+    extensions: readonly WorkspaceRuntimeExtension[],
   ): readonly WorkspaceRuntimeExtension[] {
-    return extensions.sort((left, right) => {
+    return [...extensions].sort((left, right) => {
       const priorityDifference =
         (left.priority ?? Number.MAX_SAFE_INTEGER) -
         (right.priority ?? Number.MAX_SAFE_INTEGER);
