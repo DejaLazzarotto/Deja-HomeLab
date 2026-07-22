@@ -35,6 +35,12 @@ import {
 import { WorkspaceRuntimeExtensionRegistry } from './workspace-runtime-extension-registry';
 import { WorkspaceRuntimeHookDispatcher } from './workspace-runtime-hook-dispatcher';
 import { WorkspaceRuntimeHooks } from './workspace-runtime-hooks';
+import {
+  WorkspaceMenu,
+  WorkspaceMenuId,
+  WorkspaceMenuLocation,
+} from '../ui/workspace-menu';
+import { WorkspaceMenuRegistry } from '../ui/workspace-menu-registry';
 
 /**
  * Erro lançado quando uma operação não é permitida
@@ -97,6 +103,11 @@ export class WorkspaceRuntime {
    */
   private readonly actionDispatcher: WorkspaceActionDispatcher;
 
+  /**
+   * Registry oficial de Workspace Menus.
+   */
+  private readonly menuRegistry: WorkspaceMenuRegistry;
+
   readonly extensionDispatcher: WorkspaceRuntimeExtensionDispatcher;
 
   constructor(
@@ -105,23 +116,18 @@ export class WorkspaceRuntime {
     readonly hooks: WorkspaceRuntimeHookDispatcher = new WorkspaceRuntimeHookDispatcher(),
     readonly extensions: WorkspaceRuntimeExtensionRegistry = new WorkspaceRuntimeExtensionRegistry(),
   ) {
-    this.extensionDispatcher =
-      new WorkspaceRuntimeExtensionDispatcher(this.extensions);
+    this.extensionDispatcher = new WorkspaceRuntimeExtensionDispatcher(this.extensions);
 
-    this.commandRegistry =
-      new WorkspaceCommandRegistry();
+    this.commandRegistry = new WorkspaceCommandRegistry();
+    this.commandDispatcher = new WorkspaceCommandDispatcher(this.commandRegistry);
 
-    this.commandDispatcher =
-      new WorkspaceCommandDispatcher(this.commandRegistry);
+    this.actionRegistry = new WorkspaceActionRegistry();
+    this.actionDispatcher = new WorkspaceActionDispatcher(
+      this.actionRegistry,
+      this.commandDispatcher,
+    );
 
-    this.actionRegistry =
-      new WorkspaceActionRegistry();
-
-    this.actionDispatcher =
-      new WorkspaceActionDispatcher(
-        this.actionRegistry,
-        this.commandDispatcher,
-      );
+    this.menuRegistry = new WorkspaceMenuRegistry();
   }
 
   getState(): WorkspaceRuntimeState {
@@ -135,27 +141,21 @@ export class WorkspaceRuntime {
   /**
    * Registra um Workspace Command.
    */
-  registerCommand(
-    command: WorkspaceCommand,
-  ): void {
+  registerCommand(command: WorkspaceCommand): void {
     this.commandRegistry.register(command);
   }
 
   /**
    * Registra múltiplos Workspace Commands.
    */
-  registerCommands(
-    commands: readonly WorkspaceCommand[],
-  ): void {
+  registerCommands(commands: readonly WorkspaceCommand[]): void {
     this.commandRegistry.registerAll(commands);
   }
 
   /**
    * Remove um Workspace Command.
    */
-  unregisterCommand(
-    commandId: WorkspaceCommandId,
-  ): WorkspaceCommand {
+  unregisterCommand(commandId: WorkspaceCommandId): WorkspaceCommand {
     return this.commandRegistry.unregister(commandId);
   }
 
@@ -169,18 +169,14 @@ export class WorkspaceRuntime {
   /**
    * Retorna um comando pelo identificador.
    */
-  getCommand(
-    commandId: WorkspaceCommandId,
-  ): WorkspaceCommand {
+  getCommand(commandId: WorkspaceCommandId): WorkspaceCommand {
     return this.commandRegistry.get(commandId);
   }
 
   /**
    * Verifica se um comando está registrado.
    */
-  hasCommand(
-    commandId: WorkspaceCommandId,
-  ): boolean {
+  hasCommand(commandId: WorkspaceCommandId): boolean {
     return this.commandRegistry.has(commandId);
   }
 
@@ -196,42 +192,30 @@ export class WorkspaceRuntime {
   /**
    * Executa um Workspace Command.
    */
-  dispatchCommand<
-    TPayload = unknown,
-    TResult = unknown,
-  >(
+  dispatchCommand<TPayload = unknown, TResult = unknown>(
     execution: WorkspaceCommandExecution<TPayload>,
   ): Promise<WorkspaceCommandResult<TResult>> {
-    return this.commandDispatcher.dispatch<
-      TPayload,
-      TResult
-    >(execution);
+    return this.commandDispatcher.dispatch<TPayload, TResult>(execution);
   }
 
   /**
    * Registra uma Workspace Action.
    */
-  registerAction(
-    action: WorkspaceAction,
-  ): void {
+  registerAction(action: WorkspaceAction): void {
     this.actionRegistry.register(action);
   }
 
   /**
    * Registra múltiplas Workspace Actions.
    */
-  registerActions(
-    actions: readonly WorkspaceAction[],
-  ): void {
+  registerActions(actions: readonly WorkspaceAction[]): void {
     this.actionRegistry.registerAll(actions);
   }
 
   /**
    * Remove uma Workspace Action.
    */
-  unregisterAction(
-    actionId: WorkspaceActionId,
-  ): WorkspaceAction {
+  unregisterAction(actionId: WorkspaceActionId): WorkspaceAction {
     return this.actionRegistry.unregister(actionId);
   }
 
@@ -245,18 +229,14 @@ export class WorkspaceRuntime {
   /**
    * Retorna uma Action pelo identificador.
    */
-  getAction(
-    actionId: WorkspaceActionId,
-  ): WorkspaceAction {
+  getAction(actionId: WorkspaceActionId): WorkspaceAction {
     return this.actionRegistry.get(actionId);
   }
 
   /**
    * Verifica se uma Action está registrada.
    */
-  hasAction(
-    actionId: WorkspaceActionId,
-  ): boolean {
+  hasAction(actionId: WorkspaceActionId): boolean {
     return this.actionRegistry.has(actionId);
   }
 
@@ -272,16 +252,39 @@ export class WorkspaceRuntime {
   /**
    * Executa uma Workspace Action.
    */
-  dispatchAction<
-    TPayload = unknown,
-    TResult = unknown,
-  >(
+  dispatchAction<TPayload = unknown, TResult = unknown>(
     execution: WorkspaceActionExecution<TPayload>,
   ): Promise<WorkspaceActionResult<TResult>> {
-    return this.actionDispatcher.dispatch<
-      TPayload,
-      TResult
-    >(execution);
+    return this.actionDispatcher.dispatch<TPayload, TResult>(execution);
+  }
+
+
+  registerMenu(menu: WorkspaceMenu): void {
+    this.menuRegistry.register(menu);
+  }
+
+  registerMenus(menus: readonly WorkspaceMenu[]): void {
+    this.menuRegistry.registerMany(menus);
+  }
+
+  unregisterMenu(menuId: WorkspaceMenuId): boolean {
+    return this.menuRegistry.unregister(menuId);
+  }
+
+  menus(): readonly WorkspaceMenu[] {
+    return this.menuRegistry.getAll();
+  }
+
+  getMenu(menuId: WorkspaceMenuId): WorkspaceMenu {
+    return this.menuRegistry.get(menuId);
+  }
+
+  hasMenu(menuId: WorkspaceMenuId): boolean {
+    return this.menuRegistry.has(menuId);
+  }
+
+  getMenusByLocation(location: WorkspaceMenuLocation): readonly WorkspaceMenu[] {
+    return this.menuRegistry.getByLocation(location);
   }
 
   async initialize(context: WorkspaceRuntimeContext): Promise<void> {
@@ -530,6 +533,7 @@ export class WorkspaceRuntime {
       this.extensions.clear();
       this.commandRegistry.clear();
       this.actionRegistry.clear();
+      this.menuRegistry.clear();
       this.context = undefined;
       this.initializedAt = undefined;
       this.startedAt = undefined;
@@ -582,13 +586,9 @@ export class WorkspaceRuntime {
     };
   }
 
-  private assertState(
-    operation: string,
-    allowedStates: readonly WorkspaceRuntimeState[],
-  ): void {
+  private assertState(operation: string, allowedStates: readonly WorkspaceRuntimeState[]): void {
     if (!allowedStates.includes(this.state)) {
       throw new WorkspaceRuntimeStateError(this.state, operation);
     }
   }
 }
-
