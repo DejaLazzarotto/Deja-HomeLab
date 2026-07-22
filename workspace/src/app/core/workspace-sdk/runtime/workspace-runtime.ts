@@ -5,6 +5,22 @@ import {
   WorkspaceRuntimeSnapshot,
 } from '../models/workspace-models';
 import { WorkspaceRegistries } from '../registries/workspace-registries';
+import {
+  WorkspaceAction,
+  WorkspaceActionExecution,
+  WorkspaceActionId,
+  WorkspaceActionResult,
+} from './workspace-action';
+import { WorkspaceActionDispatcher } from './workspace-action-dispatcher';
+import { WorkspaceActionRegistry } from './workspace-action-registry';
+import {
+  WorkspaceCommand,
+  WorkspaceCommandExecution,
+  WorkspaceCommandId,
+  WorkspaceCommandResult,
+} from './workspace-command';
+import { WorkspaceCommandDispatcher } from './workspace-command-dispatcher';
+import { WorkspaceCommandRegistry } from './workspace-command-registry';
 import { WorkspaceRuntimeEventDispatcher } from './workspace-runtime-event-dispatcher';
 import { WorkspaceRuntimeEvents } from './workspace-runtime-events';
 import {
@@ -19,16 +35,6 @@ import {
 import { WorkspaceRuntimeExtensionRegistry } from './workspace-runtime-extension-registry';
 import { WorkspaceRuntimeHookDispatcher } from './workspace-runtime-hook-dispatcher';
 import { WorkspaceRuntimeHooks } from './workspace-runtime-hooks';
-import {
-  WorkspaceCommand,
-  WorkspaceCommandExecution,
-  WorkspaceCommandId,
-  WorkspaceCommandResult,
-} from './workspace-command';
-
-import { WorkspaceCommandRegistry } from './workspace-command-registry';
-
-import { WorkspaceCommandDispatcher } from './workspace-command-dispatcher';
 
 /**
  * Erro lançado quando uma operação não é permitida
@@ -55,6 +61,8 @@ export class WorkspaceRuntimeStateError extends Error {
  * - emitir eventos de lifecycle;
  * - registrar manifestos de módulos;
  * - registrar e executar Runtime Extensions;
+ * - registrar e executar Workspace Commands;
+ * - registrar e executar Workspace Actions;
  * - fornecer snapshots imutáveis;
  * - preservar independência de Angular.
  */
@@ -79,6 +87,16 @@ export class WorkspaceRuntime {
    */
   private readonly commandDispatcher: WorkspaceCommandDispatcher;
 
+  /**
+   * Registry oficial de Workspace Actions.
+   */
+  private readonly actionRegistry: WorkspaceActionRegistry;
+
+  /**
+   * Dispatcher oficial de Workspace Actions.
+   */
+  private readonly actionDispatcher: WorkspaceActionDispatcher;
+
   readonly extensionDispatcher: WorkspaceRuntimeExtensionDispatcher;
 
   constructor(
@@ -95,6 +113,15 @@ export class WorkspaceRuntime {
 
     this.commandDispatcher =
       new WorkspaceCommandDispatcher(this.commandRegistry);
+
+    this.actionRegistry =
+      new WorkspaceActionRegistry();
+
+    this.actionDispatcher =
+      new WorkspaceActionDispatcher(
+        this.actionRegistry,
+        this.commandDispatcher,
+      );
   }
 
   getState(): WorkspaceRuntimeState {
@@ -176,6 +203,82 @@ export class WorkspaceRuntime {
     execution: WorkspaceCommandExecution<TPayload>,
   ): Promise<WorkspaceCommandResult<TResult>> {
     return this.commandDispatcher.dispatch<
+      TPayload,
+      TResult
+    >(execution);
+  }
+
+  /**
+   * Registra uma Workspace Action.
+   */
+  registerAction(
+    action: WorkspaceAction,
+  ): void {
+    this.actionRegistry.register(action);
+  }
+
+  /**
+   * Registra múltiplas Workspace Actions.
+   */
+  registerActions(
+    actions: readonly WorkspaceAction[],
+  ): void {
+    this.actionRegistry.registerAll(actions);
+  }
+
+  /**
+   * Remove uma Workspace Action.
+   */
+  unregisterAction(
+    actionId: WorkspaceActionId,
+  ): WorkspaceAction {
+    return this.actionRegistry.unregister(actionId);
+  }
+
+  /**
+   * Retorna todas as Actions registradas.
+   */
+  actions(): readonly WorkspaceAction[] {
+    return this.actionRegistry.list();
+  }
+
+  /**
+   * Retorna uma Action pelo identificador.
+   */
+  getAction(
+    actionId: WorkspaceActionId,
+  ): WorkspaceAction {
+    return this.actionRegistry.get(actionId);
+  }
+
+  /**
+   * Verifica se uma Action está registrada.
+   */
+  hasAction(
+    actionId: WorkspaceActionId,
+  ): boolean {
+    return this.actionRegistry.has(actionId);
+  }
+
+  /**
+   * Verifica se uma Action pode ser executada.
+   */
+  canExecuteAction<TPayload = unknown>(
+    execution: WorkspaceActionExecution<TPayload>,
+  ): Promise<boolean> {
+    return this.actionDispatcher.canExecute(execution);
+  }
+
+  /**
+   * Executa uma Workspace Action.
+   */
+  dispatchAction<
+    TPayload = unknown,
+    TResult = unknown,
+  >(
+    execution: WorkspaceActionExecution<TPayload>,
+  ): Promise<WorkspaceActionResult<TResult>> {
+    return this.actionDispatcher.dispatch<
       TPayload,
       TResult
     >(execution);
@@ -425,6 +528,8 @@ export class WorkspaceRuntime {
 
       this.registries.clear();
       this.extensions.clear();
+      this.commandRegistry.clear();
+      this.actionRegistry.clear();
       this.context = undefined;
       this.initializedAt = undefined;
       this.startedAt = undefined;
@@ -477,9 +582,13 @@ export class WorkspaceRuntime {
     };
   }
 
-  private assertState(operation: string, allowedStates: readonly WorkspaceRuntimeState[]): void {
+  private assertState(
+    operation: string,
+    allowedStates: readonly WorkspaceRuntimeState[],
+  ): void {
     if (!allowedStates.includes(this.state)) {
       throw new WorkspaceRuntimeStateError(this.state, operation);
     }
   }
 }
+
