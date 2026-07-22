@@ -23,3 +23,7 @@ export * from './runtime/workspace-runtime-extension-registry';
 export * from './runtime/workspace-runtime-extension-dispatcher';
 
 export * from './services/workspace-services';
+
+export * from './runtime/workspace-command';
+export * from './runtime/workspace-command-registry';
+export * from './runtime/workspace-command-dispatcher';

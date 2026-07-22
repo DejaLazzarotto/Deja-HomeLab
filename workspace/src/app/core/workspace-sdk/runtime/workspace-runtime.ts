@@ -1,15 +1,11 @@
-import {
-  WorkspaceRuntimeState,
-} from '../contracts/workspace-contracts';
+import { WorkspaceRuntimeState } from '../contracts/workspace-contracts';
 import {
   WorkspaceModuleManifest,
   WorkspaceRuntimeContext,
   WorkspaceRuntimeSnapshot,
 } from '../models/workspace-models';
 import { WorkspaceRegistries } from '../registries/workspace-registries';
-import {
-  WorkspaceRuntimeEventDispatcher,
-} from './workspace-runtime-event-dispatcher';
+import { WorkspaceRuntimeEventDispatcher } from './workspace-runtime-event-dispatcher';
 import { WorkspaceRuntimeEvents } from './workspace-runtime-events';
 import {
   WorkspaceRuntimeExtensionDispatcher,
@@ -20,13 +16,19 @@ import {
   WorkspaceRuntimeExtensionId,
   WorkspaceRuntimeExtensionPointId,
 } from './workspace-runtime-extension-point';
-import {
-  WorkspaceRuntimeExtensionRegistry,
-} from './workspace-runtime-extension-registry';
-import {
-  WorkspaceRuntimeHookDispatcher,
-} from './workspace-runtime-hook-dispatcher';
+import { WorkspaceRuntimeExtensionRegistry } from './workspace-runtime-extension-registry';
+import { WorkspaceRuntimeHookDispatcher } from './workspace-runtime-hook-dispatcher';
 import { WorkspaceRuntimeHooks } from './workspace-runtime-hooks';
+import {
+  WorkspaceCommand,
+  WorkspaceCommandExecution,
+  WorkspaceCommandId,
+  WorkspaceCommandResult,
+} from './workspace-command';
+
+import { WorkspaceCommandRegistry } from './workspace-command-registry';
+
+import { WorkspaceCommandDispatcher } from './workspace-command-dispatcher';
 
 /**
  * Erro lançado quando uma operação não é permitida
@@ -37,9 +39,7 @@ export class WorkspaceRuntimeStateError extends Error {
     readonly currentState: WorkspaceRuntimeState,
     readonly operation: string,
   ) {
-    super(
-      `Workspace runtime operation "${operation}" is not allowed in state "${currentState}"`,
-    );
+    super(`Workspace runtime operation "${operation}" is not allowed in state "${currentState}"`);
 
     this.name = 'WorkspaceRuntimeStateError';
   }
@@ -69,19 +69,32 @@ export class WorkspaceRuntime {
 
   private stoppedAt?: Date;
 
+  /**
+   * Registry oficial de Workspace Commands.
+   */
+  private readonly commandRegistry: WorkspaceCommandRegistry;
+
+  /**
+   * Dispatcher oficial de Workspace Commands.
+   */
+  private readonly commandDispatcher: WorkspaceCommandDispatcher;
+
   readonly extensionDispatcher: WorkspaceRuntimeExtensionDispatcher;
 
   constructor(
     readonly registries: WorkspaceRegistries = new WorkspaceRegistries(),
-    readonly events: WorkspaceRuntimeEventDispatcher =
-      new WorkspaceRuntimeEventDispatcher(),
-    readonly hooks: WorkspaceRuntimeHookDispatcher =
-      new WorkspaceRuntimeHookDispatcher(),
-    readonly extensions: WorkspaceRuntimeExtensionRegistry =
-      new WorkspaceRuntimeExtensionRegistry(),
+    readonly events: WorkspaceRuntimeEventDispatcher = new WorkspaceRuntimeEventDispatcher(),
+    readonly hooks: WorkspaceRuntimeHookDispatcher = new WorkspaceRuntimeHookDispatcher(),
+    readonly extensions: WorkspaceRuntimeExtensionRegistry = new WorkspaceRuntimeExtensionRegistry(),
   ) {
     this.extensionDispatcher =
       new WorkspaceRuntimeExtensionDispatcher(this.extensions);
+
+    this.commandRegistry =
+      new WorkspaceCommandRegistry();
+
+    this.commandDispatcher =
+      new WorkspaceCommandDispatcher(this.commandRegistry);
   }
 
   getState(): WorkspaceRuntimeState {
@@ -92,6 +105,82 @@ export class WorkspaceRuntime {
     return this.context;
   }
 
+  /**
+   * Registra um Workspace Command.
+   */
+  registerCommand(
+    command: WorkspaceCommand,
+  ): void {
+    this.commandRegistry.register(command);
+  }
+
+  /**
+   * Registra múltiplos Workspace Commands.
+   */
+  registerCommands(
+    commands: readonly WorkspaceCommand[],
+  ): void {
+    this.commandRegistry.registerAll(commands);
+  }
+
+  /**
+   * Remove um Workspace Command.
+   */
+  unregisterCommand(
+    commandId: WorkspaceCommandId,
+  ): WorkspaceCommand {
+    return this.commandRegistry.unregister(commandId);
+  }
+
+  /**
+   * Retorna todos os comandos registrados.
+   */
+  commands(): readonly WorkspaceCommand[] {
+    return this.commandRegistry.list();
+  }
+
+  /**
+   * Retorna um comando pelo identificador.
+   */
+  getCommand(
+    commandId: WorkspaceCommandId,
+  ): WorkspaceCommand {
+    return this.commandRegistry.get(commandId);
+  }
+
+  /**
+   * Verifica se um comando está registrado.
+   */
+  hasCommand(
+    commandId: WorkspaceCommandId,
+  ): boolean {
+    return this.commandRegistry.has(commandId);
+  }
+
+  /**
+   * Verifica se um comando pode ser executado.
+   */
+  canExecuteCommand<TPayload = unknown>(
+    execution: WorkspaceCommandExecution<TPayload>,
+  ): Promise<boolean> {
+    return this.commandDispatcher.canExecute(execution);
+  }
+
+  /**
+   * Executa um Workspace Command.
+   */
+  dispatchCommand<
+    TPayload = unknown,
+    TResult = unknown,
+  >(
+    execution: WorkspaceCommandExecution<TPayload>,
+  ): Promise<WorkspaceCommandResult<TResult>> {
+    return this.commandDispatcher.dispatch<
+      TPayload,
+      TResult
+    >(execution);
+  }
+
   async initialize(context: WorkspaceRuntimeContext): Promise<void> {
     this.assertState('initialize', ['created', 'stopped']);
 
@@ -100,26 +189,20 @@ export class WorkspaceRuntime {
     this.state = 'initializing';
 
     try {
-      await this.hooks.execute(
-        WorkspaceRuntimeHooks.BeforeInitialize,
-        {
-          runtimeContext: context,
-          operation: 'initialize',
-          data: {
-            previousState,
-            currentState: this.state,
-          },
-        },
-      );
-
-      await this.events.emit(
-        WorkspaceRuntimeEvents.BeforeInitialize,
-        {
+      await this.hooks.execute(WorkspaceRuntimeHooks.BeforeInitialize, {
+        runtimeContext: context,
+        operation: 'initialize',
+        data: {
           previousState,
           currentState: this.state,
-          context,
         },
-      );
+      });
+
+      await this.events.emit(WorkspaceRuntimeEvents.BeforeInitialize, {
+        previousState,
+        currentState: this.state,
+        context,
+      });
 
       this.context = context;
       this.initializedAt = new Date();
@@ -127,26 +210,20 @@ export class WorkspaceRuntime {
       this.stoppedAt = undefined;
       this.state = 'ready';
 
-      await this.events.emit(
-        WorkspaceRuntimeEvents.AfterInitialize,
-        {
+      await this.events.emit(WorkspaceRuntimeEvents.AfterInitialize, {
+        previousState,
+        currentState: this.state,
+        context,
+      });
+
+      await this.hooks.execute(WorkspaceRuntimeHooks.AfterInitialize, {
+        runtimeContext: context,
+        operation: 'initialize',
+        data: {
           previousState,
           currentState: this.state,
-          context,
         },
-      );
-
-      await this.hooks.execute(
-        WorkspaceRuntimeHooks.AfterInitialize,
-        {
-          runtimeContext: context,
-          operation: 'initialize',
-          data: {
-            previousState,
-            currentState: this.state,
-          },
-        },
-      );
+      });
     } catch (error) {
       await this.fail('initialize', error);
       throw error;
@@ -154,11 +231,7 @@ export class WorkspaceRuntime {
   }
 
   registerManifest(manifest: WorkspaceModuleManifest): void {
-    this.assertState('registerManifest', [
-      'created',
-      'initializing',
-      'ready',
-    ]);
+    this.assertState('registerManifest', ['created', 'initializing', 'ready']);
 
     if (manifest.domains?.length) {
       this.registries.domains.registerMany(manifest.domains);
@@ -189,11 +262,7 @@ export class WorkspaceRuntime {
    * Registra uma Runtime Extension.
    */
   registerExtension(extension: WorkspaceRuntimeExtension): void {
-    this.assertState('registerExtension', [
-      'created',
-      'initializing',
-      'ready',
-    ]);
+    this.assertState('registerExtension', ['created', 'initializing', 'ready']);
 
     this.extensions.register(extension);
   }
@@ -201,14 +270,8 @@ export class WorkspaceRuntime {
   /**
    * Registra múltiplas Runtime Extensions.
    */
-  registerExtensions(
-    extensions: readonly WorkspaceRuntimeExtension[],
-  ): void {
-    this.assertState('registerExtensions', [
-      'created',
-      'initializing',
-      'ready',
-    ]);
+  registerExtensions(extensions: readonly WorkspaceRuntimeExtension[]): void {
+    this.assertState('registerExtensions', ['created', 'initializing', 'ready']);
 
     this.extensions.registerMany(extensions);
   }
@@ -216,15 +279,8 @@ export class WorkspaceRuntime {
   /**
    * Remove uma Runtime Extension.
    */
-  unregisterExtension(
-    extensionId: WorkspaceRuntimeExtensionId,
-  ): boolean {
-    this.assertState('unregisterExtension', [
-      'created',
-      'initializing',
-      'ready',
-      'stopped',
-    ]);
+  unregisterExtension(extensionId: WorkspaceRuntimeExtensionId): boolean {
+    this.assertState('unregisterExtension', ['created', 'initializing', 'ready', 'stopped']);
 
     return this.extensions.unregister(extensionId);
   }
@@ -232,19 +288,11 @@ export class WorkspaceRuntime {
   /**
    * Executa as Runtime Extensions habilitadas de um ponto de extensão.
    */
-  async dispatchExtensionPoint<
-    TPayload = unknown,
-    TResult = unknown,
-  >(
+  async dispatchExtensionPoint<TPayload = unknown, TResult = unknown>(
     extensionPoint: WorkspaceRuntimeExtensionPointId,
     payload: TPayload,
-  ): Promise<
-    readonly WorkspaceRuntimeExtensionDispatchResult<TResult>[]
-  > {
-    this.assertState('dispatchExtensionPoint', [
-      'ready',
-      'running',
-    ]);
+  ): Promise<readonly WorkspaceRuntimeExtensionDispatchResult<TResult>[]> {
+    this.assertState('dispatchExtensionPoint', ['ready', 'running']);
 
     return this.extensionDispatcher.dispatch<TPayload, TResult>(
       extensionPoint,
@@ -257,22 +305,13 @@ export class WorkspaceRuntime {
    * Executa um ponto de extensão e retorna apenas os valores
    * produzidos pelos handlers.
    */
-  async dispatchExtensionResults<
-    TPayload = unknown,
-    TResult = unknown,
-  >(
+  async dispatchExtensionResults<TPayload = unknown, TResult = unknown>(
     extensionPoint: WorkspaceRuntimeExtensionPointId,
     payload: TPayload,
   ): Promise<readonly TResult[]> {
-    this.assertState('dispatchExtensionResults', [
-      'ready',
-      'running',
-    ]);
+    this.assertState('dispatchExtensionResults', ['ready', 'running']);
 
-    return this.extensionDispatcher.dispatchResults<
-      TPayload,
-      TResult
-    >(
+    return this.extensionDispatcher.dispatchResults<TPayload, TResult>(
       extensionPoint,
       payload,
       this.context,
@@ -438,10 +477,7 @@ export class WorkspaceRuntime {
     };
   }
 
-  private assertState(
-    operation: string,
-    allowedStates: readonly WorkspaceRuntimeState[],
-  ): void {
+  private assertState(operation: string, allowedStates: readonly WorkspaceRuntimeState[]): void {
     if (!allowedStates.includes(this.state)) {
       throw new WorkspaceRuntimeStateError(this.state, operation);
     }
