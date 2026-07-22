@@ -35,12 +35,9 @@ import {
 import { WorkspaceRuntimeExtensionRegistry } from './workspace-runtime-extension-registry';
 import { WorkspaceRuntimeHookDispatcher } from './workspace-runtime-hook-dispatcher';
 import { WorkspaceRuntimeHooks } from './workspace-runtime-hooks';
-import {
-  WorkspaceMenu,
-  WorkspaceMenuId,
-  WorkspaceMenuLocation,
-} from '../ui/workspace-menu';
+import { WorkspaceMenu, WorkspaceMenuId, WorkspaceMenuLocation } from '../ui/workspace-menu';
 import { WorkspaceMenuRegistry } from '../ui/workspace-menu-registry';
+import { WorkspaceToolbarRegistry } from '../ui/workspace-toolbar-registry';
 
 /**
  * Erro lançado quando uma operação não é permitida
@@ -107,6 +104,11 @@ export class WorkspaceRuntime {
    * Registry oficial de Workspace Menus.
    */
   private readonly menuRegistry: WorkspaceMenuRegistry;
+
+  /**
+   * Registry oficial de Workspace Toolbars.
+   */
+  private readonly toolbarRegistry = new WorkspaceToolbarRegistry();
 
   readonly extensionDispatcher: WorkspaceRuntimeExtensionDispatcher;
 
@@ -258,7 +260,6 @@ export class WorkspaceRuntime {
     return this.actionDispatcher.dispatch<TPayload, TResult>(execution);
   }
 
-
   registerMenu(menu: WorkspaceMenu): void {
     this.menuRegistry.register(menu);
   }
@@ -389,6 +390,13 @@ export class WorkspaceRuntime {
     this.assertState('unregisterExtension', ['created', 'initializing', 'ready', 'stopped']);
 
     return this.extensions.unregister(extensionId);
+  }
+
+    /**
+   * Registry oficial de Workspace Toolbars.
+   */
+  getToolbarRegistry(): WorkspaceToolbarRegistry {
+    return this.toolbarRegistry;
   }
 
   /**
@@ -534,6 +542,7 @@ export class WorkspaceRuntime {
       this.commandRegistry.clear();
       this.actionRegistry.clear();
       this.menuRegistry.clear();
+      this.toolbarRegistry.clear();
       this.context = undefined;
       this.initializedAt = undefined;
       this.startedAt = undefined;
