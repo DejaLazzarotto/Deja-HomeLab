@@ -67,12 +67,7 @@ export type WorkspaceWidgetCapability =
  * Superfície institucional na qual um Workspace Widget pode ser utilizado.
  */
 export type WorkspaceWidgetSurface =
-  | 'dashboard'
-  | 'view'
-  | 'panel'
-  | 'shell'
-  | 'dialog'
-  | 'standalone';
+  'dashboard' | 'view' | 'panel' | 'shell' | 'dialog' | 'standalone';
 
 /**
  * Dimensão institucional sugerida para um Workspace Widget.
@@ -100,6 +95,21 @@ export interface WorkspaceWidgetSizeConstraints {
 export type WorkspaceDashboardId = WorkspaceResourceId;
 
 /**
+ * Identificador de uma região de Dashboard.
+ */
+export type WorkspaceDashboardRegionId = WorkspaceResourceId;
+
+/**
+ * Identificador de um layout de Dashboard.
+ */
+export type WorkspaceDashboardLayoutId = WorkspaceResourceId;
+
+/**
+ * Tipo institucional de layout de Dashboard.
+ */
+export type WorkspaceDashboardLayoutType = 'grid' | 'flex' | 'columns' | 'rows' | 'free';
+
+/**
  * Identificador de um serviço disponibilizado pelo Workspace.
  */
 export type WorkspaceServiceId = WorkspaceResourceId;
@@ -117,24 +127,13 @@ export type WorkspaceInstanceId = string;
 /**
  * Estado institucional de um recurso no Workspace Runtime.
  */
-export type WorkspaceResourceState =
-  | 'registered'
-  | 'active'
-  | 'inactive'
-  | 'disabled'
-  | 'error';
+export type WorkspaceResourceState = 'registered' | 'active' | 'inactive' | 'disabled' | 'error';
 
 /**
  * Estado do ciclo de vida do Workspace Runtime.
  */
 export type WorkspaceRuntimeState =
-  | 'created'
-  | 'initializing'
-  | 'ready'
-  | 'running'
-  | 'stopping'
-  | 'stopped'
-  | 'failed';
+  'created' | 'initializing' | 'ready' | 'running' | 'stopping' | 'stopped' | 'failed';
 
 /**
  * Prioridade usada para ordenação determinística de recursos.
@@ -191,9 +190,7 @@ export interface WorkspaceResourceMetadata {
 /**
  * Contrato básico para recursos registráveis no Workspace.
  */
-export interface WorkspaceResource<
-  TId extends WorkspaceResourceId = WorkspaceResourceId,
-> {
+export interface WorkspaceResource<TId extends WorkspaceResourceId = WorkspaceResourceId> {
   readonly id: TId;
   readonly owner: WorkspaceOwnerId;
   readonly enabled?: boolean;

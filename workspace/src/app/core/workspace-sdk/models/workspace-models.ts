@@ -1,5 +1,4 @@
 import {
-  WorkspaceDashboardId,
   WorkspaceDomainId,
   WorkspaceNavigationId,
   WorkspaceOwnerId,
@@ -9,13 +8,28 @@ import {
   WorkspaceRuntimeState,
   WorkspaceServiceId,
   WorkspaceViewId,
-  WorkspaceWidgetCategory,
-  WorkspaceWidgetCapability,
-  WorkspaceWidgetId,
-  WorkspaceWidgetSizeConstraints,
-  WorkspaceWidgetSurface,
 } from '../contracts/workspace-contracts';
-import { WorkspaceActionId } from '../runtime/workspace-action';
+
+import {
+  WorkspaceDashboard,
+} from '../runtime/workspace-dashboard';
+
+import {
+  WorkspaceWidget,
+} from '../runtime/workspace-widget';
+
+/**
+ * Reexportações mantidas para compatibilidade com os imports existentes.
+ */
+export type {
+  WorkspaceDashboard,
+} from '../runtime/workspace-dashboard';
+
+export type {
+  WorkspaceGridPosition,
+  WorkspaceWidget,
+  WorkspaceWidgetInstance,
+} from '../runtime/workspace-widget';
 
 /**
  * Representa um domínio funcional do Workspace.
@@ -67,118 +81,6 @@ export interface WorkspaceNavigationItem {
   readonly visible?: boolean;
   readonly tags?: readonly string[];
   readonly children?: readonly WorkspaceNavigationItem[];
-  readonly metadata?: Readonly<Record<string, unknown>>;
-}
-
-/**
- * Representa um widget reutilizável.
- */
-/**
- * Descrição institucional de um Workspace Widget.
- *
- * Um Widget representa uma unidade reutilizável de composição
- * visual do Workspace, permanecendo totalmente independente do
- * mecanismo de renderização.
- */
-export interface WorkspaceWidget {
-  readonly id: WorkspaceWidgetId;
-
-  readonly owner: WorkspaceOwnerId;
-
-  readonly title: string;
-
-  readonly description?: string;
-
-  /**
-   * Categoria institucional.
-   */
-  readonly category?: WorkspaceWidgetCategory;
-
-  /**
-   * Tipo lógico utilizado para classificação.
-   */
-  readonly widgetType: string;
-
-  /**
-   * Superfícies onde o Widget pode ser utilizado.
-   */
-  readonly supportedSurfaces?: readonly WorkspaceWidgetSurface[];
-
-  /**
-   * Capacidades declaradas pelo Widget.
-   */
-  readonly capabilities?: readonly WorkspaceWidgetCapability[];
-
-  /**
-   * Action principal do Widget.
-   */
-  readonly primaryActionId?: WorkspaceActionId;
-
-  /**
-   * Actions auxiliares.
-   */
-  readonly actionIds?: readonly WorkspaceActionId[];
-
-  /**
-   * Restrições de dimensionamento.
-   */
-  readonly size?: WorkspaceWidgetSizeConstraints;
-
-  /**
-   * Adaptador de renderização.
-   *
-   * Mantido temporariamente para compatibilidade com a futura
-   * integração Angular.
-   */
-  readonly component?: unknown;
-
-  readonly priority?: WorkspacePriority;
-
-  readonly enabled?: boolean;
-
-  readonly tags?: readonly string[];
-
-  readonly defaultConfiguration?: Readonly<Record<string, unknown>>;
-
-  readonly metadata?: Readonly<Record<string, unknown>>;
-}
-
-/**
- * Representa uma instância de widget em um dashboard.
- */
-export interface WorkspaceWidgetInstance {
-  readonly id: string;
-  readonly widgetId: WorkspaceWidgetId;
-  readonly title?: string;
-  readonly position: WorkspaceGridPosition;
-  readonly configuration?: Readonly<Record<string, unknown>>;
-  readonly enabled?: boolean;
-}
-
-/**
- * Define a posição de um item na grade do Workspace.
- */
-export interface WorkspaceGridPosition {
-  readonly column: number;
-  readonly row: number;
-  readonly columnSpan?: number;
-  readonly rowSpan?: number;
-}
-
-/**
- * Representa um dashboard registrado.
- */
-export interface WorkspaceDashboard {
-  readonly id: WorkspaceDashboardId;
-  readonly owner: WorkspaceOwnerId;
-  readonly title: string;
-  readonly description?: string;
-  readonly icon?: string;
-  readonly route?: string;
-  readonly priority?: WorkspacePriority;
-  readonly enabled?: boolean;
-  readonly tags?: readonly string[];
-  readonly widgets?: readonly WorkspaceWidgetInstance[];
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
