@@ -4,7 +4,10 @@ import {
   WorkspaceNavigationId,
   WorkspaceServiceId,
   WorkspaceViewId,
+  WorkspaceWidgetCapability,
+  WorkspaceWidgetCategory,
   WorkspaceWidgetId,
+  WorkspaceWidgetSurface,
 } from '../contracts/workspace-contracts';
 import {
   WorkspaceDashboard,
@@ -14,6 +17,9 @@ import {
   WorkspaceView,
   WorkspaceWidget,
 } from '../models/workspace-models';
+import {
+  WorkspaceActionId,
+} from '../runtime/workspace-action';
 import { WorkspaceRegistry } from './workspace-registry';
 
 /**
@@ -67,8 +73,117 @@ export class WorkspaceWidgetRegistry extends WorkspaceRegistry<
   WorkspaceWidget,
   WorkspaceWidgetId
 > {
+  /**
+   * Retorna Widgets de um determinado tipo.
+   */
   listByType(widgetType: string): readonly WorkspaceWidget[] {
-    return this.list().filter((widget) => widget.widgetType === widgetType);
+    return this.list().filter(
+      (widget) => widget.widgetType === widgetType,
+    );
+  }
+
+  /**
+   * Retorna Widgets pertencentes a uma categoria.
+   */
+  listByCategory(
+    category: WorkspaceWidgetCategory,
+  ): readonly WorkspaceWidget[] {
+    return this.list().filter(
+      (widget) => widget.category === category,
+    );
+  }
+
+  /**
+   * Retorna Widgets compatíveis com uma superfície.
+   */
+  listBySurface(
+    surface: WorkspaceWidgetSurface,
+  ): readonly WorkspaceWidget[] {
+    return this.list().filter(
+      (widget) =>
+        widget.supportedSurfaces?.includes(surface) ?? false,
+    );
+  }
+
+  /**
+   * Retorna Widgets que implementam determinada capacidade.
+   */
+  listByCapability(
+    capability: WorkspaceWidgetCapability,
+  ): readonly WorkspaceWidget[] {
+    return this.list().filter(
+      (widget) =>
+        widget.capabilities?.includes(capability) ?? false,
+    );
+  }
+
+  /**
+   * Retorna Widgets cuja Action principal corresponde
+   * ao identificador informado.
+   */
+  listByPrimaryAction(
+    actionId: WorkspaceActionId,
+  ): readonly WorkspaceWidget[] {
+    return this.list().filter(
+      (widget) => widget.primaryActionId === actionId,
+    );
+  }
+
+  /**
+   * Retorna Widgets que utilizam determinada Action.
+   *
+   * A consulta considera tanto a Action principal quanto
+   * as Actions auxiliares declaradas pelo Widget.
+   */
+  listByAction(
+    actionId: WorkspaceActionId,
+  ): readonly WorkspaceWidget[] {
+    return this.list().filter(
+      (widget) =>
+        widget.primaryActionId === actionId ||
+        (widget.actionIds?.includes(actionId) ?? false),
+    );
+  }
+
+  /**
+   * Verifica se alguma Action declarada pelo Widget
+   * corresponde ao identificador informado.
+   */
+  usesAction(
+    widgetId: WorkspaceWidgetId,
+    actionId: WorkspaceActionId,
+  ): boolean {
+    const widget = this.get(widgetId);
+
+    if (!widget) {
+      return false;
+    }
+
+    return (
+      widget.primaryActionId === actionId ||
+      (widget.actionIds?.includes(actionId) ?? false)
+    );
+  }
+
+  /**
+   * Retorna Widgets configuráveis.
+   */
+  listConfigurable(): readonly WorkspaceWidget[] {
+    return this.listByCapability('configurable');
+  }
+
+  /**
+   * Retorna Widgets interativos.
+   */
+  listInteractive(): readonly WorkspaceWidget[] {
+    return this.listByCapability('interactive');
+  }
+
+  /**
+   * Retorna Widgets atualizáveis.
+   */
+  listRefreshable(): readonly WorkspaceWidget[] {
+    return this.listByCapability('refreshable');
   }
 }
 
@@ -96,10 +211,15 @@ export class WorkspaceServiceRegistry extends WorkspaceRegistry<
  */
 export class WorkspaceRegistries {
   readonly domains = new WorkspaceDomainRegistry();
+
   readonly views = new WorkspaceViewRegistry();
+
   readonly navigation = new WorkspaceNavigationRegistry();
+
   readonly widgets = new WorkspaceWidgetRegistry();
+
   readonly dashboards = new WorkspaceDashboardRegistry();
+
   readonly services = new WorkspaceServiceRegistry();
 
   clear(): void {

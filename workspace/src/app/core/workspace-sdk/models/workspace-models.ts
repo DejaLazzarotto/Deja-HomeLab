@@ -9,8 +9,13 @@ import {
   WorkspaceRuntimeState,
   WorkspaceServiceId,
   WorkspaceViewId,
+  WorkspaceWidgetCategory,
+  WorkspaceWidgetCapability,
   WorkspaceWidgetId,
+  WorkspaceWidgetSizeConstraints,
+  WorkspaceWidgetSurface,
 } from '../contracts/workspace-contracts';
+import { WorkspaceActionId } from '../runtime/workspace-action';
 
 /**
  * Representa um domínio funcional do Workspace.
@@ -68,17 +73,73 @@ export interface WorkspaceNavigationItem {
 /**
  * Representa um widget reutilizável.
  */
+/**
+ * Descrição institucional de um Workspace Widget.
+ *
+ * Um Widget representa uma unidade reutilizável de composição
+ * visual do Workspace, permanecendo totalmente independente do
+ * mecanismo de renderização.
+ */
 export interface WorkspaceWidget {
   readonly id: WorkspaceWidgetId;
+
   readonly owner: WorkspaceOwnerId;
+
   readonly title: string;
+
   readonly description?: string;
+
+  /**
+   * Categoria institucional.
+   */
+  readonly category?: WorkspaceWidgetCategory;
+
+  /**
+   * Tipo lógico utilizado para classificação.
+   */
   readonly widgetType: string;
+
+  /**
+   * Superfícies onde o Widget pode ser utilizado.
+   */
+  readonly supportedSurfaces?: readonly WorkspaceWidgetSurface[];
+
+  /**
+   * Capacidades declaradas pelo Widget.
+   */
+  readonly capabilities?: readonly WorkspaceWidgetCapability[];
+
+  /**
+   * Action principal do Widget.
+   */
+  readonly primaryActionId?: WorkspaceActionId;
+
+  /**
+   * Actions auxiliares.
+   */
+  readonly actionIds?: readonly WorkspaceActionId[];
+
+  /**
+   * Restrições de dimensionamento.
+   */
+  readonly size?: WorkspaceWidgetSizeConstraints;
+
+  /**
+   * Adaptador de renderização.
+   *
+   * Mantido temporariamente para compatibilidade com a futura
+   * integração Angular.
+   */
   readonly component?: unknown;
+
   readonly priority?: WorkspacePriority;
+
   readonly enabled?: boolean;
+
   readonly tags?: readonly string[];
+
   readonly defaultConfiguration?: Readonly<Record<string, unknown>>;
+
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
 

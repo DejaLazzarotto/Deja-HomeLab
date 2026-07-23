@@ -1,8 +1,9 @@
-import { WorkspaceRuntimeState } from '../contracts/workspace-contracts';
+import { WorkspaceRuntimeState, WorkspaceWidgetId } from '../contracts/workspace-contracts';
 import {
   WorkspaceModuleManifest,
   WorkspaceRuntimeContext,
   WorkspaceRuntimeSnapshot,
+  WorkspaceWidget,
 } from '../models/workspace-models';
 import { WorkspaceRegistries } from '../registries/workspace-registries';
 import {
@@ -396,6 +397,72 @@ export class WorkspaceRuntime {
    */
   searchCommandPalette(text: string): readonly WorkspaceCommandPalette[] {
     return this.commandPaletteRegistry.search(text);
+  }
+
+  /**
+   * Registra um Workspace Widget.
+   */
+  registerWidget(widget: WorkspaceWidget): void {
+    this.registries.widgets.register(widget);
+  }
+
+  /**
+   * Registra múltiplos Workspace Widgets.
+   */
+  registerWidgets(widgets: readonly WorkspaceWidget[]): void {
+    this.registries.widgets.registerMany(widgets);
+  }
+
+  /**
+   * Substitui um Workspace Widget registrado.
+   */
+  replaceWidget(widget: WorkspaceWidget): void {
+    this.registries.widgets.replace(widget);
+  }
+
+  /**
+   * Remove um Workspace Widget.
+   */
+  unregisterWidget(widgetId: WorkspaceWidgetId): boolean {
+    return this.registries.widgets.unregister(widgetId);
+  }
+
+  /**
+   * Retorna todos os Workspace Widgets registrados.
+   */
+  widgets(): readonly WorkspaceWidget[] {
+    return this.registries.widgets.list();
+  }
+
+  /**
+   * Retorna um Workspace Widget pelo identificador.
+   */
+  getWidget(widgetId: WorkspaceWidgetId): WorkspaceWidget | undefined {
+    return this.registries.widgets.get(widgetId);
+  }
+
+  /**
+   * Retorna obrigatoriamente um Workspace Widget.
+   *
+   * Lança WorkspaceRegistryResourceNotFoundError quando o Widget
+   * solicitado não está registrado.
+   */
+  requireWidget(widgetId: WorkspaceWidgetId): WorkspaceWidget {
+    return this.registries.widgets.require(widgetId);
+  }
+
+  /**
+   * Verifica se um Workspace Widget está registrado.
+   */
+  hasWidget(widgetId: WorkspaceWidgetId): boolean {
+    return this.registries.widgets.has(widgetId);
+  }
+
+  /**
+   * Retorna os Workspace Widgets pertencentes a um determinado tipo.
+   */
+  getWidgetsByType(widgetType: string): readonly WorkspaceWidget[] {
+    return this.registries.widgets.listByType(widgetType);
   }
 
   async initialize(context: WorkspaceRuntimeContext): Promise<void> {

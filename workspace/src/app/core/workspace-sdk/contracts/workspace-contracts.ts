@@ -39,6 +39,62 @@ export type WorkspaceNavigationId = WorkspaceResourceId;
 export type WorkspaceWidgetId = WorkspaceResourceId;
 
 /**
+ * Categoria institucional de um Workspace Widget.
+ *
+ * Permite classificação, descoberta e organização sem impor
+ * categorias específicas aos módulos da plataforma.
+ */
+export type WorkspaceWidgetCategory = string;
+
+/**
+ * Capacidade declarada por um Workspace Widget.
+ *
+ * As capacidades descrevem comportamentos suportados pelo Widget,
+ * permanecendo independentes do mecanismo de renderização.
+ */
+export type WorkspaceWidgetCapability =
+  | 'configurable'
+  | 'refreshable'
+  | 'resizable'
+  | 'movable'
+  | 'closable'
+  | 'maximizable'
+  | 'exportable'
+  | 'interactive'
+  | 'real-time';
+
+/**
+ * Superfície institucional na qual um Workspace Widget pode ser utilizado.
+ */
+export type WorkspaceWidgetSurface =
+  | 'dashboard'
+  | 'view'
+  | 'panel'
+  | 'shell'
+  | 'dialog'
+  | 'standalone';
+
+/**
+ * Dimensão institucional sugerida para um Workspace Widget.
+ *
+ * Não representa pixels ou qualquer unidade específica
+ * do mecanismo de renderização.
+ */
+export interface WorkspaceWidgetSize {
+  readonly columns: number;
+  readonly rows: number;
+}
+
+/**
+ * Restrições institucionais de dimensionamento de um Workspace Widget.
+ */
+export interface WorkspaceWidgetSizeConstraints {
+  readonly default?: WorkspaceWidgetSize;
+  readonly minimum?: WorkspaceWidgetSize;
+  readonly maximum?: WorkspaceWidgetSize;
+}
+
+/**
  * Identificador de um dashboard.
  */
 export type WorkspaceDashboardId = WorkspaceResourceId;
