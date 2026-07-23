@@ -38,6 +38,9 @@ import { WorkspaceRuntimeHooks } from './workspace-runtime-hooks';
 import { WorkspaceMenu, WorkspaceMenuId, WorkspaceMenuLocation } from '../ui/workspace-menu';
 import { WorkspaceMenuRegistry } from '../ui/workspace-menu-registry';
 import { WorkspaceToolbarRegistry } from '../ui/workspace-toolbar-registry';
+import { WorkspaceContextMenu, WorkspaceContextMenuId } from '../ui/workspace-context-menu';
+
+import { WorkspaceContextMenuRegistry } from '../ui/workspace-context-menu-registry';
 
 /**
  * Erro lançado quando uma operação não é permitida
@@ -109,6 +112,11 @@ export class WorkspaceRuntime {
    * Registry oficial de Workspace Toolbars.
    */
   private readonly toolbarRegistry = new WorkspaceToolbarRegistry();
+
+  /**
+   * Registry oficial de Workspace Context Menus.
+   */
+  private readonly contextMenuRegistry = new WorkspaceContextMenuRegistry();
 
   readonly extensionDispatcher: WorkspaceRuntimeExtensionDispatcher;
 
@@ -288,6 +296,48 @@ export class WorkspaceRuntime {
     return this.menuRegistry.getByLocation(location);
   }
 
+  /**
+   * Registra um Workspace Context Menu.
+   */
+  registerContextMenu(contextMenu: WorkspaceContextMenu): void {
+    this.contextMenuRegistry.register(contextMenu);
+  }
+
+  /**
+   * Registra múltiplos Workspace Context Menus.
+   */
+  registerContextMenus(contextMenus: readonly WorkspaceContextMenu[]): void {
+    this.contextMenuRegistry.registerMany(contextMenus);
+  }
+
+  /**
+   * Remove um Workspace Context Menu.
+   */
+  unregisterContextMenu(contextMenuId: WorkspaceContextMenuId): boolean {
+    return this.contextMenuRegistry.unregister(contextMenuId);
+  }
+
+  /**
+   * Retorna todos os Workspace Context Menus.
+   */
+  contextMenus(): readonly WorkspaceContextMenu[] {
+    return this.contextMenuRegistry.getAll();
+  }
+
+  /**
+   * Retorna um Workspace Context Menu pelo identificador.
+   */
+  getContextMenu(contextMenuId: WorkspaceContextMenuId): WorkspaceContextMenu {
+    return this.contextMenuRegistry.get(contextMenuId);
+  }
+
+  /**
+   * Verifica se um Workspace Context Menu está registrado.
+   */
+  hasContextMenu(contextMenuId: WorkspaceContextMenuId): boolean {
+    return this.contextMenuRegistry.has(contextMenuId);
+  }
+
   async initialize(context: WorkspaceRuntimeContext): Promise<void> {
     this.assertState('initialize', ['created', 'stopped']);
 
@@ -392,7 +442,7 @@ export class WorkspaceRuntime {
     return this.extensions.unregister(extensionId);
   }
 
-    /**
+  /**
    * Registry oficial de Workspace Toolbars.
    */
   getToolbarRegistry(): WorkspaceToolbarRegistry {
@@ -543,6 +593,7 @@ export class WorkspaceRuntime {
       this.actionRegistry.clear();
       this.menuRegistry.clear();
       this.toolbarRegistry.clear();
+      this.contextMenuRegistry.clear();
       this.context = undefined;
       this.initializedAt = undefined;
       this.startedAt = undefined;
