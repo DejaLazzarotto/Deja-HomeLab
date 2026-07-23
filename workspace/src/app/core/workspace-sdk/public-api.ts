@@ -34,7 +34,12 @@ export * from './runtime/workspace-action-dispatcher';
 
 export * from './ui/workspace-menu';
 export * from './ui/workspace-menu-registry';
+
 export * from './ui/workspace-toolbar';
 export * from './ui/workspace-toolbar-registry';
+
 export * from './ui/workspace-context-menu';
 export * from './ui/workspace-context-menu-registry';
+
+export * from './ui/workspace-command-palette';
+export * from './ui/workspace-command-palette-registry';

@@ -41,6 +41,12 @@ import { WorkspaceToolbarRegistry } from '../ui/workspace-toolbar-registry';
 import { WorkspaceContextMenu, WorkspaceContextMenuId } from '../ui/workspace-context-menu';
 
 import { WorkspaceContextMenuRegistry } from '../ui/workspace-context-menu-registry';
+import {
+  WorkspaceCommandPalette,
+  WorkspaceCommandPaletteId,
+} from '../ui/workspace-command-palette';
+
+import { WorkspaceCommandPaletteRegistry } from '../ui/workspace-command-palette-registry';
 
 /**
  * Erro lançado quando uma operação não é permitida
@@ -117,6 +123,11 @@ export class WorkspaceRuntime {
    * Registry oficial de Workspace Context Menus.
    */
   private readonly contextMenuRegistry = new WorkspaceContextMenuRegistry();
+
+  /**
+   * Registry oficial de Workspace Command Palette.
+   */
+  private readonly commandPaletteRegistry = new WorkspaceCommandPaletteRegistry();
 
   readonly extensionDispatcher: WorkspaceRuntimeExtensionDispatcher;
 
@@ -336,6 +347,55 @@ export class WorkspaceRuntime {
    */
   hasContextMenu(contextMenuId: WorkspaceContextMenuId): boolean {
     return this.contextMenuRegistry.has(contextMenuId);
+  }
+
+  /**
+   * Registra um Workspace Command Palette.
+   */
+  registerCommandPalette(commandPalette: WorkspaceCommandPalette): void {
+    this.commandPaletteRegistry.register(commandPalette);
+  }
+
+  /**
+   * Registra múltiplos Workspace Command Palette.
+   */
+  registerCommandPalettes(commandPalettes: readonly WorkspaceCommandPalette[]): void {
+    this.commandPaletteRegistry.registerMany(commandPalettes);
+  }
+
+  /**
+   * Remove um Workspace Command Palette.
+   */
+  unregisterCommandPalette(commandPaletteId: WorkspaceCommandPaletteId): boolean {
+    return this.commandPaletteRegistry.unregister(commandPaletteId);
+  }
+
+  /**
+   * Retorna todos os Workspace Command Palette.
+   */
+  commandPalettes(): readonly WorkspaceCommandPalette[] {
+    return this.commandPaletteRegistry.getAll();
+  }
+
+  /**
+   * Retorna um Workspace Command Palette pelo identificador.
+   */
+  getCommandPalette(commandPaletteId: WorkspaceCommandPaletteId): WorkspaceCommandPalette {
+    return this.commandPaletteRegistry.get(commandPaletteId);
+  }
+
+  /**
+   * Verifica se um Workspace Command Palette está registrado.
+   */
+  hasCommandPalette(commandPaletteId: WorkspaceCommandPaletteId): boolean {
+    return this.commandPaletteRegistry.has(commandPaletteId);
+  }
+
+  /**
+   * Pesquisa itens da Workspace Command Palette.
+   */
+  searchCommandPalette(text: string): readonly WorkspaceCommandPalette[] {
+    return this.commandPaletteRegistry.search(text);
   }
 
   async initialize(context: WorkspaceRuntimeContext): Promise<void> {
@@ -594,6 +654,7 @@ export class WorkspaceRuntime {
       this.menuRegistry.clear();
       this.toolbarRegistry.clear();
       this.contextMenuRegistry.clear();
+      this.commandPaletteRegistry.clear();
       this.context = undefined;
       this.initializedAt = undefined;
       this.startedAt = undefined;
