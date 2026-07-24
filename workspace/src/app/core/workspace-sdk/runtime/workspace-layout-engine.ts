@@ -21,6 +21,10 @@ import {
 } from './workspace-layout';
 
 import {
+  WorkspaceLayoutRegion,
+} from './workspace-layout-region';
+
+import {
   WorkspaceLayoutState,
 } from './workspace-layout-state';
 
@@ -28,9 +32,9 @@ import {
  * Contrato institucional do Workspace Layout Engine.
  *
  * O Layout Engine é responsável por resolver a composição
- * lógica entre Dashboards, Layouts e Widgets, permanecendo
- * totalmente independente de qualquer mecanismo de
- * renderização.
+ * lógica entre Dashboards, Layouts, regiões e Widgets,
+ * permanecendo totalmente independente de qualquer mecanismo
+ * de renderização.
  */
 export interface WorkspaceLayoutEngine {
 
@@ -47,6 +51,16 @@ export interface WorkspaceLayoutEngine {
   resolveLayout(
     dashboard: WorkspaceDashboard,
   ): WorkspaceLayout | undefined;
+
+  /**
+   * Resolve as regiões pertencentes a um Layout.
+   *
+   * Regiões inexistentes ou desabilitadas não são incluídas
+   * no resultado.
+   */
+  resolveRegions(
+    layout: WorkspaceLayout,
+  ): readonly WorkspaceLayoutRegion[];
 
   /**
    * Carrega o estado persistido de um Dashboard.

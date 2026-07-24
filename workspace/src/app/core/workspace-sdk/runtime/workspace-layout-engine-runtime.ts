@@ -29,6 +29,10 @@ import {
 } from './workspace-layout-engine';
 
 import {
+  WorkspaceLayoutRegion,
+} from './workspace-layout-region';
+
+import {
   WorkspaceLayoutState,
 } from './workspace-layout-state';
 
@@ -43,6 +47,7 @@ import {
  *
  * - localizar Layouts registrados;
  * - resolver o Layout associado a um Dashboard;
+ * - resolver as regiões pertencentes a um Layout;
  * - validar referências entre Dashboards e Layouts;
  * - carregar estado persistido;
  * - persistir estado de Layout;
@@ -97,6 +102,26 @@ export class WorkspaceLayoutEngineRuntime
   }
 
   /**
+   * Resolve as regiões pertencentes a um Layout.
+   *
+   * Regiões inexistentes ou desabilitadas não são incluídas.
+   * A ordenação institucional do registry é preservada.
+   */
+  resolveRegions(
+    layout: WorkspaceLayout,
+  ): readonly WorkspaceLayoutRegion[] {
+    if (!layout.regionIds?.length) {
+      return [];
+    }
+
+    return this.registries.layoutRegions
+      .listByIds(layout.regionIds)
+      .filter(
+        (region) => region.enabled !== false,
+      );
+  }
+
+  /**
    * Carrega o estado persistido de um Dashboard.
    *
    * Quando nenhum mecanismo de armazenamento estiver configurado,
@@ -146,4 +171,5 @@ export class WorkspaceLayoutEngineRuntime
 
     return layout !== undefined && layout.enabled !== false;
   }
+
 }

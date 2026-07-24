@@ -5,7 +5,7 @@
  *
  * Responsável pela resolução lógica de um Dashboard,
  * produzindo um WorkspaceResolvedDashboard pronto para
- * consumo pela futura camada de renderização.
+ * consumo pela camada de renderização.
  */
 
 import {
@@ -21,8 +21,16 @@ import {
 } from './workspace-dashboard';
 
 import {
+  WorkspaceLayout,
+} from './workspace-layout';
+
+import {
   WorkspaceLayoutEngine,
 } from './workspace-layout-engine';
+
+import {
+  WorkspaceLayoutRegion,
+} from './workspace-layout-region';
 
 import {
   WorkspaceResolvedDashboard,
@@ -71,18 +79,25 @@ export class WorkspaceDashboardResolver {
       );
     }
 
+    const regions = this.resolveRegions(
+      layout,
+      diagnostics,
+    );
+
     const state = await this.layoutEngine.loadState(
       dashboard.id,
     );
 
     const widgets = this.resolveWidgets(
       dashboard.widgets,
+      regions,
       diagnostics,
     );
 
     return {
       dashboard,
       layout,
+      regions,
       widgets,
       state,
       valid: diagnostics.length === 0,
@@ -91,10 +106,44 @@ export class WorkspaceDashboardResolver {
   }
 
   /**
+   * Resolve as regiões pertencentes ao Layout.
+   */
+  private resolveRegions(
+    layout: WorkspaceLayout | undefined,
+    diagnostics: string[],
+  ): readonly WorkspaceLayoutRegion[] {
+
+    if (!layout) {
+      return [];
+    }
+
+    const regions = this.layoutEngine.resolveRegions(layout);
+
+    if (!layout.regionIds?.length) {
+      return regions;
+    }
+
+    const resolvedRegionIds = new Set(
+      regions.map((region) => region.id),
+    );
+
+    for (const regionId of layout.regionIds) {
+      if (!resolvedRegionIds.has(regionId)) {
+        diagnostics.push(
+          `Layout region not found or disabled: ${regionId}`,
+        );
+      }
+    }
+
+    return regions;
+  }
+
+  /**
    * Resolve e valida as instâncias de Widgets.
    */
   private resolveWidgets(
     widgets: readonly WorkspaceWidgetInstance[] | undefined,
+    regions: readonly WorkspaceLayoutRegion[],
     diagnostics: string[],
   ): readonly WorkspaceWidgetInstance[] {
 
@@ -103,6 +152,10 @@ export class WorkspaceDashboardResolver {
     }
 
     const resolved: WorkspaceWidgetInstance[] = [];
+
+    const resolvedRegionIds = new Set(
+      regions.map((region) => region.id),
+    );
 
     for (const widget of widgets) {
 
@@ -123,9 +176,19 @@ export class WorkspaceDashboardResolver {
         continue;
       }
 
+      if (
+        widget.regionId &&
+        !resolvedRegionIds.has(widget.regionId)
+      ) {
+        diagnostics.push(
+          `Widget region not found or disabled: ${widget.regionId}`,
+        );
+      }
+
       resolved.push(widget);
     }
 
     return resolved;
   }
+
 }

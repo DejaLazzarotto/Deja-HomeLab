@@ -14,12 +14,20 @@ import {
 } from '@angular/core';
 
 import {
-  WorkspaceRuntime,
-} from '../../../core/workspace-sdk/runtime/workspace-runtime';
+  WorkspaceLayoutRegion,
+} from '../../../core/workspace-sdk/runtime/workspace-layout-region';
 
 import {
   WorkspaceResolvedDashboard,
 } from '../../../core/workspace-sdk/runtime/workspace-resolved-dashboard';
+
+import {
+  WorkspaceRuntime,
+} from '../../../core/workspace-sdk/runtime/workspace-runtime';
+
+import {
+  WorkspaceWidgetInstance,
+} from '../../../core/workspace-sdk/runtime/workspace-widget';
 
 import {
   WorkspaceWidgetHostComponent,
@@ -51,20 +59,104 @@ import {
 
       </header>
 
-      <section class="workspace-dashboard__widgets">
+      @if (hasResolvedLayout()) {
 
-        @for (
-          widget of resolvedDashboard.widgets;
-          track widget.id
-        ) {
+        <section
+          class="workspace-dashboard__layout"
+          [attr.data-layout-id]="resolvedDashboard.layout?.id"
+          [attr.data-layout-type]="resolvedDashboard.layout?.type">
 
-          <deja-workspace-widget-host
-            [runtime]="runtime"
-            [widgetInstance]="widget" />
+          @for (
+            region of resolvedDashboard.regions;
+            track region.id
+          ) {
 
-        }
+            <section
+              class="workspace-dashboard__region"
+              [attr.data-region-id]="region.id"
+              [attr.data-region-type]="region.regionType">
 
-      </section>
+              <header class="workspace-dashboard__region-header">
+
+                <h2 class="workspace-dashboard__region-title">
+                  {{ region.title }}
+                </h2>
+
+                @if (region.description) {
+                  <p class="workspace-dashboard__region-description">
+                    {{ region.description }}
+                  </p>
+                }
+
+              </header>
+
+              <section class="workspace-dashboard__region-widgets">
+
+                @for (
+                  widget of widgetsForRegion(region);
+                  track widget.id
+                ) {
+
+                  <deja-workspace-widget-host
+                    [runtime]="runtime"
+                    [widgetInstance]="widget" />
+
+                }
+
+              </section>
+
+            </section>
+
+          }
+
+          @if (unassignedWidgets().length) {
+
+            <section
+              class="
+                workspace-dashboard__region
+                workspace-dashboard__region--unassigned
+              "
+              data-region-type="unassigned">
+
+              <section class="workspace-dashboard__region-widgets">
+
+                @for (
+                  widget of unassignedWidgets();
+                  track widget.id
+                ) {
+
+                  <deja-workspace-widget-host
+                    [runtime]="runtime"
+                    [widgetInstance]="widget" />
+
+                }
+
+              </section>
+
+            </section>
+
+          }
+
+        </section>
+
+      } @else {
+
+        <section class="workspace-dashboard__widgets">
+
+          @for (
+            widget of resolvedDashboard.widgets;
+            track widget.id
+          ) {
+
+            <deja-workspace-widget-host
+              [runtime]="runtime"
+              [widgetInstance]="widget" />
+
+          }
+
+        </section>
+
+      }
 
     </section>
   `,
@@ -79,7 +171,7 @@ import {
       display: flex;
       flex-direction: column;
       width: 100%;
-      height: 100%;
+      min-height: 100%;
     }
 
     .workspace-dashboard__header {
@@ -92,6 +184,52 @@ import {
 
     .workspace-dashboard__description {
       margin: 0;
+    }
+
+    .workspace-dashboard__layout {
+      display: grid;
+      grid-template-columns: repeat(
+        auto-fit,
+        minmax(min(100%, 20rem), 1fr)
+      );
+      align-items: start;
+      flex: 1;
+      width: 100%;
+    }
+
+    .workspace-dashboard__region {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .workspace-dashboard__region-header {
+      display: block;
+    }
+
+    .workspace-dashboard__region-title {
+      margin: 0;
+    }
+
+    .workspace-dashboard__region-description {
+      margin: 0;
+    }
+
+    .workspace-dashboard__region-widgets {
+      display: grid;
+      grid-template-columns: repeat(
+        auto-fit,
+        minmax(min(100%, 16rem), 1fr)
+      );
+      align-items: start;
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .workspace-dashboard__region--unassigned {
+      grid-column: 1 / -1;
     }
 
     .workspace-dashboard__widgets {
@@ -118,5 +256,50 @@ export class WorkspaceDashboardComponent {
     required: true,
   })
   resolvedDashboard!: WorkspaceResolvedDashboard;
+
+  /**
+   * Verifica se o Dashboard possui Layout e regiões resolvidas.
+   *
+   * Dashboards sem Layout ou sem regiões permanecem utilizando
+   * a composição linear legada.
+   */
+  protected hasResolvedLayout(): boolean {
+    return (
+      this.resolvedDashboard.layout !== undefined &&
+      this.resolvedDashboard.regions.length > 0
+    );
+  }
+
+  /**
+   * Retorna os Widgets pertencentes a uma região.
+   */
+  protected widgetsForRegion(
+    region: WorkspaceLayoutRegion,
+  ): readonly WorkspaceWidgetInstance[] {
+    return this.resolvedDashboard.widgets.filter(
+      (widget) => widget.regionId === region.id,
+    );
+  }
+
+  /**
+   * Retorna Widgets que não estão associados a uma região
+   * efetivamente resolvida.
+   *
+   * Esse fallback preserva a compatibilidade durante a
+   * transição de Dashboards legados para o Layout Engine.
+   */
+  protected unassignedWidgets(): readonly WorkspaceWidgetInstance[] {
+    const regionIds = new Set(
+      this.resolvedDashboard.regions.map(
+        (region) => region.id,
+      ),
+    );
+
+    return this.resolvedDashboard.widgets.filter(
+      (widget) =>
+        !widget.regionId ||
+        !regionIds.has(widget.regionId),
+    );
+  }
 
 }

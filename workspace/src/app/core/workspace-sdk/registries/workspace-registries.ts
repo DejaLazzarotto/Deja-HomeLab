@@ -1,6 +1,7 @@
 import {
   WorkspaceDashboardId,
   WorkspaceDashboardLayoutId,
+  WorkspaceDashboardRegionId,
   WorkspaceDomainId,
   WorkspaceNavigationId,
   WorkspaceServiceId,
@@ -10,6 +11,7 @@ import {
   WorkspaceWidgetId,
   WorkspaceWidgetSurface,
 } from '../contracts/workspace-contracts';
+
 import {
   WorkspaceDashboard,
   WorkspaceDomain,
@@ -18,13 +20,22 @@ import {
   WorkspaceView,
   WorkspaceWidget,
 } from '../models/workspace-models';
+
 import {
   WorkspaceActionId,
 } from '../runtime/workspace-action';
+
 import {
   WorkspaceLayout,
 } from '../runtime/workspace-layout';
-import { WorkspaceRegistry } from './workspace-registry';
+
+import {
+  WorkspaceLayoutRegion,
+} from '../runtime/workspace-layout-region';
+
+import {
+  WorkspaceRegistry,
+} from './workspace-registry';
 
 /**
  * Registry oficial de domínios do Workspace.
@@ -41,9 +52,15 @@ export class WorkspaceViewRegistry extends WorkspaceRegistry<
   WorkspaceView,
   WorkspaceViewId
 > {
-  listByDomain(domainId: WorkspaceDomainId): readonly WorkspaceView[] {
-    return this.list().filter((view) => view.domainId === domainId);
+
+  listByDomain(
+    domainId: WorkspaceDomainId,
+  ): readonly WorkspaceView[] {
+    return this.list().filter(
+      (view) => view.domainId === domainId,
+    );
   }
+
 }
 
 /**
@@ -53,34 +70,45 @@ export class WorkspaceNavigationRegistry extends WorkspaceRegistry<
   WorkspaceNavigationItem,
   WorkspaceNavigationId
 > {
+
   listRootItems(): readonly WorkspaceNavigationItem[] {
-    return this.list().filter((item) => !item.parentId);
+    return this.list().filter(
+      (item) => !item.parentId,
+    );
   }
 
   listChildren(
     parentId: WorkspaceNavigationId,
   ): readonly WorkspaceNavigationItem[] {
-    return this.list().filter((item) => item.parentId === parentId);
+    return this.list().filter(
+      (item) => item.parentId === parentId,
+    );
   }
 
   listVisible(): readonly WorkspaceNavigationItem[] {
-    return this.list({ enabled: true }).filter(
+    return this.list({
+      enabled: true,
+    }).filter(
       (item) => item.visible !== false,
     );
   }
+
 }
 
 /**
- * Registry oficial de widgets do Workspace.
+ * Registry oficial de Widgets do Workspace.
  */
 export class WorkspaceWidgetRegistry extends WorkspaceRegistry<
   WorkspaceWidget,
   WorkspaceWidgetId
 > {
+
   /**
    * Retorna Widgets de um determinado tipo.
    */
-  listByType(widgetType: string): readonly WorkspaceWidget[] {
+  listByType(
+    widgetType: string,
+  ): readonly WorkspaceWidget[] {
     return this.list().filter(
       (widget) => widget.widgetType === widgetType,
     );
@@ -189,10 +217,11 @@ export class WorkspaceWidgetRegistry extends WorkspaceRegistry<
   listRefreshable(): readonly WorkspaceWidget[] {
     return this.listByCapability('refreshable');
   }
+
 }
 
 /**
- * Registry oficial de dashboards do Workspace.
+ * Registry oficial de Dashboards do Workspace.
  */
 export class WorkspaceDashboardRegistry extends WorkspaceRegistry<
   WorkspaceDashboard,
@@ -200,12 +229,38 @@ export class WorkspaceDashboardRegistry extends WorkspaceRegistry<
 > {}
 
 /**
- * Registry oficial de layouts do Workspace.
+ * Registry oficial de Layouts do Workspace.
  */
 export class WorkspaceLayoutRegistry extends WorkspaceRegistry<
   WorkspaceLayout,
   WorkspaceDashboardLayoutId
 > {}
+
+/**
+ * Registry oficial de regiões de Layout do Workspace.
+ */
+export class WorkspaceLayoutRegionRegistry extends WorkspaceRegistry<
+  WorkspaceLayoutRegion,
+  WorkspaceDashboardRegionId
+> {
+
+  /**
+   * Retorna regiões pertencentes ao conjunto informado.
+   *
+   * A ordenação institucional definida pelo WorkspaceRegistry
+   * é preservada.
+   */
+  listByIds(
+    regionIds: readonly WorkspaceDashboardRegionId[],
+  ): readonly WorkspaceLayoutRegion[] {
+    const allowedRegionIds = new Set(regionIds);
+
+    return this.list().filter(
+      (region) => allowedRegionIds.has(region.id),
+    );
+  }
+
+}
 
 /**
  * Registry oficial de serviços do Workspace.
@@ -218,10 +273,11 @@ export class WorkspaceServiceRegistry extends WorkspaceRegistry<
 /**
  * Agregador institucional dos registries do Workspace SDK.
  *
- * Mantém uma única composição compartilhável pelo runtime,
+ * Mantém uma única composição compartilhável pelo Runtime,
  * serviços públicos e testes.
  */
 export class WorkspaceRegistries {
+
   readonly domains = new WorkspaceDomainRegistry();
 
   readonly views = new WorkspaceViewRegistry();
@@ -234,6 +290,8 @@ export class WorkspaceRegistries {
 
   readonly layouts = new WorkspaceLayoutRegistry();
 
+  readonly layoutRegions = new WorkspaceLayoutRegionRegistry();
+
   readonly services = new WorkspaceServiceRegistry();
 
   clear(): void {
@@ -243,6 +301,8 @@ export class WorkspaceRegistries {
     this.widgets.clear();
     this.dashboards.clear();
     this.layouts.clear();
+    this.layoutRegions.clear();
     this.services.clear();
   }
+
 }

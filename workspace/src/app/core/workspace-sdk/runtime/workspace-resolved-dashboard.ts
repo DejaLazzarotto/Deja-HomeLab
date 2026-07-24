@@ -16,6 +16,10 @@ import {
 } from './workspace-layout';
 
 import {
+  WorkspaceLayoutRegion,
+} from './workspace-layout-region';
+
+import {
   WorkspaceLayoutState,
 } from './workspace-layout-state';
 
@@ -28,7 +32,7 @@ import {
  *
  * Este contrato é o resultado final do processo de resolução
  * realizado pelo WorkspaceDashboardResolver e constitui o único
- * modelo consumido pela futura camada de renderização.
+ * modelo consumido pela camada de renderização.
  */
 export interface WorkspaceResolvedDashboard {
 
@@ -43,6 +47,17 @@ export interface WorkspaceResolvedDashboard {
    * Pode ser undefined para Dashboards legados.
    */
   readonly layout?: WorkspaceLayout;
+
+  /**
+   * Regiões efetivamente resolvidas para o Layout.
+   *
+   * Permanece vazio quando:
+   *
+   * - o Dashboard não possui Layout;
+   * - o Layout não possui regiões;
+   * - nenhuma região válida foi resolvida.
+   */
+  readonly regions: readonly WorkspaceLayoutRegion[];
 
   /**
    * Widgets efetivamente resolvidos.
@@ -63,7 +78,8 @@ export interface WorkspaceResolvedDashboard {
    * Mensagens produzidas durante a resolução.
    *
    * Permite reportar Widgets inexistentes,
-   * Layout ausente, incompatibilidades, etc.
+   * Layout ausente, regiões inexistentes,
+   * incompatibilidades, etc.
    */
   readonly diagnostics: readonly string[];
 }
