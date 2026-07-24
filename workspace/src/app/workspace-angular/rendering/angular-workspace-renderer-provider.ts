@@ -23,8 +23,9 @@ import {
  * Provider oficial do Angular Workspace Renderer.
  *
  * Responsabilidades:
- * - registrar o renderer Angular;
- * - impedir que a aplicação conheça detalhes do Runtime;
+ * - associar o Renderer à instância oficial do Runtime;
+ * - registrar o Renderer Angular;
+ * - impedir que a aplicação conheça detalhes internos;
  * - preservar o desacoplamento entre Angular e Workspace SDK.
  */
 @Injectable({
@@ -37,11 +38,15 @@ export class AngularWorkspaceRendererProvider {
   ) {}
 
   /**
-   * Registra o renderer Angular no Workspace Runtime.
+   * Registra o Renderer Angular no Workspace Runtime.
    */
   register(
     runtime: WorkspaceRuntime,
   ): void {
+
+    this.renderer.registerRuntime(
+      runtime,
+    );
 
     runtime.registerRenderer(
       this.renderer,

@@ -12,12 +12,21 @@
  */
 
 import {
+  ComponentRef,
   Injectable,
 } from '@angular/core';
 
 import {
   WorkspaceResolvedDashboard,
 } from '../../core/workspace-sdk/runtime/workspace-resolved-dashboard';
+
+import {
+  WorkspaceRuntime,
+} from '../../core/workspace-sdk/runtime/workspace-runtime';
+
+import {
+  WorkspaceDashboardComponent,
+} from '../components/workspace-dashboard/workspace-dashboard';
 
 import {
   AngularWorkspaceRenderHost,
@@ -32,19 +41,43 @@ import {
 export class WorkspaceAngularRenderingService {
 
   /**
-   * Renderiza um Workspace resolvido.
-   *
-   * Nesta primeira implementação o método estabelece apenas
-   * a assinatura institucional. A criação dinâmica dos
-   * componentes será implementada nas próximas etapas.
+   * Referência do Dashboard Angular atualmente renderizado.
+   */
+  private dashboardComponentRef?: ComponentRef<WorkspaceDashboardComponent>;
+
+  /**
+   * Renderiza um Workspace Dashboard resolvido.
    */
   async render(
+    runtime: WorkspaceRuntime,
     dashboard: WorkspaceResolvedDashboard,
     host: AngularWorkspaceRenderHost,
   ): Promise<void> {
 
-    void dashboard;
-    void host;
+    await this.dispose();
+
+    host.viewContainerRef.clear();
+
+    const componentRef =
+      host.viewContainerRef.createComponent(
+        WorkspaceDashboardComponent,
+        {
+          environmentInjector:
+            host.environmentInjector,
+        },
+      );
+
+    componentRef.setInput(
+      'runtime',
+      runtime,
+    );
+
+    componentRef.setInput(
+      'resolvedDashboard',
+      dashboard,
+    );
+
+    this.dashboardComponentRef = componentRef;
 
   }
 
@@ -53,7 +86,12 @@ export class WorkspaceAngularRenderingService {
    */
   async dispose(): Promise<void> {
 
-    // Implementação futura.
+    if (!this.dashboardComponentRef) {
+      return;
+    }
+
+    this.dashboardComponentRef.destroy();
+    this.dashboardComponentRef = undefined;
 
   }
 

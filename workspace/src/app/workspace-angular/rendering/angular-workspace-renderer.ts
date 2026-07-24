@@ -24,6 +24,10 @@ import {
 } from '../../core/workspace-sdk/runtime/workspace-resolved-dashboard';
 
 import {
+  WorkspaceRuntime,
+} from '../../core/workspace-sdk/runtime/workspace-runtime';
+
+import {
   WorkspaceAngularRenderingService,
 } from '../services/workspace-angular-rendering.service';
 
@@ -37,6 +41,7 @@ import {
  * Responsabilidades:
  * - identificar suporte à tecnologia Angular;
  * - validar o host recebido;
+ * - preservar a referência do Runtime registrado;
  * - adaptar o contrato do Workspace SDK para a camada Angular;
  * - delegar a criação e destruição da árvore visual ao serviço
  *   oficial de renderização Angular.
@@ -54,9 +59,40 @@ export class AngularWorkspaceRenderer implements WorkspaceRenderer {
 
   readonly enabled = true;
 
+  /**
+   * Runtime ao qual este Renderer foi registrado.
+   */
+  private runtime?: WorkspaceRuntime;
+
   constructor(
     private readonly renderingService: WorkspaceAngularRenderingService,
   ) {}
+
+  /**
+   * Associa o Renderer à instância oficial do Workspace Runtime.
+   */
+  registerRuntime(
+    runtime: WorkspaceRuntime,
+  ): void {
+
+    this.runtime = runtime;
+
+  }
+
+  /**
+   * Retorna obrigatoriamente o Runtime associado.
+   */
+  getRuntime(): WorkspaceRuntime {
+
+    if (!this.runtime) {
+      throw new Error(
+        'Angular Workspace Renderer is not associated with a Workspace Runtime.',
+      );
+    }
+
+    return this.runtime;
+
+  }
 
   /**
    * Verifica se o contexto é suportado.
@@ -78,8 +114,10 @@ export class AngularWorkspaceRenderer implements WorkspaceRenderer {
   ): Promise<void> {
 
     const host = this.getHost(context);
+    const runtime = this.getRuntime();
 
     await this.renderingService.render(
+      runtime,
       dashboard,
       host,
     );
