@@ -30,6 +30,10 @@ import {
 } from '../../../core/workspace-sdk/runtime/workspace-widget';
 
 import {
+  WorkspaceGridItemDirective,
+} from '../../rendering/workspace-grid-item.directive';
+
+import {
   WorkspaceWidgetHostComponent,
 } from '../workspace-widget-host/workspace-widget-host';
 
@@ -41,6 +45,7 @@ import {
   standalone: true,
   imports: [
     WorkspaceWidgetHostComponent,
+    WorkspaceGridItemDirective,
   ],
   template: `
     <section class="workspace-dashboard">
@@ -90,7 +95,9 @@ import {
 
               </header>
 
-              <section class="workspace-dashboard__region-widgets">
+              <section
+                class="workspace-dashboard__region-widgets"
+                data-workspace-grid="true">
 
                 @for (
                   widget of widgetsForRegion(region);
@@ -99,7 +106,8 @@ import {
 
                   <deja-workspace-widget-host
                     [runtime]="runtime"
-                    [widgetInstance]="widget" />
+                    [widgetInstance]="widget"
+                    [dejaWorkspaceGridItem]="widget.position" />
 
                 }
 
@@ -118,7 +126,9 @@ import {
               "
               data-region-type="unassigned">
 
-              <section class="workspace-dashboard__region-widgets">
+              <section
+                class="workspace-dashboard__region-widgets"
+                data-workspace-grid="true">
 
                 @for (
                   widget of unassignedWidgets();
@@ -127,7 +137,8 @@ import {
 
                   <deja-workspace-widget-host
                     [runtime]="runtime"
-                    [widgetInstance]="widget" />
+                    [widgetInstance]="widget"
+                    [dejaWorkspaceGridItem]="widget.position" />
 
                 }
 
@@ -150,7 +161,8 @@ import {
 
             <deja-workspace-widget-host
               [runtime]="runtime"
-              [widgetInstance]="widget" />
+              [widgetInstance]="widget"
+              [dejaWorkspaceGridItem]="widget.position" />
 
           }
 
@@ -162,6 +174,11 @@ import {
   `,
   styles: `
     :host {
+      --workspace-grid-columns: 12;
+      --workspace-grid-column-gap: 1rem;
+      --workspace-grid-row-gap: 1rem;
+      --workspace-grid-auto-row-size: minmax(4rem, auto);
+
       display: block;
       width: 100%;
       height: 100%;
@@ -216,13 +233,27 @@ import {
       margin: 0;
     }
 
+    /*
+     * Workspace Grid Renderer.
+     *
+     * Cada região representa uma grade independente para
+     * posicionamento dos Widgets associados.
+     *
+     * Widgets com WorkspaceGridPosition utilizam coordenadas
+     * explícitas. Widgets sem posição permanecem utilizando
+     * o fluxo automático do CSS Grid.
+     */
     .workspace-dashboard__region-widgets {
       display: grid;
       grid-template-columns: repeat(
-        auto-fit,
-        minmax(min(100%, 16rem), 1fr)
+        var(--workspace-grid-columns),
+        minmax(0, 1fr)
       );
-      align-items: start;
+      grid-auto-rows: var(--workspace-grid-auto-row-size);
+      grid-auto-flow: row dense;
+      column-gap: var(--workspace-grid-column-gap);
+      row-gap: var(--workspace-grid-row-gap);
+      align-items: stretch;
       flex: 1;
       min-width: 0;
       min-height: 0;
@@ -232,6 +263,10 @@ import {
       grid-column: 1 / -1;
     }
 
+    /*
+     * Dashboards legados permanecem utilizando composição
+     * linear, sem dependência do Workspace Grid Renderer.
+     */
     .workspace-dashboard__widgets {
       display: block;
       flex: 1;
@@ -264,10 +299,12 @@ export class WorkspaceDashboardComponent {
    * a composição linear legada.
    */
   protected hasResolvedLayout(): boolean {
+
     return (
-      this.resolvedDashboard.layout !== undefined &&
-      this.resolvedDashboard.regions.length > 0
+      this.resolvedDashboard.layout !== undefined
+      && this.resolvedDashboard.regions.length > 0
     );
+
   }
 
   /**
@@ -276,9 +313,11 @@ export class WorkspaceDashboardComponent {
   protected widgetsForRegion(
     region: WorkspaceLayoutRegion,
   ): readonly WorkspaceWidgetInstance[] {
+
     return this.resolvedDashboard.widgets.filter(
       (widget) => widget.regionId === region.id,
     );
+
   }
 
   /**
@@ -289,6 +328,7 @@ export class WorkspaceDashboardComponent {
    * transição de Dashboards legados para o Layout Engine.
    */
   protected unassignedWidgets(): readonly WorkspaceWidgetInstance[] {
+
     const regionIds = new Set(
       this.resolvedDashboard.regions.map(
         (region) => region.id,
@@ -297,9 +337,10 @@ export class WorkspaceDashboardComponent {
 
     return this.resolvedDashboard.widgets.filter(
       (widget) =>
-        !widget.regionId ||
-        !regionIds.has(widget.regionId),
+        !widget.regionId
+        || !regionIds.has(widget.regionId),
     );
+
   }
 
 }
