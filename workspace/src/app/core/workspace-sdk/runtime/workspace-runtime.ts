@@ -50,6 +50,12 @@ import {
 
 import { WorkspaceCommandPaletteRegistry } from '../ui/workspace-command-palette-registry';
 
+import { WorkspaceRenderContext } from './workspace-render-context';
+import { WorkspaceRenderer } from './workspace-renderer';
+import { WorkspaceRendererDispatcher } from './workspace-renderer-dispatcher';
+import { WorkspaceRendererRegistry } from './workspace-renderer-registry';
+import { WorkspaceResolvedDashboard } from './workspace-resolved-dashboard';
+
 /**
  * Erro lançado quando uma operação não é permitida
  * no estado atual do Workspace Runtime.
@@ -131,6 +137,16 @@ export class WorkspaceRuntime {
    */
   private readonly commandPaletteRegistry = new WorkspaceCommandPaletteRegistry();
 
+  /**
+   * Registry oficial de Workspace Renderers.
+   */
+  private readonly rendererRegistry: WorkspaceRendererRegistry;
+
+  /**
+   * Dispatcher oficial de Workspace Renderers.
+   */
+  private readonly rendererDispatcher: WorkspaceRendererDispatcher;
+
   readonly extensionDispatcher: WorkspaceRuntimeExtensionDispatcher;
 
   /**
@@ -158,6 +174,11 @@ export class WorkspaceRuntime {
     );
 
     this.menuRegistry = new WorkspaceMenuRegistry();
+
+    this.rendererRegistry = new WorkspaceRendererRegistry();
+    this.rendererDispatcher = new WorkspaceRendererDispatcher(
+      this.rendererRegistry,
+    );
   }
 
   getState(): WorkspaceRuntimeState {
@@ -412,6 +433,52 @@ export class WorkspaceRuntime {
    */
   searchCommandPalette(text: string): readonly WorkspaceCommandPalette[] {
     return this.commandPaletteRegistry.search(text);
+  }
+
+
+  /**
+   * Registra um Workspace Renderer.
+   */
+  registerRenderer(renderer: WorkspaceRenderer): void {
+    this.rendererRegistry.register(renderer);
+  }
+
+  /**
+   * Registra múltiplos Workspace Renderers.
+   */
+  registerRenderers(renderers: readonly WorkspaceRenderer[]): void {
+    renderers.forEach((renderer) => this.rendererRegistry.register(renderer));
+  }
+
+  /**
+   * Remove um Workspace Renderer.
+   */
+  unregisterRenderer(rendererId: string): boolean {
+    return this.rendererRegistry.unregister(rendererId);
+  }
+
+  /**
+   * Retorna todos os Workspace Renderers registrados.
+   */
+  renderers(): readonly WorkspaceRenderer[] {
+    return this.rendererRegistry.list();
+  }
+
+  /**
+   * Renderiza um Workspace Dashboard resolvido.
+   */
+  async renderDashboard(
+    dashboard: WorkspaceResolvedDashboard,
+    context: WorkspaceRenderContext,
+  ): Promise<void> {
+    await this.rendererDispatcher.render(dashboard, context);
+  }
+
+  /**
+   * Libera os recursos do Renderer associado ao contexto.
+   */
+  async disposeRenderer(context: WorkspaceRenderContext): Promise<void> {
+    await this.rendererDispatcher.dispose(context);
   }
 
   /**
@@ -737,6 +804,7 @@ export class WorkspaceRuntime {
       this.toolbarRegistry.clear();
       this.contextMenuRegistry.clear();
       this.commandPaletteRegistry.clear();
+      this.rendererRegistry.clear();
       this.context = undefined;
       this.initializedAt = undefined;
       this.startedAt = undefined;
