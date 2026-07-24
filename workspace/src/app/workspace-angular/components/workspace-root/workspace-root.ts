@@ -13,9 +13,16 @@ import {
   Component,
 } from '@angular/core';
 
+import {
+  WorkspaceRenderHostDirective,
+} from '../../rendering/workspace-render-host.directive';
+
 @Component({
   selector: 'deja-workspace-root',
   standalone: true,
+  imports: [
+    WorkspaceRenderHostDirective,
+  ],
   templateUrl: './workspace-root.html',
   styleUrl: './workspace-root.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
