@@ -34,6 +34,7 @@ import {
   WorkspaceRuntimeExtensionPointId,
 } from './workspace-runtime-extension-point';
 import { WorkspaceRuntimeExtensionRegistry } from './workspace-runtime-extension-registry';
+import { WorkspaceLayoutEngine } from './workspace-layout-engine';
 import { WorkspaceRuntimeHookDispatcher } from './workspace-runtime-hook-dispatcher';
 import { WorkspaceRuntimeHooks } from './workspace-runtime-hooks';
 import { WorkspaceMenu, WorkspaceMenuId, WorkspaceMenuLocation } from '../ui/workspace-menu';
@@ -132,12 +133,19 @@ export class WorkspaceRuntime {
 
   readonly extensionDispatcher: WorkspaceRuntimeExtensionDispatcher;
 
+  /**
+   * Layout Engine associado ao Workspace Runtime.
+   */
+  private readonly layoutEngine?: WorkspaceLayoutEngine;
+
   constructor(
     readonly registries: WorkspaceRegistries = new WorkspaceRegistries(),
     readonly events: WorkspaceRuntimeEventDispatcher = new WorkspaceRuntimeEventDispatcher(),
     readonly hooks: WorkspaceRuntimeHookDispatcher = new WorkspaceRuntimeHookDispatcher(),
     readonly extensions: WorkspaceRuntimeExtensionRegistry = new WorkspaceRuntimeExtensionRegistry(),
+    layoutEngine?: WorkspaceLayoutEngine,
   ) {
+    this.layoutEngine = layoutEngine;
     this.extensionDispatcher = new WorkspaceRuntimeExtensionDispatcher(this.extensions);
 
     this.commandRegistry = new WorkspaceCommandRegistry();
@@ -158,6 +166,13 @@ export class WorkspaceRuntime {
 
   getContext(): WorkspaceRuntimeContext | undefined {
     return this.context;
+  }
+
+  /**
+   * Retorna o Layout Engine associado ao Runtime.
+   */
+  getLayoutEngine(): WorkspaceLayoutEngine | undefined {
+    return this.layoutEngine;
   }
 
   /**

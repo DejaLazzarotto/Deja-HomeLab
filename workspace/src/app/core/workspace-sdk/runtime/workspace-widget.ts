@@ -15,11 +15,10 @@ import {
   WorkspaceWidgetId,
   WorkspaceWidgetSizeConstraints,
   WorkspaceWidgetSurface,
+  WorkspaceDashboardRegionId,
 } from '../contracts/workspace-contracts';
 
-import {
-  WorkspaceActionId,
-} from './workspace-action';
+import { WorkspaceActionId } from './workspace-action';
 
 /**
  * Descrição institucional de um Workspace Widget.
@@ -29,7 +28,6 @@ import {
  * mecanismo de renderização.
  */
 export interface WorkspaceWidget {
-
   /**
    * Identificador institucional.
    */
@@ -123,7 +121,6 @@ export interface WorkspaceWidget {
  * Representa uma instância de Widget dentro de um Dashboard.
  */
 export interface WorkspaceWidgetInstance {
-
   /**
    * Identificador da instância.
    */
@@ -140,9 +137,20 @@ export interface WorkspaceWidgetInstance {
   readonly title?: string;
 
   /**
-   * Posição na grade.
+   * Região do Layout à qual esta instância pertence.
+   *
+   * O Layout Engine será responsável por determinar a
+   * posição física da região durante a composição do Dashboard.
    */
-  readonly position: WorkspaceGridPosition;
+  readonly regionId?: WorkspaceDashboardRegionId;
+
+  /**
+   * Posição declarativa na grade.
+   *
+   * Mantida temporariamente para compatibilidade durante
+   * a transição para o Layout Engine.
+   */
+  readonly position?: WorkspaceGridPosition;
 
   /**
    * Configuração específica da instância.
@@ -159,7 +167,6 @@ export interface WorkspaceWidgetInstance {
  * Define a posição de um item na grade do Workspace.
  */
 export interface WorkspaceGridPosition {
-
   /**
    * Coluna inicial.
    */

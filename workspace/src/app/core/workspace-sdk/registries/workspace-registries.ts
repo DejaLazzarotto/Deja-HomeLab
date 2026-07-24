@@ -1,5 +1,6 @@
 import {
   WorkspaceDashboardId,
+  WorkspaceDashboardLayoutId,
   WorkspaceDomainId,
   WorkspaceNavigationId,
   WorkspaceServiceId,
@@ -20,6 +21,9 @@ import {
 import {
   WorkspaceActionId,
 } from '../runtime/workspace-action';
+import {
+  WorkspaceLayout,
+} from '../runtime/workspace-layout';
 import { WorkspaceRegistry } from './workspace-registry';
 
 /**
@@ -196,6 +200,14 @@ export class WorkspaceDashboardRegistry extends WorkspaceRegistry<
 > {}
 
 /**
+ * Registry oficial de layouts do Workspace.
+ */
+export class WorkspaceLayoutRegistry extends WorkspaceRegistry<
+  WorkspaceLayout,
+  WorkspaceDashboardLayoutId
+> {}
+
+/**
  * Registry oficial de serviços do Workspace.
  */
 export class WorkspaceServiceRegistry extends WorkspaceRegistry<
@@ -220,6 +232,8 @@ export class WorkspaceRegistries {
 
   readonly dashboards = new WorkspaceDashboardRegistry();
 
+  readonly layouts = new WorkspaceLayoutRegistry();
+
   readonly services = new WorkspaceServiceRegistry();
 
   clear(): void {
@@ -228,6 +242,7 @@ export class WorkspaceRegistries {
     this.navigation.clear();
     this.widgets.clear();
     this.dashboards.clear();
+    this.layouts.clear();
     this.services.clear();
   }
 }
