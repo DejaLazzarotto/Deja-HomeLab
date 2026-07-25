@@ -8,47 +8,29 @@
  * consumo pela camada de renderização.
  */
 
-import {
-  WorkspaceDashboardId,
-} from '../contracts/workspace-contracts';
+import { WorkspaceDashboardId } from '../contracts/workspace-contracts';
 
-import {
-  WorkspaceRegistries,
-} from '../registries/workspace-registries';
+import { WorkspaceRegistries } from '../registries/workspace-registries';
 
-import {
-  WorkspaceDashboard,
-} from './workspace-dashboard';
+import { WorkspaceDashboard } from './workspace-dashboard';
 
-import {
-  WorkspaceGridConfiguration,
-} from './workspace-grid-configuration';
+import { WorkspaceLayout } from './workspace-layout';
 
-import {
-  WorkspaceLayout,
-} from './workspace-layout';
+import { WorkspaceLayoutEngine } from './workspace-layout-engine';
 
-import {
-  WorkspaceLayoutEngine,
-} from './workspace-layout-engine';
+import { WorkspaceLayoutRegion } from './workspace-layout-region';
 
-import {
-  WorkspaceLayoutRegion,
-} from './workspace-layout-region';
+import { WorkspaceResolvedDashboard } from './workspace-resolved-dashboard';
 
-import {
-  WorkspaceResolvedDashboard,
-} from './workspace-resolved-dashboard';
+import { WorkspaceWidgetInstance } from './workspace-widget';
 
-import {
-  WorkspaceWidgetInstance,
-} from './workspace-widget';
+import { WorkspaceGridConfigurationResolver } from './workspace-grid-configuration-resolver';
+import { WorkspaceLayoutCapabilityResolver } from './workspace-layout-capability-resolver';
 
 /**
  * Responsável pela resolução institucional de Dashboards.
  */
 export class WorkspaceDashboardResolver {
-
   constructor(
     private readonly registries: WorkspaceRegistries,
     private readonly layoutEngine: WorkspaceLayoutEngine,
@@ -57,10 +39,7 @@ export class WorkspaceDashboardResolver {
   /**
    * Resolve um Dashboard pelo seu identificador.
    */
-  async resolve(
-    dashboardId: WorkspaceDashboardId,
-  ): Promise<WorkspaceResolvedDashboard> {
-
+  async resolve(dashboardId: WorkspaceDashboardId): Promise<WorkspaceResolvedDashboard> {
     const dashboard = this.registries.dashboards.require(dashboardId);
 
     return this.resolveDashboard(dashboard);
@@ -69,37 +48,24 @@ export class WorkspaceDashboardResolver {
   /**
    * Resolve um Dashboard informado.
    */
-  async resolveDashboard(
-    dashboard: WorkspaceDashboard,
-  ): Promise<WorkspaceResolvedDashboard> {
-
+  async resolveDashboard(dashboard: WorkspaceDashboard): Promise<WorkspaceResolvedDashboard> {
     const diagnostics: string[] = [];
 
     const layout = this.layoutEngine.resolveLayout(dashboard);
 
     if (dashboard.layoutId && !layout) {
-      diagnostics.push(
-        `Layout not found: ${dashboard.layoutId}`,
-      );
+      diagnostics.push(`Layout not found: ${dashboard.layoutId}`);
     }
 
-    const regions = this.resolveRegions(
-      layout,
-      diagnostics,
-    );
+    const regions = this.resolveRegions(layout, diagnostics);
 
-    const state = await this.layoutEngine.loadState(
-      dashboard.id,
-    );
+    const state = await this.layoutEngine.loadState(dashboard.id);
 
-    const widgets = this.resolveWidgets(
-      dashboard.widgets,
-      regions,
-      diagnostics,
-    );
+    const widgets = this.resolveWidgets(dashboard.widgets, regions, diagnostics);
 
-    const gridConfiguration =
-      this.resolveGridConfiguration();
+    const gridConfiguration = new WorkspaceGridConfigurationResolver().resolve(layout);
+
+    const layoutCapabilities = new WorkspaceLayoutCapabilityResolver().resolve(layout);
 
     return {
       dashboard,
@@ -108,22 +74,9 @@ export class WorkspaceDashboardResolver {
       widgets,
       state,
       gridConfiguration,
+      layoutCapabilities,
       valid: diagnostics.length === 0,
       diagnostics,
-    };
-  }
-
-  /**
-   * Resolve a configuração institucional do Workspace Grid.
-   */
-  private resolveGridConfiguration(): WorkspaceGridConfiguration {
-
-    return {
-      columns: 12,
-      columnGap: '1rem',
-      rowGap: '1rem',
-      autoRowSize: 'minmax(4rem, auto)',
-      autoFlow: 'row dense',
     };
   }
 
@@ -134,7 +87,6 @@ export class WorkspaceDashboardResolver {
     layout: WorkspaceLayout | undefined,
     diagnostics: string[],
   ): readonly WorkspaceLayoutRegion[] {
-
     if (!layout) {
       return [];
     }
@@ -145,15 +97,11 @@ export class WorkspaceDashboardResolver {
       return regions;
     }
 
-    const resolvedRegionIds = new Set(
-      regions.map((region) => region.id),
-    );
+    const resolvedRegionIds = new Set(regions.map((region) => region.id));
 
     for (const regionId of layout.regionIds) {
       if (!resolvedRegionIds.has(regionId)) {
-        diagnostics.push(
-          `Layout region not found or disabled: ${regionId}`,
-        );
+        diagnostics.push(`Layout region not found or disabled: ${regionId}`);
       }
     }
 
@@ -168,43 +116,29 @@ export class WorkspaceDashboardResolver {
     regions: readonly WorkspaceLayoutRegion[],
     diagnostics: string[],
   ): readonly WorkspaceWidgetInstance[] {
-
     if (!widgets?.length) {
       return [];
     }
 
     const resolved: WorkspaceWidgetInstance[] = [];
 
-    const resolvedRegionIds = new Set(
-      regions.map((region) => region.id),
-    );
+    const resolvedRegionIds = new Set(regions.map((region) => region.id));
 
     for (const widget of widgets) {
-
-      const definition =
-        this.registries.widgets.get(widget.widgetId);
+      const definition = this.registries.widgets.get(widget.widgetId);
 
       if (!definition) {
-        diagnostics.push(
-          `Widget not registered: ${widget.widgetId}`,
-        );
+        diagnostics.push(`Widget not registered: ${widget.widgetId}`);
         continue;
       }
 
       if (definition.enabled === false) {
-        diagnostics.push(
-          `Widget disabled: ${widget.widgetId}`,
-        );
+        diagnostics.push(`Widget disabled: ${widget.widgetId}`);
         continue;
       }
 
-      if (
-        widget.regionId &&
-        !resolvedRegionIds.has(widget.regionId)
-      ) {
-        diagnostics.push(
-          `Widget region not found or disabled: ${widget.regionId}`,
-        );
+      if (widget.regionId && !resolvedRegionIds.has(widget.regionId)) {
+        diagnostics.push(`Widget region not found or disabled: ${widget.regionId}`);
       }
 
       resolved.push(widget);
@@ -212,5 +146,4 @@ export class WorkspaceDashboardResolver {
 
     return resolved;
   }
-
 }

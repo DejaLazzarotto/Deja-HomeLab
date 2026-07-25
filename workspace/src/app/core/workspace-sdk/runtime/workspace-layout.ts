@@ -14,6 +14,7 @@ import {
   WorkspaceOwnerId,
   WorkspacePriority,
 } from '../contracts/workspace-contracts';
+import { WorkspaceLayoutCapabilities } from './workspace-layout-capabilities';
 
 /**
  * Descrição institucional de um Workspace Layout.
@@ -24,7 +25,6 @@ import {
  * físicas de posicionamento.
  */
 export interface WorkspaceLayout {
-
   /**
    * Identificador institucional do Layout.
    */
@@ -89,5 +89,7 @@ export interface WorkspaceLayout {
   /**
    * Metadados adicionais.
    */
+  readonly capabilities?: WorkspaceLayoutCapabilities;
+
   readonly metadata?: Readonly<Record<string, unknown>>;
 }

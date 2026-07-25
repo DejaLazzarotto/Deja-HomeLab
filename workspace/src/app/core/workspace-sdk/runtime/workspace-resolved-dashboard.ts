@@ -7,29 +7,18 @@
  * Workspace Dashboard Resolver.
  */
 
-import {
-  WorkspaceDashboard,
-} from './workspace-dashboard';
+import { WorkspaceDashboard } from './workspace-dashboard';
 
-import {
-  WorkspaceGridConfiguration,
-} from './workspace-grid-configuration';
+import { WorkspaceGridConfiguration } from './workspace-grid-configuration';
 
-import {
-  WorkspaceLayout,
-} from './workspace-layout';
+import { WorkspaceLayout } from './workspace-layout';
 
-import {
-  WorkspaceLayoutRegion,
-} from './workspace-layout-region';
+import { WorkspaceLayoutRegion } from './workspace-layout-region';
 
-import {
-  WorkspaceLayoutState,
-} from './workspace-layout-state';
+import { WorkspaceLayoutState } from './workspace-layout-state';
 
-import {
-  WorkspaceWidgetInstance,
-} from './workspace-widget';
+import { WorkspaceWidgetInstance } from './workspace-widget';
+import { WorkspaceLayoutCapabilities } from './workspace-layout-capabilities';
 
 /**
  * Representa um Dashboard totalmente resolvido.
@@ -39,7 +28,6 @@ import {
  * modelo consumido pela camada de renderização.
  */
 export interface WorkspaceResolvedDashboard {
-
   /**
    * Dashboard institucional.
    */
@@ -79,6 +67,11 @@ export interface WorkspaceResolvedDashboard {
   readonly gridConfiguration: WorkspaceGridConfiguration;
 
   /**
+   * Capacidades resolvidas do Layout.
+   */
+  readonly layoutCapabilities: WorkspaceLayoutCapabilities;
+
+  /**
    * Indica se a resolução foi considerada válida.
    */
   readonly valid: boolean;
@@ -91,5 +84,4 @@ export interface WorkspaceResolvedDashboard {
    * incompatibilidades, etc.
    */
   readonly diagnostics: readonly string[];
-
 }
