@@ -12,6 +12,10 @@ import {
   WorkspaceDashboardLayoutId,
 } from '../contracts/workspace-contracts';
 
+import {
+  WorkspaceWidgetInstance,
+} from './workspace-widget';
+
 /**
  * Estado persistido de um Dashboard.
  *
@@ -37,6 +41,18 @@ export interface WorkspaceLayoutState {
    * Utilizada para migrações futuras.
    */
   readonly version?: number;
+
+  /**
+   * Composição persistida de instâncias de Widgets.
+   *
+   * Permite restaurar movimentações, redimensionamentos,
+   * inserções, remoções e configurações personalizadas sem
+   * alterar a definição institucional original do Dashboard.
+   *
+   * Quando omitida, a composição institucional do Dashboard
+   * deverá ser preservada.
+   */
+  readonly widgets?: readonly WorkspaceWidgetInstance[];
 
   /**
    * Configuração persistida do Dashboard.
