@@ -12,6 +12,10 @@ import {
 } from './workspace-dashboard';
 
 import {
+  WorkspaceGridConfiguration,
+} from './workspace-grid-configuration';
+
+import {
   WorkspaceLayout,
 } from './workspace-layout';
 
@@ -70,6 +74,11 @@ export interface WorkspaceResolvedDashboard {
   readonly state?: WorkspaceLayoutState;
 
   /**
+   * Configuração efetivamente resolvida do Workspace Grid.
+   */
+  readonly gridConfiguration: WorkspaceGridConfiguration;
+
+  /**
    * Indica se a resolução foi considerada válida.
    */
   readonly valid: boolean;
@@ -82,4 +91,5 @@ export interface WorkspaceResolvedDashboard {
    * incompatibilidades, etc.
    */
   readonly diagnostics: readonly string[];
+
 }

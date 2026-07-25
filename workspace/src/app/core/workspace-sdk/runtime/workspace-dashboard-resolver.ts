@@ -21,6 +21,10 @@ import {
 } from './workspace-dashboard';
 
 import {
+  WorkspaceGridConfiguration,
+} from './workspace-grid-configuration';
+
+import {
   WorkspaceLayout,
 } from './workspace-layout';
 
@@ -94,14 +98,32 @@ export class WorkspaceDashboardResolver {
       diagnostics,
     );
 
+    const gridConfiguration =
+      this.resolveGridConfiguration();
+
     return {
       dashboard,
       layout,
       regions,
       widgets,
       state,
+      gridConfiguration,
       valid: diagnostics.length === 0,
       diagnostics,
+    };
+  }
+
+  /**
+   * Resolve a configuração institucional do Workspace Grid.
+   */
+  private resolveGridConfiguration(): WorkspaceGridConfiguration {
+
+    return {
+      columns: 12,
+      columnGap: '1rem',
+      rowGap: '1rem',
+      autoRowSize: 'minmax(4rem, auto)',
+      autoFlow: 'row dense',
     };
   }
 

@@ -10,7 +10,12 @@
 import {
   Directive,
   HostBinding,
+  Input,
 } from '@angular/core';
+
+import {
+  WorkspaceGridConfiguration,
+} from '../../core/workspace-sdk/runtime/workspace-grid-configuration';
 
 /**
  * Configura um elemento visual como container institucional
@@ -20,8 +25,8 @@ import {
  * permanecendo independente dos componentes responsáveis pela
  * composição dos Dashboards e Widgets.
  *
- * A configuração visual utiliza variáveis CSS institucionais,
- * permitindo futuras integrações com o Workspace Layout Engine,
+ * A configuração visual é recebida por contrato institucional,
+ * permitindo integração com o Workspace Layout Engine,
  * redimensionamento, drag-and-drop e persistência de Layout.
  */
 @Directive({
@@ -29,6 +34,15 @@ import {
   standalone: true,
 })
 export class WorkspaceGridContainerDirective {
+
+  /**
+   * Configuração resolvida do Workspace Grid.
+   */
+  @Input({
+    alias: 'dejaWorkspaceGridContainer',
+    required: true,
+  })
+  configuration!: WorkspaceGridConfiguration;
 
   /**
    * Identifica o elemento como container institucional
@@ -47,36 +61,55 @@ export class WorkspaceGridContainerDirective {
    * Define a quantidade institucional de colunas da grade.
    */
   @HostBinding('style.grid-template-columns')
-  protected readonly gridTemplateColumns =
-    'repeat(var(--workspace-grid-columns), minmax(0, 1fr))';
+  protected get gridTemplateColumns(): string {
+
+    const columns = this.normalizeColumns(
+      this.configuration.columns,
+    );
+
+    return `repeat(${columns}, minmax(0, 1fr))`;
+
+  }
 
   /**
    * Define a dimensão automática das linhas da grade.
    */
   @HostBinding('style.grid-auto-rows')
-  protected readonly gridAutoRows =
-    'var(--workspace-grid-auto-row-size)';
+  protected get gridAutoRows(): string {
+
+    return this.configuration.autoRowSize;
+
+  }
 
   /**
-   * Mantém o fluxo automático dos Widgets,
-   * preenchendo espaços disponíveis quando possível.
+   * Mantém o fluxo automático dos Widgets.
    */
   @HostBinding('style.grid-auto-flow')
-  protected readonly gridAutoFlow = 'row dense';
+  protected get gridAutoFlow(): string {
+
+    return this.configuration.autoFlow ?? 'row dense';
+
+  }
 
   /**
    * Define o espaçamento horizontal institucional.
    */
   @HostBinding('style.column-gap')
-  protected readonly columnGap =
-    'var(--workspace-grid-column-gap)';
+  protected get columnGap(): string {
+
+    return this.configuration.columnGap;
+
+  }
 
   /**
    * Define o espaçamento vertical institucional.
    */
   @HostBinding('style.row-gap')
-  protected readonly rowGap =
-    'var(--workspace-grid-row-gap)';
+  protected get rowGap(): string {
+
+    return this.configuration.rowGap;
+
+  }
 
   /**
    * Faz os itens ocuparem integralmente a área disponível.
@@ -101,5 +134,23 @@ export class WorkspaceGridContainerDirective {
    */
   @HostBinding('style.min-height')
   protected readonly minHeight = '0';
+
+  /**
+   * Normaliza a quantidade de colunas do Grid.
+   */
+  private normalizeColumns(
+    value: number,
+  ): number {
+
+    if (
+      !Number.isFinite(value)
+      || value < 1
+    ) {
+      return 1;
+    }
+
+    return Math.trunc(value);
+
+  }
 
 }

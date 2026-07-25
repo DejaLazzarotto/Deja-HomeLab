@@ -30,6 +30,10 @@ import {
 } from '../../../core/workspace-sdk/runtime/workspace-widget';
 
 import {
+  WorkspaceGridContainerDirective,
+} from '../../rendering/workspace-grid-container.directive';
+
+import {
   WorkspaceGridItemDirective,
 } from '../../rendering/workspace-grid-item.directive';
 
@@ -45,6 +49,7 @@ import {
   standalone: true,
   imports: [
     WorkspaceWidgetHostComponent,
+    WorkspaceGridContainerDirective,
     WorkspaceGridItemDirective,
   ],
   template: `
@@ -97,7 +102,9 @@ import {
 
               <section
                 class="workspace-dashboard__region-widgets"
-                data-workspace-grid="true">
+                [dejaWorkspaceGridContainer]="
+                  resolvedDashboard.gridConfiguration
+                ">
 
                 @for (
                   widget of widgetsForRegion(region);
@@ -128,7 +135,9 @@ import {
 
               <section
                 class="workspace-dashboard__region-widgets"
-                data-workspace-grid="true">
+                [dejaWorkspaceGridContainer]="
+                  resolvedDashboard.gridConfiguration
+                ">
 
                 @for (
                   widget of unassignedWidgets();
@@ -174,11 +183,6 @@ import {
   `,
   styles: `
     :host {
-      --workspace-grid-columns: 12;
-      --workspace-grid-column-gap: 1rem;
-      --workspace-grid-row-gap: 1rem;
-      --workspace-grid-auto-row-size: minmax(4rem, auto);
-
       display: block;
       width: 100%;
       height: 100%;
@@ -231,32 +235,6 @@ import {
 
     .workspace-dashboard__region-description {
       margin: 0;
-    }
-
-    /*
-     * Workspace Grid Renderer.
-     *
-     * Cada região representa uma grade independente para
-     * posicionamento dos Widgets associados.
-     *
-     * Widgets com WorkspaceGridPosition utilizam coordenadas
-     * explícitas. Widgets sem posição permanecem utilizando
-     * o fluxo automático do CSS Grid.
-     */
-    .workspace-dashboard__region-widgets {
-      display: grid;
-      grid-template-columns: repeat(
-        var(--workspace-grid-columns),
-        minmax(0, 1fr)
-      );
-      grid-auto-rows: var(--workspace-grid-auto-row-size);
-      grid-auto-flow: row dense;
-      column-gap: var(--workspace-grid-column-gap);
-      row-gap: var(--workspace-grid-row-gap);
-      align-items: stretch;
-      flex: 1;
-      min-width: 0;
-      min-height: 0;
     }
 
     .workspace-dashboard__region--unassigned {
