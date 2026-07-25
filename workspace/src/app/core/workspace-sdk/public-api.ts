@@ -25,6 +25,10 @@ export * from './runtime/workspace-runtime-extension-dispatcher';
 export * from './runtime/workspace-layout-mutation';
 export * from './runtime/workspace-layout-mutator';
 
+export * from './runtime/workspace-layout-events';
+export * from './runtime/workspace-layout-event-dispatcher';
+export * from './runtime/workspace-layout-event-builders';
+
 export * from './services/workspace-services';
 
 export * from './runtime/workspace-command';
