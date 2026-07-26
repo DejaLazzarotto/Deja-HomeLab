@@ -29,6 +29,11 @@ export * from './runtime/workspace-layout-events';
 export * from './runtime/workspace-layout-event-dispatcher';
 export * from './runtime/workspace-layout-event-builders';
 
+export * from './runtime/workspace-layout-hook';
+export * from './runtime/workspace-layout-hooks';
+export * from './runtime/workspace-layout-hook-registry';
+export * from './runtime/workspace-layout-hook-dispatcher';
+
 export * from './services/workspace-services';
 
 export * from './runtime/workspace-command';

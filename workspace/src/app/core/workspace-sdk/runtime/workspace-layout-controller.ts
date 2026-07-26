@@ -7,18 +7,9 @@
  * das sessões de edição de Layout do Workspace.
  */
 
-import { WorkspaceLayoutEventDispatcher } from './workspace-layout-event-dispatcher';
-
 import {
-  WorkspaceLayoutMutationOperation,
-  WorkspaceLayoutMutationResult,
-} from './workspace-layout-mutation';
-
-import { WorkspaceLayoutPersistence } from './workspace-layout-persistence';
-
-import { WorkspaceLayoutSession } from './workspace-layout-session';
-
-import { WorkspaceResolvedDashboard } from './workspace-resolved-dashboard';
+  WorkspaceLayoutEventDispatcher,
+} from './workspace-layout-event-dispatcher';
 
 import {
   createWorkspaceLayoutMutatedEvent,
@@ -29,16 +20,41 @@ import {
   createWorkspaceLayoutUndoExecutedEvent,
 } from './workspace-layout-event-builders';
 
+import {
+  WorkspaceLayoutHookDispatcher,
+} from './workspace-layout-hook-dispatcher';
+
+import {
+  WorkspaceLayoutMutationOperation,
+  WorkspaceLayoutMutationResult,
+} from './workspace-layout-mutation';
+
+import {
+  WorkspaceLayoutPersistence,
+} from './workspace-layout-persistence';
+
+import {
+  WorkspaceLayoutSession,
+} from './workspace-layout-session';
+
+import {
+  WorkspaceResolvedDashboard,
+} from './workspace-resolved-dashboard';
+
 /**
  * Erro lançado quando uma nova sessão é aberta enquanto
  * outra Workspace Layout Session permanece ativa.
  */
 export class WorkspaceLayoutControllerSessionAlreadyOpenError extends Error {
+
   constructor() {
+
     super('A workspace layout session is already open.');
 
     this.name = 'WorkspaceLayoutControllerSessionAlreadyOpenError';
+
   }
+
 }
 
 /**
@@ -46,11 +62,15 @@ export class WorkspaceLayoutControllerSessionAlreadyOpenError extends Error {
  * sem que exista uma Workspace Layout Session ativa.
  */
 export class WorkspaceLayoutControllerSessionNotOpenError extends Error {
+
   constructor() {
+
     super('No workspace layout session is open.');
 
     this.name = 'WorkspaceLayoutControllerSessionNotOpenError';
+
   }
+
 }
 
 /**
@@ -71,11 +91,13 @@ export class WorkspaceLayoutControllerSessionNotOpenError extends Error {
  * - de Electron.
  */
 export class WorkspaceLayoutController {
+
   private activeSession?: WorkspaceLayoutSession;
 
   constructor(
     private readonly persistence: WorkspaceLayoutPersistence,
     private readonly events: WorkspaceLayoutEventDispatcher,
+    private readonly hooks: WorkspaceLayoutHookDispatcher,
   ) {}
 
   /**
@@ -84,42 +106,54 @@ export class WorkspaceLayoutController {
    * Retorna undefined quando nenhuma sessão estiver aberta.
    */
   get dashboard(): WorkspaceResolvedDashboard | undefined {
+
     return this.activeSession?.dashboard;
+
   }
 
   /**
    * Indica se existe uma sessão ativa.
    */
   get hasActiveSession(): boolean {
+
     return this.activeSession !== undefined;
+
   }
 
   /**
    * Indica se existe um estado anterior disponível para Undo.
    */
   get canUndo(): boolean {
+
     return this.activeSession?.canUndo ?? false;
+
   }
 
   /**
    * Indica se existe um estado futuro disponível para Redo.
    */
   get canRedo(): boolean {
+
     return this.activeSession?.canRedo ?? false;
+
   }
 
   /**
    * Quantidade de estados disponíveis para Undo.
    */
   get historySize(): number {
+
     return this.activeSession?.historySize ?? 0;
+
   }
 
   /**
    * Quantidade de estados disponíveis para Redo.
    */
   get redoHistorySize(): number {
+
     return this.activeSession?.redoHistorySize ?? 0;
+
   }
 
   /**
@@ -127,18 +161,38 @@ export class WorkspaceLayoutController {
    *
    * Apenas uma sessão pode permanecer ativa por Controller.
    */
-  open(dashboard: WorkspaceResolvedDashboard): WorkspaceResolvedDashboard {
+  async open(
+    dashboard: WorkspaceResolvedDashboard,
+  ): Promise<WorkspaceResolvedDashboard> {
+
     if (this.activeSession) {
       throw new WorkspaceLayoutControllerSessionAlreadyOpenError();
     }
 
-    this.activeSession = new WorkspaceLayoutSession(dashboard, this.persistence);
+    await this.hooks.dispatch('beforeSessionOpen', undefined);
 
-    const currentDashboard = this.activeSession.dashboard;
+    const session = new WorkspaceLayoutSession(
+      dashboard,
+      this.persistence,
+    );
 
-    this.events.dispatch(createWorkspaceLayoutSessionOpenedEvent(currentDashboard));
+    this.activeSession = session;
+
+    const currentDashboard = session.dashboard;
+
+    this.events.dispatch(
+      createWorkspaceLayoutSessionOpenedEvent(
+        currentDashboard,
+      ),
+    );
+
+    await this.hooks.dispatch(
+      'afterSessionOpen',
+      session,
+    );
 
     return currentDashboard;
+
   }
 
   /**
@@ -147,18 +201,36 @@ export class WorkspaceLayoutController {
    * Quando nenhuma sessão estiver aberta, nenhuma operação
    * adicional será realizada.
    */
-  close(): void {
+  async close(): Promise<void> {
+
     if (!this.activeSession) {
       return;
     }
 
-    const dashboard = this.activeSession.dashboard;
+    const session = this.activeSession;
 
-    this.activeSession.close();
+    await this.hooks.dispatch(
+      'beforeSessionClose',
+      session,
+    );
+
+    const dashboard = session.dashboard;
+
+    session.close();
 
     this.activeSession = undefined;
 
-    this.events.dispatch(createWorkspaceLayoutSessionClosedEvent(dashboard));
+    this.events.dispatch(
+      createWorkspaceLayoutSessionClosedEvent(
+        dashboard,
+      ),
+    );
+
+    await this.hooks.dispatch(
+      'afterSessionClose',
+      undefined,
+    );
+
   }
 
   /**
@@ -166,21 +238,45 @@ export class WorkspaceLayoutController {
    * sessão ativa.
    */
   async restore(): Promise<WorkspaceResolvedDashboard> {
+
     const session = this.getActiveSession();
+
+    await this.hooks.dispatch(
+      'beforeRestore',
+      session,
+    );
 
     const dashboard = await session.restore();
 
-    this.events.dispatch(createWorkspaceLayoutRestoredEvent(dashboard));
+    this.events.dispatch(
+      createWorkspaceLayoutRestoredEvent(
+        dashboard,
+      ),
+    );
+
+    await this.hooks.dispatch(
+      'afterRestore',
+      session,
+    );
 
     return dashboard;
+
   }
 
   /**
    * Aplica uma mutação estrutural ao Dashboard mantido pela
    * sessão ativa.
    */
-  async mutate(mutation: WorkspaceLayoutMutationOperation): Promise<WorkspaceLayoutMutationResult> {
+  async mutate(
+    mutation: WorkspaceLayoutMutationOperation,
+  ): Promise<WorkspaceLayoutMutationResult> {
+
     const session = this.getActiveSession();
+
+    await this.hooks.dispatch(
+      'beforeMutation',
+      session,
+    );
 
     const result = await session.mutate(mutation);
 
@@ -188,9 +284,21 @@ export class WorkspaceLayoutController {
       return result;
     }
 
-    this.events.dispatch(createWorkspaceLayoutMutatedEvent(mutation, result, session.dashboard));
+    this.events.dispatch(
+      createWorkspaceLayoutMutatedEvent(
+        mutation,
+        result,
+        session.dashboard,
+      ),
+    );
+
+    await this.hooks.dispatch(
+      'afterMutation',
+      result,
+    );
 
     return result;
+
   }
 
   /**
@@ -198,7 +306,13 @@ export class WorkspaceLayoutController {
    * sessão ativa.
    */
   async undo(): Promise<boolean> {
+
     const session = this.getActiveSession();
+
+    await this.hooks.dispatch(
+      'beforeUndo',
+      session,
+    );
 
     const executed = await session.undo();
 
@@ -206,9 +320,19 @@ export class WorkspaceLayoutController {
       return false;
     }
 
-    this.events.dispatch(createWorkspaceLayoutUndoExecutedEvent(session.dashboard));
+    this.events.dispatch(
+      createWorkspaceLayoutUndoExecutedEvent(
+        session.dashboard,
+      ),
+    );
+
+    await this.hooks.dispatch(
+      'afterUndo',
+      session,
+    );
 
     return true;
+
   }
 
   /**
@@ -216,7 +340,13 @@ export class WorkspaceLayoutController {
    * Redo da sessão ativa.
    */
   async redo(): Promise<boolean> {
+
     const session = this.getActiveSession();
+
+    await this.hooks.dispatch(
+      'beforeRedo',
+      session,
+    );
 
     const executed = await session.redo();
 
@@ -224,9 +354,19 @@ export class WorkspaceLayoutController {
       return false;
     }
 
-    this.events.dispatch(createWorkspaceLayoutRedoExecutedEvent(session.dashboard));
+    this.events.dispatch(
+      createWorkspaceLayoutRedoExecutedEvent(
+        session.dashboard,
+      ),
+    );
+
+    await this.hooks.dispatch(
+      'afterRedo',
+      session,
+    );
 
     return true;
+
   }
 
   /**
@@ -234,10 +374,13 @@ export class WorkspaceLayoutController {
    * nenhuma sessão estiver aberta.
    */
   private getActiveSession(): WorkspaceLayoutSession {
+
     if (!this.activeSession) {
       throw new WorkspaceLayoutControllerSessionNotOpenError();
     }
 
     return this.activeSession;
+
   }
+
 }
