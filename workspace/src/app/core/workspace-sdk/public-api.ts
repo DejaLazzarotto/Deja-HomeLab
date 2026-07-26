@@ -38,6 +38,12 @@ export * from './runtime/workspace-layout-extension-point';
 export * from './runtime/workspace-layout-extension-registry';
 export * from './runtime/workspace-layout-extension-dispatcher';
 
+export * from './runtime/workspace-layout-metrics';
+export * from './runtime/workspace-layout-telemetry';
+export * from './runtime/workspace-layout-diagnostics';
+export * from './runtime/workspace-layout-tracing';
+export * from './runtime/workspace-layout-observability';
+
 export * from './services/workspace-services';
 
 export * from './runtime/workspace-command';
