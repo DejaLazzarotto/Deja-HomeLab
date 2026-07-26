@@ -21,6 +21,10 @@ import {
 } from './workspace-layout-event-builders';
 
 import {
+  WorkspaceLayoutExtensionDispatcher,
+} from './workspace-layout-extension-dispatcher';
+
+import {
   WorkspaceLayoutHookDispatcher,
 } from './workspace-layout-hook-dispatcher';
 
@@ -98,6 +102,7 @@ export class WorkspaceLayoutController {
     private readonly persistence: WorkspaceLayoutPersistence,
     private readonly events: WorkspaceLayoutEventDispatcher,
     private readonly hooks: WorkspaceLayoutHookDispatcher,
+    private readonly extensions: WorkspaceLayoutExtensionDispatcher,
   ) {}
 
   /**
@@ -169,7 +174,15 @@ export class WorkspaceLayoutController {
       throw new WorkspaceLayoutControllerSessionAlreadyOpenError();
     }
 
-    await this.hooks.dispatch('beforeSessionOpen', undefined);
+    await this.hooks.dispatch(
+      'beforeSessionOpen',
+      undefined,
+    );
+
+    await this.extensions.dispatch(
+      'workspace.layout.session.opening',
+      dashboard,
+    );
 
     const session = new WorkspaceLayoutSession(
       dashboard,
@@ -184,6 +197,11 @@ export class WorkspaceLayoutController {
       createWorkspaceLayoutSessionOpenedEvent(
         currentDashboard,
       ),
+    );
+
+    await this.extensions.dispatch(
+      'workspace.layout.session.opened',
+      session,
     );
 
     await this.hooks.dispatch(
@@ -214,6 +232,11 @@ export class WorkspaceLayoutController {
       session,
     );
 
+    await this.extensions.dispatch(
+      'workspace.layout.session.closing',
+      session,
+    );
+
     const dashboard = session.dashboard;
 
     session.close();
@@ -224,6 +247,11 @@ export class WorkspaceLayoutController {
       createWorkspaceLayoutSessionClosedEvent(
         dashboard,
       ),
+    );
+
+    await this.extensions.dispatch(
+      'workspace.layout.session.closed',
+      dashboard,
     );
 
     await this.hooks.dispatch(
@@ -246,12 +274,22 @@ export class WorkspaceLayoutController {
       session,
     );
 
+    await this.extensions.dispatch(
+      'workspace.layout.restoring',
+      session,
+    );
+
     const dashboard = await session.restore();
 
     this.events.dispatch(
       createWorkspaceLayoutRestoredEvent(
         dashboard,
       ),
+    );
+
+    await this.extensions.dispatch(
+      'workspace.layout.restored',
+      dashboard,
     );
 
     await this.hooks.dispatch(
@@ -278,6 +316,14 @@ export class WorkspaceLayoutController {
       session,
     );
 
+    await this.extensions.dispatch(
+      'workspace.layout.mutating',
+      {
+        session,
+        mutation,
+      },
+    );
+
     const result = await session.mutate(mutation);
 
     if (!result.applied) {
@@ -290,6 +336,15 @@ export class WorkspaceLayoutController {
         result,
         session.dashboard,
       ),
+    );
+
+    await this.extensions.dispatch(
+      'workspace.layout.mutated',
+      {
+        session,
+        mutation,
+        result,
+      },
     );
 
     await this.hooks.dispatch(
@@ -314,6 +369,11 @@ export class WorkspaceLayoutController {
       session,
     );
 
+    await this.extensions.dispatch(
+      'workspace.layout.undoing',
+      session,
+    );
+
     const executed = await session.undo();
 
     if (!executed) {
@@ -324,6 +384,11 @@ export class WorkspaceLayoutController {
       createWorkspaceLayoutUndoExecutedEvent(
         session.dashboard,
       ),
+    );
+
+    await this.extensions.dispatch(
+      'workspace.layout.undone',
+      session,
     );
 
     await this.hooks.dispatch(
@@ -348,6 +413,11 @@ export class WorkspaceLayoutController {
       session,
     );
 
+    await this.extensions.dispatch(
+      'workspace.layout.redoing',
+      session,
+    );
+
     const executed = await session.redo();
 
     if (!executed) {
@@ -358,6 +428,11 @@ export class WorkspaceLayoutController {
       createWorkspaceLayoutRedoExecutedEvent(
         session.dashboard,
       ),
+    );
+
+    await this.extensions.dispatch(
+      'workspace.layout.redone',
+      session,
     );
 
     await this.hooks.dispatch(

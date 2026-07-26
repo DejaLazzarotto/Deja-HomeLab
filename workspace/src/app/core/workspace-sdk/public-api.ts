@@ -34,6 +34,10 @@ export * from './runtime/workspace-layout-hooks';
 export * from './runtime/workspace-layout-hook-registry';
 export * from './runtime/workspace-layout-hook-dispatcher';
 
+export * from './runtime/workspace-layout-extension-point';
+export * from './runtime/workspace-layout-extension-registry';
+export * from './runtime/workspace-layout-extension-dispatcher';
+
 export * from './services/workspace-services';
 
 export * from './runtime/workspace-command';
