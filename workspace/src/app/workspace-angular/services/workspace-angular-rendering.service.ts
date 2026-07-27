@@ -17,6 +17,10 @@ import {
 } from '@angular/core';
 
 import {
+  WorkspaceDashboardStateUnsubscribe,
+} from '../../core/workspace-sdk/runtime/workspace-dashboard-state';
+
+import {
   WorkspaceResolvedDashboard,
 } from '../../core/workspace-sdk/runtime/workspace-resolved-dashboard';
 
@@ -32,6 +36,10 @@ import {
   AngularWorkspaceRenderHost,
 } from '../rendering/angular-workspace-render-host';
 
+import {
+  WorkspaceRenderStrategyFactory,
+} from '../rendering/workspace-render-strategy-factory';
+
 /**
  * Serviço oficial de renderização Angular.
  */
@@ -43,12 +51,30 @@ export class WorkspaceAngularRenderingService {
   /**
    * Referência do Dashboard Angular atualmente renderizado.
    */
-  private dashboardComponentRef?: ComponentRef<WorkspaceDashboardComponent>;
+  private dashboardComponentRef?:
+    ComponentRef<WorkspaceDashboardComponent>;
 
   /**
    * Host atualmente associado ao componente renderizado.
    */
   private currentHost?: AngularWorkspaceRenderHost;
+
+  /**
+   * Runtime atualmente associado à renderização.
+   */
+  private currentRuntime?: WorkspaceRuntime;
+
+  /**
+   * Inscrição ativa no estado institucional do Dashboard.
+   */
+  private unsubscribeDashboardState?:
+    WorkspaceDashboardStateUnsubscribe;
+
+  /**
+   * Factory institucional das estratégias de renderização.
+   */
+  private readonly renderStrategyFactory =
+    new WorkspaceRenderStrategyFactory();
 
   /**
    * Renderiza um Workspace Dashboard resolvido.
@@ -59,10 +85,15 @@ export class WorkspaceAngularRenderingService {
     host: AngularWorkspaceRenderHost,
   ): Promise<void> {
 
-    if (
+    const requiresComponentCreation =
       !this.dashboardComponentRef
-      || this.currentHost !== host
-    ) {
+      || this.currentHost !== host;
+
+    const requiresStateSubscription =
+      requiresComponentCreation
+      || this.currentRuntime !== runtime;
+
+    if (requiresComponentCreation) {
 
       await this.dispose();
 
@@ -81,6 +112,14 @@ export class WorkspaceAngularRenderingService {
 
     }
 
+    if (!this.dashboardComponentRef) {
+
+      throw new Error(
+        'Workspace dashboard component could not be created.',
+      );
+
+    }
+
     const componentRef = this.dashboardComponentRef;
 
     componentRef.setInput(
@@ -93,12 +132,35 @@ export class WorkspaceAngularRenderingService {
       dashboard,
     );
 
-    if (runtime.dashboardState) {
+    if (requiresStateSubscription) {
 
-      componentRef.setInput(
-        'dashboardState',
-        runtime.dashboardState,
-      );
+      this.unsubscribeDashboardState?.();
+
+      this.unsubscribeDashboardState = undefined;
+      this.currentRuntime = runtime;
+
+      if (runtime.dashboardState) {
+
+        this.unsubscribeDashboardState =
+          runtime.dashboardState.subscribe(
+            (update) => {
+
+              const strategy =
+                this.renderStrategyFactory.create();
+
+              strategy.render({
+                runtime,
+                update,
+                dashboardComponent:
+                  componentRef.instance,
+              });
+
+              componentRef.changeDetectorRef.markForCheck();
+
+            },
+          );
+
+      }
 
     }
 
@@ -109,8 +171,17 @@ export class WorkspaceAngularRenderingService {
    */
   async dispose(): Promise<void> {
 
+    this.unsubscribeDashboardState?.();
+
+    this.unsubscribeDashboardState = undefined;
+    this.currentRuntime = undefined;
+
     if (!this.dashboardComponentRef) {
+
+      this.currentHost = undefined;
+
       return;
+
     }
 
     this.dashboardComponentRef.destroy();

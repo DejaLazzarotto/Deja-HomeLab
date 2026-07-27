@@ -33,6 +33,10 @@ import {
   WorkspaceRenderHostDirective,
 } from '../../rendering/workspace-render-host.directive';
 
+import {
+  WorkspaceWidgetComponentCache,
+} from '../../rendering/workspace-widget-component-cache';
+
 /**
  * Host responsável pela resolução e criação dinâmica
  * de uma instância de Workspace Widget.
@@ -100,9 +104,20 @@ export class WorkspaceWidgetHostComponent
   private widgetComponentRef?: ComponentRef<unknown>;
 
   /**
+   * Identificador da instância atualmente registrada no cache.
+   */
+  private registeredWidgetInstanceId?:
+    WorkspaceWidgetInstance['id'];
+
+  /**
    * Indica que o host Angular já foi inicializado.
    */
   private viewInitialized = false;
+
+  constructor(
+    private readonly widgetComponentCache:
+      WorkspaceWidgetComponentCache,
+  ) {}
 
   /**
    * Inicializa a renderização após a criação da View.
@@ -183,6 +198,25 @@ export class WorkspaceWidgetHostComponent
       this.widgetInstance,
     );
 
+    this.registerWidgetComponent();
+
+  }
+
+  /**
+   * Registra esta instância viva no cache institucional.
+   */
+  private registerWidgetComponent(): void {
+
+    this.registeredWidgetInstanceId =
+      this.widgetInstance.id;
+
+    this.widgetComponentCache.set({
+      widgetInstanceId:
+        this.registeredWidgetInstanceId,
+      component:
+        this,
+    });
+
   }
 
   /**
@@ -204,13 +238,27 @@ export class WorkspaceWidgetHostComponent
   }
 
   /**
-   * Destrói o componente Angular atualmente renderizado.
+   * Destrói o componente Angular atualmente renderizado
+   * e remove sua referência do cache institucional.
    */
   private disposeWidget(): void {
 
+    if (this.registeredWidgetInstanceId !== undefined) {
+
+      this.widgetComponentCache.delete(
+        this.registeredWidgetInstanceId,
+      );
+
+      this.registeredWidgetInstanceId = undefined;
+
+    }
+
     if (this.widgetComponentRef) {
+
       this.widgetComponentRef.destroy();
+
       this.widgetComponentRef = undefined;
+
     }
 
     this.renderHost?.viewContainerRef.clear();
