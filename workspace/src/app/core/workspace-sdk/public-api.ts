@@ -21,6 +21,7 @@ export * from './runtime/workspace-runtime-hook-dispatcher';
 export * from './runtime/workspace-runtime-extension-point';
 export * from './runtime/workspace-runtime-extension-registry';
 export * from './runtime/workspace-runtime-extension-dispatcher';
+export * from './runtime/workspace-dashboard-state';
 
 export * from './runtime/workspace-layout-mutation';
 export * from './runtime/workspace-layout-mutator';

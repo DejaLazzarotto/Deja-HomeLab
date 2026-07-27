@@ -60,6 +60,7 @@ import { WorkspaceLayoutFactory } from './workspace-layout-factory';
 import { WorkspaceLayoutManager } from './workspace-layout-manager';
 import { WorkspaceEditingFactory } from './workspace-editing-factory';
 import { WorkspaceEditingManager } from './workspace-editing-manager';
+import { WorkspaceDashboardState } from './workspace-dashboard-state';
 
 /**
  * Erro lançado quando uma operação não é permitida
@@ -218,6 +219,14 @@ export class WorkspaceRuntime {
    */
   get layout(): WorkspaceLayoutManager | undefined {
     return this.layoutManager;
+  }
+
+  /**
+   * Retorna o estado institucional do Dashboard atualmente
+   * controlado pelo subsistema de Layout.
+   */
+  get dashboardState(): WorkspaceDashboardState | undefined {
+    return this.layoutManager?.dashboardState;
   }
 
   /**

@@ -46,6 +46,11 @@ export class WorkspaceAngularRenderingService {
   private dashboardComponentRef?: ComponentRef<WorkspaceDashboardComponent>;
 
   /**
+   * Host atualmente associado ao componente renderizado.
+   */
+  private currentHost?: AngularWorkspaceRenderHost;
+
+  /**
    * Renderiza um Workspace Dashboard resolvido.
    */
   async render(
@@ -54,18 +59,29 @@ export class WorkspaceAngularRenderingService {
     host: AngularWorkspaceRenderHost,
   ): Promise<void> {
 
-    await this.dispose();
+    if (
+      !this.dashboardComponentRef
+      || this.currentHost !== host
+    ) {
 
-    host.viewContainerRef.clear();
+      await this.dispose();
 
-    const componentRef =
-      host.viewContainerRef.createComponent(
-        WorkspaceDashboardComponent,
-        {
-          environmentInjector:
-            host.environmentInjector,
-        },
-      );
+      host.viewContainerRef.clear();
+
+      this.dashboardComponentRef =
+        host.viewContainerRef.createComponent(
+          WorkspaceDashboardComponent,
+          {
+            environmentInjector:
+              host.environmentInjector,
+          },
+        );
+
+      this.currentHost = host;
+
+    }
+
+    const componentRef = this.dashboardComponentRef;
 
     componentRef.setInput(
       'runtime',
@@ -77,7 +93,14 @@ export class WorkspaceAngularRenderingService {
       dashboard,
     );
 
-    this.dashboardComponentRef = componentRef;
+    if (runtime.dashboardState) {
+
+      componentRef.setInput(
+        'dashboardState',
+        runtime.dashboardState,
+      );
+
+    }
 
   }
 
@@ -91,7 +114,9 @@ export class WorkspaceAngularRenderingService {
     }
 
     this.dashboardComponentRef.destroy();
+
     this.dashboardComponentRef = undefined;
+    this.currentHost = undefined;
 
   }
 

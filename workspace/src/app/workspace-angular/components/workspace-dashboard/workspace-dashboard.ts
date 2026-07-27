@@ -9,9 +9,17 @@
 
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   Input,
+  OnDestroy,
+  OnInit,
 } from '@angular/core';
+
+import {
+  WorkspaceDashboardState,
+  WorkspaceDashboardStateUnsubscribe,
+} from '../../../core/workspace-sdk/runtime/workspace-dashboard-state';
 
 import {
   WorkspaceLayoutRegion,
@@ -252,7 +260,15 @@ import {
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class WorkspaceDashboardComponent {
+export class WorkspaceDashboardComponent
+  implements OnInit, OnDestroy {
+
+  private unsubscribeDashboardState?:
+    WorkspaceDashboardStateUnsubscribe;
+
+  constructor(
+    private readonly changeDetectorRef: ChangeDetectorRef,
+  ) {}
 
   /**
    * Runtime oficial do Workspace.
@@ -269,6 +285,50 @@ export class WorkspaceDashboardComponent {
     required: true,
   })
   resolvedDashboard!: WorkspaceResolvedDashboard;
+
+  /**
+   * Estado institucional opcional utilizado para atualização
+   * automática do Dashboard renderizado.
+   *
+   * Quando não informado, o componente permanece operando
+   * exclusivamente com o Input legado.
+   */
+  @Input()
+  dashboardState?: WorkspaceDashboardState;
+
+  /**
+   * Inicia a observação do Dashboard corrente quando um
+   * Workspace Dashboard State for fornecido.
+   */
+  ngOnInit(): void {
+
+    if (!this.dashboardState) {
+      return;
+    }
+
+    this.unsubscribeDashboardState =
+      this.dashboardState.subscribe(
+        (update) => {
+
+          this.resolvedDashboard = update.dashboard;
+
+          this.changeDetectorRef.markForCheck();
+
+        },
+      );
+
+  }
+
+  /**
+   * Encerra a inscrição institucional mantida pelo componente.
+   */
+  ngOnDestroy(): void {
+
+    this.unsubscribeDashboardState?.();
+
+    this.unsubscribeDashboardState = undefined;
+
+  }
 
   /**
    * Verifica se o Dashboard possui Layout e regiões resolvidas.

@@ -8,8 +8,8 @@
  */
 
 import {
-  WorkspaceDashboardId,
-} from '../contracts/workspace-contracts';
+  WorkspaceDashboardState,
+} from './workspace-dashboard-state';
 
 import {
   WorkspaceLayoutController,
@@ -36,6 +36,7 @@ import {
  * - criação de Workspace Layout Controllers;
  * - gerenciamento das sessões de Layout;
  * - centralização da infraestrutura de Layout;
+ * - exposição do estado corrente do Dashboard;
  * - preparação para múltiplas sessões futuras.
  *
  * Esta infraestrutura permanece independente:
@@ -52,14 +53,18 @@ export class WorkspaceLayoutManager {
   ) {}
 
   /**
+   * Estado institucional do Dashboard atualmente controlado
+   * pelo subsistema de Layout.
+   */
+  get dashboardState(): WorkspaceDashboardState {
+
+    return this.services.dashboardState;
+
+  }
+
+  /**
    * Cria um Workspace Layout Controller para um
    * Dashboard previamente resolvido.
-   *
-   * Nesta primeira versão o Manager apenas atua como
-   * fábrica institucional dos Controllers.
-   *
-   * Nas próximas etapas passará a integrar-se ao
-   * Dashboard Resolver e ao Workspace Runtime.
    */
   createController(): WorkspaceLayoutController {
 

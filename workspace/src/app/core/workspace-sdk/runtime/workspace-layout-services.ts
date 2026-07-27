@@ -8,6 +8,10 @@
  */
 
 import {
+  WorkspaceDashboardState,
+} from './workspace-dashboard-state';
+
+import {
   WorkspaceLayoutEventDispatcher,
 } from './workspace-layout-event-dispatcher';
 
@@ -34,6 +38,7 @@ import {
  * Esta fachada preserva a independência entre:
  *
  * - coordenação das sessões;
+ * - estado corrente do Dashboard;
  * - persistência;
  * - eventos;
  * - hooks;
@@ -49,5 +54,6 @@ export class WorkspaceLayoutServices {
     readonly hooks: WorkspaceLayoutHookDispatcher,
     readonly extensions: WorkspaceLayoutExtensionDispatcher,
     readonly observability: WorkspaceLayoutObservability,
+    readonly dashboardState: WorkspaceDashboardState,
   ) {}
 }

@@ -8,6 +8,10 @@
  */
 
 import {
+  WorkspaceDashboardState,
+} from './workspace-dashboard-state';
+
+import {
   WorkspaceLayoutEventDispatcher,
 } from './workspace-layout-event-dispatcher';
 
@@ -67,12 +71,15 @@ export class WorkspaceLayoutFactory {
    */
   create(): WorkspaceLayoutManager {
 
+    const dashboardState = new WorkspaceDashboardState();
+
     const services = new WorkspaceLayoutServices(
       this.persistence,
       this.events,
       this.hooks,
       this.extensions,
       this.observability,
+      dashboardState,
     );
 
     return new WorkspaceLayoutManager(
