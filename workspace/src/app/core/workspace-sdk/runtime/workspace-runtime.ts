@@ -57,8 +57,9 @@ import { WorkspaceRendererRegistry } from './workspace-renderer-registry';
 import { WorkspaceResolvedDashboard } from './workspace-resolved-dashboard';
 
 import { WorkspaceLayoutFactory } from './workspace-layout-factory';
-
 import { WorkspaceLayoutManager } from './workspace-layout-manager';
+import { WorkspaceEditingFactory } from './workspace-editing-factory';
+import { WorkspaceEditingManager } from './workspace-editing-manager';
 
 /**
  * Erro lançado quando uma operação não é permitida
@@ -163,6 +164,11 @@ export class WorkspaceRuntime {
    */
   private readonly layoutManager?: WorkspaceLayoutManager;
 
+  /**
+   * Fachada institucional da Workspace Editing API.
+   */
+  private readonly editingManager?: WorkspaceEditingManager;
+
   constructor(
     readonly registries: WorkspaceRegistries = new WorkspaceRegistries(),
     readonly events: WorkspaceRuntimeEventDispatcher = new WorkspaceRuntimeEventDispatcher(),
@@ -170,9 +176,11 @@ export class WorkspaceRuntime {
     readonly extensions: WorkspaceRuntimeExtensionRegistry = new WorkspaceRuntimeExtensionRegistry(),
     layoutEngine?: WorkspaceLayoutEngine,
     layoutFactory?: WorkspaceLayoutFactory,
+    editingFactory?: WorkspaceEditingFactory,
   ) {
     this.layoutEngine = layoutEngine;
     this.layoutManager = layoutFactory?.create();
+    this.editingManager = editingFactory?.createManager();
     this.extensionDispatcher = new WorkspaceRuntimeExtensionDispatcher(this.extensions);
 
     this.commandRegistry = new WorkspaceCommandRegistry();
@@ -210,6 +218,13 @@ export class WorkspaceRuntime {
    */
   get layout(): WorkspaceLayoutManager | undefined {
     return this.layoutManager;
+  }
+
+  /**
+   * Retorna a Workspace Editing API.
+   */
+  get editing(): WorkspaceEditingManager | undefined {
+    return this.editingManager;
   }
 
   /**
