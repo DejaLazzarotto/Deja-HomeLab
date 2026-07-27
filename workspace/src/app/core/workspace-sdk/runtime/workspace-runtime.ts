@@ -56,6 +56,10 @@ import { WorkspaceRendererDispatcher } from './workspace-renderer-dispatcher';
 import { WorkspaceRendererRegistry } from './workspace-renderer-registry';
 import { WorkspaceResolvedDashboard } from './workspace-resolved-dashboard';
 
+import { WorkspaceLayoutFactory } from './workspace-layout-factory';
+
+import { WorkspaceLayoutManager } from './workspace-layout-manager';
+
 /**
  * Erro lançado quando uma operação não é permitida
  * no estado atual do Workspace Runtime.
@@ -154,14 +158,21 @@ export class WorkspaceRuntime {
    */
   private readonly layoutEngine?: WorkspaceLayoutEngine;
 
+  /**
+   * Fachada institucional do subsistema de Layout.
+   */
+  private readonly layoutManager?: WorkspaceLayoutManager;
+
   constructor(
     readonly registries: WorkspaceRegistries = new WorkspaceRegistries(),
     readonly events: WorkspaceRuntimeEventDispatcher = new WorkspaceRuntimeEventDispatcher(),
     readonly hooks: WorkspaceRuntimeHookDispatcher = new WorkspaceRuntimeHookDispatcher(),
     readonly extensions: WorkspaceRuntimeExtensionRegistry = new WorkspaceRuntimeExtensionRegistry(),
     layoutEngine?: WorkspaceLayoutEngine,
+    layoutFactory?: WorkspaceLayoutFactory,
   ) {
     this.layoutEngine = layoutEngine;
+    this.layoutManager = layoutFactory?.create();
     this.extensionDispatcher = new WorkspaceRuntimeExtensionDispatcher(this.extensions);
 
     this.commandRegistry = new WorkspaceCommandRegistry();
@@ -176,9 +187,7 @@ export class WorkspaceRuntime {
     this.menuRegistry = new WorkspaceMenuRegistry();
 
     this.rendererRegistry = new WorkspaceRendererRegistry();
-    this.rendererDispatcher = new WorkspaceRendererDispatcher(
-      this.rendererRegistry,
-    );
+    this.rendererDispatcher = new WorkspaceRendererDispatcher(this.rendererRegistry);
   }
 
   getState(): WorkspaceRuntimeState {
@@ -194,6 +203,13 @@ export class WorkspaceRuntime {
    */
   getLayoutEngine(): WorkspaceLayoutEngine | undefined {
     return this.layoutEngine;
+  }
+
+  /**
+   * Retorna a infraestrutura institucional de Layout.
+   */
+  get layout(): WorkspaceLayoutManager | undefined {
+    return this.layoutManager;
   }
 
   /**
@@ -434,7 +450,6 @@ export class WorkspaceRuntime {
   searchCommandPalette(text: string): readonly WorkspaceCommandPalette[] {
     return this.commandPaletteRegistry.search(text);
   }
-
 
   /**
    * Registra um Workspace Renderer.

@@ -3,6 +3,7 @@ import {
   WorkspacePriority,
   WorkspaceResourceId,
 } from '../contracts/workspace-contracts';
+
 import {
   WorkspaceRuntimeContext,
 } from '../models/workspace-models';
@@ -11,11 +12,13 @@ import {
  * Identificador público de um ponto de extensão do Workspace Runtime.
  *
  * Exemplos:
+ *
  * - workspace.navigation.items
  * - workspace.toolbar.actions
  * - workspace.dashboard.widgets
  */
-export type WorkspaceRuntimeExtensionPointId = WorkspaceResourceId;
+export type WorkspaceRuntimeExtensionPointId =
+  WorkspaceResourceId;
 
 /**
  * Identificador único de uma extensão registrada.
@@ -23,16 +26,21 @@ export type WorkspaceRuntimeExtensionPointId = WorkspaceResourceId;
  * O identificador pertence à extensão concreta, enquanto
  * extensionPoint identifica o ponto no qual ela será executada.
  */
-export type WorkspaceRuntimeExtensionId = WorkspaceResourceId;
+export type WorkspaceRuntimeExtensionId =
+  WorkspaceResourceId;
 
 /**
  * Contexto fornecido durante a execução de uma extensão.
  */
-export interface WorkspaceRuntimeExtensionContext<TPayload = unknown> {
+export interface WorkspaceRuntimeExtensionContext<
+  TPayload = unknown,
+> {
+
   /**
    * Ponto de extensão atualmente executado.
    */
-  readonly extensionPoint: WorkspaceRuntimeExtensionPointId;
+  readonly extensionPoint:
+    WorkspaceRuntimeExtensionPointId;
 
   /**
    * Contexto institucional do Workspace Runtime.
@@ -43,6 +51,7 @@ export interface WorkspaceRuntimeExtensionContext<TPayload = unknown> {
    * Dados fornecidos pelo chamador do ponto de extensão.
    */
   readonly payload: TPayload;
+
 }
 
 /**
@@ -62,6 +71,7 @@ export interface WorkspaceRuntimeExtension<
   TPayload = unknown,
   TResult = unknown,
 > {
+
   /**
    * Identificador público e único da extensão.
    */
@@ -70,7 +80,8 @@ export interface WorkspaceRuntimeExtension<
   /**
    * Ponto de extensão ao qual esta implementação pertence.
    */
-  readonly extensionPoint: WorkspaceRuntimeExtensionPointId;
+  readonly extensionPoint:
+    WorkspaceRuntimeExtensionPointId;
 
   /**
    * Módulo, domínio ou extensão proprietária do registro.
@@ -94,5 +105,7 @@ export interface WorkspaceRuntimeExtension<
   /**
    * Handler executado pelo dispatcher.
    */
-  readonly handler: WorkspaceRuntimeExtensionHandler<TPayload, TResult>;
+  readonly handler:
+    WorkspaceRuntimeExtensionHandler<TPayload, TResult>;
+
 }

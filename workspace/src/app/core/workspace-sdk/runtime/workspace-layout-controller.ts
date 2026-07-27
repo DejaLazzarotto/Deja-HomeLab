@@ -7,8 +7,6 @@
  * das sessões de edição de Layout do Workspace.
  */
 
-import { WorkspaceLayoutEventDispatcher } from './workspace-layout-event-dispatcher';
-
 import {
   createWorkspaceLayoutMutatedEvent,
   createWorkspaceLayoutRedoExecutedEvent,
@@ -18,22 +16,22 @@ import {
   createWorkspaceLayoutUndoExecutedEvent,
 } from './workspace-layout-event-builders';
 
-import { WorkspaceLayoutExtensionDispatcher } from './workspace-layout-extension-dispatcher';
-
-import { WorkspaceLayoutHookDispatcher } from './workspace-layout-hook-dispatcher';
-
 import {
   WorkspaceLayoutMutationOperation,
   WorkspaceLayoutMutationResult,
 } from './workspace-layout-mutation';
 
-import { WorkspaceLayoutPersistence } from './workspace-layout-persistence';
+import {
+  WorkspaceLayoutServices,
+} from './workspace-layout-services';
 
-import { WorkspaceLayoutSession } from './workspace-layout-session';
+import {
+  WorkspaceLayoutSession,
+} from './workspace-layout-session';
 
-import { WorkspaceResolvedDashboard } from './workspace-resolved-dashboard';
-
-import { WorkspaceLayoutObservability } from './workspace-layout-observability';
+import {
+  WorkspaceResolvedDashboard,
+} from './workspace-resolved-dashboard';
 
 /**
  * Erro lançado quando uma nova sessão é aberta enquanto
@@ -80,11 +78,7 @@ export class WorkspaceLayoutController {
   private activeSession?: WorkspaceLayoutSession;
 
   constructor(
-    private readonly persistence: WorkspaceLayoutPersistence,
-    private readonly events: WorkspaceLayoutEventDispatcher,
-    private readonly hooks: WorkspaceLayoutHookDispatcher,
-    private readonly extensions: WorkspaceLayoutExtensionDispatcher,
-    private readonly observability: WorkspaceLayoutObservability,
+    private readonly services: WorkspaceLayoutServices,
   ) {}
 
   /**
@@ -136,32 +130,58 @@ export class WorkspaceLayoutController {
    *
    * Apenas uma sessão pode permanecer ativa por Controller.
    */
-  async open(dashboard: WorkspaceResolvedDashboard): Promise<WorkspaceResolvedDashboard> {
-    return this.observability.trace('session.open', async () => {
-      if (this.activeSession) {
-        throw new WorkspaceLayoutControllerSessionAlreadyOpenError();
-      }
+  async open(
+    dashboard: WorkspaceResolvedDashboard,
+  ): Promise<WorkspaceResolvedDashboard> {
+    return this.services.observability.trace(
+      'session.open',
+      async () => {
+        if (this.activeSession) {
+          throw new WorkspaceLayoutControllerSessionAlreadyOpenError();
+        }
 
-      await this.hooks.dispatch('beforeSessionOpen', undefined);
+        await this.services.hooks.dispatch(
+          'beforeSessionOpen',
+          undefined,
+        );
 
-      await this.extensions.dispatch('workspace.layout.session.opening', dashboard);
+        await this.services.extensions.dispatch(
+          'workspace.layout.session.opening',
+          dashboard,
+        );
 
-      const session = new WorkspaceLayoutSession(dashboard, this.persistence);
+        const session = new WorkspaceLayoutSession(
+          dashboard,
+          this.services.persistence,
+        );
 
-      this.activeSession = session;
+        this.activeSession = session;
 
-      this.observability.update(this.hasActiveSession, this.historySize, this.redoHistorySize);
+        this.services.observability.update(
+          this.hasActiveSession,
+          this.historySize,
+          this.redoHistorySize,
+        );
 
-      const currentDashboard = session.dashboard;
+        const currentDashboard = session.dashboard;
 
-      this.events.dispatch(createWorkspaceLayoutSessionOpenedEvent(currentDashboard));
+        this.services.events.dispatch(
+          createWorkspaceLayoutSessionOpenedEvent(currentDashboard),
+        );
 
-      await this.extensions.dispatch('workspace.layout.session.opened', session);
+        await this.services.extensions.dispatch(
+          'workspace.layout.session.opened',
+          session,
+        );
 
-      await this.hooks.dispatch('afterSessionOpen', session);
+        await this.services.hooks.dispatch(
+          'afterSessionOpen',
+          session,
+        );
 
-      return currentDashboard;
-    });
+        return currentDashboard;
+      },
+    );
   }
 
   /**
@@ -177,9 +197,15 @@ export class WorkspaceLayoutController {
 
     const session = this.activeSession;
 
-    await this.hooks.dispatch('beforeSessionClose', session);
+    await this.services.hooks.dispatch(
+      'beforeSessionClose',
+      session,
+    );
 
-    await this.extensions.dispatch('workspace.layout.session.closing', session);
+    await this.services.extensions.dispatch(
+      'workspace.layout.session.closing',
+      session,
+    );
 
     const dashboard = session.dashboard;
 
@@ -187,11 +213,25 @@ export class WorkspaceLayoutController {
 
     this.activeSession = undefined;
 
-    this.observability.update(this.hasActiveSession, this.historySize, this.redoHistorySize);
+    this.services.observability.update(
+      this.hasActiveSession,
+      this.historySize,
+      this.redoHistorySize,
+    );
 
-    await this.extensions.dispatch('workspace.layout.session.closed', dashboard);
+    this.services.events.dispatch(
+      createWorkspaceLayoutSessionClosedEvent(dashboard),
+    );
 
-    await this.hooks.dispatch('afterSessionClose', undefined);
+    await this.services.extensions.dispatch(
+      'workspace.layout.session.closed',
+      dashboard,
+    );
+
+    await this.services.hooks.dispatch(
+      'afterSessionClose',
+      undefined,
+    );
   }
 
   /**
@@ -201,17 +241,37 @@ export class WorkspaceLayoutController {
   async restore(): Promise<WorkspaceResolvedDashboard> {
     const session = this.getActiveSession();
 
-    await this.hooks.dispatch('beforeRestore', session);
+    await this.services.hooks.dispatch(
+      'beforeRestore',
+      session,
+    );
 
-    await this.extensions.dispatch('workspace.layout.restoring', session);
+    await this.services.extensions.dispatch(
+      'workspace.layout.restoring',
+      session,
+    );
 
     const dashboard = await session.restore();
 
-    this.events.dispatch(createWorkspaceLayoutRestoredEvent(dashboard));
+    this.services.observability.update(
+      this.hasActiveSession,
+      this.historySize,
+      this.redoHistorySize,
+    );
 
-    await this.extensions.dispatch('workspace.layout.restored', dashboard);
+    this.services.events.dispatch(
+      createWorkspaceLayoutRestoredEvent(dashboard),
+    );
 
-    await this.hooks.dispatch('afterRestore', session);
+    await this.services.extensions.dispatch(
+      'workspace.layout.restored',
+      dashboard,
+    );
+
+    await this.services.hooks.dispatch(
+      'afterRestore',
+      session,
+    );
 
     return dashboard;
   }
@@ -220,15 +280,23 @@ export class WorkspaceLayoutController {
    * Aplica uma mutação estrutural ao Dashboard mantido pela
    * sessão ativa.
    */
-  async mutate(mutation: WorkspaceLayoutMutationOperation): Promise<WorkspaceLayoutMutationResult> {
+  async mutate(
+    mutation: WorkspaceLayoutMutationOperation,
+  ): Promise<WorkspaceLayoutMutationResult> {
     const session = this.getActiveSession();
 
-    await this.hooks.dispatch('beforeMutation', session);
-
-    await this.extensions.dispatch('workspace.layout.mutating', {
+    await this.services.hooks.dispatch(
+      'beforeMutation',
       session,
-      mutation,
-    });
+    );
+
+    await this.services.extensions.dispatch(
+      'workspace.layout.mutating',
+      {
+        session,
+        mutation,
+      },
+    );
 
     const result = await session.mutate(mutation);
 
@@ -236,17 +304,33 @@ export class WorkspaceLayoutController {
       return result;
     }
 
-    this.observability.update(this.hasActiveSession, this.historySize, this.redoHistorySize);
+    this.services.observability.update(
+      this.hasActiveSession,
+      this.historySize,
+      this.redoHistorySize,
+    );
 
-    this.events.dispatch(createWorkspaceLayoutMutatedEvent(mutation, result, session.dashboard));
+    this.services.events.dispatch(
+      createWorkspaceLayoutMutatedEvent(
+        mutation,
+        result,
+        session.dashboard,
+      ),
+    );
 
-    await this.extensions.dispatch('workspace.layout.mutated', {
-      session,
-      mutation,
+    await this.services.extensions.dispatch(
+      'workspace.layout.mutated',
+      {
+        session,
+        mutation,
+        result,
+      },
+    );
+
+    await this.services.hooks.dispatch(
+      'afterMutation',
       result,
-    });
-
-    await this.hooks.dispatch('afterMutation', result);
+    );
 
     return result;
   }
@@ -258,9 +342,15 @@ export class WorkspaceLayoutController {
   async undo(): Promise<boolean> {
     const session = this.getActiveSession();
 
-    await this.hooks.dispatch('beforeUndo', session);
+    await this.services.hooks.dispatch(
+      'beforeUndo',
+      session,
+    );
 
-    await this.extensions.dispatch('workspace.layout.undoing', session);
+    await this.services.extensions.dispatch(
+      'workspace.layout.undoing',
+      session,
+    );
 
     const executed = await session.undo();
 
@@ -268,13 +358,25 @@ export class WorkspaceLayoutController {
       return false;
     }
 
-    this.observability.update(this.hasActiveSession, this.historySize, this.redoHistorySize);
+    this.services.observability.update(
+      this.hasActiveSession,
+      this.historySize,
+      this.redoHistorySize,
+    );
 
-    this.events.dispatch(createWorkspaceLayoutUndoExecutedEvent(session.dashboard));
+    this.services.events.dispatch(
+      createWorkspaceLayoutUndoExecutedEvent(session.dashboard),
+    );
 
-    await this.extensions.dispatch('workspace.layout.undone', session);
+    await this.services.extensions.dispatch(
+      'workspace.layout.undone',
+      session,
+    );
 
-    await this.hooks.dispatch('afterUndo', session);
+    await this.services.hooks.dispatch(
+      'afterUndo',
+      session,
+    );
 
     return true;
   }
@@ -286,9 +388,15 @@ export class WorkspaceLayoutController {
   async redo(): Promise<boolean> {
     const session = this.getActiveSession();
 
-    await this.hooks.dispatch('beforeRedo', session);
+    await this.services.hooks.dispatch(
+      'beforeRedo',
+      session,
+    );
 
-    await this.extensions.dispatch('workspace.layout.redoing', session);
+    await this.services.extensions.dispatch(
+      'workspace.layout.redoing',
+      session,
+    );
 
     const executed = await session.redo();
 
@@ -296,13 +404,25 @@ export class WorkspaceLayoutController {
       return false;
     }
 
-    this.observability.update(this.hasActiveSession, this.historySize, this.redoHistorySize);
+    this.services.observability.update(
+      this.hasActiveSession,
+      this.historySize,
+      this.redoHistorySize,
+    );
 
-    this.events.dispatch(createWorkspaceLayoutRedoExecutedEvent(session.dashboard));
+    this.services.events.dispatch(
+      createWorkspaceLayoutRedoExecutedEvent(session.dashboard),
+    );
 
-    await this.extensions.dispatch('workspace.layout.redone', session);
+    await this.services.extensions.dispatch(
+      'workspace.layout.redone',
+      session,
+    );
 
-    await this.hooks.dispatch('afterRedo', session);
+    await this.services.hooks.dispatch(
+      'afterRedo',
+      session,
+    );
 
     return true;
   }
