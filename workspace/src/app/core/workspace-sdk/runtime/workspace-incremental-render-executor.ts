@@ -12,30 +12,34 @@ import {
 } from './workspace-incremental-render-operation';
 
 import {
-  WorkspaceWidgetReferenceRegistry,
-} from './workspace-widget-reference-registry';
+  WorkspaceWidgetRenderAdapter,
+} from './workspace-widget-render-adapter';
 
 /**
  * Executor institucional das operações incrementais.
  *
  * Esta infraestrutura permanece completamente independente
- * da tecnologia de renderização utilizada pelo Workspace.
+ * da tecnologia concreta de renderização utilizada pelo
+ * Workspace.
  *
- * Nesta primeira implementação o Executor apenas resolve
- * a referência institucional do Widget afetado, preparando
- * a evolução futura para atualização incremental do renderer.
+ * O Executor interpreta a operação incremental e delega sua
+ * execução ao WorkspaceWidgetRenderAdapter configurado pela
+ * camada de integração.
  */
 export class WorkspaceIncrementalRenderExecutor {
 
   constructor(
-    private readonly registry: WorkspaceWidgetReferenceRegistry,
+    private readonly adapter: WorkspaceWidgetRenderAdapter,
   ) {}
 
   /**
    * Executa uma operação incremental.
    *
-   * Retorna true quando a infraestrutura conseguiu localizar
-   * o Widget alvo da operação.
+   * Retorna true quando o Adapter executa a operação.
+   *
+   * Retorna false quando a operação não pode ser executada
+   * incrementalmente, permitindo que a estratégia de
+   * renderização utilize Full Render como fallback.
    */
   execute(
     operation: WorkspaceIncrementalRenderOperationUnion,
@@ -43,31 +47,21 @@ export class WorkspaceIncrementalRenderExecutor {
 
     switch (operation.type) {
 
-      case 'insert':
-
-        /*
-         * Inserções continuam utilizando Full Render
-         * nesta primeira versão.
-         */
-        return false;
-
       case 'move':
 
-        return this.registry.get(
-          operation.widgetInstanceId,
-        ) !== undefined;
+        return this.adapter.move(operation);
 
       case 'resize':
 
-        return this.registry.get(
-          operation.widgetInstanceId,
-        ) !== undefined;
+        return this.adapter.resize(operation);
+
+      case 'insert':
+
+        return this.adapter.insert(operation);
 
       case 'remove':
 
-        return this.registry.get(
-          operation.widgetInstanceId,
-        ) !== undefined;
+        return this.adapter.remove(operation);
 
     }
 

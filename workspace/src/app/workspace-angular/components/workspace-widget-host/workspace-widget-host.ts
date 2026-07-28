@@ -37,6 +37,10 @@ import {
   WorkspaceWidgetComponentCache,
 } from '../../rendering/workspace-widget-component-cache';
 
+import {
+  WorkspaceWidgetRenderController,
+} from '../../rendering/workspace-widget-render-controller';
+
 /**
  * Host responsável pela resolução e criação dinâmica
  * de uma instância de Workspace Widget.
@@ -68,7 +72,11 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkspaceWidgetHostComponent
-  implements AfterViewInit, OnChanges, OnDestroy {
+  implements
+    AfterViewInit,
+    OnChanges,
+    OnDestroy,
+    WorkspaceWidgetRenderController {
 
   /**
    * Runtime oficial do Workspace.
@@ -160,6 +168,59 @@ export class WorkspaceWidgetHostComponent
   }
 
   /**
+   * Executa a movimentação incremental do Widget.
+   *
+   * A atualização concreta da posição será implementada
+   * durante a evolução do Widget Diff Engine.
+   */
+  move(): boolean {
+
+    return false;
+
+  }
+
+  /**
+   * Executa o redimensionamento incremental do Widget.
+   *
+   * A atualização concreta das dimensões será implementada
+   * durante a evolução do Widget Diff Engine.
+   */
+  resize(): boolean {
+
+    return false;
+
+  }
+
+  /**
+   * Anexa o Widget à árvore Angular de renderização.
+   *
+   * Quando o host já está inicializado, a renderização pode
+   * ser executada institucionalmente.
+   */
+  attach(): boolean {
+
+    if (!this.viewInitialized) {
+      return false;
+    }
+
+    this.renderWidget();
+
+    return this.widgetComponentRef !== undefined;
+
+  }
+
+  /**
+   * Destrói incrementalmente o Widget renderizado.
+   */
+  destroy(): boolean {
+
+    this.disposeWidget();
+
+    return true;
+
+  }
+
+  /**
    * Resolve e renderiza o Widget.
    */
   private renderWidget(): void {
@@ -182,7 +243,8 @@ export class WorkspaceWidgetHostComponent
       return;
     }
 
-    const componentType = this.resolveComponentType(widget);
+    const componentType =
+      this.resolveComponentType(widget);
 
     this.widgetComponentRef =
       this.renderHost.viewContainerRef.createComponent(
@@ -215,6 +277,8 @@ export class WorkspaceWidgetHostComponent
         this.registeredWidgetInstanceId,
       component:
         this,
+      controller:
+        this,
     });
 
   }
@@ -243,13 +307,17 @@ export class WorkspaceWidgetHostComponent
    */
   private disposeWidget(): void {
 
-    if (this.registeredWidgetInstanceId !== undefined) {
+    if (
+      this.registeredWidgetInstanceId
+      !== undefined
+    ) {
 
       this.widgetComponentCache.delete(
         this.registeredWidgetInstanceId,
       );
 
-      this.registeredWidgetInstanceId = undefined;
+      this.registeredWidgetInstanceId =
+        undefined;
 
     }
 
@@ -257,7 +325,8 @@ export class WorkspaceWidgetHostComponent
 
       this.widgetComponentRef.destroy();
 
-      this.widgetComponentRef = undefined;
+      this.widgetComponentRef =
+        undefined;
 
     }
 

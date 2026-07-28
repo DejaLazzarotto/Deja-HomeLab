@@ -20,6 +20,10 @@ import {
 } from '../../core/workspace-sdk/runtime/workspace-widget-reference-registry';
 
 import {
+  AngularWorkspaceWidgetRenderAdapter,
+} from './angular-workspace-widget-render-adapter';
+
+import {
   WorkspaceFullRenderStrategy,
 } from './workspace-full-render-strategy';
 
@@ -58,9 +62,14 @@ export class WorkspaceRenderStrategyFactory {
     const operationFactory =
       new WorkspaceIncrementalRenderOperationFactory();
 
+    const widgetRenderAdapter =
+      new AngularWorkspaceWidgetRenderAdapter(
+        widgetReferenceRegistry,
+      );
+
     const executor =
       new WorkspaceIncrementalRenderExecutor(
-        widgetReferenceRegistry,
+        widgetRenderAdapter,
       );
 
     this.incrementalRenderStrategy =

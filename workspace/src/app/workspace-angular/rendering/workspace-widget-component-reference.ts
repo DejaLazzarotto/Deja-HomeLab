@@ -15,6 +15,10 @@ import {
   WorkspaceWidgetHostComponent,
 } from '../components/workspace-widget-host/workspace-widget-host';
 
+import {
+  WorkspaceWidgetRenderController,
+} from './workspace-widget-render-controller';
+
 /**
  * Representa uma referência Angular para um
  * WorkspaceWidgetHostComponent atualmente ativo.
@@ -32,5 +36,12 @@ export interface WorkspaceWidgetComponentReference
    */
   readonly component:
     WorkspaceWidgetHostComponent;
+
+  /**
+   * Controlador responsável pelas operações incrementais
+   * aplicáveis à instância renderizada do Widget.
+   */
+  readonly controller:
+    WorkspaceWidgetRenderController;
 
 }
