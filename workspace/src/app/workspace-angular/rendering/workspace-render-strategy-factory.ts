@@ -3,9 +3,21 @@
  *
  * Workspace Render Strategy Factory
  *
- * Factory institucional responsável pela resolução da
- * estratégia de renderização do Workspace.
+ * Factory institucional responsável pela composição e
+ * resolução das estratégias de renderização do Workspace.
  */
+
+import {
+  WorkspaceIncrementalRenderExecutor,
+} from '../../core/workspace-sdk/runtime/workspace-incremental-render-executor';
+
+import {
+  WorkspaceIncrementalRenderOperationFactory,
+} from '../../core/workspace-sdk/runtime/workspace-incremental-render-operation-factory';
+
+import {
+  WorkspaceWidgetReferenceRegistry,
+} from '../../core/workspace-sdk/runtime/workspace-widget-reference-registry';
 
 import {
   WorkspaceFullRenderStrategy,
@@ -23,19 +35,42 @@ import {
  * Factory responsável pela composição e resolução das
  * estratégias de renderização do Workspace.
  *
- * Nesta etapa, toda atualização é direcionada para a
- * estratégia incremental, que ainda utiliza internamente
- * a renderização completa como mecanismo de fallback.
+ * A composição recebe apenas o contrato institucional de
+ * localização de Widgets renderizados, permanecendo
+ * desacoplada da implementação concreta do cache Angular.
  */
 export class WorkspaceRenderStrategyFactory {
 
-  private readonly fullRenderStrategy =
-    new WorkspaceFullRenderStrategy();
+  private readonly fullRenderStrategy:
+    WorkspaceFullRenderStrategy;
 
-  private readonly incrementalRenderStrategy =
-    new WorkspaceIncrementalRenderStrategy(
-      this.fullRenderStrategy,
-    );
+  private readonly incrementalRenderStrategy:
+    WorkspaceIncrementalRenderStrategy;
+
+  constructor(
+    widgetReferenceRegistry:
+      WorkspaceWidgetReferenceRegistry,
+  ) {
+
+    this.fullRenderStrategy =
+      new WorkspaceFullRenderStrategy();
+
+    const operationFactory =
+      new WorkspaceIncrementalRenderOperationFactory();
+
+    const executor =
+      new WorkspaceIncrementalRenderExecutor(
+        widgetReferenceRegistry,
+      );
+
+    this.incrementalRenderStrategy =
+      new WorkspaceIncrementalRenderStrategy(
+        operationFactory,
+        executor,
+        this.fullRenderStrategy,
+      );
+
+  }
 
   /**
    * Resolve a estratégia institucional de renderização.

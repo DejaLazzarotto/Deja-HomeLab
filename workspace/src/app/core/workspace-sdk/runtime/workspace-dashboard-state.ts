@@ -8,7 +8,7 @@
  */
 
 import {
-  WorkspaceLayoutMutation,
+  WorkspaceLayoutMutationOperation,
 } from './workspace-layout-mutation';
 
 import {
@@ -26,12 +26,12 @@ export interface WorkspaceDashboardUpdate {
   readonly dashboard: WorkspaceResolvedDashboard;
 
   /**
-   * Mutação que originou a atualização.
+   * Mutação concreta que originou a atualização.
    *
    * Undefined indica publicação inicial, restauração ou
    * atualização sem uma mutação específica.
    */
-  readonly mutation?: WorkspaceLayoutMutation;
+  readonly mutation?: WorkspaceLayoutMutationOperation;
 
 }
 
@@ -62,7 +62,7 @@ export class WorkspaceDashboardState {
    */
   publish(
     dashboard: WorkspaceResolvedDashboard,
-    mutation?: WorkspaceLayoutMutation,
+    mutation?: WorkspaceLayoutMutationOperation,
   ): void {
 
     this.currentDashboard = dashboard;
@@ -73,7 +73,9 @@ export class WorkspaceDashboardState {
     };
 
     for (const listener of this.listeners) {
+
       listener(update);
+
     }
 
   }

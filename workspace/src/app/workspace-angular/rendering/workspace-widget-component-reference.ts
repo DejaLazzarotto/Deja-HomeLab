@@ -3,37 +3,28 @@
  *
  * Workspace Widget Component Reference
  *
- * Referência institucional de uma instância de Widget
- * atualmente renderizada pelo Workspace.
+ * Referência Angular de uma instância de Widget atualmente
+ * renderizada pelo Workspace.
  */
 
 import {
-  WorkspaceWidgetInstance,
-} from '../../core/workspace-sdk/runtime/workspace-widget';
+  WorkspaceWidgetRenderReference,
+} from '../../core/workspace-sdk/runtime/workspace-widget-render-reference';
 
 import {
   WorkspaceWidgetHostComponent,
 } from '../components/workspace-widget-host/workspace-widget-host';
 
 /**
- * Representa uma referência institucional para um
+ * Representa uma referência Angular para um
  * WorkspaceWidgetHostComponent atualmente ativo.
  *
- * O cache utiliza o identificador da instância do Widget,
- * permitindo distinguir múltiplas utilizações de uma mesma
- * definição institucional de Widget.
- *
- * Como os hosts são criados declarativamente pela árvore
- * Angular, esta estrutura mantém a instância viva do
- * componente, sem depender de um ComponentRef externo.
+ * Esta referência especializa o contrato institucional neutro
+ * definido pelo Workspace SDK, acrescentando exclusivamente
+ * informações pertencentes à integração Angular.
  */
-export interface WorkspaceWidgetComponentReference {
-
-  /**
-   * Identificador institucional da instância do Widget.
-   */
-  readonly widgetInstanceId:
-    WorkspaceWidgetInstance['id'];
+export interface WorkspaceWidgetComponentReference
+  extends WorkspaceWidgetRenderReference {
 
   /**
    * Instância Angular viva do host responsável pela

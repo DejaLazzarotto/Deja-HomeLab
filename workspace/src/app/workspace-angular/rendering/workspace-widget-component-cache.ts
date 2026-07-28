@@ -12,6 +12,10 @@ import {
 } from '@angular/core';
 
 import {
+  WorkspaceWidgetReferenceRegistry,
+} from '../../core/workspace-sdk/runtime/workspace-widget-reference-registry';
+
+import {
   WorkspaceWidgetInstance,
 } from '../../core/workspace-sdk/runtime/workspace-widget';
 
@@ -29,13 +33,17 @@ import {
  * - das mutações de Layout;
  * - do Dashboard;
  * - do Grid;
- * - das regiões;
  * - da API pública do Workspace SDK.
+ *
+ * Além de sua responsabilidade concreta na integração Angular,
+ * esta infraestrutura implementa o contrato institucional de
+ * localização de Widgets renderizados definido pelo Workspace SDK.
  */
 @Injectable({
   providedIn: 'root',
 })
-export class WorkspaceWidgetComponentCache {
+export class WorkspaceWidgetComponentCache
+  implements WorkspaceWidgetReferenceRegistry {
 
   private readonly references = new Map<
     WorkspaceWidgetInstance['id'],

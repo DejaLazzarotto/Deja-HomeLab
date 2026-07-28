@@ -40,6 +40,10 @@ import {
   WorkspaceRenderStrategyFactory,
 } from '../rendering/workspace-render-strategy-factory';
 
+import {
+  WorkspaceWidgetComponentCache,
+} from '../rendering/workspace-widget-component-cache';
+
 /**
  * Serviço oficial de renderização Angular.
  */
@@ -73,8 +77,20 @@ export class WorkspaceAngularRenderingService {
   /**
    * Factory institucional das estratégias de renderização.
    */
-  private readonly renderStrategyFactory =
-    new WorkspaceRenderStrategyFactory();
+  private readonly renderStrategyFactory:
+    WorkspaceRenderStrategyFactory;
+
+  constructor(
+    widgetComponentCache:
+      WorkspaceWidgetComponentCache,
+  ) {
+
+    this.renderStrategyFactory =
+      new WorkspaceRenderStrategyFactory(
+        widgetComponentCache,
+      );
+
+  }
 
   /**
    * Renderiza um Workspace Dashboard resolvido.

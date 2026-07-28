@@ -8,6 +8,14 @@
  */
 
 import {
+  WorkspaceIncrementalRenderExecutor,
+} from '../../core/workspace-sdk/runtime/workspace-incremental-render-executor';
+
+import {
+  WorkspaceIncrementalRenderOperationFactory,
+} from '../../core/workspace-sdk/runtime/workspace-incremental-render-operation-factory';
+
+import {
   WorkspaceRenderContext,
 } from './workspace-render-context';
 
@@ -20,34 +28,62 @@ import {
 } from './workspace-render-strategy';
 
 /**
- * Estratégia institucional preparada para a futura
- * renderização incremental do Workspace.
+ * Estratégia institucional responsável por interpretar
+ * mutações de Layout e tentar aplicá-las incrementalmente.
  *
- * Nesta etapa (W17.5), toda atualização permanece utilizando
- * a estratégia de renderização completa como mecanismo de
- * fallback, preservando integralmente o comportamento atual.
- *
- * Nas etapas seguintes esta infraestrutura passará a atualizar
- * apenas os Widgets efetivamente afetados por cada mutação.
+ * Quando a mutação não puder ser processada pelo mecanismo
+ * incremental, a estratégia utiliza a renderização completa
+ * como fallback.
  */
 export class WorkspaceIncrementalRenderStrategy
   implements WorkspaceRenderStrategy {
 
   constructor(
-    private readonly fullRenderStrategy =
-      new WorkspaceFullRenderStrategy(),
+    private readonly operationFactory:
+      WorkspaceIncrementalRenderOperationFactory,
+
+    private readonly executor:
+      WorkspaceIncrementalRenderExecutor,
+
+    private readonly fullRenderStrategy:
+      WorkspaceFullRenderStrategy,
   ) {}
 
   /**
-   * Aplica uma atualização incremental.
-   *
-   * Enquanto a infraestrutura incremental não estiver
-   * implementada, a atualização é delegada para a estratégia
-   * de renderização completa.
+   * Aplica uma atualização do Dashboard.
    */
   render(
     context: WorkspaceRenderContext,
   ): void {
+
+    const mutation =
+      context.update.mutation;
+
+    if (!mutation) {
+
+      this.fullRenderStrategy.render(
+        context,
+      );
+
+      return;
+
+    }
+
+    const operation =
+      this.operationFactory.create(
+        mutation,
+      );
+
+    const executed =
+      this.executor.execute(
+        operation,
+      );
+
+    if (executed) {
+
+      return;
+
+    }
 
     this.fullRenderStrategy.render(
       context,
