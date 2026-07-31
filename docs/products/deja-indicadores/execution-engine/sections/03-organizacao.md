@@ -4,7 +4,7 @@
 
 Esta seção define a organização institucional dos componentes que compõem o Execution Engine.
 
-Cada componente representa um ativo arquitetural com responsabilidade única dentro do processo de execução das decisões corporativas.
+Cada componente representa um ativo arquitetural com responsabilidade única dentro da infraestrutura de orquestração e execução dos processos institucionais da plataforma.
 
 Essa organização assegura modularidade, reutilização, rastreabilidade e evolução independente.
 
@@ -18,6 +18,7 @@ O Execution Engine é composto pelos seguintes elementos:
 Execution Engine
 │
 ├── Execution Definitions
+├── Execution Requests
 ├── Execution Plans
 ├── Execution Policies
 ├── Execution Rules
@@ -41,6 +42,7 @@ Cada definição estabelece:
 
 - objetivo da execução;
 - domínio de aplicação;
+- tipos de solicitação suportados;
 - entradas obrigatórias;
 - tarefas previstas;
 - políticas aplicáveis;
@@ -51,9 +53,28 @@ As definições permanecem reutilizáveis e versionadas.
 
 ---
 
+## Execution Requests
+
+As **Execution Requests** representam a solicitação institucional que inicia uma execução.
+
+Uma solicitação poderá ser originada por componentes autorizados da plataforma, como:
+
+- Decision Engine;
+- Data Pipeline;
+- Intelligence Core;
+- AI Assistant;
+- APIs institucionais;
+- Scheduler;
+- usuários autorizados;
+- eventos internos.
+
+Cada solicitação deverá possuir identidade, origem, contexto e rastreabilidade próprios.
+
+---
+
 ## Execution Plans
 
-Os **Execution Plans** representam o plano operacional utilizado para executar uma decisão.
+Os **Execution Plans** representam o plano operacional utilizado para executar uma solicitação institucional.
 
 Cada plano pode definir:
 
@@ -106,7 +127,7 @@ O **Execution Context** reúne todas as informações necessárias para realizar
 
 Pode incluir:
 
-- Decision Instance;
+- Execution Request;
 - plano de execução;
 - parâmetros;
 - recursos;
@@ -159,6 +180,7 @@ Os **Execution Events** registram todos os acontecimentos relevantes durante a e
 
 Exemplos:
 
+- solicitação recebida;
 - execução iniciada;
 - tarefa iniciada;
 - tarefa concluída;
@@ -178,7 +200,7 @@ As **Execution Instances** representam cada execução efetivamente realizada.
 Cada instância deverá conter:
 
 - identificador único;
-- Decision Instance associada;
+- Execution Request associada;
 - plano utilizado;
 - contexto;
 - estado atual;
@@ -221,4 +243,4 @@ Cada ativo deverá possuir:
 - documentação;
 - rastreabilidade.
 
-Essa organização assegura que a camada de execução evolua de forma consistente, auditável e totalmente integrada ao restante do Núcleo de Inteligência.
+Essa organização assegura que a camada de execução evolua de forma consistente, auditável e totalmente integrada ao restante da arquitetura da Deja Indicadores.

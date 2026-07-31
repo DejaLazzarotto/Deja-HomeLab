@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Esta seção define o processo institucional utilizado pelo Execution Engine para transformar uma decisão corporativa aprovada em uma execução operacional controlada.
+Esta seção define o processo institucional utilizado pelo Execution Engine para transformar uma solicitação institucional em uma execução operacional controlada.
 
 O processo estabelece uma sequência padronizada de etapas que assegura consistência, monitoramento, rastreabilidade, recuperação de falhas e governança durante todo o ciclo de vida da execução.
 
@@ -13,7 +13,10 @@ O processo estabelece uma sequência padronizada de etapas que assegura consist�
 O fluxo institucional do Execution Engine é representado pela seguinte sequência:
 
 ```text
-Decision Instance
+Execution Request
+        │
+        ▼
+Execution Request Manager
         │
         ▼
 Execution Plan Builder
@@ -58,19 +61,44 @@ Cada etapa possui responsabilidade própria e produz informações utilizadas pe
 
 ---
 
-## Etapa 1 — Recebimento da Decision Instance
+## Etapa 1 — Recebimento da Execution Request
 
-O processo inicia com o recebimento de uma **Decision Instance** previamente consolidada pelo Decision Engine.
+O processo inicia com o recebimento de uma **Execution Request** proveniente de um componente autorizado da plataforma.
 
-Essa decisão representa a autorização institucional para início da execução.
+A solicitação poderá ser originada por:
 
-Nenhuma execução poderá ser iniciada sem uma Decision Instance válida.
+- Decision Engine;
+- Data Pipeline;
+- Intelligence Core;
+- AI Assistant;
+- APIs institucionais;
+- Scheduler;
+- eventos internos;
+- usuários autorizados.
+
+Toda solicitação deverá possuir origem identificável e contexto válido.
 
 ---
 
-## Etapa 2 — Construção do Execution Plan
+## Etapa 2 — Validação da solicitação
 
-O Execution Plan Builder interpreta a decisão recebida e produz um plano operacional.
+O Execution Request Manager realiza a validação inicial da solicitação.
+
+Entre as validações realizadas estão:
+
+- origem autorizada;
+- tipo de execução;
+- parâmetros obrigatórios;
+- contexto operacional;
+- políticas aplicáveis.
+
+Somente solicitações válidas seguem para o planejamento.
+
+---
+
+## Etapa 3 — Construção do Execution Plan
+
+O Execution Plan Builder interpreta a solicitação recebida e produz um plano operacional.
 
 O plano poderá definir:
 
@@ -85,13 +113,14 @@ Após sua geração, o plano torna-se a referência oficial da execução.
 
 ---
 
-## Etapa 3 — Inicialização da execução
+## Etapa 4 — Inicialização da execução
 
 O Execution Orchestrator inicia uma nova Execution Instance.
 
 Nesta etapa são registrados:
 
 - identificador da execução;
+- solicitação recebida;
 - plano utilizado;
 - estado inicial;
 - contexto operacional;
@@ -101,7 +130,7 @@ A partir desse momento a execução passa a ser monitorada.
 
 ---
 
-## Etapa 4 — Orquestração do workflow
+## Etapa 5 — Orquestração do workflow
 
 O Workflow Engine interpreta o Execution Plan e coordena o fluxo operacional.
 
@@ -117,7 +146,7 @@ O Workflow Engine não executa tarefas diretamente.
 
 ---
 
-## Etapa 5 — Despacho das tarefas
+## Etapa 6 — Despacho das tarefas
 
 O Task Dispatcher identifica quais tarefas podem ser iniciadas.
 
@@ -133,7 +162,7 @@ Somente tarefas elegíveis são encaminhadas para execução.
 
 ---
 
-## Etapa 6 — Execução das tarefas
+## Etapa 7 — Execução das tarefas
 
 O Task Executor executa as tarefas previstas no plano.
 
@@ -146,11 +175,11 @@ As tarefas podem envolver:
 - processamento de dados;
 - automações.
 
-O Executor segue estritamente o plano aprovado, sem modificar a Decision Instance.
+O Executor segue estritamente o plano aprovado, sem modificar a solicitação recebida.
 
 ---
 
-## Etapa 7 — Gerenciamento de recursos
+## Etapa 8 — Gerenciamento de recursos
 
 Durante a execução, o Resource Manager controla os recursos necessários.
 
@@ -167,7 +196,7 @@ A disponibilidade dos recursos pode influenciar o andamento da execução.
 
 ---
 
-## Etapa 8 — Integrações
+## Etapa 9 — Integrações
 
 Quando necessário, o Integration Manager realiza a comunicação com sistemas externos.
 
@@ -184,7 +213,7 @@ Todas as integrações permanecem registradas na rastreabilidade da execução.
 
 ---
 
-## Etapa 9 — Tratamento de falhas
+## Etapa 10 — Tratamento de falhas
 
 Caso ocorram falhas durante a execução, poderão ser aplicadas estratégias de recuperação.
 
@@ -199,7 +228,7 @@ Quando a recuperação não for possível, o Compensation Manager poderá execut
 
 ---
 
-## Etapa 10 — Atualização de estado
+## Etapa 11 — Atualização de estado
 
 O Execution State Manager registra todas as transições de estado da execução.
 
@@ -217,13 +246,14 @@ Toda alteração de estado gera eventos institucionais.
 
 ---
 
-## Etapa 11 — Publicação de eventos
+## Etapa 12 — Publicação de eventos
 
 O Execution Event Bus publica todos os eventos relevantes produzidos durante a execução.
 
 Entre eles:
 
-- início da execução;
+- solicitação recebida;
+- execução iniciada;
 - início de tarefa;
 - conclusão de tarefa;
 - mudança de estado;
@@ -236,7 +266,7 @@ Esses eventos podem ser consumidos por outros componentes da plataforma.
 
 ---
 
-## Etapa 12 — Monitoramento
+## Etapa 13 — Monitoramento
 
 O Execution Monitor acompanha continuamente o andamento da execução.
 
@@ -254,13 +284,13 @@ O monitoramento fornece visibilidade operacional em tempo real.
 
 ---
 
-## Etapa 13 — Construção da rastreabilidade
+## Etapa 14 — Construção da rastreabilidade
 
 O Execution Trace Builder consolida toda a rastreabilidade produzida durante a execução.
 
 São preservados vínculos com:
 
-- Decision Instance;
+- Execution Request;
 - Execution Plan;
 - tarefas;
 - eventos;
@@ -272,7 +302,7 @@ Essa rastreabilidade permite reconstruir integralmente o processo de execução.
 
 ---
 
-## Etapa 14 — Persistência
+## Etapa 15 — Persistência
 
 Ao término da execução, a Execution Instance é registrada no Execution Repository.
 
@@ -288,6 +318,6 @@ O repositório torna-se a fonte oficial para:
 
 ## Resultado do processo
 
-Ao final do processo, o Execution Engine produz uma Execution Instance completamente registrada, contendo o histórico operacional, os eventos gerados, os resultados obtidos e a rastreabilidade completa da execução.
+Ao final do processo, o Execution Engine produz uma Execution Instance completamente registrada, contendo a Execution Request de origem, o plano executado, o histórico operacional, os eventos gerados, os resultados obtidos e a rastreabilidade completa da execução.
 
-Essa abordagem estabelece um processo de execução robusto, resiliente e governado, capaz de suportar desde tarefas simples até workflows corporativos complexos, preservando a separação entre decisão e execução definida pela arquitetura da Deja Indicadores.
+Essa abordagem estabelece um processo de execução robusto, resiliente e governado, capaz de suportar desde execuções simples até processos corporativos complexos, preservando a separação entre solicitação, planejamento e execução definida pela arquitetura da Deja Indicadores.

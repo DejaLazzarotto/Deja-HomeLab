@@ -10,44 +10,71 @@ Os princípios aqui definidos garantem que toda execução permaneça consistent
 
 ## Separação de responsabilidades
 
-O Execution Engine possui responsabilidade exclusiva pela execução das decisões corporativas.
+O Execution Engine possui responsabilidade exclusiva pela orquestração e execução dos processos institucionais da plataforma.
 
-As responsabilidades dos componentes do Núcleo de Inteligência permanecem claramente separadas:
+As responsabilidades dos componentes permanecem claramente separadas:
 
-- **Indicator Catalog** produz indicadores.
+- **Data Pipeline** prepara e publica os dados.
+- **Indicator Catalog** define e organiza os indicadores.
 - **Diagnostic Engine** interpreta indicadores e identifica situações.
 - **Recommendation Engine** propõe alternativas.
-- **Decision Engine** consolida a decisão institucional.
-- **Execution Engine** executa a decisão aprovada.
-- **AI Assistant** comunica e explica o processo ao usuário.
+- **Decision Engine** consolida decisões institucionais.
+- **Intelligence Core** coordena o contexto e os serviços inteligentes.
+- **Execution Engine** planeja, orquestra, executa e monitora processos institucionais.
+- **Data Store** realiza a persistência institucional.
+- **AI Assistant** interage com os usuários e apresenta os resultados.
 
 Nenhum componente deverá assumir responsabilidades pertencentes a outro.
 
 ---
 
-## Execução baseada em decisão
+## Execução baseada em solicitações institucionais
 
-Toda execução deverá possuir uma Decision Instance previamente aprovada.
+Toda execução deverá possuir uma solicitação institucional válida.
 
-O Execution Engine não inicia processos por iniciativa própria.
+As solicitações poderão ser originadas por componentes autorizados da plataforma, incluindo:
 
-Toda ação executada deverá possuir uma decisão institucional que a justifique.
+- Decision Engine;
+- Data Pipeline;
+- Intelligence Core;
+- AI Assistant;
+- APIs institucionais;
+- Scheduler;
+- eventos internos;
+- usuários autorizados.
+
+Toda execução deverá possuir origem identificável e contexto de execução completo.
 
 ---
 
-## Imutabilidade da decisão
+## Imutabilidade da solicitação
 
-A decisão recebida pelo Execution Engine é considerada imutável.
+A solicitação recebida pelo Execution Engine é considerada imutável durante sua execução.
 
-Durante a execução não é permitido:
+Não é permitido:
 
-- alterar critérios;
-- modificar políticas;
-- substituir justificativas;
-- redefinir prioridades;
-- alterar o conteúdo da decisão.
+- alterar critérios de execução;
+- modificar parâmetros aprovados;
+- redefinir prioridades da solicitação;
+- alterar o escopo da execução.
 
-Caso uma decisão necessite revisão, um novo processo decisório deverá ser iniciado pelo Decision Engine.
+Caso seja necessária qualquer alteração, uma nova solicitação institucional deverá ser criada.
+
+---
+
+## Planejamento antes da execução
+
+Nenhuma execução deverá iniciar diretamente.
+
+Toda solicitação deverá resultar em um plano de execução contendo, no mínimo:
+
+- contexto;
+- tarefas;
+- dependências;
+- políticas aplicáveis;
+- estratégia de execução.
+
+O planejamento torna-se etapa obrigatória do ciclo de vida da execução.
 
 ---
 
@@ -55,7 +82,7 @@ Caso uma decisão necessite revisão, um novo processo decisório deverá ser in
 
 Sempre que aplicável, as operações executadas deverão ser idempotentes.
 
-Isso significa que uma mesma execução não deverá produzir efeitos colaterais adicionais quando repetida sob as mesmas condições.
+Uma mesma execução não deverá produzir efeitos colaterais adicionais quando repetida sob as mesmas condições.
 
 Esse princípio aumenta a segurança, especialmente em integrações distribuídas e reprocessamentos.
 
@@ -85,6 +112,7 @@ Todo evento relevante da execução deverá ser registrado.
 
 Entre eles:
 
+- criação da execução;
 - início da execução;
 - início e término de tarefas;
 - falhas;
@@ -100,7 +128,7 @@ A observabilidade apoia monitoramento, auditoria e diagnóstico operacional.
 
 Cada execução deverá manter vínculo completo com:
 
-- Decision Instance;
+- solicitação de execução;
 - plano de execução;
 - tarefas executadas;
 - recursos utilizados;
@@ -117,6 +145,7 @@ Toda execução deverá ser auditável.
 
 Devem permanecer registrados:
 
+- origem da solicitação;
 - quem iniciou a execução;
 - quando ocorreu;
 - quais tarefas foram executadas;
@@ -162,10 +191,11 @@ A arquitetura define conceitos e responsabilidades, não tecnologias específica
 
 ## Governança
 
-As execuções corporativas constituem registros institucionais da Deja Indicadores.
+As execuções institucionais constituem registros oficiais da Deja Indicadores.
 
 Seu ciclo de vida deverá contemplar:
 
+- solicitação;
 - planejamento;
 - execução;
 - monitoramento;

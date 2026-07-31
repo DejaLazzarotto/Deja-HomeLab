@@ -32,6 +32,7 @@ O Execution Engine administra diversos ativos institucionais.
 Entre eles:
 
 - Execution Definitions;
+- Execution Requests;
 - Execution Plans;
 - Execution Policies;
 - Execution Rules;
@@ -78,6 +79,7 @@ Todos os ativos deverão possuir versionamento explícito.
 Uma nova versão poderá ser criada quando houver alterações em:
 
 - definições;
+- tipos de solicitações suportadas;
 - planos;
 - workflows;
 - políticas;
@@ -101,13 +103,28 @@ A aprovação confirma que o ativo:
 
 ---
 
+## Governança das execuções
+
+Toda Execution Request deverá possuir:
+
+- origem identificável;
+- autorização para execução;
+- contexto válido;
+- identificação do componente solicitante;
+- rastreabilidade completa.
+
+O Execution Engine somente poderá iniciar execuções a partir de solicitações institucionais válidas.
+
+---
+
 ## Auditoria
 
 Toda execução deverá ser auditável.
 
 A auditoria poderá verificar:
 
-- decisão de origem;
+- solicitação de origem;
+- componente solicitante;
 - plano utilizado;
 - tarefas executadas;
 - eventos registrados;
@@ -117,6 +134,8 @@ A auditoria poderá verificar:
 - retries;
 - compensações;
 - resultado produzido.
+
+Quando aplicável, também poderá ser identificada a Decision Instance que originou a solicitação.
 
 Os registros deverão permanecer íntegros e imutáveis.
 
@@ -186,4 +205,4 @@ Novas capacidades poderão ser incorporadas sem comprometer:
 
 A governança assegura que o Execution Engine permaneça uma infraestrutura operacional confiável, auditável e alinhada aos objetivos organizacionais.
 
-Por meio de regras claras de administração, versionamento, revisão e conformidade, a Deja Indicadores garante que a execução das decisões evolua de forma sustentável, preservando a integridade de todo o ciclo operacional.
+Ao centralizar o gerenciamento das solicitações, do planejamento, da execução e da rastreabilidade dos processos institucionais, a Deja Indicadores garante que toda execução evolua de forma sustentável, preservando a integridade de todo o ciclo operacional da plataforma.

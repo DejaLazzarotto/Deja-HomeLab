@@ -24,6 +24,22 @@ Esses princípios garantem uma evolução sustentável da camada de execução.
 
 ---
 
+## Ampliação das fontes de execução
+
+Novas versões poderão ampliar os componentes autorizados a produzir Execution Requests.
+
+Além dos componentes atualmente previstos, a arquitetura poderá suportar:
+
+- novos serviços da plataforma;
+- módulos especializados;
+- produtos da Deja Platform;
+- integrações externas;
+- mecanismos de automação.
+
+Essa evolução ocorrerá preservando o modelo institucional baseado em Execution Requests.
+
+---
+
 ## Evolução dos workflows
 
 O Workflow Engine poderá incorporar novas capacidades ao longo do tempo.
@@ -68,7 +84,7 @@ Entre as possibilidades:
 - otimização automática de recursos;
 - adaptação ao contexto operacional.
 
-Essas capacidades deverão permanecer subordinadas às decisões institucionais previamente aprovadas.
+Essas capacidades deverão permanecer subordinadas às políticas institucionais e às Execution Requests recebidas.
 
 ---
 
@@ -130,7 +146,7 @@ Exemplos:
 - alteração de estratégias de recuperação;
 - adaptação a indisponibilidades operacionais.
 
-Essas adaptações deverão respeitar as políticas institucionais e preservar a integridade da Decision Instance.
+Essas adaptações deverão respeitar as políticas institucionais e preservar a integridade da Execution Request e do Execution Plan aprovados.
 
 ---
 
@@ -170,3 +186,5 @@ Essas capacidades fortalecerão a confiabilidade da infraestrutura operacional.
 O Execution Engine deverá consolidar-se como a infraestrutura institucional de execução e orquestração de processos da Deja Platform.
 
 Sua evolução buscará ampliar a escalabilidade, a automação e a capacidade operacional da plataforma, preservando os princípios arquiteturais de separação de responsabilidades, rastreabilidade, governança e independência tecnológica estabelecidos para todo o ecossistema da Deja Indicadores.
+
+Como componente transversal da plataforma, o Execution Engine deverá executar processos originados por qualquer componente autorizado, mantendo um modelo único de planejamento, orquestração, execução, monitoramento e rastreabilidade para toda a Deja Platform.

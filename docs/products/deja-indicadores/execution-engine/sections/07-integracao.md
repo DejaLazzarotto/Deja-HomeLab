@@ -2,9 +2,9 @@
 
 ## Objetivo
 
-Esta seção descreve a integração do Execution Engine com os demais componentes da Deja Indicadores e com os serviços externos envolvidos na execução das decisões corporativas.
+Esta seção descreve a integração do Execution Engine com os demais componentes da arquitetura da Deja Indicadores e com os serviços externos envolvidos na execução dos processos institucionais.
 
-O Execution Engine atua como a camada institucional de orquestração operacional da plataforma, consumindo decisões oficiais e coordenando sua execução por meio de workflows, integrações e recursos corporativos.
+O Execution Engine atua como a camada institucional de orquestração operacional da plataforma, recebendo solicitações de componentes autorizados e coordenando sua execução por meio de workflows, integrações e recursos corporativos.
 
 ---
 
@@ -13,44 +13,69 @@ O Execution Engine atua como a camada institucional de orquestração operaciona
 O posicionamento arquitetural do Execution Engine é representado pelo seguinte fluxo:
 
 ```text
-Knowledge Base
-        │
-        ▼
-Indicator Catalog
-        │
-        ▼
-Diagnostic Engine
-        │
-        ▼
-Recommendation Engine
-        │
-        ▼
-Decision Engine
-        │
-        ▼
-Execution Engine
-        │
-        ├────────► AI Assistant
+                  Data Pipeline
+                        │
+                        │
+Knowledge Base ─────────┤
+                        │
+Indicator Catalog ──────┤
+                        │
+Diagnostic Engine ──────┤
+                        │
+Recommendation Engine ──┤
+                        │
+Decision Engine ────────┤
+                        │
+Intelligence Core ──────┤
+                        │
+AI Assistant ───────────┤
+                        │
+APIs / Scheduler ───────┤
+                        ▼
+                Execution Engine
+                        │
         ├────────► Workflows
         ├────────► Sistemas Corporativos
         ├────────► APIs
-        ├────────► Serviços
+        ├────────► Serviços da Plataforma
         └────────► Plataformas Externas
 ```
 
-O Execution Engine representa a fronteira entre o processo decisório interno e a execução operacional.
+O Execution Engine representa a camada institucional responsável pela execução operacional dos processos da plataforma.
+
+---
+
+## Integração com o Intelligence Core
+
+O Intelligence Core coordena os serviços inteligentes da plataforma e pode solicitar execuções institucionais.
+
+O Execution Engine utiliza o contexto fornecido pelo Intelligence Core, preservando a separação entre coordenação e execução.
 
 ---
 
 ## Integração com o Decision Engine
 
-O Decision Engine constitui a origem oficial das execuções.
+O Decision Engine permanece como um dos principais produtores de Execution Requests.
 
-Cada Execution Instance deverá estar obrigatoriamente associada a uma Decision Instance válida.
+Quando uma decisão exigir ações operacionais, ela poderá originar uma solicitação de execução.
 
 O Execution Engine não interpreta, modifica ou substitui decisões.
 
-Sua responsabilidade limita-se à sua execução.
+Sua responsabilidade limita-se ao planejamento e à execução operacional da solicitação recebida.
+
+---
+
+## Integração com o Data Pipeline
+
+O Data Pipeline poderá iniciar execuções relacionadas a:
+
+- processamento de dados;
+- validações;
+- publicações;
+- sincronizações;
+- cargas operacionais.
+
+Essa integração permite automatizar processos de tratamento de dados utilizando a infraestrutura institucional de execução.
 
 ---
 
@@ -83,7 +108,7 @@ Pode utilizar:
 - falhas;
 - resultados.
 
-O AI Assistant não controla nem interfere diretamente na execução.
+O AI Assistant não controla diretamente a execução, podendo apenas originar solicitações autorizadas quando permitido pelas políticas institucionais.
 
 ---
 
@@ -137,7 +162,7 @@ O restante da arquitetura permanece desacoplado dos detalhes dessas tecnologias.
 
 ---
 
-## Integração com Serviços
+## Integração com Serviços da Plataforma
 
 O Execution Engine poderá consumir serviços internos da Deja Platform.
 
@@ -148,7 +173,9 @@ Exemplos:
 - notificações;
 - auditoria;
 - armazenamento;
-- observabilidade.
+- observabilidade;
+- configuração;
+- registro de eventos.
 
 Esses serviços permanecem independentes da lógica de execução.
 
@@ -203,6 +230,6 @@ Esses princípios asseguram a evolução sustentável da arquitetura da Deja Ind
 
 ## Papel na plataforma
 
-O Execution Engine representa a camada institucional responsável por conectar o processo decisório da Deja Indicadores ao ambiente operacional da organização.
+O Execution Engine representa a camada institucional responsável pela execução operacional dos processos da Deja Indicadores.
 
-Sua arquitetura permite que decisões corporativas sejam executadas de maneira controlada, monitorada, auditável e integrada, preservando a separação entre inteligência, decisão e execução e preparando o componente para futura reutilização em outros produtos da Deja Platform.
+Sua arquitetura permite que componentes autorizados da plataforma iniciem processos de forma controlada, monitorada, auditável e integrada, preservando a separação entre solicitação, planejamento, inteligência e execução e preparando o componente para reutilização em toda a Deja Platform.

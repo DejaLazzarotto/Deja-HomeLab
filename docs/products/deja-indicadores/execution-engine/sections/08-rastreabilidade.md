@@ -4,7 +4,7 @@
 
 Esta seção estabelece o modelo institucional de rastreabilidade do Execution Engine.
 
-Toda execução deverá manter um histórico completo e verificável das ações realizadas, dos recursos utilizados, dos eventos gerados e dos resultados obtidos, permitindo auditoria, monitoramento e reconstrução integral do processo operacional.
+Toda execução deverá manter um histórico completo e verificável das solicitações recebidas, dos planos gerados, das ações realizadas, dos recursos utilizados, dos eventos produzidos e dos resultados obtidos, permitindo auditoria, monitoramento e reconstrução integral do processo operacional.
 
 A rastreabilidade representa um dos pilares da governança da camada de execução da Deja Indicadores.
 
@@ -15,6 +15,7 @@ A rastreabilidade representa um dos pilares da governança da camada de execuç�
 A rastreabilidade da execução deve garantir:
 
 - reconstrução completa da execução;
+- identificação da solicitação de origem;
 - identificação de todas as ações realizadas;
 - preservação da sequência cronológica dos eventos;
 - identificação dos recursos utilizados;
@@ -28,7 +29,28 @@ Nenhuma execução institucional deverá existir sem rastreabilidade.
 
 ## Cadeia de rastreabilidade
 
-Cada Execution Instance deverá manter vínculos completos com toda a cadeia de inteligência e execução.
+Cada Execution Instance deverá manter vínculos completos com toda a cadeia institucional.
+
+```text
+Execution Request
+        │
+        ▼
+Execution Definition
+        │
+        ▼
+Execution Plan
+        │
+        ▼
+Execution Instance
+        │
+        ├── Execution Tasks
+        ├── Execution Events
+        ├── Execution Resources
+        ├── Execution Outcome
+        └── Execution Trace
+```
+
+Quando a execução for originada pelo fluxo de inteligência da plataforma, a cadeia poderá ser estendida da seguinte forma:
 
 ```text
 Knowledge Item
@@ -46,10 +68,13 @@ Recommendation Instance
 Decision Instance
         │
         ▼
+Execution Request
+        │
+        ▼
 Execution Instance
 ```
 
-Essa cadeia permite compreender toda a origem de uma execução operacional.
+Essa estrutura permite rastrear tanto o processo operacional quanto sua origem institucional.
 
 ---
 
@@ -57,17 +82,23 @@ Essa cadeia permite compreender toda a origem de uma execução operacional.
 
 Uma Execution Instance poderá manter referências para:
 
-- Knowledge Items;
-- Indicators;
-- Diagnostic Instances;
-- Recommendation Instances;
-- Decision Instance;
+- Execution Request;
 - Execution Definition;
 - Execution Plan;
 - Execution Tasks;
 - Execution Events;
 - Execution Resources;
-- Execution Outcome.
+- Execution Outcome;
+- componentes de origem;
+- integrações executadas.
+
+Quando aplicável, também poderão ser mantidas referências para:
+
+- Knowledge Items;
+- Indicators;
+- Diagnostic Instances;
+- Recommendation Instances;
+- Decision Instances.
 
 Todos esses ativos deverão possuir identificadores institucionais únicos.
 
@@ -77,6 +108,7 @@ Todos esses ativos deverão possuir identificadores institucionais únicos.
 
 Além das referências aos ativos, a Execution Instance deverá preservar:
 
+- origem da solicitação;
 - contexto utilizado;
 - plano de execução;
 - tarefas executadas;
@@ -100,13 +132,15 @@ A rastreabilidade deverá registrar a versão dos ativos utilizados durante a ex
 
 Entre eles:
 
-- versão da Decision Instance;
+- versão da Execution Request;
 - versão da Execution Definition;
 - versão do Execution Plan;
 - versão das políticas;
 - versão das regras;
 - versão dos workflows;
 - versão das integrações.
+
+Quando a execução for originada pelo fluxo decisório, também poderá ser registrada a versão da Decision Instance.
 
 Esse mecanismo garante reprodutibilidade histórica.
 
@@ -116,7 +150,8 @@ Esse mecanismo garante reprodutibilidade histórica.
 
 A rastreabilidade deverá permitir responder, entre outras, às seguintes questões:
 
-- Qual decisão originou esta execução?
+- Qual solicitação originou esta execução?
+- Qual componente iniciou a execução?
 - Qual plano foi utilizado?
 - Quais tarefas foram executadas?
 - Quais tarefas falharam?
@@ -137,6 +172,7 @@ Uma execução deverá poder ser analisada e compreendida integralmente a partir
 
 A reprodutibilidade depende da preservação de:
 
+- solicitação;
 - contexto;
 - plano;
 - tarefas;
@@ -161,7 +197,7 @@ Os registros produzidos pelo Execution Engine apoiam:
 - conformidade regulatória;
 - investigação de incidentes;
 - melhoria contínua;
-- otimização dos workflows;
+- otimização dos processos de execução;
 - avaliação operacional.
 
 ---
@@ -170,4 +206,4 @@ Os registros produzidos pelo Execution Engine apoiam:
 
 A rastreabilidade transforma cada Execution Instance em um registro corporativo completo do processo operacional.
 
-Dessa forma, o Execution Engine assegura transparência, auditabilidade e confiabilidade da execução das decisões corporativas, preservando a integridade de todo o ciclo de vida operacional da Deja Indicadores.
+Independentemente da origem da solicitação, o Execution Engine assegura transparência, auditabilidade e confiabilidade da execução, preservando a integridade de todo o ciclo de vida operacional da Deja Indicadores.

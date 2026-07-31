@@ -4,7 +4,7 @@
 
 Esta seção descreve os componentes que compõem a arquitetura interna do Execution Engine.
 
-O Execution Engine é responsável por transformar decisões institucionais em execuções operacionais controladas, coordenando workflows, tarefas, integrações, recursos e monitoramento.
+O Execution Engine é responsável por transformar solicitações institucionais em execuções operacionais controladas, coordenando planejamento, workflows, tarefas, integrações, recursos e monitoramento.
 
 Cada componente possui responsabilidade única, interfaces explícitas e baixo acoplamento, permitindo evolução independente da implementação.
 
@@ -18,6 +18,7 @@ A arquitetura institucional do Execution Engine é composta pelos seguintes comp
 Execution Engine
 │
 ├── Execution Definition Registry
+├── Execution Request Manager
 ├── Execution Plan Builder
 ├── Execution Orchestrator
 ├── Workflow Engine
@@ -53,13 +54,29 @@ Suas responsabilidades incluem:
 
 ---
 
+## Execution Request Manager
+
+Responsável por receber, validar e preparar as Execution Requests.
+
+Suas responsabilidades incluem:
+
+- validar a origem da solicitação;
+- validar parâmetros obrigatórios;
+- identificar o tipo de execução;
+- construir o contexto inicial;
+- encaminhar a solicitação para o planejamento.
+
+Todas as execuções iniciam por este componente.
+
+---
+
 ## Execution Plan Builder
 
 Constrói o plano operacional da execução.
 
 É responsável por:
 
-- interpretar a Decision Instance;
+- interpretar a Execution Request;
 - selecionar a Execution Definition;
 - gerar o Execution Plan;
 - organizar tarefas;
@@ -187,13 +204,13 @@ Controla o estado institucional da execução.
 
 Exemplos:
 
-- Planned
-- Waiting
-- Running
-- Paused
-- Completed
-- Cancelled
-- Failed
+- Planned;
+- Waiting;
+- Running;
+- Paused;
+- Completed;
+- Cancelled;
+- Failed.
 
 Toda mudança de estado gera eventos.
 
@@ -225,7 +242,7 @@ Quando uma execução não puder ser concluída, esse componente poderá:
 - restaurar estados anteriores;
 - registrar inconsistências.
 
-A compensação não altera a Decision Instance.
+A compensação não altera a Execution Request recebida.
 
 ---
 
@@ -250,6 +267,7 @@ Centraliza todos os eventos produzidos durante a execução.
 
 Entre eles:
 
+- solicitação recebida;
 - execução iniciada;
 - tarefa iniciada;
 - tarefa concluída;
@@ -269,7 +287,7 @@ Constrói toda a rastreabilidade da execução.
 
 Mantém vínculos com:
 
-- Decision Instance;
+- Execution Request;
 - Execution Plan;
 - tarefas;
 - eventos;
@@ -286,7 +304,7 @@ Responsável pela criação da Execution Instance.
 Cada instância deverá conter:
 
 - identificador único;
-- Decision Instance;
+- Execution Request;
 - plano utilizado;
 - estado;
 - histórico;
@@ -314,8 +332,8 @@ Suas responsabilidades incluem:
 
 ## Organização arquitetural
 
-O Execution Engine constitui a camada operacional do Núcleo de Inteligência da Deja Indicadores.
+O Execution Engine constitui a camada operacional da arquitetura da Deja Indicadores.
 
-Sua arquitetura foi concebida para suportar desde execuções simples até workflows corporativos complexos, preservando os princípios de modularidade, rastreabilidade, governança e independência tecnológica.
+Sua arquitetura foi concebida para suportar desde execuções simples até processos corporativos complexos, preservando os princípios de modularidade, rastreabilidade, governança e independência tecnológica.
 
-Essa organização permite que o Execution Engine evolua futuramente para uma infraestrutura institucional de orquestração de processos reutilizável por toda a Deja Platform.
+Essa organização permite que o Execution Engine evolua para uma infraestrutura institucional de orquestração reutilizável por todos os componentes da Deja Platform.

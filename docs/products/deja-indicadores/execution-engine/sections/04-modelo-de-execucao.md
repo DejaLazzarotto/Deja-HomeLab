@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Esta seção define o modelo conceitual utilizado pelo Execution Engine para representar execuções corporativas de forma padronizada, rastreável e governada.
+Esta seção define o modelo conceitual utilizado pelo Execution Engine para representar execuções institucionais de forma padronizada, rastreável e governada.
 
 O modelo estabelece os elementos fundamentais que compõem uma execução e como esses elementos se relacionam durante todo o seu ciclo de vida.
 
@@ -10,13 +10,13 @@ O modelo estabelece os elementos fundamentais que compõem uma execução e como
 
 ## Conceito de execução
 
-Uma execução representa a materialização operacional de uma Decision Instance previamente aprovada.
+Uma execução representa a materialização operacional de uma Execution Request institucional.
 
-Seu objetivo é transformar uma decisão institucional em um conjunto organizado de ações executáveis, preservando integridade, governança, observabilidade e rastreabilidade.
+Seu objetivo é transformar uma solicitação autorizada em um conjunto organizado de ações executáveis, preservando integridade, governança, observabilidade e rastreabilidade.
 
-A execução não altera a decisão.
+A execução não altera a solicitação recebida.
 
-Ela apenas implementa operacionalmente aquilo que foi decidido.
+Sua responsabilidade consiste em planejar, coordenar, executar, monitorar e registrar todo o processo operacional.
 
 ---
 
@@ -28,6 +28,7 @@ Toda execução é composta pelos seguintes elementos:
 Execution
 │
 ├── Definition
+├── Request
 ├── Context
 ├── Plan
 ├── Tasks
@@ -53,6 +54,7 @@ Ela estabelece:
 
 - objetivo;
 - domínio de aplicação;
+- tipos de solicitação suportados;
 - entradas obrigatórias;
 - plano de execução esperado;
 - estados suportados;
@@ -62,13 +64,30 @@ As definições permanecem reutilizáveis e versionadas.
 
 ---
 
+## Execution Request
+
+A **Execution Request** representa a solicitação institucional que origina uma execução.
+
+Ela identifica:
+
+- componente de origem;
+- tipo de execução;
+- contexto inicial;
+- parâmetros recebidos;
+- prioridade;
+- momento da solicitação.
+
+Toda execução deverá possuir exatamente uma Execution Request associada.
+
+---
+
 ## Execution Context
 
 O **Execution Context** reúne todas as informações necessárias para realizar uma execução.
 
 Pode incluir:
 
-- Decision Instance;
+- Execution Request;
 - parâmetros;
 - usuários;
 - ambiente;
@@ -82,7 +101,7 @@ O contexto permanece associado durante todo o ciclo de vida da execução.
 
 ## Execution Plan
 
-O **Execution Plan** representa a estratégia operacional utilizada para executar a decisão.
+O **Execution Plan** representa a estratégia operacional utilizada para executar a solicitação.
 
 O plano pode definir:
 
@@ -141,7 +160,7 @@ Podem estabelecer:
 - requisitos de segurança;
 - critérios de conformidade.
 
-As políticas não alteram a decisão recebida, apenas regulam sua execução.
+As políticas regulam a execução sem alterar sua finalidade.
 
 ---
 
@@ -187,13 +206,14 @@ Os **Execution Events** registram todos os acontecimentos relevantes ocorridos d
 
 Exemplos:
 
-- início;
+- solicitação recebida;
+- início da execução;
 - mudança de estado;
 - início de tarefa;
 - conclusão de tarefa;
 - falhas;
 - tentativas de recuperação;
-- integração realizada;
+- integrações executadas;
 - encerramento.
 
 Os eventos compõem o histórico operacional da execução.
@@ -242,7 +262,7 @@ O **Execution Trace** representa toda a rastreabilidade da execução.
 
 Deve manter vínculos com:
 
-- Decision Instance;
+- Execution Request;
 - Execution Definition;
 - Execution Plan;
 - tarefas;
@@ -259,4 +279,4 @@ O Execution Trace garante a completa auditabilidade do processo operacional.
 
 O modelo de execução definido nesta arquitetura estabelece um padrão único para todas as execuções produzidas pela Deja Indicadores.
 
-Esse padrão assegura consistência, governança, rastreabilidade e evolução controlada da camada de execução, independentemente da tecnologia utilizada ou do domínio de negócio.
+Independentemente da origem da solicitação, toda execução deverá seguir o mesmo ciclo de vida institucional, assegurando consistência, governança, rastreabilidade e evolução controlada da camada de execução.
