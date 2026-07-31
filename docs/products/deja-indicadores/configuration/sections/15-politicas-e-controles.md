@@ -1,0 +1,97 @@
+# 15. Políticas e Controles
+
+## Objetivo
+
+Esta seção descreve as políticas e controles aplicados ao Configuration da Deja Platform.
+
+O objetivo é estabelecer mecanismos institucionais para garantir que configurações sejam administradas de forma segura, controlada e alinhada aos requisitos de governança da plataforma.
+
+---
+
+# Conceito de políticas configuracionais
+
+Políticas configuracionais definem regras que controlam como configurações podem ser criadas, modificadas, utilizadas e distribuídas.
+
+Elas representam restrições e orientações institucionais aplicáveis ao ciclo de vida configuracional.
+
+---
+
+# Configuration Policy Engine
+
+O Configuration Policy Engine é responsável pela aplicação das políticas configuracionais.
+
+Responsabilidades:
+
+- avaliar regras;
+- bloquear operações inválidas;
+- aplicar controles;
+- registrar decisões;
+- integrar-se ao Security.
+
+---
+
+# Tipos de políticas
+
+## Política de criação
+
+Define regras para criação de novas configurações.
+
+Pode controlar:
+
+- responsáveis autorizados;
+- nomenclatura;
+- classificação;
+- requisitos mínimos.
+
+---
+
+## Política de alteração
+
+Controla modificações existentes.
+
+Pode exigir:
+
+- justificativa;
+- aprovação;
+- validação;
+- revisão.
+
+---
+
+## Política de publicação
+
+Define condições para disponibilizar uma configuração.
+
+Exemplos:
+
+- validação concluída;
+- aprovação obtida;
+- ambiente autorizado.
+
+---
+
+## Política de acesso
+
+Controla quem pode consultar ou alterar configurações.
+
+Integra-se com:
+
+- identidade;
+- autenticação;
+- autorização.
+
+---
+
+## Política de retenção
+
+Define:
+
+- tempo de armazenamento;
+- histórico obrigatório;
+- descarte controlado.
+
+---
+
+# Classificação de configurações
+
+Configurações podem possuir classificações diferentes:
