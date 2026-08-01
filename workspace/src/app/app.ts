@@ -2,12 +2,7 @@ import {
   Component,
   OnInit,
   inject,
-  signal,
 } from '@angular/core';
-
-import {
-  RouterOutlet,
-} from '@angular/router';
 
 import {
   WorkspaceBootstrapService,
@@ -21,17 +16,20 @@ import {
   createWorkspaceRuntimeContext,
 } from './workspace-angular/bootstrap/workspace-runtime-context';
 
+import {
+  WorkspaceRootComponent,
+} from './workspace-angular/components/workspace-root/workspace-root';
+
 @Component({
   selector: 'app-root',
+  standalone: true,
   imports: [
-    RouterOutlet,
+    WorkspaceRootComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App implements OnInit {
-
-  protected readonly title = signal('deja-workspace');
 
   private readonly workspace =
     inject(WorkspaceBootstrapService);
