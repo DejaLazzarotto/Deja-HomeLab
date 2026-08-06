@@ -54,46 +54,15 @@
 }
 
 .workspace-header__logo {
-  position: relative;
-  display: grid;
-  place-items: center;
+  display: block;
   flex: 0 0 auto;
   width: 2.75rem;
   height: 2.75rem;
-  overflow: hidden;
-  border: 1px solid var(--workspace-color-primary-border);
+  object-fit: contain;
   border-radius: var(--workspace-radius-lg);
-  background:
-    linear-gradient(
-      145deg,
-      var(--workspace-color-primary-hover) 0%,
-      var(--workspace-color-primary) 48%,
-      var(--workspace-color-primary-active) 100%
-    );
-  color: var(--workspace-color-primary-contrast);
-  font-size: var(--workspace-font-size-lg);
-  font-weight: var(--workspace-font-weight-bold);
-  line-height: 1;
   box-shadow:
     var(--workspace-shadow-primary),
-    0 1px 0 rgb(255 255 255 / 24%) inset;
-}
-
-.workspace-header__logo::after {
-  position: absolute;
-  top: -40%;
-  left: -15%;
-  width: 70%;
-  height: 160%;
-  content: "";
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgb(255 255 255 / 22%),
-      transparent
-    );
-  transform: rotate(24deg);
+    0 1px 0 rgb(255 255 255 / 12%) inset;
 }
 
 .workspace-header__titles {
