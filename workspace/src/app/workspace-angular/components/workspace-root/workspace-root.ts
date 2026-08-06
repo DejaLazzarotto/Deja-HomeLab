@@ -3,9 +3,8 @@
  *
  * Workspace Root Component
  *
- * Componente raiz responsável por hospedar a árvore visual do
- * Workspace. Atua como ponto de entrada da renderização Angular,
- * permanecendo desacoplado do Workspace SDK.
+ * Componente raiz responsável por compor a árvore visual do
+ * Workspace e iniciar seu ciclo de renderização institucional.
  */
 
 import {
@@ -17,8 +16,20 @@ import {
 } from '@angular/core';
 
 import {
-  WorkspaceRenderHostDirective,
-} from '../../rendering/workspace-render-host.directive';
+  WorkspaceHeaderComponent,
+} from '../workspace-header/workspace-header';
+
+import {
+  WorkspaceMainComponent,
+} from '../workspace-main/workspace-main';
+
+import {
+  WorkspaceSidebarComponent,
+} from '../workspace-sidebar/workspace-sidebar';
+
+import {
+  WorkspaceStatusBarComponent,
+} from '../workspace-status-bar/workspace-status-bar';
 
 import {
   WorkspaceShellController,
@@ -28,7 +39,10 @@ import {
   selector: 'deja-workspace-root',
   standalone: true,
   imports: [
-    WorkspaceRenderHostDirective,
+    WorkspaceHeaderComponent,
+    WorkspaceSidebarComponent,
+    WorkspaceMainComponent,
+    WorkspaceStatusBarComponent,
   ],
   templateUrl: './workspace-root.html',
   styleUrl: './workspace-root.scss',
@@ -38,17 +52,17 @@ export class WorkspaceRootComponent
   implements AfterViewInit, OnDestroy {
 
   /**
-   * Host oficial onde a árvore visual do Workspace será
-   * renderizada.
+   * Área central oficial responsável por fornecer o host
+   * de renderização dos Dashboards.
    */
   @ViewChild(
-    WorkspaceRenderHostDirective,
+    WorkspaceMainComponent,
     {
       static: true,
     },
   )
-  private readonly renderHost!:
-    WorkspaceRenderHostDirective;
+  private readonly workspaceMain!:
+    WorkspaceMainComponent;
 
   constructor(
     private readonly shell:
@@ -56,8 +70,8 @@ export class WorkspaceRootComponent
   ) {}
 
   /**
-   * Inicia a camada visual somente depois que o host Angular
-   * estiver disponível.
+   * Inicia a camada visual somente depois que todos os
+   * componentes permanentes da Shell estiverem disponíveis.
    */
   ngAfterViewInit(): void {
 
@@ -81,7 +95,7 @@ export class WorkspaceRootComponent
   private async startShell(): Promise<void> {
 
     await this.shell.start(
-      this.renderHost,
+      this.workspaceMain.getRenderHost(),
     );
 
   }

@@ -1,0 +1,66 @@
+:root {
+  color-scheme: dark;
+
+  --workspace-color-background: #111315;
+  --workspace-color-surface: #1a1d20;
+  --workspace-color-surface-elevated: #22262a;
+  --workspace-color-surface-hover: #2b3035;
+
+  --workspace-color-border: #343a40;
+  --workspace-color-border-strong: #454d55;
+
+  --workspace-color-text: #f2f4f5;
+  --workspace-color-text-secondary: #aeb5bc;
+  --workspace-color-text-muted: #7f8891;
+
+  --workspace-color-primary: #4c9aff;
+  --workspace-color-primary-hover: #6aacff;
+  --workspace-color-primary-contrast: #08111d;
+
+  --workspace-color-success: #4caf7a;
+  --workspace-color-warning: #d8a644;
+  --workspace-color-danger: #d86161;
+  --workspace-color-info: #54a6d8;
+
+  --workspace-font-family:
+    Inter,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+
+  --workspace-font-size-xs: 0.75rem;
+  --workspace-font-size-sm: 0.875rem;
+  --workspace-font-size-md: 1rem;
+  --workspace-font-size-lg: 1.125rem;
+  --workspace-font-size-xl: 1.5rem;
+
+  --workspace-font-weight-regular: 400;
+  --workspace-font-weight-medium: 500;
+  --workspace-font-weight-semibold: 600;
+  --workspace-font-weight-bold: 700;
+
+  --workspace-spacing-xs: 0.25rem;
+  --workspace-spacing-sm: 0.5rem;
+  --workspace-spacing-md: 1rem;
+  --workspace-spacing-lg: 1.5rem;
+  --workspace-spacing-xl: 2rem;
+
+  --workspace-radius-sm: 0.25rem;
+  --workspace-radius-md: 0.5rem;
+  --workspace-radius-lg: 0.75rem;
+
+  --workspace-shadow-sm:
+    0 1px 2px rgb(0 0 0 / 24%);
+
+  --workspace-shadow-md:
+    0 4px 12px rgb(0 0 0 / 28%);
+
+  --workspace-transition-fast: 120ms ease;
+  --workspace-transition-default: 180ms ease;
+
+  --workspace-header-height: 4rem;
+  --workspace-sidebar-width: 16rem;
+  --workspace-status-bar-height: 2rem;
+}

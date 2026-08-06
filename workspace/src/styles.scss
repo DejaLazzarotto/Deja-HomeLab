@@ -1,1 +1,23 @@
-/* You can add global styles to this file, and also import other style files */
+@use "./app/workspace-angular/theme/workspace-theme";
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--workspace-color-background);
+  color: var(--workspace-color-text);
+  font-family: var(--workspace-font-family);
+  font-size: var(--workspace-font-size-md);
+  overflow: hidden;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}

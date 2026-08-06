@@ -1,0 +1,34 @@
+:host {
+  display: block;
+  grid-area: status;
+  min-width: 0;
+}
+
+.workspace-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--workspace-status-bar-height);
+  padding: 0 var(--workspace-spacing-lg);
+  background: var(--workspace-color-surface);
+  border-top: 1px solid var(--workspace-color-border);
+  color: var(--workspace-color-text-secondary);
+  font-size: var(--workspace-font-size-xs);
+}
+
+.workspace-status-bar__status {
+  display: flex;
+  align-items: center;
+  gap: var(--workspace-spacing-sm);
+}
+
+.workspace-status-bar__indicator {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--workspace-color-success);
+}
+
+.workspace-status-bar__environment {
+  color: var(--workspace-color-text-muted);
+}

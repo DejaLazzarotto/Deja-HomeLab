@@ -1,0 +1,21 @@
+:host {
+  display: block;
+  grid-area: main;
+  min-width: 0;
+  min-height: 0;
+}
+
+.workspace-main {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--workspace-spacing-lg);
+  overflow: auto;
+  background: var(--workspace-color-background);
+}
+
+.workspace-main__content {
+  width: 100%;
+  min-height: 100%;
+}
