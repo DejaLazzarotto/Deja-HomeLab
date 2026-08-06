@@ -41,6 +41,8 @@ import { WorkspaceLayoutRegion } from '../../core/workspace-sdk/runtime/workspac
 
 import { WorkspaceLocalStorageLayoutStorage } from '../../core/workspace-sdk/runtime/workspace-local-storage-layout-storage';
 
+import { WorkspaceNavigation } from '../../core/workspace-sdk/runtime/workspace-navigation';
+
 import { WorkspaceRuntime } from '../../core/workspace-sdk/runtime/workspace-runtime';
 
 import { WorkspaceWidget } from '../../core/workspace-sdk/runtime/workspace-widget';
@@ -59,13 +61,20 @@ export class WorkspaceComposition {
   /**
    * Identificadores dos recursos institucionais iniciais.
    */
-  private static readonly INITIAL_DASHBOARD_ID = 'deja.workspace.dashboard.initial';
+  private static readonly INITIAL_DASHBOARD_ID =
+    'deja.workspace.dashboard.initial';
 
-  private static readonly INITIAL_LAYOUT_ID = 'deja.workspace.layout.initial';
+  private static readonly INITIAL_NAVIGATION_ID =
+    'deja.workspace.navigation.initial';
 
-  private static readonly MAIN_REGION_ID = 'deja.workspace.region.main';
+  private static readonly INITIAL_LAYOUT_ID =
+    'deja.workspace.layout.initial';
 
-  private static readonly WELCOME_WIDGET_ID = 'deja.workspace.widget.welcome';
+  private static readonly MAIN_REGION_ID =
+    'deja.workspace.region.main';
+
+  private static readonly WELCOME_WIDGET_ID =
+    'deja.workspace.widget.welcome';
 
   /**
    * Cria toda a infraestrutura institucional do Workspace.
@@ -86,71 +95,95 @@ export class WorkspaceComposition {
      * Armazenamento institucional de referência utilizado
      * pelo Layout Engine e pela infraestrutura de persistência.
      */
-    const layoutStorage = new WorkspaceLocalStorageLayoutStorage();
+    const layoutStorage =
+      new WorkspaceLocalStorageLayoutStorage();
 
     /**
      * Layout Engine oficial associado aos mesmos registries
      * utilizados pelo Runtime.
      */
-    const layoutEngine = new WorkspaceLayoutEngineRuntime(registries, layoutStorage);
+    const layoutEngine =
+      new WorkspaceLayoutEngineRuntime(
+        registries,
+        layoutStorage,
+      );
 
     /**
      * Infraestrutura institucional de persistência.
      */
-    const layoutPersistence = new WorkspaceLayoutPersistence(layoutStorage);
+    const layoutPersistence =
+      new WorkspaceLayoutPersistence(
+        layoutStorage,
+      );
 
     /**
      * Infraestrutura institucional de eventos.
      */
-    const layoutEvents = new WorkspaceLayoutEventDispatcher();
+    const layoutEvents =
+      new WorkspaceLayoutEventDispatcher();
 
     /**
      * Registry e dispatcher institucionais de Hooks.
      */
-    const layoutHookRegistry = new WorkspaceLayoutHookRegistry();
+    const layoutHookRegistry =
+      new WorkspaceLayoutHookRegistry();
 
-    const layoutHooks = new WorkspaceLayoutHookDispatcher(layoutHookRegistry);
+    const layoutHooks =
+      new WorkspaceLayoutHookDispatcher(
+        layoutHookRegistry,
+      );
 
     /**
      * Registry e dispatcher institucionais de Extensions.
      */
-    const layoutExtensionRegistry = new WorkspaceLayoutExtensionRegistry();
+    const layoutExtensionRegistry =
+      new WorkspaceLayoutExtensionRegistry();
 
-    const layoutExtensions = new WorkspaceLayoutExtensionDispatcher(layoutExtensionRegistry);
+    const layoutExtensions =
+      new WorkspaceLayoutExtensionDispatcher(
+        layoutExtensionRegistry,
+      );
 
     /**
      * Infraestrutura institucional de observabilidade.
      */
-    const layoutObservability = new WorkspaceLayoutObservability();
+    const layoutObservability =
+      new WorkspaceLayoutObservability();
 
     /**
      * Factory oficial do subsistema de Layout.
      */
-    const layoutFactory = new WorkspaceLayoutFactory(
-      layoutPersistence,
-      layoutEvents,
-      layoutHooks,
-      layoutExtensions,
-      layoutObservability,
-    );
+    const layoutFactory =
+      new WorkspaceLayoutFactory(
+        layoutPersistence,
+        layoutEvents,
+        layoutHooks,
+        layoutExtensions,
+        layoutObservability,
+      );
 
     /**
      * Instância única do Workspace Layout Manager.
      */
-    const layoutManager = layoutFactory.create();
+    const layoutManager =
+      layoutFactory.create();
 
     /**
      * Workspace Editing API associada ao mesmo
      * Layout Manager utilizado pelo Runtime.
      */
-    const editingFactory = new WorkspaceEditingFactory(layoutManager);
+    const editingFactory =
+      new WorkspaceEditingFactory(
+        layoutManager,
+      );
 
-    const editingManager = editingFactory.createManager();
+    const editingManager =
+      editingFactory.createManager();
 
     /**
      * Runtime oficial completamente composto.
      */
-    return new WorkspaceRuntime(
+    const runtime = new WorkspaceRuntime(
       registries,
       undefined,
       undefined,
@@ -159,34 +192,78 @@ export class WorkspaceComposition {
       layoutManager,
       editingManager,
     );
+
+    this.registerInitialNavigation(runtime);
+
+    return runtime;
+  }
+
+  /**
+   * Registra a navegação institucional inicial.
+   */
+  private static registerInitialNavigation(
+    runtime: WorkspaceRuntime,
+  ): void {
+    const initialNavigation: WorkspaceNavigation = {
+      id: this.INITIAL_NAVIGATION_ID,
+      ownerId: this.CORE_OWNER,
+      dashboardId: this.INITIAL_DASHBOARD_ID,
+      title: 'Início',
+      description:
+        'Abre o Dashboard inicial da Deja Platform.',
+      icon: 'home',
+      order: 10,
+      enabled: true,
+      metadata: {
+        route: '/',
+      },
+    };
+
+    runtime.registerNavigation(
+      initialNavigation,
+    );
   }
 
   /**
    * Registra os recursos institucionais iniciais do Workspace.
    */
-  private static registerInitialResources(registries: WorkspaceRegistries): void {
+  private static registerInitialResources(
+    registries: WorkspaceRegistries,
+  ): void {
     const mainRegion: WorkspaceLayoutRegion = {
       id: this.MAIN_REGION_ID,
       owner: this.CORE_OWNER,
       title: 'Região principal',
-      description: 'Região principal do Dashboard inicial do Workspace.',
+      description:
+        'Região principal do Dashboard inicial do Workspace.',
       regionType: 'main',
       priority: 10,
       enabled: true,
-      tags: ['core', 'initial', 'main'],
+      tags: [
+        'core',
+        'initial',
+        'main',
+      ],
     };
 
     const initialLayout: WorkspaceLayout = {
       id: this.INITIAL_LAYOUT_ID,
       owner: this.CORE_OWNER,
       title: 'Layout inicial',
-      description: 'Layout institucional utilizado pelo Dashboard inicial.',
+      description:
+        'Layout institucional utilizado pelo Dashboard inicial.',
       type: 'grid',
-      regionIds: [mainRegion.id],
+      regionIds: [
+        mainRegion.id,
+      ],
       version: '1.0.0',
       priority: 10,
       enabled: true,
-      tags: ['core', 'initial', 'dashboard'],
+      tags: [
+        'core',
+        'initial',
+        'dashboard',
+      ],
       configuration: {
         columns: 12,
         rowHeight: 'auto',
@@ -197,11 +274,17 @@ export class WorkspaceComposition {
       id: this.WELCOME_WIDGET_ID,
       owner: this.CORE_OWNER,
       title: 'Bem-vindo à Deja Platform',
-      description: 'Primeiro Widget institucional do Workspace.',
+      description:
+        'Primeiro Widget institucional do Workspace.',
       category: 'system',
       widgetType: 'welcome',
-      supportedSurfaces: ['dashboard'],
-      capabilities: ['resizable', 'movable'],
+      supportedSurfaces: [
+        'dashboard',
+      ],
+      capabilities: [
+        'resizable',
+        'movable',
+      ],
       size: {
         default: {
           columns: 12,
@@ -215,9 +298,14 @@ export class WorkspaceComposition {
       component: WorkspaceWelcomeWidgetComponent,
       priority: 10,
       enabled: true,
-      tags: ['core', 'initial', 'welcome'],
+      tags: [
+        'core',
+        'initial',
+        'welcome',
+      ],
       defaultConfiguration: {
-        message: 'A infraestrutura inicial da Deja Platform está funcionando.',
+        message:
+          'A infraestrutura inicial da Deja Platform está funcionando.',
       },
     };
 
@@ -225,15 +313,21 @@ export class WorkspaceComposition {
       id: this.INITIAL_DASHBOARD_ID,
       owner: this.CORE_OWNER,
       title: 'Dashboard inicial',
-      description: 'Primeiro Dashboard institucional da Deja Platform.',
+      description:
+        'Primeiro Dashboard institucional da Deja Platform.',
       route: '/',
       layoutId: initialLayout.id,
       priority: 10,
       enabled: true,
-      tags: ['core', 'initial', 'default'],
+      tags: [
+        'core',
+        'initial',
+        'default',
+      ],
       widgets: [
         {
-          id: 'deja.workspace.widget-instance.welcome',
+          id:
+            'deja.workspace.widget-instance.welcome',
           widgetId: welcomeWidget.id,
           regionId: mainRegion.id,
           position: {
@@ -247,12 +341,20 @@ export class WorkspaceComposition {
       ],
     };
 
-    registries.layoutRegions.register(mainRegion);
+    registries.layoutRegions.register(
+      mainRegion,
+    );
 
-    registries.layouts.register(initialLayout);
+    registries.layouts.register(
+      initialLayout,
+    );
 
-    registries.widgets.register(welcomeWidget);
+    registries.widgets.register(
+      welcomeWidget,
+    );
 
-    registries.dashboards.register(initialDashboard);
+    registries.dashboards.register(
+      initialDashboard,
+    );
   }
 }

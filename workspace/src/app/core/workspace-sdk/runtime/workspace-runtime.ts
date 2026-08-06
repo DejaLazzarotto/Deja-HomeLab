@@ -60,6 +60,17 @@ import { WorkspaceLayoutManager } from './workspace-layout-manager';
 import { WorkspaceEditingManager } from './workspace-editing-manager';
 import { WorkspaceDashboardState } from './workspace-dashboard-state';
 
+import { WorkspaceNavigation, WorkspaceNavigationId } from './workspace-navigation';
+
+import {
+  WorkspaceNavigationDispatcher,
+  WorkspaceNavigationResult,
+} from './workspace-navigation-dispatcher';
+
+import { WorkspaceNavigationRegistry } from './workspace-navigation-registry';
+
+import { WorkspaceDashboardResolver } from './workspace-dashboard-resolver';
+
 /**
  * Erro lançado quando uma operação não é permitida
  * no estado atual do Workspace Runtime.
@@ -120,6 +131,16 @@ export class WorkspaceRuntime {
    * Dispatcher oficial de Workspace Actions.
    */
   private readonly actionDispatcher: WorkspaceActionDispatcher;
+
+  /**
+   * Registry oficial de Workspace Navigation.
+   */
+  private readonly navigationRegistry: WorkspaceNavigationRegistry;
+
+  /**
+   * Dispatcher oficial de Workspace Navigation.
+   */
+  private readonly navigationDispatcher: WorkspaceNavigationDispatcher;
 
   /**
    * Registry oficial de Workspace Menus.
@@ -189,6 +210,16 @@ export class WorkspaceRuntime {
     this.actionDispatcher = new WorkspaceActionDispatcher(
       this.actionRegistry,
       this.commandDispatcher,
+    );
+
+    const dashboardResolver = new WorkspaceDashboardResolver(this.registries, this.layoutEngine!);
+
+    this.navigationRegistry = new WorkspaceNavigationRegistry();
+
+    this.navigationDispatcher = new WorkspaceNavigationDispatcher(
+      this.navigationRegistry,
+      dashboardResolver,
+      this.layoutManager,
     );
 
     this.menuRegistry = new WorkspaceMenuRegistry();
@@ -352,6 +383,83 @@ export class WorkspaceRuntime {
     execution: WorkspaceActionExecution<TPayload>,
   ): Promise<WorkspaceActionResult<TResult>> {
     return this.actionDispatcher.dispatch<TPayload, TResult>(execution);
+  }
+
+  /**
+   * Registra um item de Workspace Navigation.
+   */
+  registerNavigation(navigation: WorkspaceNavigation): void {
+    this.navigationRegistry.register(navigation);
+  }
+
+  /**
+   * Registra múltiplos itens de Workspace Navigation.
+   */
+  registerNavigations(navigations: readonly WorkspaceNavigation[]): void {
+    this.navigationRegistry.registerAll(navigations);
+  }
+
+  /**
+   * Remove um item de Workspace Navigation.
+   */
+  unregisterNavigation(navigationId: WorkspaceNavigationId): WorkspaceNavigation {
+    return this.navigationRegistry.unregister(navigationId);
+  }
+
+  /**
+   * Retorna todos os itens de navegação registrados.
+   */
+  navigations(): readonly WorkspaceNavigation[] {
+    return this.navigationRegistry.list();
+  }
+
+  /**
+   * Retorna os itens de navegação habilitados.
+   */
+  enabledNavigations(): readonly WorkspaceNavigation[] {
+    return this.navigationRegistry.listEnabled();
+  }
+
+  /**
+   * Retorna um item de navegação pelo identificador.
+   */
+  getNavigation(navigationId: WorkspaceNavigationId): WorkspaceNavigation {
+    return this.navigationRegistry.get(navigationId);
+  }
+
+  /**
+   * Verifica se um item de navegação está registrado.
+   */
+  hasNavigation(navigationId: WorkspaceNavigationId): boolean {
+    return this.navigationRegistry.has(navigationId);
+  }
+
+  /**
+   * Retorna o item de navegação atualmente ativo.
+   */
+  currentNavigation(): WorkspaceNavigation | undefined {
+    return this.navigationDispatcher.current();
+  }
+
+  /**
+   * Verifica se um item de navegação está ativo.
+   */
+  isNavigationActive(navigationId: WorkspaceNavigationId): boolean {
+    return this.navigationDispatcher.isActive(navigationId);
+  }
+
+  /**
+   * Executa uma navegação institucional.
+   */
+  navigate(navigationId: WorkspaceNavigationId): Promise<WorkspaceNavigationResult> {
+    return this.navigationDispatcher.dispatch(navigationId);
+  }
+
+  /**
+   * Encerra a navegação institucional ativa.
+   */
+  clearNavigation(): Promise<void> {
+    return this.navigationDispatcher.clear();
   }
 
   registerMenu(menu: WorkspaceMenu): void {
