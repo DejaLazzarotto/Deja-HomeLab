@@ -1,66 +1,125 @@
 :root {
   color-scheme: dark;
 
-  --workspace-color-background: #111315;
-  --workspace-color-surface: #1a1d20;
-  --workspace-color-surface-elevated: #22262a;
-  --workspace-color-surface-hover: #2b3035;
+  /*
+   * Deja Platform
+   *
+   * Workspace Design Tokens v1
+   *
+   * Fundação visual institucional utilizada por todos os
+   * componentes Angular do Workspace.
+   */
 
-  --workspace-color-border: #343a40;
-  --workspace-color-border-strong: #454d55;
+  --workspace-color-background: #070b14;
+  --workspace-color-background-soft: #0a101c;
+  --workspace-color-background-elevated: #0d1422;
 
-  --workspace-color-text: #f2f4f5;
-  --workspace-color-text-secondary: #aeb5bc;
-  --workspace-color-text-muted: #7f8891;
+  --workspace-color-surface: #101827;
+  --workspace-color-surface-soft: #141e2f;
+  --workspace-color-surface-elevated: #182438;
+  --workspace-color-surface-hover: #1d2b41;
+  --workspace-color-surface-active: #22344e;
 
-  --workspace-color-primary: #4c9aff;
-  --workspace-color-primary-hover: #6aacff;
-  --workspace-color-primary-contrast: #08111d;
+  --workspace-color-overlay: rgb(5 10 20 / 72%);
 
-  --workspace-color-success: #4caf7a;
-  --workspace-color-warning: #d8a644;
-  --workspace-color-danger: #d86161;
-  --workspace-color-info: #54a6d8;
+  --workspace-color-border: rgb(145 166 196 / 14%);
+  --workspace-color-border-soft: rgb(145 166 196 / 9%);
+  --workspace-color-border-strong: rgb(145 166 196 / 24%);
+
+  --workspace-color-text: #f4f7fb;
+  --workspace-color-text-secondary: #aebbd0;
+  --workspace-color-text-muted: #718099;
+  --workspace-color-text-disabled: #4f5c70;
+
+  --workspace-color-primary: #4f8cff;
+  --workspace-color-primary-hover: #6ca0ff;
+  --workspace-color-primary-active: #3978ed;
+  --workspace-color-primary-soft: rgb(79 140 255 / 14%);
+  --workspace-color-primary-border: rgb(79 140 255 / 32%);
+  --workspace-color-primary-glow: rgb(79 140 255 / 22%);
+  --workspace-color-primary-contrast: #ffffff;
+
+  --workspace-color-accent: #32d5d2;
+  --workspace-color-accent-soft: rgb(50 213 210 / 14%);
+
+  --workspace-color-success: #39c889;
+  --workspace-color-success-soft: rgb(57 200 137 / 14%);
+
+  --workspace-color-warning: #f0b84b;
+  --workspace-color-warning-soft: rgb(240 184 75 / 14%);
+
+  --workspace-color-danger: #ef6a78;
+  --workspace-color-danger-soft: rgb(239 106 120 / 14%);
+
+  --workspace-color-info: #5cb8ff;
+  --workspace-color-info-soft: rgb(92 184 255 / 14%);
 
   --workspace-font-family:
     Inter,
+    "Segoe UI Variable",
     "Segoe UI",
     Roboto,
     Helvetica,
     Arial,
     sans-serif;
 
+  --workspace-font-size-2xs: 0.6875rem;
   --workspace-font-size-xs: 0.75rem;
   --workspace-font-size-sm: 0.875rem;
   --workspace-font-size-md: 1rem;
   --workspace-font-size-lg: 1.125rem;
   --workspace-font-size-xl: 1.5rem;
+  --workspace-font-size-2xl: 2rem;
 
   --workspace-font-weight-regular: 400;
   --workspace-font-weight-medium: 500;
   --workspace-font-weight-semibold: 600;
   --workspace-font-weight-bold: 700;
 
+  --workspace-line-height-tight: 1.2;
+  --workspace-line-height-default: 1.5;
+  --workspace-line-height-relaxed: 1.7;
+
+  --workspace-letter-spacing-tight: -0.02em;
+  --workspace-letter-spacing-default: 0;
+  --workspace-letter-spacing-wide: 0.06em;
+
+  --workspace-spacing-2xs: 0.125rem;
   --workspace-spacing-xs: 0.25rem;
   --workspace-spacing-sm: 0.5rem;
   --workspace-spacing-md: 1rem;
   --workspace-spacing-lg: 1.5rem;
   --workspace-spacing-xl: 2rem;
+  --workspace-spacing-2xl: 3rem;
 
-  --workspace-radius-sm: 0.25rem;
-  --workspace-radius-md: 0.5rem;
-  --workspace-radius-lg: 0.75rem;
+  --workspace-radius-sm: 0.375rem;
+  --workspace-radius-md: 0.625rem;
+  --workspace-radius-lg: 0.875rem;
+  --workspace-radius-xl: 1.125rem;
+  --workspace-radius-pill: 999px;
 
   --workspace-shadow-sm:
-    0 1px 2px rgb(0 0 0 / 24%);
+    0 1px 2px rgb(0 0 0 / 30%);
 
   --workspace-shadow-md:
-    0 4px 12px rgb(0 0 0 / 28%);
+    0 8px 24px rgb(0 0 0 / 24%);
+
+  --workspace-shadow-lg:
+    0 18px 48px rgb(0 0 0 / 32%);
+
+  --workspace-shadow-primary:
+    0 0 24px var(--workspace-color-primary-glow);
+
+  --workspace-focus-ring:
+    0 0 0 3px rgb(79 140 255 / 24%);
 
   --workspace-transition-fast: 120ms ease;
   --workspace-transition-default: 180ms ease;
+  --workspace-transition-slow: 280ms ease;
 
-  --workspace-header-height: 4rem;
+  --workspace-header-height: 4.5rem;
   --workspace-sidebar-width: 18rem;
-  --workspace-status-bar-height: 2rem;
+  --workspace-status-bar-height: 2.25rem;
+
+  --workspace-content-max-width: 100rem;
 }

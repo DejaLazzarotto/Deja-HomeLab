@@ -6,16 +6,100 @@
 }
 
 .workspace-main {
+  position: relative;
   width: 100%;
   height: 100%;
   min-width: 0;
   min-height: 0;
   padding: var(--workspace-spacing-lg);
   overflow: auto;
-  background: var(--workspace-color-background);
+  background:
+    radial-gradient(
+      circle at 92% 0%,
+      rgb(79 140 255 / 8%) 0%,
+      transparent 28rem
+    ),
+    radial-gradient(
+      circle at 8% 100%,
+      rgb(50 213 210 / 5%) 0%,
+      transparent 24rem
+    ),
+    linear-gradient(
+      145deg,
+      var(--workspace-color-background) 0%,
+      var(--workspace-color-background-soft) 52%,
+      var(--workspace-color-background-elevated) 100%
+    );
+  scrollbar-color:
+    var(--workspace-color-border-strong)
+    transparent;
+  scrollbar-width: thin;
+}
+
+.workspace-main::before {
+  position: fixed;
+  inset:
+    var(--workspace-header-height)
+    0
+    var(--workspace-status-bar-height)
+    var(--workspace-sidebar-width);
+  pointer-events: none;
+  content: "";
+  background-image:
+    linear-gradient(
+      rgb(145 166 196 / 2.5%) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgb(145 166 196 / 2.5%) 1px,
+      transparent 1px
+    );
+  background-size: 2rem 2rem;
+  mask-image:
+    linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 55%),
+      transparent 82%
+    );
+}
+
+.workspace-main::-webkit-scrollbar {
+  width: 0.625rem;
+  height: 0.625rem;
+}
+
+.workspace-main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.workspace-main::-webkit-scrollbar-thumb {
+  border: 0.125rem solid transparent;
+  border-radius: var(--workspace-radius-pill);
+  background:
+    var(--workspace-color-border-strong)
+    padding-box;
+}
+
+.workspace-main::-webkit-scrollbar-thumb:hover {
+  background:
+    var(--workspace-color-text-muted)
+    padding-box;
 }
 
 .workspace-main__content {
-  width: 100%;
+  position: relative;
+  width: min(
+    100%,
+    var(--workspace-content-max-width)
+  );
   min-height: 100%;
+  margin: 0 auto;
+  z-index: 1;
+}
+
+@media (max-width: 64rem) {
+  .workspace-main {
+    padding: var(--workspace-spacing-md);
+  }
 }
