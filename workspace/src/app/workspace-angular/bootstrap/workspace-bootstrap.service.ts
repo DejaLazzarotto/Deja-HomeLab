@@ -19,6 +19,10 @@ import {
   AngularWorkspaceRendererProvider,
 } from '../rendering/angular-workspace-renderer-provider';
 
+import {
+  WorkspaceComposition,
+} from './workspace-composition';
+
 /**
  * Serviço oficial responsável pelo bootstrap
  * do Workspace Runtime.
@@ -28,7 +32,14 @@ import {
 })
 export class WorkspaceBootstrapService {
 
-  private readonly runtime = new WorkspaceRuntime();
+  /**
+   * Runtime oficial da plataforma.
+   *
+   * Sua composição é centralizada pelo
+   * WorkspaceComposition.
+   */
+  private readonly runtime =
+    WorkspaceComposition.create();
 
   constructor(
     private readonly rendererProvider: AngularWorkspaceRendererProvider,

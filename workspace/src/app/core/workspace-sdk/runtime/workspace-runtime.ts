@@ -56,9 +56,7 @@ import { WorkspaceRendererDispatcher } from './workspace-renderer-dispatcher';
 import { WorkspaceRendererRegistry } from './workspace-renderer-registry';
 import { WorkspaceResolvedDashboard } from './workspace-resolved-dashboard';
 
-import { WorkspaceLayoutFactory } from './workspace-layout-factory';
 import { WorkspaceLayoutManager } from './workspace-layout-manager';
-import { WorkspaceEditingFactory } from './workspace-editing-factory';
 import { WorkspaceEditingManager } from './workspace-editing-manager';
 import { WorkspaceDashboardState } from './workspace-dashboard-state';
 
@@ -176,12 +174,12 @@ export class WorkspaceRuntime {
     readonly hooks: WorkspaceRuntimeHookDispatcher = new WorkspaceRuntimeHookDispatcher(),
     readonly extensions: WorkspaceRuntimeExtensionRegistry = new WorkspaceRuntimeExtensionRegistry(),
     layoutEngine?: WorkspaceLayoutEngine,
-    layoutFactory?: WorkspaceLayoutFactory,
-    editingFactory?: WorkspaceEditingFactory,
+    layoutManager?: WorkspaceLayoutManager,
+    editingManager?: WorkspaceEditingManager,
   ) {
     this.layoutEngine = layoutEngine;
-    this.layoutManager = layoutFactory?.create();
-    this.editingManager = editingFactory?.createManager();
+    this.layoutManager = layoutManager;
+    this.editingManager = editingManager;
     this.extensionDispatcher = new WorkspaceRuntimeExtensionDispatcher(this.extensions);
 
     this.commandRegistry = new WorkspaceCommandRegistry();
