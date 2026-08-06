@@ -4,11 +4,16 @@
     class="workspace-sidebar__navigation"
     aria-label="Navegação principal">
 
-    @for (item of navigation; track item.id) {
+    @for (
+      item of navigation;
+      track item.id
+    ) {
 
       <button
         class="workspace-sidebar__item"
-        type="button">
+        [class.workspace-sidebar__item--active]="isActive(item)"
+        type="button"
+        (click)="navigate(item)">
 
         <span
           class="workspace-sidebar__icon"

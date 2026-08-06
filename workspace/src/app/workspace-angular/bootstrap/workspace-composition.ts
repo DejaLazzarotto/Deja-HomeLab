@@ -49,110 +49,104 @@ import { WorkspaceWidget } from '../../core/workspace-sdk/runtime/workspace-widg
 
 import { WorkspaceWelcomeWidgetComponent } from '../components/workspace-welcome-widget/workspace-welcome-widget';
 
+
 /**
  * Composition Root oficial do Workspace.
  */
 export class WorkspaceComposition {
-  /**
-   * Proprietário institucional dos recursos iniciais.
-   */
-  private static readonly CORE_OWNER = 'deja.workspace.core';
 
-  /**
-   * Identificadores dos recursos institucionais iniciais.
-   */
+  private static readonly CORE_OWNER =
+    'deja.workspace.core';
+
+
   private static readonly INITIAL_DASHBOARD_ID =
     'deja.workspace.dashboard.initial';
+
+  private static readonly APPLICATIONS_DASHBOARD_ID =
+    'deja.workspace.dashboard.applications';
+
+  private static readonly REPORTS_DASHBOARD_ID =
+    'deja.workspace.dashboard.reports';
+
 
   private static readonly INITIAL_NAVIGATION_ID =
     'deja.workspace.navigation.initial';
 
+  private static readonly APPLICATIONS_NAVIGATION_ID =
+    'deja.workspace.navigation.applications';
+
+  private static readonly REPORTS_NAVIGATION_ID =
+    'deja.workspace.navigation.reports';
+
+
   private static readonly INITIAL_LAYOUT_ID =
     'deja.workspace.layout.initial';
+
 
   private static readonly MAIN_REGION_ID =
     'deja.workspace.region.main';
 
+
   private static readonly WELCOME_WIDGET_ID =
     'deja.workspace.widget.welcome';
 
-  /**
-   * Cria toda a infraestrutura institucional do Workspace.
-   */
+
   static create(): WorkspaceRuntime {
-    /**
-     * Agregador único dos registries institucionais.
-     */
-    const registries = new WorkspaceRegistries();
 
-    /**
-     * Registra os primeiros recursos institucionais
-     * disponibilizados pelo Workspace.
-     */
-    this.registerInitialResources(registries);
+    const registries =
+      new WorkspaceRegistries();
 
-    /**
-     * Armazenamento institucional de referência utilizado
-     * pelo Layout Engine e pela infraestrutura de persistência.
-     */
+
+    this.registerInitialResources(
+      registries,
+    );
+
+
     const layoutStorage =
       new WorkspaceLocalStorageLayoutStorage();
 
-    /**
-     * Layout Engine oficial associado aos mesmos registries
-     * utilizados pelo Runtime.
-     */
+
     const layoutEngine =
       new WorkspaceLayoutEngineRuntime(
         registries,
         layoutStorage,
       );
 
-    /**
-     * Infraestrutura institucional de persistência.
-     */
+
     const layoutPersistence =
       new WorkspaceLayoutPersistence(
         layoutStorage,
       );
 
-    /**
-     * Infraestrutura institucional de eventos.
-     */
+
     const layoutEvents =
       new WorkspaceLayoutEventDispatcher();
 
-    /**
-     * Registry e dispatcher institucionais de Hooks.
-     */
+
     const layoutHookRegistry =
       new WorkspaceLayoutHookRegistry();
+
 
     const layoutHooks =
       new WorkspaceLayoutHookDispatcher(
         layoutHookRegistry,
       );
 
-    /**
-     * Registry e dispatcher institucionais de Extensions.
-     */
+
     const layoutExtensionRegistry =
       new WorkspaceLayoutExtensionRegistry();
+
 
     const layoutExtensions =
       new WorkspaceLayoutExtensionDispatcher(
         layoutExtensionRegistry,
       );
 
-    /**
-     * Infraestrutura institucional de observabilidade.
-     */
+
     const layoutObservability =
       new WorkspaceLayoutObservability();
 
-    /**
-     * Factory oficial do subsistema de Layout.
-     */
+
     const layoutFactory =
       new WorkspaceLayoutFactory(
         layoutPersistence,
@@ -162,74 +156,97 @@ export class WorkspaceComposition {
         layoutObservability,
       );
 
-    /**
-     * Instância única do Workspace Layout Manager.
-     */
+
     const layoutManager =
       layoutFactory.create();
 
-    /**
-     * Workspace Editing API associada ao mesmo
-     * Layout Manager utilizado pelo Runtime.
-     */
+
     const editingFactory =
       new WorkspaceEditingFactory(
         layoutManager,
       );
 
+
     const editingManager =
       editingFactory.createManager();
 
-    /**
-     * Runtime oficial completamente composto.
-     */
-    const runtime = new WorkspaceRuntime(
-      registries,
-      undefined,
-      undefined,
-      undefined,
-      layoutEngine,
-      layoutManager,
-      editingManager,
+
+    const runtime =
+      new WorkspaceRuntime(
+        registries,
+        undefined,
+        undefined,
+        undefined,
+        layoutEngine,
+        layoutManager,
+        editingManager,
+      );
+
+
+    this.registerInitialNavigations(
+      runtime,
     );
 
-    this.registerInitialNavigation(runtime);
 
     return runtime;
+
   }
 
+
   /**
-   * Registra a navegação institucional inicial.
+   * Registra as navegações institucionais.
    */
-  private static registerInitialNavigation(
+  private static registerInitialNavigations(
     runtime: WorkspaceRuntime,
   ): void {
-    const initialNavigation: WorkspaceNavigation = {
-      id: this.INITIAL_NAVIGATION_ID,
-      ownerId: this.CORE_OWNER,
-      dashboardId: this.INITIAL_DASHBOARD_ID,
-      title: 'Início',
-      description:
-        'Abre o Dashboard inicial da Deja Platform.',
-      icon: 'home',
-      order: 10,
-      enabled: true,
-      metadata: {
-        route: '/',
-      },
-    };
 
-    runtime.registerNavigation(
-      initialNavigation,
-    );
+    runtime.registerNavigations([
+
+      {
+        id: this.INITIAL_NAVIGATION_ID,
+        ownerId: this.CORE_OWNER,
+        dashboardId: this.INITIAL_DASHBOARD_ID,
+        title: 'Início',
+        description:
+          'Abre o Dashboard inicial da Deja Platform.',
+        icon: 'home',
+        order: 10,
+        enabled: true,
+      },
+
+      {
+        id: this.APPLICATIONS_NAVIGATION_ID,
+        ownerId: this.CORE_OWNER,
+        dashboardId: this.APPLICATIONS_DASHBOARD_ID,
+        title: 'Applications',
+        description:
+          'Acesso às aplicações da plataforma.',
+        icon: 'apps',
+        order: 20,
+        enabled: true,
+      },
+
+      {
+        id: this.REPORTS_NAVIGATION_ID,
+        ownerId: this.CORE_OWNER,
+        dashboardId: this.REPORTS_DASHBOARD_ID,
+        title: 'Reports',
+        description:
+          'Acesso aos relatórios da plataforma.',
+        icon: 'reports',
+        order: 30,
+        enabled: true,
+      },
+
+    ]);
+
   }
 
-  /**
-   * Registra os recursos institucionais iniciais do Workspace.
-   */
+
   private static registerInitialResources(
     registries: WorkspaceRegistries,
   ): void {
+
     const mainRegion: WorkspaceLayoutRegion = {
       id: this.MAIN_REGION_ID,
       owner: this.CORE_OWNER,
@@ -246,12 +263,13 @@ export class WorkspaceComposition {
       ],
     };
 
+
     const initialLayout: WorkspaceLayout = {
       id: this.INITIAL_LAYOUT_ID,
       owner: this.CORE_OWNER,
       title: 'Layout inicial',
       description:
-        'Layout institucional utilizado pelo Dashboard inicial.',
+        'Layout institucional utilizado pelos Dashboards iniciais.',
       type: 'grid',
       regionIds: [
         mainRegion.id,
@@ -269,6 +287,7 @@ export class WorkspaceComposition {
         rowHeight: 'auto',
       },
     };
+
 
     const welcomeWidget: WorkspaceWidget = {
       id: this.WELCOME_WIDGET_ID,
@@ -303,58 +322,97 @@ export class WorkspaceComposition {
         'initial',
         'welcome',
       ],
-      defaultConfiguration: {
-        message:
-          'A infraestrutura inicial da Deja Platform está funcionando.',
-      },
     };
 
-    const initialDashboard: WorkspaceDashboard = {
-      id: this.INITIAL_DASHBOARD_ID,
-      owner: this.CORE_OWNER,
-      title: 'Dashboard inicial',
-      description:
-        'Primeiro Dashboard institucional da Deja Platform.',
-      route: '/',
-      layoutId: initialLayout.id,
-      priority: 10,
-      enabled: true,
-      tags: [
-        'core',
-        'initial',
-        'default',
-      ],
-      widgets: [
-        {
-          id:
-            'deja.workspace.widget-instance.welcome',
-          widgetId: welcomeWidget.id,
-          regionId: mainRegion.id,
-          position: {
-            column: 1,
-            row: 1,
-            columnSpan: 12,
-            rowSpan: 4,
-          },
-          enabled: true,
-        },
-      ],
-    };
 
     registries.layoutRegions.register(
       mainRegion,
     );
 
+
     registries.layouts.register(
       initialLayout,
     );
+
 
     registries.widgets.register(
       welcomeWidget,
     );
 
-    registries.dashboards.register(
-      initialDashboard,
-    );
+
+    registries.dashboards.registerMany([
+
+      {
+        id: this.INITIAL_DASHBOARD_ID,
+        owner: this.CORE_OWNER,
+        title: 'Dashboard inicial',
+        description:
+          'Primeiro Dashboard institucional.',
+        route: '/',
+        layoutId: initialLayout.id,
+        priority: 10,
+        enabled: true,
+        tags: [
+          'core',
+          'initial',
+        ],
+        widgets: [
+          {
+            id:
+              'deja.workspace.widget-instance.welcome',
+            widgetId: welcomeWidget.id,
+            regionId: mainRegion.id,
+            position: {
+              column: 1,
+              row: 1,
+              columnSpan: 12,
+              rowSpan: 4,
+            },
+            enabled: true,
+          },
+        ],
+      },
+
+
+      {
+        id: this.APPLICATIONS_DASHBOARD_ID,
+        owner: this.CORE_OWNER,
+        title: 'Applications',
+        description:
+          'Dashboard institucional de aplicações.',
+        route: '/applications',
+        layoutId: initialLayout.id,
+        priority: 20,
+        enabled: true,
+        tags: [
+          'applications',
+        ],
+        metadata: {
+          type: 'applications',
+        },
+      },
+
+
+      {
+        id: this.REPORTS_DASHBOARD_ID,
+        owner: this.CORE_OWNER,
+        title: 'Reports',
+        description:
+          'Dashboard institucional de relatórios.',
+        route: '/reports',
+        layoutId: initialLayout.id,
+        priority: 30,
+        enabled: true,
+        tags: [
+          'reports',
+        ],
+        metadata: {
+          type: 'reports',
+        },
+      },
+
+    ]);
+
   }
+
 }

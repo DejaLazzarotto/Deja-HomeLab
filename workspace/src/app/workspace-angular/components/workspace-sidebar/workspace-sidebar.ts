@@ -12,21 +12,22 @@ import {
   Component,
 } from '@angular/core';
 
-/**
- * Item institucional de navegação.
- */
-interface WorkspaceNavigationItem {
+import {
+  WorkspaceNavigation,
+} from '../../../core/workspace-sdk/runtime/workspace-navigation';
 
-  readonly id: string;
-
-  readonly title: string;
-
-  readonly icon: string;
-
-}
+import {
+  WorkspaceBootstrapService,
+} from '../../bootstrap/workspace-bootstrap.service';
 
 /**
  * Sidebar permanente da Workspace Shell.
+ *
+ * A Sidebar não mantém conhecimento sobre Dashboards,
+ * aplicações ou rotas específicas.
+ *
+ * Toda navegação é resolvida exclusivamente pelo
+ * Workspace Runtime através dos Registries institucionais.
  */
 @Component({
   selector: 'deja-workspace-sidebar',
@@ -37,34 +38,63 @@ interface WorkspaceNavigationItem {
 })
 export class WorkspaceSidebarComponent {
 
+  constructor(
+    private readonly bootstrapService: WorkspaceBootstrapService,
+  ) {}
+
+
   /**
-   * Navegação institucional inicial.
+   * Runtime oficial do Workspace.
    *
-   * Nesta fase ainda não existe integração com Commands,
-   * Actions ou Dashboards. Os itens servem para estabelecer
-   * a estrutura visual definitiva da Shell.
+   * Obtido através do Bootstrap Service,
+   * preservando o Composition Root como único
+   * ponto responsável pela composição.
    */
-  readonly navigation: readonly WorkspaceNavigationItem[] = [
-    {
-      id: 'dashboard',
-      title: 'Dashboard',
-      icon: '⌂',
-    },
-    {
-      id: 'applications',
-      title: 'Applications',
-      icon: '◫',
-    },
-    {
-      id: 'reports',
-      title: 'Reports',
-      icon: '▤',
-    },
-    {
-      id: 'settings',
-      title: 'Settings',
-      icon: '⚙',
-    },
-  ];
+  private get runtime() {
+
+    return this.bootstrapService.getRuntime();
+
+  }
+
+
+  /**
+   * Retorna as navegações institucionais habilitadas.
+   *
+   * A Sidebar consome exclusivamente o Registry
+   * através da API pública do Runtime.
+   */
+  get navigation(): readonly WorkspaceNavigation[] {
+
+    return this.runtime.enabledNavigations();
+
+  }
+
+
+  /**
+   * Executa uma navegação institucional.
+   */
+  async navigate(
+    navigation: WorkspaceNavigation,
+  ): Promise<void> {
+
+    await this.runtime.navigate(
+      navigation.id,
+    );
+
+  }
+
+
+  /**
+   * Verifica se a navegação está ativa.
+   */
+  isActive(
+    navigation: WorkspaceNavigation,
+  ): boolean {
+
+    return this.runtime.isNavigationActive(
+      navigation.id,
+    );
+
+  }
 
 }

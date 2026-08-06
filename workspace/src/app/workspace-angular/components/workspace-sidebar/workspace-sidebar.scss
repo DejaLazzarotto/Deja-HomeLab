@@ -43,6 +43,11 @@
   color: var(--workspace-color-text);
 }
 
+.workspace-sidebar__item--active {
+  background: var(--workspace-color-surface-hover);
+  color: var(--workspace-color-text);
+}
+
 .workspace-sidebar__icon {
   display: inline-flex;
   justify-content: center;
@@ -50,6 +55,10 @@
   color: var(--workspace-color-primary);
   font-size: var(--workspace-font-size-md);
   font-weight: var(--workspace-font-weight-semibold);
+}
+
+.workspace-sidebar__item--active .workspace-sidebar__icon {
+  color: var(--workspace-color-primary);
 }
 
 .workspace-sidebar__title {
