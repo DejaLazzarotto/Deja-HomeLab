@@ -1,0 +1,43 @@
+<article class="workspace-widget-host">
+
+  <header class="workspace-widget-host__header">
+
+    <div class="workspace-widget-host__identity">
+
+      <span
+        class="workspace-widget-host__indicator"
+        aria-hidden="true"
+      ></span>
+
+      <div class="workspace-widget-host__titles">
+
+        <h3 class="workspace-widget-host__title">
+          {{ widgetTitle }}
+        </h3>
+
+        @if (resolvedWidget?.description) {
+
+          <p class="workspace-widget-host__description">
+            {{ resolvedWidget?.description }}
+          </p>
+
+        }
+
+      </div>
+
+    </div>
+
+    <div
+      class="workspace-widget-host__actions"
+      aria-hidden="true"
+    ></div>
+
+  </header>
+
+  <div class="workspace-widget-host__content">
+
+    <ng-template dejaWorkspaceRenderHost></ng-template>
+
+  </div>
+
+</article>

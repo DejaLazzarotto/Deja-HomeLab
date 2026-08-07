@@ -51,135 +51,16 @@ import {
   imports: [
     WorkspaceRenderHostDirective,
   ],
-  template: `
-    <article class="workspace-widget-host">
-
-      <header class="workspace-widget-host__header">
-
-        <div class="workspace-widget-host__titles">
-
-          <h3 class="workspace-widget-host__title">
-            {{ widgetTitle }}
-          </h3>
-
-          @if (resolvedWidget?.description) {
-
-            <p class="workspace-widget-host__description">
-              {{ resolvedWidget?.description }}
-            </p>
-
-          }
-
-        </div>
-
-      </header>
-
-      <section class="workspace-widget-host__content">
-        <ng-container dejaWorkspaceRenderHost />
-      </section>
-
-    </article>
-  `,
-  styles: `
-    :host {
-      display: block;
-      width: 100%;
-      height: 100%;
-      min-width: 0;
-      min-height: 0;
-    }
-
-    .workspace-widget-host {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-      height: 100%;
-      min-width: 0;
-      min-height: 0;
-      overflow: hidden;
-      border: 1px solid var(--workspace-color-border);
-      border-radius: var(--workspace-radius-lg);
-      background:
-        linear-gradient(
-          145deg,
-          var(--workspace-color-surface-elevated) 0%,
-          var(--workspace-color-surface) 100%
-        );
-      box-shadow:
-        var(--workspace-shadow-sm),
-        inset 0 1px 0 rgb(255 255 255 / 4%);
-      transition:
-        border-color var(--workspace-transition-default),
-        box-shadow var(--workspace-transition-default),
-        transform var(--workspace-transition-default);
-    }
-
-    .workspace-widget-host:hover {
-      border-color: var(--workspace-color-border-strong);
-      box-shadow:
-        var(--workspace-shadow-md),
-        inset 0 1px 0 rgb(255 255 255 / 5%);
-      transform: translateY(-0.125rem);
-    }
-
-    .workspace-widget-host__header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: var(--workspace-spacing-md);
-      min-width: 0;
-      padding:
-        var(--workspace-spacing-md)
-        var(--workspace-spacing-lg);
-      border-bottom: 1px solid var(--workspace-color-border-soft);
-      background:
-        linear-gradient(
-          180deg,
-          rgb(255 255 255 / 2.5%) 0%,
-          transparent 100%
-        );
-    }
-
-    .workspace-widget-host__titles {
-      display: flex;
-      flex-direction: column;
-      gap: var(--workspace-spacing-xs);
-      min-width: 0;
-    }
-
-    .workspace-widget-host__title {
-      margin: 0;
-      overflow: hidden;
-      color: var(--workspace-color-text);
-      font-size: var(--workspace-font-size-sm);
-      font-weight: var(--workspace-font-weight-semibold);
-      line-height: var(--workspace-line-height-tight);
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .workspace-widget-host__description {
-      margin: 0;
-      color: var(--workspace-color-text-muted);
-      font-size: var(--workspace-font-size-xs);
-      line-height: var(--workspace-line-height-default);
-    }
-
-    .workspace-widget-host__content {
-      flex: 1;
-      min-width: 0;
-      min-height: 0;
-      padding: var(--workspace-spacing-lg);
-    }
-  `,
+  templateUrl: './workspace-widget-host.html',
+  styleUrl: './workspace-widget-host.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkspaceWidgetHostComponent
-  implements
-    AfterViewInit,
-    OnChanges,
-    OnDestroy,
-    WorkspaceWidgetRenderController {
+implements
+AfterViewInit,
+OnChanges,
+OnDestroy,
+WorkspaceWidgetRenderController {
 
   /**
    * Runtime oficial do Workspace.
@@ -257,6 +138,7 @@ export class WorkspaceWidgetHostComponent
   ngAfterViewInit(): void {
 
     this.viewInitialized = true;
+
     this.renderWidget();
 
   }
@@ -418,9 +300,11 @@ export class WorkspaceWidgetHostComponent
   ): Type<unknown> {
 
     if (typeof widget.component !== 'function') {
+
       throw new Error(
         `Workspace widget "${widget.id}" does not define a valid Angular component.`,
       );
+
     }
 
     return widget.component as Type<unknown>;
