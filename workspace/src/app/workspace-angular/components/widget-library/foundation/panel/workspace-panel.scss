@@ -1,0 +1,119 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.workspace-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+
+  background: var(--workspace-color-surface);
+  border-radius: var(--workspace-radius-lg);
+
+  transition:
+    border-color var(--workspace-transition-fast),
+    box-shadow var(--workspace-transition-fast),
+    background var(--workspace-transition-fast),
+    transform var(--workspace-transition-fast);
+}
+
+.workspace-panel--bordered {
+  border: 1px solid var(--workspace-color-border);
+}
+
+.workspace-panel--elevation-none {
+  box-shadow: none;
+}
+
+.workspace-panel--elevation-sm {
+  box-shadow: var(--workspace-shadow-sm);
+}
+
+.workspace-panel--elevation-md {
+  box-shadow: var(--workspace-shadow-md);
+}
+
+.workspace-panel--elevation-lg {
+  box-shadow: var(--workspace-shadow-lg);
+}
+
+.workspace-panel--interactive:not(
+  .workspace-panel--disabled
+):hover {
+  border-color: var(--workspace-color-border-strong);
+  box-shadow: var(--workspace-shadow-md);
+  transform: translateY(-1px);
+}
+
+.workspace-panel--interactive:not(
+  .workspace-panel--disabled
+):active {
+  transform: translateY(0);
+}
+
+.workspace-panel--selected {
+  border-color: var(--workspace-color-primary);
+}
+
+.workspace-panel--disabled {
+  pointer-events: none;
+  opacity: var(--workspace-opacity-disabled);
+}
+
+.workspace-panel--loading {
+  cursor: progress;
+}
+
+.workspace-panel__header,
+.workspace-panel__content,
+.workspace-panel__footer {
+  position: relative;
+  min-width: 0;
+}
+
+.workspace-panel__header {
+  flex: 0 0 auto;
+}
+
+.workspace-panel__content {
+  flex: 1 1 auto;
+}
+
+.workspace-panel__footer {
+  flex: 0 0 auto;
+}
+
+.workspace-panel--padding-none
+  .workspace-panel__content {
+  padding: 0;
+}
+
+.workspace-panel--padding-sm
+  .workspace-panel__content {
+  padding: var(--workspace-spacing-sm);
+}
+
+.workspace-panel--padding-md
+  .workspace-panel__content {
+  padding: var(--workspace-spacing-md);
+}
+
+.workspace-panel--padding-lg
+  .workspace-panel__content {
+  padding: var(--workspace-spacing-lg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-panel {
+    transition: none;
+  }
+
+  .workspace-panel--interactive:hover,
+  .workspace-panel--interactive:active {
+    transform: none;
+  }
+}

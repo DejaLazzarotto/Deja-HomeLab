@@ -1,245 +1,35 @@
-<section class="workspace-welcome-widget">
+<workspace-panel
+  [interactive]="true"
+  elevation="sm"
+>
+  <div panel-header>
 
-  <div class="workspace-welcome-widget__status-strip">
+    <!-- Status Strip -->
+    <!-- Cole aqui exatamente o bloco do status -->
 
-    <div class="workspace-welcome-widget__status-indicator"></div>
-
-    <div class="workspace-welcome-widget__status-copy">
-      <span class="workspace-welcome-widget__status-label">
-        Infraestrutura operacional
-      </span>
-
-      <span class="workspace-welcome-widget__status-description">
-        Todos os componentes essenciais estão disponíveis.
-      </span>
-    </div>
-
-    <span class="workspace-welcome-widget__status-badge">
-      Operational
-    </span>
+    <!-- Hero -->
+    <!-- Cole aqui exatamente o bloco do título e mensagem -->
 
   </div>
 
-  <div class="workspace-welcome-widget__intro">
+  <div panel-content>
 
-    <span class="workspace-welcome-widget__eyebrow">
-      Deja Platform
-    </span>
+    <!-- KPI Grid -->
+    <!-- Cole aqui exatamente o bloco dos KPIs -->
 
-    <h2 class="workspace-welcome-widget__title">
-      {{ widgetInstance.title ?? 'Bem-vindo à Deja Platform' }}
-    </h2>
+    <!-- Information -->
+    <!-- Cole aqui exatamente o bloco Information -->
 
-    <p class="workspace-welcome-widget__message">
-      {{ message }}
-    </p>
+    <!-- Quick Actions -->
+    <!-- Cole aqui exatamente o bloco Quick Actions -->
 
   </div>
 
-  <div class="workspace-welcome-widget__kpi-grid">
+  <div panel-footer>
 
-    <article class="workspace-welcome-widget__kpi">
-
-      <span class="workspace-welcome-widget__kpi-label">
-        Runtime
-      </span>
-
-      <strong class="workspace-welcome-widget__kpi-value">
-        Ready
-      </strong>
-
-      <span class="workspace-welcome-widget__kpi-description">
-        Workspace Runtime
-      </span>
-
-    </article>
-
-    <article class="workspace-welcome-widget__kpi">
-
-      <span class="workspace-welcome-widget__kpi-label">
-        SDK
-      </span>
-
-      <strong class="workspace-welcome-widget__kpi-value">
-        Ready
-      </strong>
-
-      <span class="workspace-welcome-widget__kpi-description">
-        Workspace SDK
-      </span>
-
-    </article>
-
-    <article class="workspace-welcome-widget__kpi">
-
-      <span class="workspace-welcome-widget__kpi-label">
-        Angular
-      </span>
-
-      <strong class="workspace-welcome-widget__kpi-value">
-        Ready
-      </strong>
-
-      <span class="workspace-welcome-widget__kpi-description">
-        Presentation Layer
-      </span>
-
-    </article>
-
-    <article class="workspace-welcome-widget__kpi">
-
-      <span class="workspace-welcome-widget__kpi-label">
-        Renderer
-      </span>
-
-      <strong class="workspace-welcome-widget__kpi-value">
-        Ready
-      </strong>
-
-      <span class="workspace-welcome-widget__kpi-description">
-        Angular Renderer
-      </span>
-
-    </article>
+    <!-- Footer -->
+    <!-- Cole aqui exatamente o bloco Footer -->
 
   </div>
 
-  <div class="workspace-welcome-widget__content-grid">
-
-    <section class="workspace-welcome-widget__information">
-
-      <header class="workspace-welcome-widget__section-header">
-
-        <span class="workspace-welcome-widget__section-eyebrow">
-          Platform
-        </span>
-
-        <h3 class="workspace-welcome-widget__section-title">
-          Workspace Infrastructure
-        </h3>
-
-      </header>
-
-      <p class="workspace-welcome-widget__section-message">
-        A Deja Platform está preparada para hospedar aplicações,
-        dashboards e experiências corporativas através de uma
-        arquitetura visual baseada em Widgets reutilizáveis.
-      </p>
-
-      <div class="workspace-welcome-widget__information-status">
-
-        <span class="workspace-welcome-widget__information-dot"></span>
-
-        <span>
-          Ambiente institucional inicializado
-        </span>
-
-      </div>
-
-    </section>
-
-    <section class="workspace-welcome-widget__quick-actions">
-
-      <header class="workspace-welcome-widget__section-header">
-
-        <span class="workspace-welcome-widget__section-eyebrow">
-          Quick Actions
-        </span>
-
-        <h3 class="workspace-welcome-widget__section-title">
-          Acesso rápido
-        </h3>
-
-      </header>
-
-      <div class="workspace-welcome-widget__action-list">
-
-        <button
-          class="workspace-welcome-widget__action"
-          type="button"
-          disabled
-        >
-          <span class="workspace-welcome-widget__action-copy">
-
-            <strong>
-              Applications
-            </strong>
-
-            <span>
-              Explorar aplicações disponíveis
-            </span>
-
-          </span>
-
-          <span class="workspace-welcome-widget__action-arrow">
-            →
-          </span>
-        </button>
-
-        <button
-          class="workspace-welcome-widget__action"
-          type="button"
-          disabled
-        >
-          <span class="workspace-welcome-widget__action-copy">
-
-            <strong>
-              Workspace
-            </strong>
-
-            <span>
-              Visualizar ambiente corporativo
-            </span>
-
-          </span>
-
-          <span class="workspace-welcome-widget__action-arrow">
-            →
-          </span>
-        </button>
-
-        <button
-          class="workspace-welcome-widget__action"
-          type="button"
-          disabled
-        >
-          <span class="workspace-welcome-widget__action-copy">
-
-            <strong>
-              System Status
-            </strong>
-
-            <span>
-              Consultar estado da plataforma
-            </span>
-
-          </span>
-
-          <span class="workspace-welcome-widget__action-arrow">
-            →
-          </span>
-        </button>
-
-      </div>
-
-    </section>
-
-  </div>
-
-  <footer class="workspace-welcome-widget__footer">
-
-    <span>
-      Deja Platform
-    </span>
-
-    <span class="workspace-welcome-widget__footer-separator">
-      •
-    </span>
-
-    <span>
-      Workspace Infrastructure
-    </span>
-
-  </footer>
-
-</section>
+</workspace-panel>

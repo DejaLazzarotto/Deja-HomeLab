@@ -1,0 +1,30 @@
+<article
+  class="workspace-panel"
+  [class.workspace-panel--bordered]="bordered"
+  [class.workspace-panel--interactive]="interactive"
+  [class.workspace-panel--selected]="selected"
+  [class.workspace-panel--disabled]="disabled"
+  [class.workspace-panel--loading]="loading"
+  [class.workspace-panel--elevation-none]="elevation === 'none'"
+  [class.workspace-panel--elevation-sm]="elevation === 'sm'"
+  [class.workspace-panel--elevation-md]="elevation === 'md'"
+  [class.workspace-panel--elevation-lg]="elevation === 'lg'"
+  [class.workspace-panel--padding-none]="padding === 'none'"
+  [class.workspace-panel--padding-sm]="padding === 'sm'"
+  [class.workspace-panel--padding-md]="padding === 'md'"
+  [class.workspace-panel--padding-lg]="padding === 'lg'"
+  [attr.aria-busy]="loading ? 'true' : null"
+  [attr.aria-disabled]="disabled ? 'true' : null"
+>
+  <header class="workspace-panel__header">
+    <ng-content select="[panel-header]"></ng-content>
+  </header>
+
+  <div class="workspace-panel__content">
+    <ng-content select="[panel-content]"></ng-content>
+  </div>
+
+  <footer class="workspace-panel__footer">
+    <ng-content select="[panel-footer]"></ng-content>
+  </footer>
+</article>

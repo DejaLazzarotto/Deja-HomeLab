@@ -18,6 +18,11 @@ import {
   WorkspaceWidgetInstance,
 } from '../../../core/workspace-sdk/runtime/workspace-widget';
 
+import {
+  WorkspacePanelComponent,
+} from '../widget-library/foundation/panel/workspace-panel';
+
+
 /**
  * Componente visual institucional do Widget inicial
  * da Deja Platform.
@@ -25,6 +30,9 @@ import {
 @Component({
   selector: 'deja-workspace-welcome-widget',
   standalone: true,
+  imports: [
+    WorkspacePanelComponent,
+  ],
   templateUrl: './workspace-welcome-widget.html',
   styleUrl: './workspace-welcome-widget.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,6 +51,7 @@ export class WorkspaceWelcomeWidgetComponent {
    * Mensagem configurada para esta instância.
    */
   protected get message(): string {
+
     const configuredMessage =
       this.widgetInstance.configuration?.['message'];
 
@@ -55,4 +64,5 @@ export class WorkspaceWelcomeWidgetComponent {
       + 'está funcionando corretamente.'
     );
   }
+
 }
