@@ -1,0 +1,15 @@
+<span
+  class="workspace-status-badge"
+  [class.workspace-status-badge--success]="variant === 'success'"
+  [class.workspace-status-badge--warning]="variant === 'warning'"
+  [class.workspace-status-badge--danger]="variant === 'danger'"
+  [class.workspace-status-badge--info]="variant === 'info'"
+  [class.workspace-status-badge--neutral]="variant === 'neutral'">
+
+  <span class="workspace-status-badge__indicator"></span>
+
+  <span class="workspace-status-badge__label">
+    {{ label }}
+  </span>
+
+</span>

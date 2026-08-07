@@ -1,0 +1,56 @@
+:host {
+  display: inline-flex;
+}
+
+.workspace-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+
+  padding:
+    .35rem
+    .8rem;
+
+  border-radius: 999px;
+
+  border: 1px solid currentColor;
+
+  background: rgb(255 255 255 / 4%);
+
+  font-size: var(--workspace-font-size-xs);
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+
+  transition:
+    background var(--workspace-transition),
+    border-color var(--workspace-transition),
+    color var(--workspace-transition);
+}
+
+.workspace-status-badge__indicator {
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.workspace-status-badge--success {
+  color: var(--workspace-color-success);
+}
+
+.workspace-status-badge--warning {
+  color: var(--workspace-color-warning);
+}
+
+.workspace-status-badge--danger {
+  color: var(--workspace-color-danger);
+}
+
+.workspace-status-badge--info {
+  color: var(--workspace-color-info);
+}
+
+.workspace-status-badge--neutral {
+  color: var(--workspace-color-text-secondary);
+}

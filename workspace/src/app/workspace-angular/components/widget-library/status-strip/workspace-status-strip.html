@@ -1,0 +1,44 @@
+<div
+  class="workspace-status-strip"
+  [class.workspace-status-strip--success]="variant === 'success'"
+  [class.workspace-status-strip--warning]="variant === 'warning'"
+  [class.workspace-status-strip--danger]="variant === 'danger'"
+  [class.workspace-status-strip--info]="variant === 'info'"
+  [class.workspace-status-strip--neutral]="variant === 'neutral'">
+
+  <div class="workspace-status-strip__content">
+
+    @if (icon) {
+      <div class="workspace-status-strip__icon">
+        <img
+          [src]="icon"
+          [alt]="title">
+      </div>
+    }
+
+    <div class="workspace-status-strip__text">
+
+      <div class="workspace-status-strip__title">
+        {{ title }}
+      </div>
+
+      @if (subtitle) {
+        <div class="workspace-status-strip__subtitle">
+          {{ subtitle }}
+        </div>
+      }
+
+    </div>
+
+  </div>
+
+@if (status) {
+
+  <deja-status-badge
+    [label]="status"
+    [variant]="variant">
+  </deja-status-badge>
+
+}
+
+</div>
