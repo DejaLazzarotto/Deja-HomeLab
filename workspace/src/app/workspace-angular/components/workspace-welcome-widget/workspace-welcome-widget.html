@@ -15,18 +15,20 @@
       description="Infraestrutura institucional carregada corretamente."
     >
 
-      <deja-status-indicator
-        sectionHeaderIndicators
-        status="success"
-        size="md"
-        [animated]="true"
-      ></deja-status-indicator>
+      <deja-workspace-toolbar>
 
-      <deja-status-badge
-        sectionHeaderBadges
-        label="Online"
-        variant="success"
-      ></deja-status-badge>
+        <deja-status-indicator
+          status="success"
+          size="md"
+          [animated]="true"
+        ></deja-status-indicator>
+
+        <deja-status-badge
+          label="Online"
+          variant="success"
+        ></deja-status-badge>
+
+      </deja-workspace-toolbar>
 
     </deja-section-header>
 
@@ -39,7 +41,7 @@
   >
 
     <deja-section-header
-      subtitle="Deja Platform"
+      eyebrow="Deja Platform"
       title="Workspace pronto para operação"
       [description]="message"
     ></deja-section-header>
@@ -172,7 +174,7 @@
         <section class="workspace-welcome-widget__information">
 
           <deja-section-header
-            subtitle="Information"
+            eyebrow="Information"
             title="Ambiente preparado"
             description="A base visual e arquitetural da Deja Platform está preparada para receber novos componentes, gráficos, tabelas e módulos analíticos."
           ></deja-section-header>
@@ -206,7 +208,7 @@
         <section class="workspace-welcome-widget__quick-actions">
 
           <deja-section-header
-            subtitle="Quick Actions"
+            eyebrow="Quick Actions"
             title="Próximas capacidades"
           ></deja-section-header>
 

@@ -1,4 +1,4 @@
-<header class="workspace-section-header">
+<div class="workspace-section-header">
 
   <div class="workspace-section-header__content">
 
@@ -8,27 +8,9 @@
       </span>
     }
 
-    <div class="workspace-section-header__heading">
-
-      <h2 class="workspace-section-header__title">
-        {{ title }}
-      </h2>
-
-      <div class="workspace-section-header__indicators">
-        <ng-content select="[sectionHeaderIndicators]"></ng-content>
-      </div>
-
-      <div class="workspace-section-header__badges">
-        <ng-content select="[sectionHeaderBadges]"></ng-content>
-      </div>
-
-    </div>
-
-    @if (subtitle) {
-      <span class="workspace-section-header__subtitle">
-        {{ subtitle }}
-      </span>
-    }
+    <h2 class="workspace-section-header__title">
+      {{ title }}
+    </h2>
 
     @if (description) {
       <p class="workspace-section-header__description">
@@ -38,8 +20,8 @@
 
   </div>
 
-  <div class="workspace-section-header__actions">
-    <ng-content select="[sectionHeaderActions]"></ng-content>
+  <div class="workspace-section-header__toolbar">
+    <ng-content select="deja-workspace-toolbar"></ng-content>
   </div>
 
-</header>
+</div>

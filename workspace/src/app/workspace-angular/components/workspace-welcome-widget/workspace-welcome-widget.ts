@@ -8,15 +8,9 @@
  * Widgets corporativos da plataforma.
  */
 
-import {
-  ChangeDetectionStrategy,
-  Component,
-  Input,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 
-import {
-  WorkspaceWidgetInstance,
-} from '../../../core/workspace-sdk/runtime/workspace-widget';
+import { WorkspaceWidgetInstance } from '../../../core/workspace-sdk/runtime/workspace-widget';
 
 import {
   WorkspaceGridComponent,
@@ -26,6 +20,7 @@ import {
   WorkspaceStatusBadgeComponent,
   WorkspaceStatusIndicatorComponent,
   WorkspaceSurfaceComponent,
+  WorkspaceToolbarComponent,
 } from '../widget-library/foundation';
 
 /**
@@ -43,13 +38,13 @@ import {
     WorkspaceSectionHeaderComponent,
     WorkspaceStatusBadgeComponent,
     WorkspaceStatusIndicatorComponent,
+    WorkspaceToolbarComponent,
   ],
   templateUrl: './workspace-welcome-widget.html',
   styleUrl: './workspace-welcome-widget.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkspaceWelcomeWidgetComponent {
-
   /**
    * Instância declarativa do Widget no Dashboard.
    */
@@ -62,18 +57,12 @@ export class WorkspaceWelcomeWidgetComponent {
    * Mensagem configurada para esta instância.
    */
   protected get message(): string {
-
-    const configuredMessage =
-      this.widgetInstance.configuration?.['message'];
+    const configuredMessage = this.widgetInstance.configuration?.['message'];
 
     if (typeof configuredMessage === 'string') {
       return configuredMessage;
     }
 
-    return (
-      'A infraestrutura inicial da Deja Platform '
-      + 'está funcionando corretamente.'
-    );
+    return 'A infraestrutura inicial da Deja Platform ' + 'está funcionando corretamente.';
   }
-
 }
