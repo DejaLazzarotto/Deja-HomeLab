@@ -18,7 +18,17 @@
         <span
           class="workspace-sidebar__icon"
           aria-hidden="true">
-          {{ item.icon }}
+
+          @if (resolveIcon(item); as icon) {
+
+            <img
+              class="workspace-sidebar__icon-image"
+              [src]="icon"
+              [alt]="item.title"
+            />
+
+          }
+
         </span>
 
         <span class="workspace-sidebar__title">

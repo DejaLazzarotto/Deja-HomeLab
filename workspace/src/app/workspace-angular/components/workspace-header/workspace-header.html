@@ -1,36 +1,75 @@
 <header class="workspace-header">
 
-  <div class="workspace-header__brand">
+  <!-- =========================================================
+       PRIMARY BAR
+       Identidade institucional e contexto global da plataforma
+       ========================================================= -->
 
-    <img
-      class="workspace-header__logo"
-      src="/branding/icons/icon-64.png"
-      alt="Deja Platform"
-    />
+  <div class="workspace-header__primary">
 
-    <div class="workspace-header__titles">
+    <div class="workspace-header__brand">
 
-      <div class="workspace-header__platform">
-        {{ platformName }}
+      <img
+        class="workspace-header__logo"
+        src="/branding/icons/icon-64.png"
+        alt="Deja Platform"
+      />
+
+      <div class="workspace-header__identity">
+
+        <div class="workspace-header__platform">
+          {{ platformName }}
+        </div>
+
+        <div class="workspace-header__application">
+          {{ applicationName }}
+        </div>
+
       </div>
 
-      <div class="workspace-header__application">
-        {{ applicationName }}
-      </div>
+    </div>
+
+    <div class="workspace-header__global-actions">
+
+      <!-- Área institucional reservada para:
+           - Pesquisa global
+           - Command Palette
+           - Notificações
+           - Aplicações
+           - Organização / Tenant
+           - Usuário -->
 
     </div>
 
   </div>
 
-  <div class="workspace-header__actions">
 
-    <!-- Área reservada para:
-         - Tenant
-         - Organização
-         - Usuário
-         - Notificações
-         - Command Palette
-         - Ferramentas -->
+  <!-- =========================================================
+       CONTEXT BAR
+       Navegação e ações relacionadas ao contexto corrente
+       ========================================================= -->
+
+  <div class="workspace-header__context">
+
+    <div class="workspace-header__context-left">
+
+      <div class="workspace-header__workspace-label">
+        Workspace
+      </div>
+
+    </div>
+
+    <div class="workspace-header__context-actions">
+
+      <!-- Área institucional reservada para:
+           - Breadcrumb
+           - Dashboard corrente
+           - Filtros globais
+           - Período
+           - Atualização
+           - Ações contextuais -->
+
+    </div>
 
   </div>
 

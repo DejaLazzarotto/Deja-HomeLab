@@ -41,34 +41,28 @@ import { WorkspaceMenu, WorkspaceMenuId, WorkspaceMenuLocation } from '../ui/wor
 import { WorkspaceMenuRegistry } from '../ui/workspace-menu-registry';
 import { WorkspaceToolbarRegistry } from '../ui/workspace-toolbar-registry';
 import { WorkspaceContextMenu, WorkspaceContextMenuId } from '../ui/workspace-context-menu';
-
 import { WorkspaceContextMenuRegistry } from '../ui/workspace-context-menu-registry';
 import {
   WorkspaceCommandPalette,
   WorkspaceCommandPaletteId,
 } from '../ui/workspace-command-palette';
-
 import { WorkspaceCommandPaletteRegistry } from '../ui/workspace-command-palette-registry';
-
+import { WorkspaceIcon } from '../ui/workspace-icon';
+import { WorkspaceIconRegistry } from '../ui/workspace-icon-registry';
 import { WorkspaceRenderContext } from './workspace-render-context';
 import { WorkspaceRenderer } from './workspace-renderer';
 import { WorkspaceRendererDispatcher } from './workspace-renderer-dispatcher';
 import { WorkspaceRendererRegistry } from './workspace-renderer-registry';
 import { WorkspaceResolvedDashboard } from './workspace-resolved-dashboard';
-
 import { WorkspaceLayoutManager } from './workspace-layout-manager';
 import { WorkspaceEditingManager } from './workspace-editing-manager';
 import { WorkspaceDashboardState } from './workspace-dashboard-state';
-
 import { WorkspaceNavigation, WorkspaceNavigationId } from './workspace-navigation';
-
 import {
   WorkspaceNavigationDispatcher,
   WorkspaceNavigationResult,
 } from './workspace-navigation-dispatcher';
-
 import { WorkspaceNavigationRegistry } from './workspace-navigation-registry';
-
 import { WorkspaceDashboardResolver } from './workspace-dashboard-resolver';
 
 /**
@@ -163,6 +157,11 @@ export class WorkspaceRuntime {
   private readonly commandPaletteRegistry = new WorkspaceCommandPaletteRegistry();
 
   /**
+   * Registry oficial de Workspace Icons.
+   */
+  private readonly iconRegistry = new WorkspaceIconRegistry();
+
+  /**
    * Registry oficial de Workspace Renderers.
    */
   private readonly rendererRegistry: WorkspaceRendererRegistry;
@@ -212,7 +211,10 @@ export class WorkspaceRuntime {
       this.commandDispatcher,
     );
 
-    const dashboardResolver = new WorkspaceDashboardResolver(this.registries, this.layoutEngine!);
+    const dashboardResolver = new WorkspaceDashboardResolver(
+      this.registries,
+      this.layoutEngine!,
+    );
 
     this.navigationRegistry = new WorkspaceNavigationRegistry();
 
@@ -225,7 +227,9 @@ export class WorkspaceRuntime {
     this.menuRegistry = new WorkspaceMenuRegistry();
 
     this.rendererRegistry = new WorkspaceRendererRegistry();
-    this.rendererDispatcher = new WorkspaceRendererDispatcher(this.rendererRegistry);
+    this.rendererDispatcher = new WorkspaceRendererDispatcher(
+      this.rendererRegistry,
+    );
   }
 
   getState(): WorkspaceRuntimeState {
@@ -462,30 +466,51 @@ export class WorkspaceRuntime {
     return this.navigationDispatcher.clear();
   }
 
+  /**
+   * Registra um Workspace Menu.
+   */
   registerMenu(menu: WorkspaceMenu): void {
     this.menuRegistry.register(menu);
   }
 
+  /**
+   * Registra múltiplos Workspace Menus.
+   */
   registerMenus(menus: readonly WorkspaceMenu[]): void {
     this.menuRegistry.registerMany(menus);
   }
 
+  /**
+   * Remove um Workspace Menu.
+   */
   unregisterMenu(menuId: WorkspaceMenuId): boolean {
     return this.menuRegistry.unregister(menuId);
   }
 
+  /**
+   * Retorna todos os Workspace Menus.
+   */
   menus(): readonly WorkspaceMenu[] {
     return this.menuRegistry.getAll();
   }
 
+  /**
+   * Retorna um Workspace Menu.
+   */
   getMenu(menuId: WorkspaceMenuId): WorkspaceMenu {
     return this.menuRegistry.get(menuId);
   }
 
+  /**
+   * Verifica se um Workspace Menu está registrado.
+   */
   hasMenu(menuId: WorkspaceMenuId): boolean {
     return this.menuRegistry.has(menuId);
   }
 
+  /**
+   * Retorna Workspace Menus por localização.
+   */
   getMenusByLocation(location: WorkspaceMenuLocation): readonly WorkspaceMenu[] {
     return this.menuRegistry.getByLocation(location);
   }
@@ -579,6 +604,55 @@ export class WorkspaceRuntime {
    */
   searchCommandPalette(text: string): readonly WorkspaceCommandPalette[] {
     return this.commandPaletteRegistry.search(text);
+  }
+
+  /**
+   * Registra um Workspace Icon.
+   */
+  registerIcon(icon: WorkspaceIcon): void {
+    this.iconRegistry.register(icon);
+  }
+
+  /**
+   * Registra múltiplos Workspace Icons.
+   */
+  registerIcons(icons: readonly WorkspaceIcon[]): void {
+    this.iconRegistry.registerMany(icons);
+  }
+
+  /**
+   * Remove um Workspace Icon.
+   */
+  unregisterIcon(iconId: string): boolean {
+    return this.iconRegistry.unregister(iconId);
+  }
+
+  /**
+   * Retorna todos os Workspace Icons registrados.
+   */
+  icons(): readonly WorkspaceIcon[] {
+    return this.iconRegistry.getAll();
+  }
+
+  /**
+   * Retorna um Workspace Icon pelo identificador.
+   */
+  getIcon(iconId: string): WorkspaceIcon | undefined {
+    return this.iconRegistry.resolve(iconId);
+  }
+
+  /**
+   * Verifica se um Workspace Icon está registrado.
+   */
+  hasIcon(iconId: string): boolean {
+    return this.iconRegistry.has(iconId);
+  }
+
+  /**
+   * Retorna o Registry institucional de Workspace Icons.
+   */
+  getIconRegistry(): WorkspaceIconRegistry {
+    return this.iconRegistry;
   }
 
   /**
@@ -949,6 +1023,7 @@ export class WorkspaceRuntime {
       this.toolbarRegistry.clear();
       this.contextMenuRegistry.clear();
       this.commandPaletteRegistry.clear();
+      this.iconRegistry.clear();
       this.rendererRegistry.clear();
       this.context = undefined;
       this.initializedAt = undefined;
@@ -1002,9 +1077,15 @@ export class WorkspaceRuntime {
     };
   }
 
-  private assertState(operation: string, allowedStates: readonly WorkspaceRuntimeState[]): void {
+  private assertState(
+    operation: string,
+    allowedStates: readonly WorkspaceRuntimeState[],
+  ): void {
     if (!allowedStates.includes(this.state)) {
-      throw new WorkspaceRuntimeStateError(this.state, operation);
+      throw new WorkspaceRuntimeStateError(
+        this.state,
+        operation,
+      );
     }
   }
 }

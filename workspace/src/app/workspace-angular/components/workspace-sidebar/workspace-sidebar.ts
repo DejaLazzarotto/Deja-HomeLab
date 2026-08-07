@@ -20,6 +20,10 @@ import {
   WorkspaceBootstrapService,
 } from '../../bootstrap/workspace-bootstrap.service';
 
+import {
+  WorkspaceIconProvider,
+} from '../../services/workspace-icon-provider';
+
 /**
  * Sidebar permanente da Workspace Shell.
  *
@@ -40,8 +44,8 @@ export class WorkspaceSidebarComponent {
 
   constructor(
     private readonly bootstrapService: WorkspaceBootstrapService,
+    readonly iconProvider: WorkspaceIconProvider,
   ) {}
-
 
   /**
    * Runtime oficial do Workspace.
@@ -56,7 +60,6 @@ export class WorkspaceSidebarComponent {
 
   }
 
-
   /**
    * Retorna as navegações institucionais habilitadas.
    *
@@ -68,7 +71,6 @@ export class WorkspaceSidebarComponent {
     return this.runtime.enabledNavigations();
 
   }
-
 
   /**
    * Executa uma navegação institucional.
@@ -83,7 +85,6 @@ export class WorkspaceSidebarComponent {
 
   }
 
-
   /**
    * Verifica se a navegação está ativa.
    */
@@ -93,6 +94,19 @@ export class WorkspaceSidebarComponent {
 
     return this.runtime.isNavigationActive(
       navigation.id,
+    );
+
+  }
+
+  /**
+   * Resolve o recurso físico do ícone institucional.
+   */
+  resolveIcon(
+    navigation: WorkspaceNavigation,
+  ): string | undefined {
+
+    return this.iconProvider.resolve(
+      navigation.icon,
     );
 
   }
