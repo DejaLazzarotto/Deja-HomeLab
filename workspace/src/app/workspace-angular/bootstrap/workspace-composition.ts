@@ -209,7 +209,7 @@ export class WorkspaceComposition {
         title: 'Início',
         description:
           'Abre o Dashboard inicial da Deja Platform.',
-        icon: 'home',
+        icon: 'dashboard',
         order: 10,
         enabled: true,
       },
@@ -221,7 +221,7 @@ export class WorkspaceComposition {
         title: 'Applications',
         description:
           'Acesso às aplicações da plataforma.',
-        icon: 'apps',
+        icon: 'applications',
         order: 20,
         enabled: true,
       },

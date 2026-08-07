@@ -1,0 +1,87 @@
+<section class="workspace-dashboard">
+  <header class="workspace-dashboard__header">
+    <h1 class="workspace-dashboard__title">
+      {{ resolvedDashboard.dashboard.title }}
+    </h1>
+
+    @if (resolvedDashboard.dashboard.description) {
+      <p class="workspace-dashboard__description">
+        {{ resolvedDashboard.dashboard.description }}
+      </p>
+    }
+  </header>
+
+  @if (hasResolvedLayout()) {
+    <section
+      class="workspace-dashboard__layout"
+      [attr.data-layout-id]="resolvedDashboard.layout?.id"
+      [attr.data-layout-type]="resolvedDashboard.layout?.type"
+    >
+      @for (region of resolvedDashboard.regions; track region.id) {
+        <section
+          class="workspace-dashboard__region"
+          [attr.data-region-id]="region.id"
+          [attr.data-region-type]="region.regionType"
+        >
+          <header class="workspace-dashboard__region-header">
+            <h2 class="workspace-dashboard__region-title">
+              {{ region.title }}
+            </h2>
+
+            @if (region.description) {
+              <p class="workspace-dashboard__region-description">
+                {{ region.description }}
+              </p>
+            }
+          </header>
+
+          <section
+            class="workspace-dashboard__region-widgets"
+            [dejaWorkspaceGridContainer]="resolvedDashboard.gridConfiguration"
+          >
+            @for (widget of widgetsForRegion(region); track widget.id) {
+              <deja-workspace-widget-host
+                [runtime]="runtime"
+                [widgetInstance]="widget"
+                [dejaWorkspaceGridItem]="widget.position"
+              />
+            }
+          </section>
+        </section>
+      }
+
+      @if (unassignedWidgets().length) {
+        <section
+          class="
+            workspace-dashboard__region
+            workspace-dashboard__region--unassigned
+          "
+          data-region-type="unassigned"
+        >
+          <section
+            class="workspace-dashboard__region-widgets"
+            [dejaWorkspaceGridContainer]="resolvedDashboard.gridConfiguration"
+          >
+            @for (widget of unassignedWidgets(); track widget.id) {
+              <deja-workspace-widget-host
+                [runtime]="runtime"
+                [widgetInstance]="widget"
+                [dejaWorkspaceGridItem]="widget.position"
+              />
+            }
+          </section>
+        </section>
+      }
+    </section>
+  } @else {
+    <section class="workspace-dashboard__widgets">
+      @for (widget of resolvedDashboard.widgets; track widget.id) {
+        <deja-workspace-widget-host
+          [runtime]="runtime"
+          [widgetInstance]="widget"
+          [dejaWorkspaceGridItem]="widget.position"
+        />
+      }
+    </section>
+  }
+</section>
