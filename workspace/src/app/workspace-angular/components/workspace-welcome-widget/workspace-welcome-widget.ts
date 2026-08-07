@@ -19,9 +19,20 @@ import {
 } from '../../../core/workspace-sdk/runtime/workspace-widget';
 
 import {
+  WorkspaceGridComponent,
+} from '../widget-library/foundation/grid/workspace-grid';
+
+import {
+  WorkspaceStackComponent,
+} from '../widget-library/foundation/stack/workspace-stack';
+
+import {
+  WorkspaceSurfaceComponent,
+} from '../widget-library/foundation/surface/workspace-surface';
+
+import {
   WorkspacePanelComponent,
 } from '../widget-library/foundation/panel/workspace-panel';
-
 
 /**
  * Componente visual institucional do Widget inicial
@@ -31,6 +42,9 @@ import {
   selector: 'deja-workspace-welcome-widget',
   standalone: true,
   imports: [
+    WorkspaceGridComponent,
+    WorkspaceStackComponent,
+    WorkspaceSurfaceComponent,
     WorkspacePanelComponent,
   ],
   templateUrl: './workspace-welcome-widget.html',

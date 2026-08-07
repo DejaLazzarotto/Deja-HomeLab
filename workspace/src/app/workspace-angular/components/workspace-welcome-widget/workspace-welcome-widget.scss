@@ -4,14 +4,6 @@
   height: 100%;
 }
 
-.workspace-welcome-widget {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 100%;
-}
 
 .workspace-welcome-widget__status-strip {
   display: flex;
@@ -29,6 +21,7 @@
   border-radius: 0.65rem;
 }
 
+
 .workspace-welcome-widget__status-indicator {
   flex: 0 0 auto;
   width: 0.55rem;
@@ -40,6 +33,7 @@
     0 0 1rem rgb(65 205 142 / 22%);
 }
 
+
 .workspace-welcome-widget__status-copy {
   display: flex;
   flex: 1;
@@ -48,16 +42,19 @@
   min-width: 0;
 }
 
+
 .workspace-welcome-widget__status-label {
   color: var(--workspace-color-text-primary);
   font-size: 0.8rem;
   font-weight: 600;
 }
 
+
 .workspace-welcome-widget__status-description {
   color: var(--workspace-color-text-muted);
   font-size: 0.72rem;
 }
+
 
 .workspace-welcome-widget__status-badge {
   flex: 0 0 auto;
@@ -72,11 +69,13 @@
   border-radius: 999px;
 }
 
+
 .workspace-welcome-widget__intro {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
+
 
 .workspace-welcome-widget__eyebrow,
 .workspace-welcome-widget__section-eyebrow {
@@ -87,6 +86,7 @@
   text-transform: uppercase;
 }
 
+
 .workspace-welcome-widget__title {
   margin: 0;
   color: var(--workspace-color-text-primary);
@@ -96,6 +96,7 @@
   letter-spacing: -0.025em;
 }
 
+
 .workspace-welcome-widget__message {
   max-width: 52rem;
   margin: 0;
@@ -104,11 +105,6 @@
   line-height: 1.65;
 }
 
-.workspace-welcome-widget__kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.75rem;
-}
 
 .workspace-welcome-widget__kpi {
   position: relative;
@@ -130,6 +126,7 @@
     inset 0 1px 0 rgb(255 255 255 / 2%);
 }
 
+
 .workspace-welcome-widget__kpi::before {
   position: absolute;
   top: 0;
@@ -146,6 +143,7 @@
     );
 }
 
+
 .workspace-welcome-widget__kpi-label {
   color: var(--workspace-color-text-muted);
   font-size: 0.66rem;
@@ -154,24 +152,19 @@
   text-transform: uppercase;
 }
 
+
 .workspace-welcome-widget__kpi-value {
   color: var(--workspace-color-text-primary);
   font-size: 1.05rem;
   font-weight: 650;
 }
 
+
 .workspace-welcome-widget__kpi-description {
   color: var(--workspace-color-text-muted);
   font-size: 0.7rem;
 }
 
-.workspace-welcome-widget__content-grid {
-  display: grid;
-  grid-template-columns:
-    minmax(0, 1.4fr)
-    minmax(15rem, 0.8fr);
-  gap: 0.75rem;
-}
 
 .workspace-welcome-widget__information,
 .workspace-welcome-widget__quick-actions {
@@ -182,12 +175,14 @@
   border-radius: 0.65rem;
 }
 
+
 .workspace-welcome-widget__section-header {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
   margin-bottom: 0.85rem;
 }
+
 
 .workspace-welcome-widget__section-title {
   margin: 0;
@@ -196,6 +191,7 @@
   font-weight: 600;
 }
 
+
 .workspace-welcome-widget__section-message {
   max-width: 44rem;
   margin: 0;
@@ -203,6 +199,7 @@
   font-size: 0.8rem;
   line-height: 1.65;
 }
+
 
 .workspace-welcome-widget__information-status {
   display: flex;
@@ -213,6 +210,7 @@
   font-size: 0.72rem;
 }
 
+
 .workspace-welcome-widget__information-dot {
   width: 0.4rem;
   height: 0.4rem;
@@ -220,11 +218,13 @@
   border-radius: 50%;
 }
 
+
 .workspace-welcome-widget__action-list {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
 }
+
 
 .workspace-welcome-widget__action {
   display: flex;
@@ -241,10 +241,12 @@
   border-radius: 0.5rem;
 }
 
+
 .workspace-welcome-widget__action:disabled {
   cursor: default;
   opacity: 1;
 }
+
 
 .workspace-welcome-widget__action-copy {
   display: flex;
@@ -253,11 +255,13 @@
   min-width: 0;
 }
 
+
 .workspace-welcome-widget__action-copy strong {
   color: var(--workspace-color-text-primary);
   font-size: 0.75rem;
   font-weight: 600;
 }
+
 
 .workspace-welcome-widget__action-copy span {
   overflow: hidden;
@@ -267,11 +271,13 @@
   white-space: nowrap;
 }
 
+
 .workspace-welcome-widget__action-arrow {
   flex: 0 0 auto;
   color: var(--workspace-color-text-muted);
   font-size: 0.9rem;
 }
+
 
 .workspace-welcome-widget__footer {
   display: flex;
@@ -283,31 +289,22 @@
   font-size: 0.68rem;
 }
 
+
 .workspace-welcome-widget__footer-separator {
   opacity: 0.45;
 }
 
-@media (max-width: 64rem) {
-  .workspace-welcome-widget__kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .workspace-welcome-widget__content-grid {
-    grid-template-columns: 1fr;
-  }
-}
 
 @media (max-width: 38rem) {
+
   .workspace-welcome-widget__status-strip {
     align-items: flex-start;
     flex-wrap: wrap;
   }
 
+
   .workspace-welcome-widget__status-badge {
     margin-left: 1.3rem;
   }
 
-  .workspace-welcome-widget__kpi-grid {
-    grid-template-columns: 1fr;
-  }
 }

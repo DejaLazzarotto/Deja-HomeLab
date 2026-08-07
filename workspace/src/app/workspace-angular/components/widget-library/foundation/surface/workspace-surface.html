@@ -1,0 +1,19 @@
+<div
+  class="workspace-surface"
+  [class.workspace-surface--variant-default]="variant === 'default'"
+  [class.workspace-surface--variant-subtle]="variant === 'subtle'"
+  [class.workspace-surface--variant-card]="variant === 'card'"
+  [class.workspace-surface--variant-accent]="variant === 'accent'"
+  [class.workspace-surface--padding-none]="padding === 'none'"
+  [class.workspace-surface--padding-sm]="padding === 'sm'"
+  [class.workspace-surface--padding-md]="padding === 'md'"
+  [class.workspace-surface--padding-lg]="padding === 'lg'"
+  [class.workspace-surface--radius-sm]="radius === 'sm'"
+  [class.workspace-surface--radius-md]="radius === 'md'"
+  [class.workspace-surface--radius-lg]="radius === 'lg'"
+  [class.workspace-surface--elevation-none]="elevation === 'none'"
+  [class.workspace-surface--elevation-sm]="elevation === 'sm'"
+  [class.workspace-surface--elevation-md]="elevation === 'md'"
+>
+  <ng-content />
+</div>

@@ -1,0 +1,55 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.workspace-stack {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+.workspace-stack--gap-xs {
+  gap: 0.5rem;
+}
+
+.workspace-stack--gap-sm {
+  gap: 0.75rem;
+}
+
+.workspace-stack--gap-md {
+  gap: 1rem;
+}
+
+.workspace-stack--gap-lg {
+  gap: 1.5rem;
+}
+
+.workspace-stack--gap-xl {
+  gap: 2rem;
+}
+
+.workspace-stack--align-start {
+  align-items: flex-start;
+}
+
+.workspace-stack--align-center {
+  align-items: center;
+}
+
+.workspace-stack--align-stretch {
+  align-items: stretch;
+}
+
+.workspace-stack--justify-start {
+  justify-content: flex-start;
+}
+
+.workspace-stack--justify-center {
+  justify-content: center;
+}
+
+.workspace-stack--justify-space-between {
+  justify-content: space-between;
+}

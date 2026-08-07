@@ -1,0 +1,16 @@
+<div
+  class="workspace-stack"
+  [class.workspace-stack--gap-xs]="gap === 'xs'"
+  [class.workspace-stack--gap-sm]="gap === 'sm'"
+  [class.workspace-stack--gap-md]="gap === 'md'"
+  [class.workspace-stack--gap-lg]="gap === 'lg'"
+  [class.workspace-stack--gap-xl]="gap === 'xl'"
+  [class.workspace-stack--align-start]="align === 'start'"
+  [class.workspace-stack--align-center]="align === 'center'"
+  [class.workspace-stack--align-stretch]="align === 'stretch'"
+  [class.workspace-stack--justify-start]="justify === 'start'"
+  [class.workspace-stack--justify-center]="justify === 'center'"
+  [class.workspace-stack--justify-space-between]="justify === 'space-between'"
+>
+  <ng-content />
+</div>

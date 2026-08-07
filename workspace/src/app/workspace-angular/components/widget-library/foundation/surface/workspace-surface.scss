@@ -1,0 +1,108 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.workspace-surface {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/*
+ * Variants
+ */
+
+.workspace-surface--variant-default {
+  background:
+    linear-gradient(
+      180deg,
+      rgb(18 28 45 / 92%) 0%,
+      rgb(13 21 35 / 92%) 100%
+    );
+  border: 1px solid rgb(255 255 255 / 6%);
+}
+
+.workspace-surface--variant-subtle {
+  background: rgb(255 255 255 / 2.5%);
+  border: 1px solid rgb(255 255 255 / 5%);
+}
+
+.workspace-surface--variant-card {
+  background:
+    linear-gradient(
+      180deg,
+      rgb(20 31 50 / 96%) 0%,
+      rgb(14 23 38 / 96%) 100%
+    );
+  border: 1px solid rgb(255 255 255 / 7%);
+}
+
+.workspace-surface--variant-accent {
+  background:
+    linear-gradient(
+      135deg,
+      rgb(65 205 142 / 8%) 0%,
+      rgb(65 205 142 / 2%) 60%,
+      rgb(255 255 255 / 2%) 100%
+    );
+  border: 1px solid rgb(65 205 142 / 16%);
+}
+
+/*
+ * Padding
+ */
+
+.workspace-surface--padding-none {
+  padding: 0;
+}
+
+.workspace-surface--padding-sm {
+  padding: 0.75rem;
+}
+
+.workspace-surface--padding-md {
+  padding: 1rem;
+}
+
+.workspace-surface--padding-lg {
+  padding: 1.5rem;
+}
+
+/*
+ * Radius
+ */
+
+.workspace-surface--radius-sm {
+  border-radius: 0.5rem;
+}
+
+.workspace-surface--radius-md {
+  border-radius: 0.75rem;
+}
+
+.workspace-surface--radius-lg {
+  border-radius: 1rem;
+}
+
+/*
+ * Elevation
+ */
+
+.workspace-surface--elevation-none {
+  box-shadow: none;
+}
+
+.workspace-surface--elevation-sm {
+  box-shadow:
+    0 0.25rem 0.75rem rgb(0 0 0 / 12%),
+    inset 0 1px 0 rgb(255 255 255 / 2%);
+}
+
+.workspace-surface--elevation-md {
+  box-shadow:
+    0 0.75rem 2rem rgb(0 0 0 / 18%),
+    inset 0 1px 0 rgb(255 255 255 / 2%);
+}

@@ -1,0 +1,18 @@
+<div
+  class="workspace-grid"
+  [class.workspace-grid--columns-auto]="columns === 'auto'"
+  [class.workspace-grid--columns-1]="columns === 1"
+  [class.workspace-grid--columns-2]="columns === 2"
+  [class.workspace-grid--columns-3]="columns === 3"
+  [class.workspace-grid--columns-4]="columns === 4"
+  [class.workspace-grid--layout-equal]="layout === 'equal'"
+  [class.workspace-grid--layout-content-sidebar]="layout === 'content-sidebar'"
+  [class.workspace-grid--gap-sm]="gap === 'sm'"
+  [class.workspace-grid--gap-md]="gap === 'md'"
+  [class.workspace-grid--gap-lg]="gap === 'lg'"
+  [class.workspace-grid--align-start]="align === 'start'"
+  [class.workspace-grid--align-center]="align === 'center'"
+  [class.workspace-grid--align-stretch]="align === 'stretch'"
+>
+  <ng-content />
+</div>
