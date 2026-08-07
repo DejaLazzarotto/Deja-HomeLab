@@ -3,36 +3,79 @@
   elevation="sm"
 >
 
-  <deja-workspace-stack gap="lg">
+  <deja-workspace-surface
+    variant="accent"
+    padding="md"
+    radius="md"
+    elevation="none"
+  >
+
+    <div class="workspace-welcome-widget__status-strip">
+
+      <span
+        class="workspace-welcome-widget__status-indicator"
+        aria-hidden="true"
+      ></span>
+
+      <div class="workspace-welcome-widget__status-copy">
+
+        <span class="workspace-welcome-widget__status-label">
+          Workspace operacional
+        </span>
+
+        <span class="workspace-welcome-widget__status-description">
+          Infraestrutura institucional carregada corretamente.
+        </span>
+
+      </div>
+
+      <span class="workspace-welcome-widget__status-badge">
+        Online
+      </span>
+
+    </div>
+
+  </deja-workspace-surface>
+
+
+  <deja-workspace-stack
+    gap="sm"
+    align="start"
+  >
+
+    <deja-section-header
+      subtitle="Deja Platform"
+      title="Workspace pronto para operação"
+      [description]="message"
+    ></deja-section-header>
+
+  </deja-workspace-stack>
+
+
+  <deja-workspace-grid
+    [columns]="4"
+    gap="md"
+  >
 
     <deja-workspace-surface
-      variant="accent"
+      variant="card"
       padding="md"
       radius="md"
       elevation="none"
     >
 
-      <div class="workspace-welcome-widget__status-strip">
+      <div class="workspace-welcome-widget__kpi">
 
-        <span
-          class="workspace-welcome-widget__status-indicator"
-          aria-hidden="true"
-        ></span>
+        <span class="workspace-welcome-widget__kpi-label">
+          Runtime
+        </span>
 
-        <div class="workspace-welcome-widget__status-copy">
+        <strong class="workspace-welcome-widget__kpi-value">
+          Ativo
+        </strong>
 
-          <span class="workspace-welcome-widget__status-label">
-            Workspace operacional
-          </span>
-
-          <span class="workspace-welcome-widget__status-description">
-            Infraestrutura institucional carregada corretamente.
-          </span>
-
-        </div>
-
-        <span class="workspace-welcome-widget__status-badge">
-          Online
+        <span class="workspace-welcome-widget__kpi-description">
+          Workspace Runtime inicializado.
         </span>
 
       </div>
@@ -40,334 +83,258 @@
     </deja-workspace-surface>
 
 
-    <deja-workspace-stack
-      gap="sm"
-      align="start"
+    <deja-workspace-surface
+      variant="card"
+      padding="md"
+      radius="md"
+      elevation="none"
     >
 
-      <div class="workspace-welcome-widget__intro">
+      <div class="workspace-welcome-widget__kpi">
 
-        <span class="workspace-welcome-widget__eyebrow">
-          Deja Platform
+        <span class="workspace-welcome-widget__kpi-label">
+          Renderer
         </span>
 
-        <h2 class="workspace-welcome-widget__title">
-          Workspace pronto para operação
-        </h2>
+        <strong class="workspace-welcome-widget__kpi-value">
+          Angular
+        </strong>
 
-        <p class="workspace-welcome-widget__message">
-          {{ message }}
-        </p>
+        <span class="workspace-welcome-widget__kpi-description">
+          Renderer institucional registrado.
+        </span>
 
       </div>
 
-    </deja-workspace-stack>
+    </deja-workspace-surface>
 
 
-    <deja-workspace-grid
-      [columns]="4"
-      gap="md"
+    <deja-workspace-surface
+      variant="card"
+      padding="md"
+      radius="md"
+      elevation="none"
     >
 
-      <deja-workspace-surface
-        variant="card"
-        padding="md"
-        radius="md"
-        elevation="none"
-      >
+      <div class="workspace-welcome-widget__kpi">
 
-        <div class="workspace-welcome-widget__kpi">
+        <span class="workspace-welcome-widget__kpi-label">
+          Dashboard
+        </span>
 
-          <span class="workspace-welcome-widget__kpi-label">
-            Runtime
-          </span>
+        <strong class="workspace-welcome-widget__kpi-value">
+          Carregado
+        </strong>
 
-          <strong class="workspace-welcome-widget__kpi-value">
-            Ativo
-          </strong>
+        <span class="workspace-welcome-widget__kpi-description">
+          Composição inicial disponível.
+        </span>
 
-          <span class="workspace-welcome-widget__kpi-description">
-            Workspace Runtime inicializado.
-          </span>
+      </div>
 
-        </div>
-
-      </deja-workspace-surface>
+    </deja-workspace-surface>
 
 
-      <deja-workspace-surface
-        variant="card"
-        padding="md"
-        radius="md"
-        elevation="none"
-      >
-
-        <div class="workspace-welcome-widget__kpi">
-
-          <span class="workspace-welcome-widget__kpi-label">
-            Renderer
-          </span>
-
-          <strong class="workspace-welcome-widget__kpi-value">
-            Angular
-          </strong>
-
-          <span class="workspace-welcome-widget__kpi-description">
-            Renderer institucional registrado.
-          </span>
-
-        </div>
-
-      </deja-workspace-surface>
-
-
-      <deja-workspace-surface
-        variant="card"
-        padding="md"
-        radius="md"
-        elevation="none"
-      >
-
-        <div class="workspace-welcome-widget__kpi">
-
-          <span class="workspace-welcome-widget__kpi-label">
-            Dashboard
-          </span>
-
-          <strong class="workspace-welcome-widget__kpi-value">
-            Carregado
-          </strong>
-
-          <span class="workspace-welcome-widget__kpi-description">
-            Composição inicial disponível.
-          </span>
-
-        </div>
-
-      </deja-workspace-surface>
-
-
-      <deja-workspace-surface
-        variant="card"
-        padding="md"
-        radius="md"
-        elevation="none"
-      >
-
-        <div class="workspace-welcome-widget__kpi">
-
-          <span class="workspace-welcome-widget__kpi-label">
-            Foundation
-          </span>
-
-          <strong class="workspace-welcome-widget__kpi-value">
-            Online
-          </strong>
-
-          <span class="workspace-welcome-widget__kpi-description">
-            Componentes institucionais disponíveis.
-          </span>
-
-        </div>
-
-      </deja-workspace-surface>
-
-    </deja-workspace-grid>
-
-
-    <deja-workspace-grid
-      [columns]="2"
-      gap="md"
-      align="stretch"
+    <deja-workspace-surface
+      variant="card"
+      padding="md"
+      radius="md"
+      elevation="none"
     >
 
-      <deja-workspace-surface
-        variant="subtle"
-        padding="lg"
-        radius="md"
-        elevation="none"
-      >
+      <div class="workspace-welcome-widget__kpi">
 
-        <section class="workspace-welcome-widget__information">
+        <span class="workspace-welcome-widget__kpi-label">
+          Foundation
+        </span>
 
-          <header class="workspace-welcome-widget__section-header">
+        <strong class="workspace-welcome-widget__kpi-value">
+          Online
+        </strong>
 
-            <span class="workspace-welcome-widget__section-eyebrow">
-              Information
-            </span>
+        <span class="workspace-welcome-widget__kpi-description">
+          Componentes institucionais disponíveis.
+        </span>
 
-            <h3 class="workspace-welcome-widget__section-title">
-              Ambiente preparado
-            </h3>
+      </div>
 
-            <p class="workspace-welcome-widget__section-message">
-              A base visual e arquitetural da Deja Platform está preparada
-              para receber novos componentes, gráficos, tabelas e módulos
-              analíticos.
-            </p>
+    </deja-workspace-surface>
 
-          </header>
+  </deja-workspace-grid>
 
 
-          <div class="workspace-welcome-widget__information-status">
+  <deja-workspace-grid
+    [columns]="2"
+    gap="md"
+    align="stretch"
+  >
 
-            <span
-              class="workspace-welcome-widget__information-dot"
-              aria-hidden="true"
-            ></span>
+    <deja-workspace-surface
+      variant="subtle"
+      padding="lg"
+      radius="md"
+      elevation="none"
+    >
 
-            <span>
-              Serviços principais disponíveis
-            </span>
+      <section class="workspace-welcome-widget__information">
 
-          </div>
-
-        </section>
-
-      </deja-workspace-surface>
-
-
-      <deja-workspace-surface
-        variant="subtle"
-        padding="lg"
-        radius="md"
-        elevation="none"
-      >
-
-        <section class="workspace-welcome-widget__quick-actions">
-
-          <header class="workspace-welcome-widget__section-header">
-
-            <span class="workspace-welcome-widget__section-eyebrow">
-              Quick Actions
-            </span>
-
-            <h3 class="workspace-welcome-widget__section-title">
-              Próximas capacidades
-            </h3>
-
-          </header>
+        <deja-section-header
+          subtitle="Information"
+          title="Ambiente preparado"
+          description="A base visual e arquitetural da Deja Platform está preparada para receber novos componentes, gráficos, tabelas e módulos analíticos."
+        ></deja-section-header>
 
 
-          <div class="workspace-welcome-widget__action-list">
+        <div class="workspace-welcome-widget__information-status">
 
-            <button
-              class="workspace-welcome-widget__action"
-              type="button"
-              disabled
-            >
+          <span
+            class="workspace-welcome-widget__information-dot"
+            aria-hidden="true"
+          ></span>
 
-              <span class="workspace-welcome-widget__action-copy">
+          <span>
+            Serviços principais disponíveis
+          </span>
 
-                <strong>
-                  Analytics
-                </strong>
+        </div>
 
-                <span>
-                  Indicadores e visualizações
-                </span>
+      </section>
 
-              </span>
-
-              <span
-                class="workspace-welcome-widget__action-arrow"
-                aria-hidden="true"
-              >
-                →
-              </span>
-
-            </button>
-
-
-            <button
-              class="workspace-welcome-widget__action"
-              type="button"
-              disabled
-            >
-
-              <span class="workspace-welcome-widget__action-copy">
-
-                <strong>
-                  Activity
-                </strong>
-
-                <span>
-                  Eventos e atividades recentes
-                </span>
-
-              </span>
-
-              <span
-                class="workspace-welcome-widget__action-arrow"
-                aria-hidden="true"
-              >
-                →
-              </span>
-
-            </button>
-
-
-            <button
-              class="workspace-welcome-widget__action"
-              type="button"
-              disabled
-            >
-
-              <span class="workspace-welcome-widget__action-copy">
-
-                <strong>
-                  Timeline
-                </strong>
-
-                <span>
-                  Marcos e evolução operacional
-                </span>
-
-              </span>
-
-              <span
-                class="workspace-welcome-widget__action-arrow"
-                aria-hidden="true"
-              >
-                →
-              </span>
-
-            </button>
-
-          </div>
-
-        </section>
-
-      </deja-workspace-surface>
-
-    </deja-workspace-grid>
+    </deja-workspace-surface>
 
 
     <deja-workspace-surface
       variant="subtle"
-      padding="md"
-      radius="sm"
+      padding="lg"
+      radius="md"
       elevation="none"
     >
 
-      <div class="workspace-welcome-widget__footer">
+      <section class="workspace-welcome-widget__quick-actions">
 
-        <span>
-          Deja Platform
-        </span>
+        <deja-section-header
+          subtitle="Quick Actions"
+          title="Próximas capacidades"
+        ></deja-section-header>
 
-        <span class="workspace-welcome-widget__footer-separator">
-          •
-        </span>
 
-        <span>
-          Workspace Foundation
-        </span>
+        <div class="workspace-welcome-widget__action-list">
 
-      </div>
+          <button
+            class="workspace-welcome-widget__action"
+            type="button"
+            disabled
+          >
+
+            <span class="workspace-welcome-widget__action-copy">
+
+              <strong>
+                Analytics
+              </strong>
+
+              <span>
+                Indicadores e visualizações
+              </span>
+
+            </span>
+
+            <span
+              class="workspace-welcome-widget__action-arrow"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+          </button>
+
+
+          <button
+            class="workspace-welcome-widget__action"
+            type="button"
+            disabled
+          >
+
+            <span class="workspace-welcome-widget__action-copy">
+
+              <strong>
+                Activity
+              </strong>
+
+              <span>
+                Eventos e atividades recentes
+              </span>
+
+            </span>
+
+            <span
+              class="workspace-welcome-widget__action-arrow"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+          </button>
+
+
+          <button
+            class="workspace-welcome-widget__action"
+            type="button"
+            disabled
+          >
+
+            <span class="workspace-welcome-widget__action-copy">
+
+              <strong>
+                Timeline
+              </strong>
+
+              <span>
+                Marcos e evolução operacional
+              </span>
+
+            </span>
+
+            <span
+              class="workspace-welcome-widget__action-arrow"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+          </button>
+
+        </div>
+
+      </section>
 
     </deja-workspace-surface>
 
-  </deja-workspace-stack>
+  </deja-workspace-grid>
+
+
+  <deja-workspace-surface
+    variant="subtle"
+    padding="md"
+    radius="sm"
+    elevation="none"
+  >
+
+    <div class="workspace-welcome-widget__footer">
+
+      <span>
+        Deja Platform
+      </span>
+
+      <span class="workspace-welcome-widget__footer-separator">
+        •
+      </span>
+
+      <span>
+        Workspace Foundation
+      </span>
+
+    </div>
+
+  </deja-workspace-surface>
 
 </workspace-panel>

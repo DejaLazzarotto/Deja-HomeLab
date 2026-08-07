@@ -20,19 +20,11 @@ import {
 
 import {
   WorkspaceGridComponent,
-} from '../widget-library/foundation/grid/workspace-grid';
-
-import {
-  WorkspaceStackComponent,
-} from '../widget-library/foundation/stack/workspace-stack';
-
-import {
-  WorkspaceSurfaceComponent,
-} from '../widget-library/foundation/surface/workspace-surface';
-
-import {
   WorkspacePanelComponent,
-} from '../widget-library/foundation/panel/workspace-panel';
+  WorkspaceSectionHeaderComponent,
+  WorkspaceStackComponent,
+  WorkspaceSurfaceComponent,
+} from '../widget-library/foundation';
 
 /**
  * Componente visual institucional do Widget inicial
@@ -46,6 +38,7 @@ import {
     WorkspaceStackComponent,
     WorkspaceSurfaceComponent,
     WorkspacePanelComponent,
+    WorkspaceSectionHeaderComponent,
   ],
   templateUrl: './workspace-welcome-widget.html',
   styleUrl: './workspace-welcome-widget.scss',
