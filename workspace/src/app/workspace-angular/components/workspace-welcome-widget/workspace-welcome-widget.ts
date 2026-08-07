@@ -23,6 +23,8 @@ import {
   WorkspacePanelComponent,
   WorkspaceSectionHeaderComponent,
   WorkspaceStackComponent,
+  WorkspaceStatusBadgeComponent,
+  WorkspaceStatusIndicatorComponent,
   WorkspaceSurfaceComponent,
 } from '../widget-library/foundation';
 
@@ -39,6 +41,8 @@ import {
     WorkspaceSurfaceComponent,
     WorkspacePanelComponent,
     WorkspaceSectionHeaderComponent,
+    WorkspaceStatusBadgeComponent,
+    WorkspaceStatusIndicatorComponent,
   ],
   templateUrl: './workspace-welcome-widget.html',
   styleUrl: './workspace-welcome-widget.scss',

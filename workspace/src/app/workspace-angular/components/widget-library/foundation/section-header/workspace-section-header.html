@@ -1,47 +1,45 @@
 <header class="workspace-section-header">
 
-  <div class="workspace-section-header__main">
+  <div class="workspace-section-header__content">
 
-    <div class="workspace-section-header__content">
+    @if (eyebrow) {
+      <span class="workspace-section-header__eyebrow">
+        {{ eyebrow }}
+      </span>
+    }
 
-      @if (subtitle) {
-        <span class="workspace-section-header__subtitle">
-          {{ subtitle }}
-        </span>
-      }
+    <div class="workspace-section-header__heading">
 
-      @if (title) {
-        <h2 class="workspace-section-header__title">
-          {{ title }}
-        </h2>
-      }
+      <h2 class="workspace-section-header__title">
+        {{ title }}
+      </h2>
 
-      @if (description) {
-        <p class="workspace-section-header__description">
-          {{ description }}
-        </p>
-      }
+      <div class="workspace-section-header__indicators">
+        <ng-content select="[sectionHeaderIndicators]"></ng-content>
+      </div>
+
+      <div class="workspace-section-header__badges">
+        <ng-content select="[sectionHeaderBadges]"></ng-content>
+      </div>
 
     </div>
 
-    <div class="workspace-section-header__actions">
-      <ng-content select="[section-header-actions]"></ng-content>
-    </div>
+    @if (subtitle) {
+      <span class="workspace-section-header__subtitle">
+        {{ subtitle }}
+      </span>
+    }
+
+    @if (description) {
+      <p class="workspace-section-header__description">
+        {{ description }}
+      </p>
+    }
 
   </div>
 
-  <div class="workspace-section-header__meta">
-
-    <ng-content
-      select="[section-header-indicators]"
-    ></ng-content>
-
-    <div class="workspace-section-header__meta-spacer"></div>
-
-    <ng-content
-      select="[section-header-badges]"
-    ></ng-content>
-
+  <div class="workspace-section-header__actions">
+    <ng-content select="[sectionHeaderActions]"></ng-content>
   </div>
 
 </header>

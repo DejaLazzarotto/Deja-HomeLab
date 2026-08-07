@@ -4,51 +4,6 @@
 }
 
 
-.workspace-welcome-widget__status-indicator {
-  flex: 0 0 auto;
-  width: 0.55rem;
-  height: 0.55rem;
-  background: var(--workspace-color-success);
-  border-radius: 50%;
-  box-shadow:
-    0 0 0 0.25rem rgb(65 205 142 / 8%),
-    0 0 1rem rgb(65 205 142 / 22%);
-}
-
-
-.workspace-welcome-widget__status-copy {
-  flex: 1;
-  min-width: 0;
-}
-
-
-.workspace-welcome-widget__status-label {
-  color: var(--workspace-color-text-primary);
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-
-.workspace-welcome-widget__status-description {
-  color: var(--workspace-color-text-muted);
-  font-size: 0.72rem;
-}
-
-
-.workspace-welcome-widget__status-badge {
-  flex: 0 0 auto;
-  padding: 0.3rem 0.55rem;
-  color: var(--workspace-color-success);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  background: rgb(65 205 142 / 8%);
-  border: 1px solid rgb(65 205 142 / 16%);
-  border-radius: 999px;
-}
-
-
 .workspace-welcome-widget__kpi {
   min-width: 0;
 }
@@ -148,13 +103,4 @@
 
 .workspace-welcome-widget__footer-separator {
   opacity: 0.45;
-}
-
-
-@media (max-width: 38rem) {
-
-  .workspace-welcome-widget__status-badge {
-    margin-left: 1.3rem;
-  }
-
 }

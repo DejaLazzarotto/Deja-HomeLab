@@ -3,8 +3,9 @@
  *
  * Workspace Section Header Component
  *
- * Cabeçalho institucional reutilizável utilizado para estruturar
- * títulos, descrições, indicadores, badges e ações em Widgets.
+ * Componente institucional reutilizável responsável pela
+ * apresentação de cabeçalhos semânticos de seções e Widgets
+ * dentro da Deja Platform.
  */
 
 import {
@@ -21,6 +22,9 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkspaceSectionHeaderComponent {
+
+  @Input()
+  eyebrow = '';
 
   @Input()
   title = '';

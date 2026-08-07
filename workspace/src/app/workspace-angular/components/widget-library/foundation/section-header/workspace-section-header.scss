@@ -6,18 +6,10 @@
 
 .workspace-section-header {
   display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  width: 100%;
-}
-
-
-.workspace-section-header__main {
-  display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1.5rem;
-  min-width: 0;
+  gap: 1.25rem;
+  width: 100%;
 }
 
 
@@ -30,13 +22,21 @@
 }
 
 
-.workspace-section-header__subtitle {
+.workspace-section-header__eyebrow {
   color: var(--workspace-color-accent);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  line-height: 1.2;
   text-transform: uppercase;
+}
+
+
+.workspace-section-header__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
 }
 
 
@@ -45,7 +45,24 @@
   color: var(--workspace-color-text-primary);
   font-size: 1.35rem;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.2;
+}
+
+
+.workspace-section-header__indicators,
+.workspace-section-header__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+
+.workspace-section-header__subtitle {
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 
@@ -61,50 +78,20 @@
 .workspace-section-header__actions {
   display: flex;
   flex: 0 0 auto;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
 }
 
 
-.workspace-section-header__meta {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
-}
-
-
-.workspace-section-header__meta-spacer {
-  flex: 1;
-}
-
-
-.workspace-section-header__meta > * {
-  flex: 0 0 auto;
-}
-
-
-@media (max-width: 48rem) {
-
-  .workspace-section-header__main {
+@media (max-width: 720px) {
+  .workspace-section-header {
     flex-direction: column;
-    gap: 1rem;
   }
-
 
   .workspace-section-header__actions {
     width: 100%;
+    justify-content: flex-start;
   }
-
-
-  .workspace-section-header__meta {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-
-  .workspace-section-header__meta-spacer {
-    display: none;
-  }
-
 }
