@@ -16,7 +16,7 @@ import {
 
 import {
   WorkspaceStatusBadgeComponent,
-} from '../status-badge/workspace-status-badge';
+} from '../foundation/badge/workspace-status-badge';
 
 export type WorkspaceStatusStripVariant =
   | 'success'

@@ -28,13 +28,6 @@
     color var(--workspace-transition);
 }
 
-.workspace-status-badge__indicator {
-  width: .5rem;
-  height: .5rem;
-  border-radius: 50%;
-  background: currentColor;
-}
-
 .workspace-status-badge--success {
   color: var(--workspace-color-success);
 }

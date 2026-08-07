@@ -13,6 +13,10 @@ import {
   Input,
 } from '@angular/core';
 
+import {
+  WorkspaceStatusIndicatorComponent,
+} from '../status-indicator/workspace-status-indicator';
+
 export type WorkspaceStatusBadgeVariant =
   | 'success'
   | 'warning'
@@ -23,6 +27,9 @@ export type WorkspaceStatusBadgeVariant =
 @Component({
   selector: 'deja-status-badge',
   standalone: true,
+  imports: [
+    WorkspaceStatusIndicatorComponent,
+  ],
   templateUrl: './workspace-status-badge.html',
   styleUrl: './workspace-status-badge.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

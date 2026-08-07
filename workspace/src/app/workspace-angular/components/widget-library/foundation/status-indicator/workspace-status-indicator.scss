@@ -1,0 +1,97 @@
+:host {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.workspace-status-indicator {
+  display: inline-block;
+  flex: 0 0 auto;
+
+  border-radius: 50%;
+
+  transition:
+    background var(--workspace-transition-fast),
+    box-shadow var(--workspace-transition-fast),
+    opacity var(--workspace-transition-fast);
+}
+
+/*
+ * Sizes
+ */
+
+.workspace-status-indicator--sm {
+  width: 0.4rem;
+  height: 0.4rem;
+}
+
+.workspace-status-indicator--md {
+  width: 0.55rem;
+  height: 0.55rem;
+}
+
+.workspace-status-indicator--lg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+/*
+ * Status
+ */
+
+.workspace-status-indicator--success {
+  background: var(--workspace-color-success);
+  box-shadow:
+    0 0 0 0.2rem rgb(65 205 142 / 8%),
+    0 0 0.8rem rgb(65 205 142 / 20%);
+}
+
+.workspace-status-indicator--warning {
+  background: var(--workspace-color-warning);
+  box-shadow:
+    0 0 0 0.2rem rgb(255 193 7 / 8%),
+    0 0 0.8rem rgb(255 193 7 / 18%);
+}
+
+.workspace-status-indicator--danger {
+  background: var(--workspace-color-danger);
+  box-shadow:
+    0 0 0 0.2rem rgb(244 67 54 / 8%),
+    0 0 0.8rem rgb(244 67 54 / 18%);
+}
+
+.workspace-status-indicator--info {
+  background: var(--workspace-color-info);
+  box-shadow:
+    0 0 0 0.2rem rgb(59 130 246 / 8%),
+    0 0 0.8rem rgb(59 130 246 / 18%);
+}
+
+.workspace-status-indicator--neutral {
+  background: var(--workspace-color-text-muted);
+  box-shadow: none;
+}
+
+/*
+ * Animation
+ */
+
+.workspace-status-indicator--animated {
+  animation: workspace-status-indicator-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes workspace-status-indicator-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-status-indicator--animated {
+    animation: none;
+  }
+}

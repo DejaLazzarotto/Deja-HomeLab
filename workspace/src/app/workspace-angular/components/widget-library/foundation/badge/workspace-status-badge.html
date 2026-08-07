@@ -6,7 +6,10 @@
   [class.workspace-status-badge--info]="variant === 'info'"
   [class.workspace-status-badge--neutral]="variant === 'neutral'">
 
-  <span class="workspace-status-badge__indicator"></span>
+  <deja-status-indicator
+    [status]="variant"
+    size="sm">
+  </deja-status-indicator>
 
   <span class="workspace-status-badge__label">
     {{ label }}
