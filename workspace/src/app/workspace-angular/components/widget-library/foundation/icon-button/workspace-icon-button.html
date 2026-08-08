@@ -1,0 +1,27 @@
+<button
+  type="button"
+  class="workspace-icon-button"
+  [class.workspace-icon-button--active]="active"
+  [class.workspace-icon-button--disabled]="disabled"
+  [class.workspace-icon-button--sm]="size === 'sm'"
+  [class.workspace-icon-button--md]="size === 'md'"
+  [class.workspace-icon-button--lg]="size === 'lg'"
+  [class.workspace-icon-button--primary]="variant === 'primary'"
+  [class.workspace-icon-button--success]="variant === 'success'"
+  [class.workspace-icon-button--warning]="variant === 'warning'"
+  [class.workspace-icon-button--danger]="variant === 'danger'"
+  [disabled]="disabled"
+  [attr.aria-label]="label"
+  [attr.title]="label || null"
+  [attr.aria-pressed]="active ? true : null"
+  (click)="handleClick()"
+>
+
+  <span
+    class="workspace-icon-button__icon"
+    aria-hidden="true"
+  >
+    {{ icon }}
+  </span>
+
+</button>

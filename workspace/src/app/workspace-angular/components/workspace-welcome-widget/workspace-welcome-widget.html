@@ -1,63 +1,63 @@
-<workspace-panel
-  [interactive]="true"
-  elevation="sm"
->
+<workspace-panel [interactive]="true" elevation="sm">
 
-  <deja-workspace-surface
-    variant="accent"
-    padding="md"
-    radius="md"
-    elevation="none"
+  <deja-workspace-surface panel-content variant="accent" padding="md" radius="md" elevation="none">
+
+    <deja-section-header title="Workspace operacional"
+      description="Infraestrutura institucional carregada corretamente.">
+
+<deja-workspace-toolbar>
+
+  <deja-button-group
+    ariaLabel="Status do Workspace"
+    size="md"
   >
 
-    <deja-section-header
-      title="Workspace operacional"
-      description="Infraestrutura institucional carregada corretamente."
-    >
+    <deja-status-indicator
+      status="success"
+      size="md"
+      [animated]="true"
+    ></deja-status-indicator>
 
-      <deja-workspace-toolbar>
+    <deja-status-badge
+      label="Online"
+      variant="success"
+    ></deja-status-badge>
 
-        <deja-status-indicator
-          status="success"
-          size="md"
-          [animated]="true"
-        ></deja-status-indicator>
+  </deja-button-group>
 
-        <deja-status-badge
-          label="Online"
-          variant="success"
-        ></deja-status-badge>
+  <deja-toolbar-spacer></deja-toolbar-spacer>
 
-      </deja-workspace-toolbar>
+  <deja-button-group
+    ariaLabel="Ações do Workspace"
+    size="md"
+  >
+
+    <deja-icon-button
+      icon="⋯"
+      label="Mais ações"
+      variant="default"
+      size="md"
+      [disabled]="true"
+    ></deja-icon-button>
+
+  </deja-button-group>
+
+</deja-workspace-toolbar>
 
     </deja-section-header>
 
   </deja-workspace-surface>
 
 
-  <deja-workspace-stack
-    gap="sm"
-    align="start"
-  >
+  <deja-workspace-stack gap="sm" align="start">
 
-    <deja-section-header
-      eyebrow="Deja Platform"
-      title="Workspace pronto para operação"
-      [description]="message"
-    ></deja-section-header>
+    <deja-section-header eyebrow="Deja Platform" title="Workspace pronto para operação"
+      [description]="message"></deja-section-header>
 
 
-    <deja-workspace-grid
-      [columns]="4"
-      gap="md"
-    >
+    <deja-workspace-grid [columns]="4" gap="md">
 
-      <deja-workspace-surface
-        variant="card"
-        padding="md"
-        radius="md"
-        elevation="none"
-      >
+      <deja-workspace-surface variant="card" padding="md" radius="md" elevation="none">
 
         <div class="workspace-welcome-widget__kpi">
 
@@ -78,12 +78,7 @@
       </deja-workspace-surface>
 
 
-      <deja-workspace-surface
-        variant="card"
-        padding="md"
-        radius="md"
-        elevation="none"
-      >
+      <deja-workspace-surface variant="card" padding="md" radius="md" elevation="none">
 
         <div class="workspace-welcome-widget__kpi">
 
@@ -104,12 +99,7 @@
       </deja-workspace-surface>
 
 
-      <deja-workspace-surface
-        variant="card"
-        padding="md"
-        radius="md"
-        elevation="none"
-      >
+      <deja-workspace-surface variant="card" padding="md" radius="md" elevation="none">
 
         <div class="workspace-welcome-widget__kpi">
 
@@ -130,12 +120,7 @@
       </deja-workspace-surface>
 
 
-      <deja-workspace-surface
-        variant="card"
-        padding="md"
-        radius="md"
-        elevation="none"
-      >
+      <deja-workspace-surface variant="card" padding="md" radius="md" elevation="none">
 
         <div class="workspace-welcome-widget__kpi">
 
@@ -158,34 +143,19 @@
     </deja-workspace-grid>
 
 
-    <deja-workspace-grid
-      [columns]="2"
-      gap="md"
-      align="stretch"
-    >
+    <deja-workspace-grid [columns]="2" gap="md" align="stretch">
 
-      <deja-workspace-surface
-        variant="subtle"
-        padding="lg"
-        radius="md"
-        elevation="none"
-      >
+      <deja-workspace-surface variant="subtle" padding="lg" radius="md" elevation="none">
 
         <section class="workspace-welcome-widget__information">
 
-          <deja-section-header
-            eyebrow="Information"
-            title="Ambiente preparado"
-            description="A base visual e arquitetural da Deja Platform está preparada para receber novos componentes, gráficos, tabelas e módulos analíticos."
-          ></deja-section-header>
+          <deja-section-header eyebrow="Information" title="Ambiente preparado"
+            description="A base visual e arquitetural da Deja Platform está preparada para receber novos componentes, gráficos, tabelas e módulos analíticos."></deja-section-header>
 
 
           <div class="workspace-welcome-widget__information-status">
 
-            <span
-              class="workspace-welcome-widget__information-dot"
-              aria-hidden="true"
-            ></span>
+            <span class="workspace-welcome-widget__information-dot" aria-hidden="true"></span>
 
             <span>
               Serviços principais disponíveis
@@ -198,28 +168,16 @@
       </deja-workspace-surface>
 
 
-      <deja-workspace-surface
-        variant="subtle"
-        padding="lg"
-        radius="md"
-        elevation="none"
-      >
+      <deja-workspace-surface variant="subtle" padding="lg" radius="md" elevation="none">
 
         <section class="workspace-welcome-widget__quick-actions">
 
-          <deja-section-header
-            eyebrow="Quick Actions"
-            title="Próximas capacidades"
-          ></deja-section-header>
+          <deja-section-header eyebrow="Quick Actions" title="Próximas capacidades"></deja-section-header>
 
 
           <div class="workspace-welcome-widget__action-list">
 
-            <button
-              class="workspace-welcome-widget__action"
-              type="button"
-              disabled
-            >
+            <button class="workspace-welcome-widget__action" type="button" disabled>
 
               <span class="workspace-welcome-widget__action-copy">
 
@@ -233,21 +191,14 @@
 
               </span>
 
-              <span
-                class="workspace-welcome-widget__action-arrow"
-                aria-hidden="true"
-              >
+              <span class="workspace-welcome-widget__action-arrow" aria-hidden="true">
                 →
               </span>
 
             </button>
 
 
-            <button
-              class="workspace-welcome-widget__action"
-              type="button"
-              disabled
-            >
+            <button class="workspace-welcome-widget__action" type="button" disabled>
 
               <span class="workspace-welcome-widget__action-copy">
 
@@ -261,21 +212,14 @@
 
               </span>
 
-              <span
-                class="workspace-welcome-widget__action-arrow"
-                aria-hidden="true"
-              >
+              <span class="workspace-welcome-widget__action-arrow" aria-hidden="true">
                 →
               </span>
 
             </button>
 
 
-            <button
-              class="workspace-welcome-widget__action"
-              type="button"
-              disabled
-            >
+            <button class="workspace-welcome-widget__action" type="button" disabled>
 
               <span class="workspace-welcome-widget__action-copy">
 
@@ -289,10 +233,7 @@
 
               </span>
 
-              <span
-                class="workspace-welcome-widget__action-arrow"
-                aria-hidden="true"
-              >
+              <span class="workspace-welcome-widget__action-arrow" aria-hidden="true">
                 →
               </span>
 
@@ -307,12 +248,7 @@
     </deja-workspace-grid>
 
 
-    <deja-workspace-surface
-      variant="subtle"
-      padding="md"
-      radius="sm"
-      elevation="none"
-    >
+    <deja-workspace-surface variant="subtle" padding="md" radius="sm" elevation="none">
 
       <div class="workspace-welcome-widget__footer">
 

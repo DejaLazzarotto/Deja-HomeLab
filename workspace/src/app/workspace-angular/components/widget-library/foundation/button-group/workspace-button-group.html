@@ -1,0 +1,14 @@
+<div
+  class="workspace-button-group"
+  [class.workspace-button-group--horizontal]="orientation === 'horizontal'"
+  [class.workspace-button-group--vertical]="orientation === 'vertical'"
+  [class.workspace-button-group--sm]="size === 'sm'"
+  [class.workspace-button-group--md]="size === 'md'"
+  [class.workspace-button-group--lg]="size === 'lg'"
+  role="group"
+  [attr.aria-label]="ariaLabel || null"
+>
+
+  <ng-content></ng-content>
+
+</div>

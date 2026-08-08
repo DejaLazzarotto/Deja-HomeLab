@@ -21,6 +21,9 @@ import {
   WorkspaceStatusIndicatorComponent,
   WorkspaceSurfaceComponent,
   WorkspaceToolbarComponent,
+  WorkspaceButtonGroupComponent,
+  WorkspaceIconButtonComponent,
+  WorkspaceToolbarSpacerComponent,
 } from '../widget-library/foundation';
 
 /**
@@ -39,6 +42,9 @@ import {
     WorkspaceStatusBadgeComponent,
     WorkspaceStatusIndicatorComponent,
     WorkspaceToolbarComponent,
+    WorkspaceButtonGroupComponent,
+    WorkspaceIconButtonComponent,
+    WorkspaceToolbarSpacerComponent,
   ],
   templateUrl: './workspace-welcome-widget.html',
   styleUrl: './workspace-welcome-widget.scss',
