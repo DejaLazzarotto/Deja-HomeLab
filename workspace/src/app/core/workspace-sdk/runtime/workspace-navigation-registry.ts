@@ -182,6 +182,18 @@ export class WorkspaceNavigationRegistry {
   }
 
   /**
+   * Retorna os itens habilitados e visíveis
+   * na navegação principal do Workspace.
+   */
+  listVisible(): readonly WorkspaceNavigation[] {
+    return Object.freeze(
+      this.listEnabled().filter(
+        navigation => navigation.visible !== false,
+      ),
+    );
+  }
+
+  /**
    * Retorna os itens pertencentes a um proprietário.
    */
   listByOwner(

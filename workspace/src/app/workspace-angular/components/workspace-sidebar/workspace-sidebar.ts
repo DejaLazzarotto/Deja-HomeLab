@@ -68,7 +68,7 @@ export class WorkspaceSidebarComponent {
    */
   get navigation(): readonly WorkspaceNavigation[] {
 
-    return this.runtime.enabledNavigations();
+    return this.runtime.visibleNavigations();
 
   }
 

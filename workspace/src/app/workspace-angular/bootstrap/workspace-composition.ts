@@ -68,6 +68,15 @@ export class WorkspaceComposition {
   private static readonly REPORTS_DASHBOARD_ID =
     'deja.workspace.dashboard.reports';
 
+  private static readonly ANALYTICS_DASHBOARD_ID =
+    'deja.workspace.dashboard.analytics';
+
+  private static readonly ACTIVITY_DASHBOARD_ID =
+    'deja.workspace.dashboard.activity';
+
+  private static readonly TIMELINE_DASHBOARD_ID =
+    'deja.workspace.dashboard.timeline';
+
 
   private static readonly INITIAL_NAVIGATION_ID =
     'deja.workspace.navigation.initial';
@@ -77,6 +86,15 @@ export class WorkspaceComposition {
 
   private static readonly REPORTS_NAVIGATION_ID =
     'deja.workspace.navigation.reports';
+
+  private static readonly ANALYTICS_NAVIGATION_ID =
+    'deja.workspace.navigation.analytics';
+
+  private static readonly ACTIVITY_NAVIGATION_ID =
+    'deja.workspace.navigation.activity';
+
+  private static readonly TIMELINE_NAVIGATION_ID =
+    'deja.workspace.navigation.timeline';
 
 
   private static readonly INITIAL_LAYOUT_ID =
@@ -89,6 +107,15 @@ export class WorkspaceComposition {
 
   private static readonly WELCOME_WIDGET_ID =
     'deja.workspace.widget.welcome';
+
+  private static readonly ANALYTICS_ACTION_ID =
+    'deja.workspace.widget.welcome.analytics';
+
+  private static readonly ACTIVITY_ACTION_ID =
+    'deja.workspace.widget.welcome.activity';
+
+  private static readonly TIMELINE_ACTION_ID =
+    'deja.workspace.widget.welcome.timeline';
 
 
   static create(): WorkspaceRuntime {
@@ -183,6 +210,10 @@ export class WorkspaceComposition {
       );
 
 
+    this.registerInitialActions(
+      runtime,
+    );
+
     this.registerInitialNavigations(
       runtime,
     );
@@ -192,6 +223,102 @@ export class WorkspaceComposition {
 
   }
 
+
+  /**
+   * Registra as Actions institucionais iniciais.
+   */
+  private static registerInitialActions(
+    runtime: WorkspaceRuntime,
+  ): void {
+    runtime.registerActions([
+      {
+        id: this.ANALYTICS_ACTION_ID,
+        ownerId: this.CORE_OWNER,
+        label: 'Analytics',
+        description:
+          'Acessa indicadores e visualizações do Workspace.',
+        category: 'welcome',
+        keywords: [
+          'analytics',
+          'indicadores',
+          'visualizações',
+        ],
+        order: 10,
+        visible: true,
+        enabled: true,
+        execute: async () => {
+          await runtime.navigate(
+            this.ANALYTICS_NAVIGATION_ID,
+          );
+
+          return {
+            success: true,
+            message:
+              'Analytics aberto com sucesso.',
+            completedAt: new Date(),
+          };
+        },
+      },
+
+      {
+        id: this.ACTIVITY_ACTION_ID,
+        ownerId: this.CORE_OWNER,
+        label: 'Activity',
+        description:
+          'Acessa eventos e atividades recentes do Workspace.',
+        category: 'welcome',
+        keywords: [
+          'activity',
+          'eventos',
+          'atividades',
+        ],
+        order: 20,
+        visible: true,
+        enabled: true,
+        execute: async () => {
+          await runtime.navigate(
+            this.ACTIVITY_NAVIGATION_ID,
+          );
+
+          return {
+            success: true,
+            message:
+              'Activity aberto com sucesso.',
+            completedAt: new Date(),
+          };
+        },
+      },
+
+      {
+        id: this.TIMELINE_ACTION_ID,
+        ownerId: this.CORE_OWNER,
+        label: 'Timeline',
+        description:
+          'Acessa marcos e a evolução operacional do Workspace.',
+        category: 'welcome',
+        keywords: [
+          'timeline',
+          'marcos',
+          'evolução',
+        ],
+        order: 30,
+        visible: true,
+        enabled: true,
+        execute: async () => {
+          await runtime.navigate(
+            this.TIMELINE_NAVIGATION_ID,
+          );
+
+          return {
+            success: true,
+            message:
+              'Timeline aberta com sucesso.',
+            completedAt: new Date(),
+          };
+        },
+      },
+    ]);
+  }
 
   /**
    * Registra as navegações institucionais.
@@ -236,6 +363,42 @@ export class WorkspaceComposition {
         icon: 'reports',
         order: 30,
         enabled: true,
+      },
+
+      {
+        id: this.ANALYTICS_NAVIGATION_ID,
+        ownerId: this.CORE_OWNER,
+        dashboardId: this.ANALYTICS_DASHBOARD_ID,
+        title: 'Analytics',
+        description:
+          'Acesso aos indicadores e visualizações do Workspace.',
+        order: 40,
+        enabled: true,
+        visible: false,
+      },
+
+      {
+        id: this.ACTIVITY_NAVIGATION_ID,
+        ownerId: this.CORE_OWNER,
+        dashboardId: this.ACTIVITY_DASHBOARD_ID,
+        title: 'Activity',
+        description:
+          'Acesso aos eventos e atividades recentes do Workspace.',
+        order: 50,
+        enabled: true,
+        visible: false,
+      },
+
+      {
+        id: this.TIMELINE_NAVIGATION_ID,
+        ownerId: this.CORE_OWNER,
+        dashboardId: this.TIMELINE_DASHBOARD_ID,
+        title: 'Timeline',
+        description:
+          'Acesso aos marcos e à evolução operacional do Workspace.',
+        order: 60,
+        enabled: true,
+        visible: false,
       },
 
     ]);
@@ -408,6 +571,60 @@ export class WorkspaceComposition {
         ],
         metadata: {
           type: 'reports',
+        },
+      },
+
+      {
+        id: this.ANALYTICS_DASHBOARD_ID,
+        owner: this.CORE_OWNER,
+        title: 'Analytics',
+        description:
+          'Dashboard institucional de indicadores e visualizações.',
+        route: '/analytics',
+        layoutId: initialLayout.id,
+        priority: 40,
+        enabled: true,
+        tags: [
+          'analytics',
+        ],
+        metadata: {
+          type: 'analytics',
+        },
+      },
+
+      {
+        id: this.ACTIVITY_DASHBOARD_ID,
+        owner: this.CORE_OWNER,
+        title: 'Activity',
+        description:
+          'Dashboard institucional de eventos e atividades recentes.',
+        route: '/activity',
+        layoutId: initialLayout.id,
+        priority: 50,
+        enabled: true,
+        tags: [
+          'activity',
+        ],
+        metadata: {
+          type: 'activity',
+        },
+      },
+
+      {
+        id: this.TIMELINE_DASHBOARD_ID,
+        owner: this.CORE_OWNER,
+        title: 'Timeline',
+        description:
+          'Dashboard institucional de marcos e evolução operacional.',
+        route: '/timeline',
+        layoutId: initialLayout.id,
+        priority: 60,
+        enabled: true,
+        tags: [
+          'timeline',
+        ],
+        metadata: {
+          type: 'timeline',
         },
       },
 

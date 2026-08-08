@@ -425,6 +425,14 @@ export class WorkspaceRuntime {
   }
 
   /**
+   * Retorna os itens habilitados e visíveis
+   * na navegação principal do Workspace.
+   */
+  visibleNavigations(): readonly WorkspaceNavigation[] {
+    return this.navigationRegistry.listVisible();
+  }
+
+  /**
    * Retorna um item de navegação pelo identificador.
    */
   getNavigation(navigationId: WorkspaceNavigationId): WorkspaceNavigation {

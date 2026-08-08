@@ -66,6 +66,12 @@ export interface WorkspaceNavigation {
   readonly enabled?: boolean;
 
   /**
+   * Determina se o item deve ser apresentado
+   * na navegação principal do Workspace.
+   */
+  readonly visible?: boolean;
+
+  /**
    * Metadados adicionais.
    */
   readonly metadata?: Readonly<Record<string, unknown>>;

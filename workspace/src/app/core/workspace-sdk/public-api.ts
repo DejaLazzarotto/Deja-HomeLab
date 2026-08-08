@@ -54,6 +54,7 @@ export * from './runtime/workspace-command-dispatcher';
 export * from './runtime/workspace-action';
 export * from './runtime/workspace-action-registry';
 export * from './runtime/workspace-action-dispatcher';
+export * from './runtime/workspace-widget-context';
 
 export * from './ui/workspace-menu';
 export * from './ui/workspace-menu-registry';

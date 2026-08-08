@@ -41,6 +41,15 @@ import {
   WorkspaceWidgetRenderController,
 } from '../../rendering/workspace-widget-render-controller';
 
+import {
+  WorkspaceActionId,
+  WorkspaceActionResult,
+} from '../../../core/workspace-sdk/runtime/workspace-action';
+
+import {
+  WorkspaceWidgetContext,
+} from '../../../core/workspace-sdk/runtime/workspace-widget-context';
+
 /**
  * Host responsável pela resolução e criação dinâmica
  * de uma instância de Workspace Widget.
@@ -268,8 +277,63 @@ WorkspaceWidgetRenderController {
       this.widgetInstance,
     );
 
+    this.widgetComponentRef.setInput(
+      'widgetContext',
+      this.createWidgetContext(widget),
+    );
+
     this.registerWidgetComponent();
 
+  }
+
+  /**
+   * Cria o contexto institucional disponibilizado
+   * ao componente visual do Widget.
+   */
+  private createWidgetContext(
+    widget: WorkspaceWidget,
+  ): WorkspaceWidgetContext {
+    const widgetInstance = this.widgetInstance;
+    const runtime = this.runtime;
+
+    const createMetadata = (
+      metadata?: Readonly<Record<string, unknown>>,
+    ): Readonly<Record<string, unknown>> => ({
+      ...metadata,
+      widgetInstanceId: widgetInstance.id,
+      widgetId: widget.id,
+    });
+
+    return {
+      widget,
+      widgetInstance,
+
+      canExecuteAction<TPayload = unknown>(
+        actionId: WorkspaceActionId,
+        payload?: TPayload,
+        metadata?: Readonly<Record<string, unknown>>,
+      ): Promise<boolean> {
+        return runtime.canExecuteAction({
+          actionId,
+          payload,
+          source: 'widget',
+          metadata: createMetadata(metadata),
+        });
+      },
+
+      dispatchAction<TPayload = unknown, TResult = unknown>(
+        actionId: WorkspaceActionId,
+        payload?: TPayload,
+        metadata?: Readonly<Record<string, unknown>>,
+      ): Promise<WorkspaceActionResult<TResult>> {
+        return runtime.dispatchAction<TPayload, TResult>({
+          actionId,
+          payload,
+          source: 'widget',
+          metadata: createMetadata(metadata),
+        });
+      },
+    };
   }
 
   /**

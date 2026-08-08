@@ -10,7 +10,11 @@
 
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 
+import { WorkspaceActionId } from '../../../core/workspace-sdk/runtime/workspace-action';
+
 import { WorkspaceWidgetInstance } from '../../../core/workspace-sdk/runtime/workspace-widget';
+
+import { WorkspaceWidgetContext } from '../../../core/workspace-sdk/runtime/workspace-widget-context';
 
 import {
   WorkspaceButtonGroupComponent,
@@ -53,6 +57,15 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkspaceWelcomeWidgetComponent {
+
+  protected readonly analyticsActionId: WorkspaceActionId =
+    'deja.workspace.widget.welcome.analytics';
+
+  protected readonly activityActionId: WorkspaceActionId =
+    'deja.workspace.widget.welcome.activity';
+
+  protected readonly timelineActionId: WorkspaceActionId =
+    'deja.workspace.widget.welcome.timeline';
   /**
    * Instância declarativa do Widget no Dashboard.
    */
@@ -60,6 +73,14 @@ export class WorkspaceWelcomeWidgetComponent {
     required: true,
   })
   widgetInstance!: WorkspaceWidgetInstance;
+
+  /**
+   * Contexto institucional de execucao do Widget.
+   */
+  @Input({
+    required: true,
+  })
+  widgetContext!: WorkspaceWidgetContext;
 
   /**
    * Mensagem configurada para esta instância.
@@ -73,4 +94,16 @@ export class WorkspaceWelcomeWidgetComponent {
 
     return 'A infraestrutura inicial da Deja Platform ' + 'está funcionando corretamente.';
   }
+  /**
+   * Solicita a execucao de uma Action por meio
+   * do contexto institucional do Widget.
+   */
+  protected executeAction(
+    actionId: WorkspaceActionId,
+  ): void {
+    void this.widgetContext.dispatchAction(
+      actionId,
+    );
+  }
+
 }
