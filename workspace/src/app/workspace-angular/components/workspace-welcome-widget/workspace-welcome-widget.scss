@@ -3,34 +3,6 @@
   width: 100%;
 }
 
-
-.workspace-welcome-widget__kpi {
-  min-width: 0;
-}
-
-
-.workspace-welcome-widget__kpi-label {
-  color: var(--workspace-color-text-muted);
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
-
-.workspace-welcome-widget__kpi-value {
-  color: var(--workspace-color-text-primary);
-  font-size: 1.05rem;
-  font-weight: 650;
-}
-
-
-.workspace-welcome-widget__kpi-description {
-  color: var(--workspace-color-text-muted);
-  font-size: 0.7rem;
-}
-
-
 .workspace-welcome-widget__information,
 .workspace-welcome-widget__quick-actions {
   min-width: 0;

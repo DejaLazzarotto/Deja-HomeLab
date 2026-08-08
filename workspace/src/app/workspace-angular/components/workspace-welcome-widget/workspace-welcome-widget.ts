@@ -13,7 +13,10 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { WorkspaceWidgetInstance } from '../../../core/workspace-sdk/runtime/workspace-widget';
 
 import {
+  WorkspaceButtonGroupComponent,
   WorkspaceGridComponent,
+  WorkspaceIconButtonComponent,
+  WorkspaceKpiCardComponent,
   WorkspacePanelComponent,
   WorkspaceSectionHeaderComponent,
   WorkspaceStackComponent,
@@ -21,8 +24,6 @@ import {
   WorkspaceStatusIndicatorComponent,
   WorkspaceSurfaceComponent,
   WorkspaceToolbarComponent,
-  WorkspaceButtonGroupComponent,
-  WorkspaceIconButtonComponent,
   WorkspaceToolbarSpacerComponent,
 } from '../widget-library/foundation';
 
@@ -45,6 +46,7 @@ import {
     WorkspaceButtonGroupComponent,
     WorkspaceIconButtonComponent,
     WorkspaceToolbarSpacerComponent,
+    WorkspaceKpiCardComponent,
   ],
   templateUrl: './workspace-welcome-widget.html',
   styleUrl: './workspace-welcome-widget.scss',

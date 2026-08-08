@@ -2,6 +2,7 @@ export * from './badge/workspace-status-badge';
 export * from './button-group/workspace-button-group';
 export * from './grid/workspace-grid';
 export * from './icon-button/workspace-icon-button';
+export * from './kpi-card/workspace-kpi-card';
 export * from './panel/workspace-panel';
 export * from './section-header/workspace-section-header';
 export * from './stack/workspace-stack';
