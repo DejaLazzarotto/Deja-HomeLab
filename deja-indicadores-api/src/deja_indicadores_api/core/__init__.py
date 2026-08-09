@@ -1,0 +1,1 @@
+"""Recursos centrais e configurações compartilhadas da API."""
