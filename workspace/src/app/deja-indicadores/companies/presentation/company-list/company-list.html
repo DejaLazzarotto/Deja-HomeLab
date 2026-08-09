@@ -1,0 +1,184 @@
+<!--
+  Deja Indicadores
+
+  Companies Presentation
+
+  Estrutura visual da listagem de empresas.
+-->
+
+<section class="company-list">
+
+  <header class="company-list__header">
+
+    <div class="company-list__heading">
+      <span class="company-list__eyebrow">
+        Deja Indicadores
+      </span>
+
+      <h2 class="company-list__title">
+        Empresas
+      </h2>
+
+      <p class="company-list__description">
+        Gerencie as empresas clientes cadastradas na plataforma.
+      </p>
+    </div>
+
+    <button
+      class="company-list__create-button"
+      type="button"
+    >
+      Nova empresa
+    </button>
+
+  </header>
+
+  @if (companies().length > 0) {
+
+    <div class="company-list__table-container">
+
+      <table class="company-list__table">
+
+        <thead>
+          <tr>
+            <th scope="col">
+              Empresa
+            </th>
+
+            <th scope="col">
+              Documento
+            </th>
+
+            <th scope="col">
+              Contato
+            </th>
+
+            <th scope="col">
+              Status
+            </th>
+
+            <th
+              class="company-list__actions-heading"
+              scope="col"
+            >
+              Ações
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          @for (
+            company of companies();
+            track company.id
+          ) {
+
+            <tr>
+
+              <td>
+                <div class="company-list__company">
+                  <strong>
+                    {{ company.tradeName }}
+                  </strong>
+
+                  <span>
+                    {{ company.legalName }}
+                  </span>
+                </div>
+              </td>
+
+              <td>
+                {{ company.document }}
+              </td>
+
+              <td>
+                <div class="company-list__contact">
+
+                  @if (company.email) {
+                    <span>
+                      {{ company.email }}
+                    </span>
+                  }
+
+                  @if (company.phone) {
+                    <span>
+                      {{ company.phone }}
+                    </span>
+                  }
+
+                  @if (
+                    !company.email
+                    && !company.phone
+                  ) {
+                    <span>
+                      Não informado
+                    </span>
+                  }
+
+                </div>
+              </td>
+
+              <td>
+                <span
+                  class="company-list__status"
+                  [class.company-list__status--active]="company.status === 'active'"
+                  [class.company-list__status--inactive]="company.status === 'inactive'"
+                >
+                  {{ company.status === 'active' ? 'Ativa' : 'Inativa' }}
+                </span>
+              </td>
+
+              <td>
+                <div class="company-list__actions">
+
+                  <button
+                    class="company-list__action"
+                    type="button"
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    class="company-list__action company-list__action--danger"
+                    type="button"
+                  >
+                    Excluir
+                  </button>
+
+                </div>
+              </td>
+
+            </tr>
+
+          }
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  } @else {
+
+    <div class="company-list__empty">
+
+      <h3>
+        Nenhuma empresa cadastrada
+      </h3>
+
+      <p>
+        Cadastre a primeira empresa para iniciar o gerenciamento de clientes.
+      </p>
+
+      <button
+        class="company-list__create-button"
+        type="button"
+      >
+        Cadastrar primeira empresa
+      </button>
+
+    </div>
+
+  }
+
+</section>

@@ -1,0 +1,251 @@
+/*
+ * Deja Indicadores
+ *
+ * Companies Presentation
+ *
+ * Estilos institucionais da listagem de empresas.
+ */
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.company-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--workspace-spacing-lg);
+  min-width: 0;
+  padding: var(--workspace-spacing-lg);
+  color: var(--workspace-color-text);
+  background: var(--workspace-color-surface);
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-lg);
+  box-shadow: var(--workspace-shadow-sm);
+}
+
+.company-list__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--workspace-spacing-md);
+}
+
+.company-list__heading {
+  display: flex;
+  flex: 1 1 20rem;
+  flex-direction: column;
+  gap: var(--workspace-spacing-xs);
+  min-width: 0;
+}
+
+.company-list__eyebrow {
+  color: var(--workspace-color-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.company-list__title {
+  margin: 0;
+  color: var(--workspace-color-text);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  line-height: 1.2;
+}
+
+.company-list__description {
+  max-width: 42rem;
+  margin: 0;
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.company-list__create-button {
+  min-height: 2.5rem;
+  padding: 0.65rem 1rem;
+  color: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--workspace-color-primary);
+  border: 1px solid transparent;
+  border-radius: var(--workspace-radius-md);
+  transition:
+    filter var(--workspace-transition-fast),
+    transform var(--workspace-transition-fast);
+}
+
+.company-list__create-button:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.company-list__create-button:focus-visible,
+.company-list__action:focus-visible {
+  outline: 2px solid var(--workspace-color-primary);
+  outline-offset: 2px;
+}
+
+.company-list__table-container {
+  min-width: 0;
+  overflow-x: auto;
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
+}
+
+.company-list__table {
+  width: 100%;
+  min-width: 48rem;
+  border-collapse: collapse;
+}
+
+.company-list__table th,
+.company-list__table td {
+  padding: 0.9rem 1rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--workspace-color-border);
+}
+
+.company-list__table th {
+  color: var(--workspace-color-text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: var(--workspace-color-background);
+  text-transform: uppercase;
+}
+
+.company-list__table td {
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.82rem;
+}
+
+.company-list__table tbody tr {
+  transition: background var(--workspace-transition-fast);
+}
+
+.company-list__table tbody tr:hover {
+  background: var(--workspace-color-overlay);
+}
+
+.company-list__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.company-list__company,
+.company-list__contact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.company-list__company strong {
+  color: var(--workspace-color-text);
+  font-size: 0.86rem;
+}
+
+.company-list__company span,
+.company-list__contact span {
+  color: var(--workspace-color-text-muted);
+  font-size: 0.76rem;
+}
+
+.company-list__status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.6rem;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+}
+
+.company-list__status--active {
+  color: var(--workspace-color-success);
+  background: rgb(65 205 142 / 8%);
+}
+
+.company-list__status--inactive {
+  color: var(--workspace-color-text-muted);
+  background: var(--workspace-color-overlay);
+}
+
+.company-list__actions-heading {
+  text-align: right !important;
+}
+
+.company-list__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--workspace-spacing-xs);
+}
+
+.company-list__action {
+  padding: 0.4rem 0.65rem;
+  color: var(--workspace-color-text-secondary);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-sm);
+  transition:
+    color var(--workspace-transition-fast),
+    background var(--workspace-transition-fast),
+    border-color var(--workspace-transition-fast);
+}
+
+.company-list__action:hover {
+  color: var(--workspace-color-text);
+  background: var(--workspace-color-overlay);
+  border-color: var(--workspace-color-border-strong);
+}
+
+.company-list__action--danger:hover {
+  color: var(--workspace-color-danger);
+  background: rgb(255 92 92 / 8%);
+  border-color: var(--workspace-color-danger);
+}
+
+.company-list__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--workspace-spacing-sm);
+  padding: clamp(2rem, 8vw, 4rem) var(--workspace-spacing-lg);
+  text-align: center;
+  background: var(--workspace-color-background);
+  border: 1px dashed var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
+}
+
+.company-list__empty h3 {
+  margin: 0;
+  color: var(--workspace-color-text);
+  font-size: 1rem;
+}
+
+.company-list__empty p {
+  max-width: 32rem;
+  margin: 0 0 var(--workspace-spacing-sm);
+  color: var(--workspace-color-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 40rem) {
+  .company-list {
+    padding: var(--workspace-spacing-md);
+  }
+
+  .company-list__create-button {
+    width: 100%;
+  }
+}
