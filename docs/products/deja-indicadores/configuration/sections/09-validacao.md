@@ -113,3 +113,151 @@ Inclui:
 # Momento de validação
 
 A validação pode ocorrer em diferentes momentos:
+
+Registro
+
+|
+
+Alteração
+
+|
+
+Publicação
+
+|
+
+Resolução
+
+|
+
+Aplicação
+
+
+Cada etapa pode possuir validações específicas.
+
+---
+
+# Resultado de validação
+
+O resultado deve possuir representação padronizada.
+
+Modelo conceitual:
+
+Validation Result
+
+configurationId
+
+status
+
+errors
+
+warnings
+
+rulesApplied
+
+timestamp
+
+validator
+
+
+---
+
+# Estados de validação
+
+Uma configuração pode assumir estados:
+
+PENDING_VALIDATION
+
+VALIDATED
+
+INVALID
+
+REJECTED
+
+APPROVED
+
+
+---
+
+# Bloqueio de configurações inválidas
+
+Configurações inválidas não devem:
+
+- ser publicadas;
+- ser disponibilizadas pelo Runtime;
+- afetar consumidores.
+
+---
+
+# Integração com Versionamento
+
+Toda alteração validada deve estar associada a uma versão.
+
+Fluxo:
+
+Configuration Change
+
+    |
+
+Validation
+
+    |
+
+New Version
+
+    |
+
+Publication
+
+
+---
+
+# Integração com Governance
+
+Resultados de validação devem participar do processo de governança.
+
+Podem exigir:
+
+- aprovação;
+- revisão;
+- justificativa;
+- auditoria.
+
+---
+
+# Integração com Observability
+
+O sistema deve registrar:
+
+- falhas de validação;
+- tempo de processamento;
+- regras aplicadas;
+- quantidade de rejeições.
+
+---
+
+# Integração com Execution Log
+
+Eventos importantes devem gerar registros técnicos:
+
+- validação executada;
+- falha encontrada;
+- configuração rejeitada;
+- publicação autorizada.
+
+---
+
+# Evolução
+
+A arquitetura permite evolução para:
+
+- validação inteligente;
+- análise preditiva;
+- detecção automática de conflitos;
+- recomendações configuracionais.
+
+---
+
+# Resultado arquitetural
+
+A validação transforma o Configuration em uma capacidade confiável, impedindo que configurações inconsistentes ou inseguras afetem a operação da Deja Platform.

@@ -78,3 +78,82 @@ O Configuration contempla:
 ## Modelo operacional
 
 O fluxo institucional de configuração segue:
+Configuration Source
+
+    |
+    v
+
+Configuration Provider
+
+    |
+    v
+
+Configuration Registry
+
+    |
+    v
+
+Configuration Resolver
+
+    |
+    v
+
+Configuration Runtime
+
+    |
+    v
+
+Component Consumers
+
+
+Cada etapa possui responsabilidade própria, permitindo evolução independente e baixo acoplamento.
+
+---
+
+## Benefícios arquiteturais
+
+A adoção do Configuration proporciona:
+
+- padronização configuracional;
+- redução de duplicidade;
+- maior segurança;
+- controle de mudanças;
+- suporte a múltiplos ambientes;
+- rastreabilidade operacional;
+- evolução simplificada da plataforma.
+
+---
+
+## Integração com a Deja Platform
+
+O Configuration integra-se como capacidade transversal aos componentes institucionais:
+
+- Kernel;
+- Runtime;
+- Module System;
+- Service Registry;
+- Execution Engine;
+- Workflow Engine;
+- Intelligence Core;
+- Data Pipeline;
+- Security;
+- Execution Log;
+- Execution History;
+- Observability;
+- Workspace;
+- APIs.
+
+---
+
+## Resultado esperado
+
+Ao final da arquitetura, a Deja Platform possuirá uma infraestrutura única de configuração capaz de suportar:
+
+- operação em diferentes ambientes;
+- evolução contínua;
+- controle institucional;
+- segurança;
+- auditoria;
+- escalabilidade.
+
+O Configuration torna-se um dos pilares arquiteturais responsáveis pela operação confiável da plataforma.
