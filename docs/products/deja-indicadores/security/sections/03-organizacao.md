@@ -145,3 +145,49 @@ Responsabilidades:
 ## Integração entre camadas
 
 O fluxo conceitual de segurança segue:
+
+Identity
+↓
+Authentication
+↓
+Authorization
+↓
+Access Decision
+↓
+Protected Operation
+↓
+Audit Record
+
+
+Cada etapa possui responsabilidade própria e pode evoluir independentemente.
+
+---
+
+## Integração com a Deja Platform
+
+O Security disponibiliza suas capacidades para:
+
+- Execution Engine;
+- Workflow Engine;
+- Intelligence Core;
+- Execution Log;
+- Execution History;
+- Observability;
+- Data Pipeline;
+- Diagnostic Engine;
+- Recommendation Engine;
+- AI Assistant;
+- Workspace.
+
+---
+
+## Benefícios arquiteturais
+
+A organização proposta proporciona:
+
+- baixo acoplamento;
+- reutilização de serviços;
+- controle centralizado;
+- políticas consistentes;
+- auditoria completa;
+- evolução independente.

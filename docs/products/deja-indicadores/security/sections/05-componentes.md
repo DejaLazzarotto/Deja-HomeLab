@@ -256,3 +256,29 @@ Inclui:
 # Relacionamento entre componentes
 
 O fluxo principal é:
+
+Identity Service
+↓
+Authentication Service
+↓
+Authorization Service
+↓
+Policy Engine
+↓
+Protected Resource
+↓
+Security Audit Service
+
+
+---
+
+## Benefícios arquiteturais
+
+A separação dos componentes permite:
+
+- evolução independente;
+- substituição tecnológica;
+- reutilização;
+- testes isolados;
+- governança centralizada;
+- integração consistente com toda a plataforma.

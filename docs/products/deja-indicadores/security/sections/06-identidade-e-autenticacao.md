@@ -92,3 +92,141 @@ Uma identidade pode possuir:
 # Ciclo de vida da identidade
 
 O ciclo de vida contempla:
+
+Created
+↓
+Activated
+↓
+Used
+↓
+Suspended
+↓
+Revoked
+↓
+Archived
+
+
+Cada transição deve ser controlada e auditável.
+
+---
+
+# Authentication Service
+
+## Responsabilidade
+
+O Authentication Service valida a identidade apresentada por uma entidade.
+
+A autenticação ocorre antes de qualquer operação que exija proteção.
+
+---
+
+## Métodos de autenticação
+
+A arquitetura suporta diferentes mecanismos:
+
+- autenticação por credenciais;
+- tokens;
+- certificados;
+- chaves de serviço;
+- provedores externos de identidade.
+
+---
+
+# Sessões e contexto
+
+Após uma autenticação bem-sucedida, o Security mantém informações de contexto.
+
+O contexto pode incluir:
+
+- identidade autenticada;
+- momento da autenticação;
+- origem da solicitação;
+- recursos solicitados;
+- nível de confiança.
+
+---
+
+# Autenticação de serviços
+
+Serviços internos e externos devem possuir mecanismos próprios de autenticação.
+
+Nenhum serviço deve assumir confiança automática por estar dentro da plataforma.
+
+---
+
+# Integração com autorização
+
+A autenticação responde:
+
+> Quem está solicitando a operação?
+
+A autorização responde:
+
+> Essa identidade pode executar essa operação?
+
+As responsabilidades permanecem separadas.
+
+Fluxo:
+
+Identity
+↓
+Authentication
+↓
+Authorization
+↓
+Execution
+
+
+---
+
+# Segurança de identidade
+
+O Security deve proteger:
+
+- informações de identidade;
+- credenciais;
+- tokens;
+- certificados;
+- atributos sensíveis.
+
+---
+
+# Auditoria
+
+Eventos relacionados à identidade e autenticação devem ser registrados.
+
+Exemplos:
+
+- criação de identidade;
+- autenticação realizada;
+- falha de autenticação;
+- alteração de atributos;
+- revogação de acesso.
+
+---
+
+# Integração institucional
+
+A identidade e autenticação são utilizadas por:
+
+- Execution Engine;
+- Workflow Engine;
+- Intelligence Core;
+- Execution Log;
+- Execution History;
+- Observability;
+- Data Pipeline;
+- Workspace;
+- APIs.
+
+---
+
+# Benefícios arquiteturais
+
+Este modelo proporciona:
+
+- identificação confiável;
+- controle centralizado;
+- rastreabilidade completa;
+- suporte a múltiplos tipos de entidades;
+- evolução para ambientes corporativos distribuídos.

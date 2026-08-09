@@ -112,3 +112,103 @@ Toda política deve possuir:
 As políticas são aplicadas pelos componentes responsáveis pela decisão de segurança.
 
 Fluxo:
+
+Security Policy Registry
+↓
+Policy Retrieval
+↓
+Policy Evaluation
+↓
+Security Decision
+↓
+Operation
+
+
+---
+
+# Governança de acesso
+
+A governança controla:
+
+- concessão de permissões;
+- revisão de acessos;
+- remoção de privilégios;
+- segregação de responsabilidades.
+
+---
+
+# Segregação de responsabilidades
+
+A arquitetura evita concentração excessiva de privilégios.
+
+Responsabilidades devem ser distribuídas entre:
+
+- administração;
+- operação;
+- auditoria;
+- desenvolvimento.
+
+---
+
+# Conformidade
+
+O Security deve suportar requisitos de conformidade relacionados a:
+
+- proteção de dados;
+- auditoria;
+- controle de acesso;
+- rastreabilidade;
+- segurança operacional.
+
+---
+
+# Gestão de mudanças
+
+Alterações relevantes de segurança devem ser controladas.
+
+Inclui:
+
+- alteração de políticas;
+- mudança de permissões;
+- atualização de mecanismos;
+- evolução arquitetural.
+
+---
+
+# Integração com auditoria
+
+Todas as alterações de governança devem gerar registros.
+
+Exemplos:
+
+- criação de política;
+- alteração de regra;
+- publicação;
+- revogação;
+- mudança administrativa.
+
+Esses registros integram-se com:
+
+- Security Audit Service;
+- Execution Log;
+- Observability.
+
+---
+
+# Evolução institucional
+
+A governança deve acompanhar a evolução da Deja Platform.
+
+Novos componentes, integrações e capacidades devem incorporar requisitos de segurança desde sua concepção.
+
+---
+
+# Benefícios arquiteturais
+
+A governança proporciona:
+
+- segurança consistente;
+- controle institucional;
+- rastreabilidade;
+- conformidade;
+- evolução sustentável.
