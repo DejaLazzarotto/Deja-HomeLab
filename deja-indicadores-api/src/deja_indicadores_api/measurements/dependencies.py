@@ -6,30 +6,30 @@ from sqlalchemy.orm import Session
 from deja_indicadores_api.companies.repository import CompanyRepository
 from deja_indicadores_api.core.database import get_db_session
 from deja_indicadores_api.indicators.repository import IndicatorRepository
-from deja_indicadores_api.indicators.service import IndicatorService
 from deja_indicadores_api.measurements.repository import MeasurementRepository
+from deja_indicadores_api.measurements.service import MeasurementService
 
 
 DatabaseSession = Annotated[Session, Depends(get_db_session)]
 
 
-def get_indicator_service(
+def get_measurement_service(
     session: DatabaseSession,
-) -> IndicatorService:
-    """Cria o serviço de indicadores para a sessão da requisição."""
+) -> MeasurementService:
+    """Cria o serviço de medições para a sessão da requisição."""
 
+    measurement_repository = MeasurementRepository(session)
     indicator_repository = IndicatorRepository(session)
     company_repository = CompanyRepository(session)
-    measurement_repository = MeasurementRepository(session)
 
-    return IndicatorService(
+    return MeasurementService(
+        measurement_repository,
         indicator_repository,
         company_repository,
-        measurement_repository,
     )
 
 
-IndicatorServiceDependency = Annotated[
-    IndicatorService,
-    Depends(get_indicator_service),
+MeasurementServiceDependency = Annotated[
+    MeasurementService,
+    Depends(get_measurement_service),
 ]

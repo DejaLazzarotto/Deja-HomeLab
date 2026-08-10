@@ -7,6 +7,8 @@ from deja_indicadores_api.companies.models import CompanyModel
 from deja_indicadores_api.core.config import get_settings
 from deja_indicadores_api.core.database import Base
 from deja_indicadores_api.indicators.models import IndicatorModel
+from deja_indicadores_api.measurements.models import MeasurementModel
+
 
 config = context.config
 settings = get_settings()
@@ -21,6 +23,7 @@ target_metadata = Base.metadata
 _registered_models = (
     CompanyModel,
     IndicatorModel,
+    MeasurementModel,
 )
 
 

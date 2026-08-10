@@ -12,6 +12,10 @@ from deja_indicadores_api.indicators.schemas import (
     IndicatorCreate,
     IndicatorUpdate,
 )
+from deja_indicadores_api.measurements.exceptions import (
+    IndicatorHasMeasurementsError,
+)
+from deja_indicadores_api.measurements.repository import MeasurementRepository
 
 
 class IndicatorService:
@@ -21,9 +25,11 @@ class IndicatorService:
         self,
         repository: IndicatorRepository,
         company_repository: CompanyRepository,
+        measurement_repository: MeasurementRepository,
     ) -> None:
         self._repository = repository
         self._company_repository = company_repository
+        self._measurement_repository = measurement_repository
 
     def list(
         self,
@@ -84,9 +90,13 @@ class IndicatorService:
         return self._repository.update(indicator)
 
     def delete(self, indicator_id: str) -> None:
-        """Exclui um indicador existente."""
+        """Exclui um indicador que não possua medições cadastradas."""
 
         indicator = self.find_by_id(indicator_id)
+
+        if self._measurement_repository.exists_for_indicator(indicator_id):
+            raise IndicatorHasMeasurementsError(indicator_id)
+
         self._repository.delete(indicator)
 
     def _ensure_company_exists(self, company_id: str) -> None:
