@@ -12,6 +12,11 @@ from deja_indicadores_api.core.database import Base, get_db_session
 from deja_indicadores_api.indicators.models import IndicatorModel
 from deja_indicadores_api.main import create_app
 from deja_indicadores_api.measurements.models import MeasurementModel
+from deja_indicadores_api.tenant_management.models import (
+    EnvironmentModel,
+    OrganizationModel,
+    TenantModel,
+)
 
 
 @pytest.fixture(scope="session")
@@ -76,6 +81,9 @@ def clean_database(
     """Garante tabelas vazias antes e depois de cada teste."""
 
     with test_session_factory() as session:
+        session.execute(delete(EnvironmentModel))
+        session.execute(delete(TenantModel))
+        session.execute(delete(OrganizationModel))
         session.execute(delete(MeasurementModel))
         session.execute(delete(IndicatorModel))
         session.execute(delete(CompanyModel))
@@ -84,6 +92,9 @@ def clean_database(
     yield
 
     with test_session_factory() as session:
+        session.execute(delete(EnvironmentModel))
+        session.execute(delete(TenantModel))
+        session.execute(delete(OrganizationModel))
         session.execute(delete(MeasurementModel))
         session.execute(delete(IndicatorModel))
         session.execute(delete(CompanyModel))
