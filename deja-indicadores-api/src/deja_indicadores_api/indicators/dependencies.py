@@ -4,26 +4,28 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from deja_indicadores_api.companies.repository import CompanyRepository
-from deja_indicadores_api.companies.service import CompanyService
 from deja_indicadores_api.core.database import get_db_session
 from deja_indicadores_api.indicators.repository import IndicatorRepository
+from deja_indicadores_api.indicators.service import IndicatorService
 
 DatabaseSession = Annotated[Session, Depends(get_db_session)]
 
 
-def get_company_service(session: DatabaseSession) -> CompanyService:
-    """Cria o serviço de empresas para a sessão da requisição."""
+def get_indicator_service(
+    session: DatabaseSession,
+) -> IndicatorService:
+    """Cria o serviço de indicadores para a sessão da requisição."""
 
-    company_repository = CompanyRepository(session)
     indicator_repository = IndicatorRepository(session)
+    company_repository = CompanyRepository(session)
 
-    return CompanyService(
-        company_repository,
+    return IndicatorService(
         indicator_repository,
+        company_repository,
     )
 
 
-CompanyServiceDependency = Annotated[
-    CompanyService,
-    Depends(get_company_service),
+IndicatorServiceDependency = Annotated[
+    IndicatorService,
+    Depends(get_indicator_service),
 ]

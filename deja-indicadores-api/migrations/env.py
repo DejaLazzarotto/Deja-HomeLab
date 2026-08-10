@@ -3,8 +3,10 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from deja_indicadores_api.companies.models import CompanyModel
 from deja_indicadores_api.core.config import get_settings
 from deja_indicadores_api.core.database import Base
+from deja_indicadores_api.indicators.models import IndicatorModel
 
 config = context.config
 settings = get_settings()
@@ -15,6 +17,11 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
+
+_registered_models = (
+    CompanyModel,
+    IndicatorModel,
+)
 
 
 def run_migrations_offline() -> None:

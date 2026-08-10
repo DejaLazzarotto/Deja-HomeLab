@@ -9,12 +9,14 @@ from sqlalchemy.orm import Session, sessionmaker
 from deja_indicadores_api.companies.models import CompanyModel
 from deja_indicadores_api.core.config import Settings
 from deja_indicadores_api.core.database import Base, get_db_session
+from deja_indicadores_api.indicators.models import IndicatorModel
 from deja_indicadores_api.main import create_app
 
 
 @pytest.fixture(scope="session")
 def test_settings() -> Settings:
-    """Carrega e valida exclusivamente as configurações do ambiente de testes."""
+    """Carrega e valida exclusivamente as configurações de testes."""
+
     settings = Settings(_env_file=".env.test")
 
     if settings.app_env != "testing":
@@ -33,8 +35,11 @@ def test_settings() -> Settings:
 
 
 @pytest.fixture(scope="session")
-def test_engine(test_settings: Settings) -> Generator[Engine, None, None]:
+def test_engine(
+    test_settings: Settings,
+) -> Generator[Engine, None, None]:
     """Cria a engine vinculada exclusivamente ao banco MySQL de testes."""
+
     engine = create_engine(
         test_settings.database_url,
         pool_pre_ping=True,
@@ -55,6 +60,7 @@ def test_session_factory(
     test_engine: Engine,
 ) -> sessionmaker[Session]:
     """Cria sessões SQLAlchemy exclusivas para os testes."""
+
     return sessionmaker(
         bind=test_engine,
         autoflush=False,
@@ -66,14 +72,17 @@ def test_session_factory(
 def clean_database(
     test_session_factory: sessionmaker[Session],
 ) -> Generator[None, None, None]:
-    """Garante uma tabela de empresas vazia antes e depois de cada teste."""
+    """Garante tabelas vazias antes e depois de cada teste."""
+
     with test_session_factory() as session:
+        session.execute(delete(IndicatorModel))
         session.execute(delete(CompanyModel))
         session.commit()
 
     yield
 
     with test_session_factory() as session:
+        session.execute(delete(IndicatorModel))
         session.execute(delete(CompanyModel))
         session.commit()
 
@@ -83,6 +92,7 @@ def test_app(
     test_session_factory: sessionmaker[Session],
 ) -> Generator[FastAPI, None, None]:
     """Cria uma aplicação com a sessão de produção substituída pela de testes."""
+
     app = create_app()
 
     def override_get_db_session() -> Generator[Session, None, None]:
@@ -104,5 +114,6 @@ def test_app(
 @pytest.fixture()
 def client(test_app: FastAPI) -> Generator[TestClient, None, None]:
     """Fornece um cliente HTTP conectado à aplicação isolada."""
+
     with TestClient(test_app) as test_client:
         yield test_client

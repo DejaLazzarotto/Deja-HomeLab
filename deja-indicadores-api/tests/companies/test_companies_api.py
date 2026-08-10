@@ -3,6 +3,7 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 
 COMPANIES_URL = "/api/companies"
+INDICATORS_URL = "/api/indicators"
 
 FIRST_COMPANY = {
     "legal_name": "Deja Tecnologia Ltda",
@@ -28,7 +29,31 @@ def create_company(
     payload: dict[str, str],
 ) -> dict[str, object]:
     """Cadastra uma empresa e retorna o corpo da resposta."""
+
     response = client.post(COMPANIES_URL, json=payload)
+
+    assert response.status_code == 201
+    return response.json()
+
+
+def create_indicator(
+    client: TestClient,
+    company_id: str,
+) -> dict[str, object]:
+    """Cadastra um indicador para a empresa informada."""
+
+    response = client.post(
+        INDICATORS_URL,
+        json={
+            "company_id": company_id,
+            "name": "Margem líquida",
+            "description": "Percentual de lucro líquido sobre a receita.",
+            "unit": "%",
+            "direction": "higher_is_better",
+            "target_value": "15.5000",
+            "status": "active",
+        },
+    )
 
     assert response.status_code == 201
     return response.json()
@@ -38,6 +63,7 @@ def test_create_company_normalizes_and_returns_data(
     client: TestClient,
 ) -> None:
     """Cadastra uma empresa normalizando os campos informados."""
+
     payload = {
         **FIRST_COMPANY,
         "legal_name": "  Deja Tecnologia Ltda  ",
@@ -65,6 +91,7 @@ def test_list_companies_returns_trade_name_order(
     client: TestClient,
 ) -> None:
     """Lista as empresas ordenadas pelo nome fantasia."""
+
     create_company(client, FIRST_COMPANY)
     create_company(client, SECOND_COMPANY)
 
@@ -83,6 +110,7 @@ def test_list_companies_returns_trade_name_order(
 
 def test_get_company_by_id(client: TestClient) -> None:
     """Consulta uma empresa pelo identificador."""
+
     company = create_company(client, FIRST_COMPANY)
 
     response = client.get(f"{COMPANIES_URL}/{company['id']}")
@@ -93,6 +121,7 @@ def test_get_company_by_id(client: TestClient) -> None:
 
 def test_update_company(client: TestClient) -> None:
     """Atualiza integralmente uma empresa existente."""
+
     company = create_company(client, FIRST_COMPANY)
     update_payload = {
         **FIRST_COMPANY,
@@ -123,6 +152,7 @@ def test_update_company_keeps_its_own_document(
     client: TestClient,
 ) -> None:
     """Permite atualizar a empresa mantendo o próprio documento."""
+
     company = create_company(client, FIRST_COMPANY)
 
     response = client.put(
@@ -136,6 +166,7 @@ def test_update_company_keeps_its_own_document(
 
 def test_delete_company(client: TestClient) -> None:
     """Exclui uma empresa e impede consultas posteriores."""
+
     company = create_company(client, FIRST_COMPANY)
 
     delete_response = client.delete(
@@ -153,10 +184,34 @@ def test_delete_company(client: TestClient) -> None:
     assert get_response.json()["error"] == "company_not_found"
 
 
+def test_delete_company_rejects_when_it_has_indicators(
+    client: TestClient,
+) -> None:
+    """Impede excluir uma empresa que possua indicadores cadastrados."""
+
+    company = create_company(client, FIRST_COMPANY)
+    create_indicator(client, str(company["id"]))
+
+    response = client.delete(
+        f"{COMPANIES_URL}/{company['id']}",
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"] == "company_has_indicators"
+
+    get_response = client.get(
+        f"{COMPANIES_URL}/{company['id']}",
+    )
+
+    assert get_response.status_code == 200
+    assert get_response.json()["id"] == company["id"]
+
+
 def test_create_company_rejects_duplicate_document(
     client: TestClient,
 ) -> None:
     """Rejeita um documento já associado a outra empresa."""
+
     create_company(client, FIRST_COMPANY)
 
     response = client.post(
@@ -168,13 +223,14 @@ def test_create_company_rejects_duplicate_document(
     )
 
     assert response.status_code == 409
-    assert response.json()["error"] == ("company_document_already_exists")
+    assert response.json()["error"] == "company_document_already_exists"
 
 
 def test_update_company_rejects_another_company_document(
     client: TestClient,
 ) -> None:
     """Rejeita documento pertencente a outra empresa."""
+
     first_company = create_company(client, FIRST_COMPANY)
     second_company = create_company(client, SECOND_COMPANY)
 
@@ -187,7 +243,7 @@ def test_update_company_rejects_another_company_document(
     )
 
     assert response.status_code == 409
-    assert response.json()["error"] == ("company_document_already_exists")
+    assert response.json()["error"] == "company_document_already_exists"
     assert first_company["document"] == "12345678000190"
 
 
@@ -195,6 +251,7 @@ def test_get_unknown_company_returns_not_found(
     client: TestClient,
 ) -> None:
     """Retorna 404 ao consultar uma empresa inexistente."""
+
     company_id = str(uuid4())
 
     response = client.get(f"{COMPANIES_URL}/{company_id}")
@@ -207,6 +264,7 @@ def test_update_unknown_company_returns_not_found(
     client: TestClient,
 ) -> None:
     """Retorna 404 ao atualizar uma empresa inexistente."""
+
     company_id = str(uuid4())
 
     response = client.put(
@@ -222,6 +280,7 @@ def test_delete_unknown_company_returns_not_found(
     client: TestClient,
 ) -> None:
     """Retorna 404 ao excluir uma empresa inexistente."""
+
     company_id = str(uuid4())
 
     response = client.delete(f"{COMPANIES_URL}/{company_id}")
@@ -234,6 +293,7 @@ def test_create_company_rejects_invalid_document(
     client: TestClient,
 ) -> None:
     """Rejeita documento que não possui 11 ou 14 números."""
+
     response = client.post(
         COMPANIES_URL,
         json={
@@ -249,6 +309,7 @@ def test_create_company_rejects_invalid_email(
     client: TestClient,
 ) -> None:
     """Rejeita endereço de e-mail inválido."""
+
     response = client.post(
         COMPANIES_URL,
         json={
@@ -264,6 +325,7 @@ def test_company_id_requires_36_characters(
     client: TestClient,
 ) -> None:
     """Rejeita identificador que não possui 36 caracteres."""
+
     response = client.get(f"{COMPANIES_URL}/invalid-id")
 
     assert response.status_code == 422
