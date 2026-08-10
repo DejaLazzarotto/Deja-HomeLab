@@ -19,6 +19,4 @@ class CompanyDocumentAlreadyExistsError(ResourceConflictError):
     error_code = "company_document_already_exists"
 
     def __init__(self, document: str) -> None:
-        super().__init__(
-            f"Já existe uma empresa cadastrada com o documento '{document}'."
-        )
+        super().__init__(f"Já existe uma empresa cadastrada com o documento '{document}'.")

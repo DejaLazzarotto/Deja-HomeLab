@@ -43,9 +43,7 @@ def upgrade() -> None:
             "updated_at",
             sa.DateTime(),
             nullable=False,
-            server_default=sa.text(
-                "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-            ),
+            server_default=sa.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(

@@ -24,9 +24,7 @@ class CompanyRepository:
     def find_by_document(self, document: str) -> CompanyModel | None:
         """Localiza uma empresa pelo documento normalizado."""
 
-        statement = select(CompanyModel).where(
-            CompanyModel.document == document
-        )
+        statement = select(CompanyModel).where(CompanyModel.document == document)
         return self._session.scalar(statement)
 
     def add(self, company: CompanyModel) -> CompanyModel:
