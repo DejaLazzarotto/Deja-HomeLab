@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+from deja_indicadores_api.core.security import PasswordService
 from deja_indicadores_api.tenant_management.exceptions import (
     EnvironmentNotFoundError,
     OrganizationNotFoundError,
@@ -28,11 +29,10 @@ from deja_indicadores_api.user_management.models import (
     UserRole,
     UserStatus,
 )
-from deja_indicadores_api.user_management.repository import (
-    UserRepository,
-)
+from deja_indicadores_api.user_management.repository import UserRepository
 from deja_indicadores_api.user_management.schemas import (
     UserCreate,
+    UserPasswordSet,
     UserUpdate,
 )
 
@@ -46,11 +46,13 @@ class UserService:
         organization_repository: OrganizationRepository,
         tenant_repository: TenantRepository,
         environment_repository: EnvironmentRepository,
+        password_service: PasswordService,
     ) -> None:
         self._user_repository = user_repository
         self._organization_repository = organization_repository
         self._tenant_repository = tenant_repository
         self._environment_repository = environment_repository
+        self._password_service = password_service
 
     def list(
         self,
@@ -131,33 +133,49 @@ class UserService:
 
         return self._user_repository.update(user)
 
+    def set_password(
+        self,
+        user_id: str,
+        input_data: UserPasswordSet,
+    ) -> UserModel:
+        """Define ou altera a senha de um usuário."""
+
+        user = self.find_by_id(user_id)
+        user.password_hash = self._password_service.hash(
+            input_data.password
+        )
+
+        return self._user_repository.update(user)
+
     def _validate_institutional_scope(
         self,
         input_data: UserCreate | UserUpdate,
     ) -> None:
         """Valida a consistência entre vínculos e papel do usuário."""
 
-        self._require_organization(input_data.organization_id)
+        organization = self._require_organization(
+            input_data.organization_id
+        )
+        tenant = self._resolve_tenant(
+            input_data.tenant_id,
+            organization,
+        )
+        environment = self._resolve_environment(
+            input_data.environment_id,
+            tenant,
+        )
 
-        tenant = self._validate_tenant_scope(
-            organization_id=input_data.organization_id,
-            tenant_id=input_data.tenant_id,
-        )
-        self._validate_environment_scope(
-            tenant_id=input_data.tenant_id,
-            environment_id=input_data.environment_id,
-        )
         self._validate_role_scope(
-            role=input_data.role,
-            tenant=tenant,
-            environment_id=input_data.environment_id,
+            input_data.role,
+            tenant,
+            environment,
         )
 
     def _require_organization(
         self,
         organization_id: str,
     ) -> OrganizationModel:
-        """Garante que a organização informada exista."""
+        """Exige a existência da organização informada."""
 
         organization = self._organization_repository.find_by_id(
             organization_id
@@ -168,12 +186,12 @@ class UserService:
 
         return organization
 
-    def _validate_tenant_scope(
+    def _resolve_tenant(
         self,
-        organization_id: str,
         tenant_id: str | None,
+        organization: OrganizationModel,
     ) -> TenantModel | None:
-        """Valida a existência e a organização do tenant opcional."""
+        """Valida e retorna o tenant opcional do usuário."""
 
         if tenant_id is None:
             return None
@@ -183,25 +201,25 @@ class UserService:
         if tenant is None:
             raise TenantNotFoundError(tenant_id)
 
-        if tenant.organization_id != organization_id:
+        if tenant.organization_id != organization.id:
             raise TenantDoesNotBelongToOrganizationError(
-                tenant_id,
-                organization_id,
+                tenant.id,
+                organization.id,
             )
 
         return tenant
 
-    def _validate_environment_scope(
+    def _resolve_environment(
         self,
-        tenant_id: str | None,
         environment_id: str | None,
+        tenant: TenantModel | None,
     ) -> EnvironmentModel | None:
-        """Valida a existência e o tenant do ambiente opcional."""
+        """Valida e retorna o ambiente opcional do usuário."""
 
         if environment_id is None:
             return None
 
-        if tenant_id is None:
+        if tenant is None:
             raise EnvironmentRequiresTenantError(environment_id)
 
         environment = self._environment_repository.find_by_id(
@@ -211,10 +229,10 @@ class UserService:
         if environment is None:
             raise EnvironmentNotFoundError(environment_id)
 
-        if environment.tenant_id != tenant_id:
+        if environment.tenant_id != tenant.id:
             raise EnvironmentDoesNotBelongToTenantError(
-                environment_id,
-                tenant_id,
+                environment.id,
+                tenant.id,
             )
 
         return environment
@@ -223,35 +241,28 @@ class UserService:
         self,
         role: UserRole,
         tenant: TenantModel | None,
-        environment_id: str | None,
+        environment: EnvironmentModel | None,
     ) -> None:
-        """Garante que o papel seja compatível com os vínculos."""
+        """Valida os vínculos obrigatórios e proibidos para cada papel."""
 
         if role == UserRole.ORGANIZATION_ADMIN:
-            if tenant is not None or environment_id is not None:
+            if tenant is not None or environment is not None:
                 raise RoleScopeMismatchError(
                     role.value,
-                    "o administrador da organização não pode possuir "
-                    "tenant ou ambiente",
+                    "não permite tenant nem ambiente",
                 )
             return
 
         if role == UserRole.TENANT_ADMIN:
-            if tenant is None:
+            if tenant is None or environment is not None:
                 raise RoleScopeMismatchError(
                     role.value,
-                    "o administrador de tenant exige um tenant",
-                )
-
-            if environment_id is not None:
-                raise RoleScopeMismatchError(
-                    role.value,
-                    "o administrador de tenant não pode possuir ambiente",
+                    "exige tenant e não permite ambiente",
                 )
             return
 
-        if tenant is None:
+        if tenant is None or environment is None:
             raise RoleScopeMismatchError(
                 role.value,
-                "o papel exige um tenant",
+                "exige tenant e ambiente",
             )

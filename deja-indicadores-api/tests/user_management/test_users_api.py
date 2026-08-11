@@ -1,4 +1,8 @@
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session, sessionmaker
+
+from deja_indicadores_api.core.security import PasswordService
+from deja_indicadores_api.user_management.models import UserModel
 
 ORGANIZATIONS_URL = "/api/v1/organizations"
 TENANTS_URL = "/api/v1/tenants"
@@ -210,14 +214,14 @@ def test_create_user_uses_default_status(
 ) -> None:
     """Utiliza active quando o status não é informado."""
 
-    organization, tenant, _ = create_hierarchy(client)
+    organization, tenant, environment = create_hierarchy(client)
 
     response = client.post(
         USERS_URL,
         json={
             "organization_id": organization["id"],
             "tenant_id": tenant["id"],
-            "environment_id": None,
+            "environment_id": environment["id"],
             "name": "Gestor Principal",
             "email": "gestor@deja.com",
             "role": "manager",
@@ -233,12 +237,13 @@ def test_list_users_ordered_by_name(
 ) -> None:
     """Lista usuários ordenados pelo nome."""
 
-    organization, tenant, _ = create_hierarchy(client)
+    organization, tenant, environment = create_hierarchy(client)
 
     create_user(
         client,
         str(organization["id"]),
         tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
         name="Usuário Secundário",
         email="secundario@deja.com",
     )
@@ -246,6 +251,7 @@ def test_list_users_ordered_by_name(
         client,
         str(organization["id"]),
         tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
         name="Usuário Principal",
         email="principal@deja.com",
     )
@@ -268,12 +274,13 @@ def test_list_users_with_same_name_ordered_by_email(
 ) -> None:
     """Ordena pelo e-mail quando usuários possuem o mesmo nome."""
 
-    organization, tenant, _ = create_hierarchy(client)
+    organization, tenant, environment = create_hierarchy(client)
 
     create_user(
         client,
         str(organization["id"]),
         tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
         name="Usuário Compartilhado",
         email="segundo@deja.com",
     )
@@ -281,6 +288,7 @@ def test_list_users_with_same_name_ordered_by_email(
         client,
         str(organization["id"]),
         tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
         name="Usuário Compartilhado",
         email="primeiro@deja.com",
     )
@@ -352,10 +360,21 @@ def test_list_users_filtered_by_tenant(
         name="Tenant Secundário",
     )
 
+    first_environment = create_environment(
+        client,
+        str(first_tenant["id"]),
+    )
+    second_environment = create_environment(
+        client,
+        str(second_tenant["id"]),
+        name="Homologação",
+    )
+
     create_user(
         client,
         str(organization["id"]),
         tenant_id=str(first_tenant["id"]),
+        environment_id=str(first_environment["id"]),
         name="Usuário Principal",
         email="principal@deja.com",
     )
@@ -363,6 +382,7 @@ def test_list_users_filtered_by_tenant(
         client,
         str(organization["id"]),
         tenant_id=str(second_tenant["id"]),
+        environment_id=str(second_environment["id"]),
         name="Usuário Secundário",
         email="secundario@deja.com",
     )
@@ -424,12 +444,13 @@ def test_list_users_filtered_by_status(
 ) -> None:
     """Filtra usuários pelo status."""
 
-    organization, tenant, _ = create_hierarchy(client)
+    organization, tenant, environment = create_hierarchy(client)
 
     create_user(
         client,
         str(organization["id"]),
         tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
         name="Usuário Ativo",
         email="ativo@deja.com",
     )
@@ -437,6 +458,7 @@ def test_list_users_filtered_by_status(
         client,
         str(organization["id"]),
         tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
         name="Usuário Inativo",
         email="inativo@deja.com",
         status="inactive",
@@ -456,12 +478,13 @@ def test_list_users_filtered_by_status(
 def test_get_user_by_id(client: TestClient) -> None:
     """Consulta um usuário pelo identificador."""
 
-    organization, tenant, _ = create_hierarchy(client)
+    organization, tenant, environment = create_hierarchy(client)
 
     user = create_user(
         client,
         str(organization["id"]),
         tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
     )
 
     response = client.get(f"{USERS_URL}/{user['id']}")
@@ -479,6 +502,7 @@ def test_update_user(client: TestClient) -> None:
         client,
         str(organization["id"]),
         tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
         name="Usuário Principal",
         email="usuario@deja.com",
     )
@@ -515,12 +539,13 @@ def test_update_user(client: TestClient) -> None:
 def test_deactivate_user(client: TestClient) -> None:
     """Desativa um usuário por atualização integral."""
 
-    organization, tenant, _ = create_hierarchy(client)
+    organization, tenant, environment = create_hierarchy(client)
 
     user = create_user(
         client,
         str(organization["id"]),
         tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
     )
 
     response = client.put(
@@ -528,7 +553,7 @@ def test_deactivate_user(client: TestClient) -> None:
         json={
             "organization_id": organization["id"],
             "tenant_id": tenant["id"],
-            "environment_id": None,
+            "environment_id": environment["id"],
             "name": user["name"],
             "email": user["email"],
             "role": user["role"],
@@ -714,7 +739,7 @@ def test_organization_admin_rejects_tenant_scope(
 ) -> None:
     """Impede administrador de organização de possuir tenant."""
 
-    organization, tenant, _ = create_hierarchy(client)
+    organization, tenant, environment = create_hierarchy(client)
 
     response = client.post(
         USERS_URL,
@@ -810,12 +835,13 @@ def test_create_user_rejects_duplicate_email_in_organization(
 ) -> None:
     """Rejeita e-mail duplicado dentro da mesma organização."""
 
-    organization, tenant, _ = create_hierarchy(client)
+    organization, tenant, environment = create_hierarchy(client)
 
     create_user(
         client,
         str(organization["id"]),
         tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
         email="usuario@deja.com",
     )
 
@@ -824,7 +850,7 @@ def test_create_user_rejects_duplicate_email_in_organization(
         json={
             "organization_id": organization["id"],
             "tenant_id": tenant["id"],
-            "environment_id": None,
+            "environment_id": environment["id"],
             "name": "Outro Usuário",
             "email": "USUARIO@deja.com",
             "role": "viewer",
@@ -875,12 +901,13 @@ def test_update_user_rejects_duplicate_email(
 ) -> None:
     """Rejeita atualização para o e-mail de outro usuário."""
 
-    organization, tenant, _ = create_hierarchy(client)
+    organization, tenant, environment = create_hierarchy(client)
 
     first_user = create_user(
         client,
         str(organization["id"]),
         tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
         name="Usuário Principal",
         email="principal@deja.com",
     )
@@ -888,6 +915,7 @@ def test_update_user_rejects_duplicate_email(
         client,
         str(organization["id"]),
         tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
         name="Usuário Secundário",
         email="secundario@deja.com",
     )
@@ -897,7 +925,7 @@ def test_update_user_rejects_duplicate_email(
         json={
             "organization_id": organization["id"],
             "tenant_id": tenant["id"],
-            "environment_id": None,
+            "environment_id": environment["id"],
             "name": second_user["name"],
             "email": first_user["email"],
             "role": second_user["role"],
@@ -914,12 +942,13 @@ def test_update_user_keeps_own_email(
 ) -> None:
     """Permite atualizar um usuário mantendo seu próprio e-mail."""
 
-    organization, tenant, _ = create_hierarchy(client)
+    organization, tenant, environment = create_hierarchy(client)
 
     user = create_user(
         client,
         str(organization["id"]),
         tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
     )
 
     response = client.put(
@@ -927,7 +956,7 @@ def test_update_user_keeps_own_email(
         json={
             "organization_id": organization["id"],
             "tenant_id": tenant["id"],
-            "environment_id": None,
+            "environment_id": environment["id"],
             "name": "Usuário Renomeado",
             "email": user["email"],
             "role": user["role"],
@@ -1092,3 +1121,131 @@ def test_user_filters_require_36_characters(
     )
 
     assert response.status_code == 422
+
+def test_set_user_password_stores_argon2_hash(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Armazena a senha como hash Argon2 sem expor dados sensíveis."""
+
+    organization = create_organization(client)
+    user = create_user(
+        client,
+        organization_id=str(organization["id"]),
+        tenant_id=None,
+        environment_id=None,
+        role="organization_admin",
+    )
+    plain_password = "SenhaSegura123!"
+
+    response = client.put(
+        f"{USERS_URL}/{user['id']}/password",
+        json={"password": plain_password},
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert "password" not in body
+    assert "password_hash" not in body
+
+    with test_session_factory() as session:
+        stored_user = session.get(UserModel, str(user["id"]))
+
+        assert stored_user is not None
+        assert stored_user.password_hash is not None
+        assert stored_user.password_hash != plain_password
+        assert stored_user.password_hash.startswith("$argon2")
+        assert PasswordService().verify(
+            plain_password,
+            stored_user.password_hash,
+        )
+
+
+def test_set_user_password_replaces_existing_hash(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Substitui o hash anterior quando a senha é alterada."""
+
+    organization = create_organization(client)
+    user = create_user(
+        client,
+        organization_id=str(organization["id"]),
+        tenant_id=None,
+        environment_id=None,
+        role="organization_admin",
+    )
+
+    first_response = client.put(
+        f"{USERS_URL}/{user['id']}/password",
+        json={"password": "PrimeiraSenha123!"},
+    )
+
+    assert first_response.status_code == 200
+
+    with test_session_factory() as session:
+        stored_user = session.get(UserModel, str(user["id"]))
+
+        assert stored_user is not None
+        first_hash = stored_user.password_hash
+
+    second_response = client.put(
+        f"{USERS_URL}/{user['id']}/password",
+        json={"password": "SegundaSenha456!"},
+    )
+
+    assert second_response.status_code == 200
+
+    with test_session_factory() as session:
+        stored_user = session.get(UserModel, str(user["id"]))
+
+        assert stored_user is not None
+        assert stored_user.password_hash != first_hash
+        assert PasswordService().verify(
+            "SegundaSenha456!",
+            stored_user.password_hash,
+        )
+        assert not PasswordService().verify(
+            "PrimeiraSenha123!",
+            stored_user.password_hash,
+        )
+
+
+def test_set_user_password_rejects_short_password(
+    client: TestClient,
+) -> None:
+    """Rejeita senha com menos de oito caracteres."""
+
+    organization = create_organization(client)
+    user = create_user(
+        client,
+        organization_id=str(organization["id"]),
+        tenant_id=None,
+        environment_id=None,
+        role="organization_admin",
+    )
+
+    response = client.put(
+        f"{USERS_URL}/{user['id']}/password",
+        json={"password": "curta"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_set_password_for_unknown_user_returns_not_found(
+    client: TestClient,
+) -> None:
+    """Retorna erro ao definir senha para usuário inexistente."""
+
+    user_id = "00000000-0000-0000-0000-000000000000"
+
+    response = client.put(
+        f"{USERS_URL}/{user_id}/password",
+        json={"password": "SenhaSegura123!"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["error"] == "user_not_found"

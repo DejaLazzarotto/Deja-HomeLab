@@ -80,6 +80,10 @@ class UserModel(Base):
         nullable=False,
         index=True,
     )
+    password_hash: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
     role: Mapped[UserRole] = mapped_column(
         Enum(
             UserRole,

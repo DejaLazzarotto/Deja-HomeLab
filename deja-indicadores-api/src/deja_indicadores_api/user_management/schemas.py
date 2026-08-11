@@ -59,6 +59,12 @@ class UserUpdate(UserBase):
     """Dados aceitos na atualização integral de um usuário."""
 
 
+class UserPasswordSet(BaseModel):
+    """Dados aceitos na definição ou alteração da senha."""
+
+    password: str = Field(min_length=8, max_length=128)
+
+
 class UserResponse(UserBase):
     """Representação pública de um usuário."""
 

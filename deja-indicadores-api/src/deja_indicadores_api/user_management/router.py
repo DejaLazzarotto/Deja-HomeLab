@@ -8,6 +8,7 @@ from deja_indicadores_api.user_management.dependencies import (
 from deja_indicadores_api.user_management.models import UserStatus
 from deja_indicadores_api.user_management.schemas import (
     UserCreate,
+    UserPasswordSet,
     UserResponse,
     UserUpdate,
 )
@@ -16,7 +17,6 @@ router = APIRouter(
     prefix="/v1",
     tags=["User Management"],
 )
-
 
 UserId = Annotated[
     str,
@@ -120,3 +120,17 @@ def update_user(
     """Atualiza integralmente ou desativa um usuário."""
 
     return service.update(user_id, input_data)
+
+
+@router.put(
+    "/users/{user_id}/password",
+    response_model=UserResponse,
+)
+def set_user_password(
+    user_id: UserId,
+    input_data: UserPasswordSet,
+    service: UserServiceDependency,
+) -> UserResponse:
+    """Define ou altera a senha de um usuário."""
+
+    return service.set_password(user_id, input_data)

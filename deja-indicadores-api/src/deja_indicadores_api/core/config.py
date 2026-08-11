@@ -32,6 +32,17 @@ class Settings(BaseSettings):
     db_password: str = Field(alias="DB_PASSWORD")
     db_charset: str = Field(default="utf8mb4", alias="DB_CHARSET")
 
+    jwt_secret_key: str = Field(alias="JWT_SECRET_KEY")
+    jwt_algorithm: Literal["HS256"] = Field(
+        default="HS256",
+        alias="JWT_ALGORITHM",
+    )
+    access_token_expire_minutes: int = Field(
+        default=30,
+        gt=0,
+        alias="ACCESS_TOKEN_EXPIRE_MINUTES",
+    )
+
     @property
     def database_url(self) -> str:
         user = quote_plus(self.db_user)
