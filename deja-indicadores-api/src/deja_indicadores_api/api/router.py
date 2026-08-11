@@ -7,7 +7,9 @@ from deja_indicadores_api.measurements.router import router as measurements_rout
 from deja_indicadores_api.tenant_management.router import (
     router as tenant_management_router,
 )
-
+from deja_indicadores_api.user_management.router import (
+    router as user_management_router,
+)
 
 api_router = APIRouter()
 
@@ -16,3 +18,4 @@ api_router.include_router(indicators_router)
 api_router.include_router(measurements_router)
 api_router.include_router(dashboards_router)
 api_router.include_router(tenant_management_router)
+api_router.include_router(user_management_router)

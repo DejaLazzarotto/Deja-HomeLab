@@ -9,7 +9,6 @@ from deja_indicadores_api.indicators.repository import IndicatorRepository
 from deja_indicadores_api.measurements.repository import MeasurementRepository
 from deja_indicadores_api.measurements.service import MeasurementService
 
-
 DatabaseSession = Annotated[Session, Depends(get_db_session)]
 
 

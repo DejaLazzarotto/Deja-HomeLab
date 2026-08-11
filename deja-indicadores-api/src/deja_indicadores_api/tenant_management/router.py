@@ -19,7 +19,6 @@ from deja_indicadores_api.tenant_management.schemas import (
     TenantUpdate,
 )
 
-
 router = APIRouter(
     prefix="/v1",
     tags=["Tenant Management"],

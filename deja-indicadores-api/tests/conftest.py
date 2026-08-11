@@ -17,6 +17,7 @@ from deja_indicadores_api.tenant_management.models import (
     OrganizationModel,
     TenantModel,
 )
+from deja_indicadores_api.user_management.models import UserModel
 
 
 @pytest.fixture(scope="session")
@@ -74,31 +75,33 @@ def test_session_factory(
     )
 
 
+def clear_database(
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Remove os registros respeitando a ordem das chaves estrangeiras."""
+
+    with test_session_factory() as session:
+        session.execute(delete(UserModel))
+        session.execute(delete(EnvironmentModel))
+        session.execute(delete(TenantModel))
+        session.execute(delete(OrganizationModel))
+        session.execute(delete(MeasurementModel))
+        session.execute(delete(IndicatorModel))
+        session.execute(delete(CompanyModel))
+        session.commit()
+
+
 @pytest.fixture(autouse=True)
 def clean_database(
     test_session_factory: sessionmaker[Session],
 ) -> Generator[None, None, None]:
     """Garante tabelas vazias antes e depois de cada teste."""
 
-    with test_session_factory() as session:
-        session.execute(delete(EnvironmentModel))
-        session.execute(delete(TenantModel))
-        session.execute(delete(OrganizationModel))
-        session.execute(delete(MeasurementModel))
-        session.execute(delete(IndicatorModel))
-        session.execute(delete(CompanyModel))
-        session.commit()
+    clear_database(test_session_factory)
 
     yield
 
-    with test_session_factory() as session:
-        session.execute(delete(EnvironmentModel))
-        session.execute(delete(TenantModel))
-        session.execute(delete(OrganizationModel))
-        session.execute(delete(MeasurementModel))
-        session.execute(delete(IndicatorModel))
-        session.execute(delete(CompanyModel))
-        session.commit()
+    clear_database(test_session_factory)
 
 
 @pytest.fixture()

@@ -1,6 +1,5 @@
 from fastapi.testclient import TestClient
 
-
 ORGANIZATIONS_URL = "/api/v1/organizations"
 TENANTS_URL = "/api/v1/tenants"
 

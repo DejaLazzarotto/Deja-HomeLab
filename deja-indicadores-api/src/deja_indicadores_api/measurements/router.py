@@ -12,7 +12,6 @@ from deja_indicadores_api.measurements.schemas import (
     MeasurementUpdate,
 )
 
-
 router = APIRouter(prefix="/measurements", tags=["Coleta Manual de Dados"])
 
 MeasurementId = Annotated[

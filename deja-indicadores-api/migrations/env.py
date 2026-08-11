@@ -8,7 +8,12 @@ from deja_indicadores_api.core.config import get_settings
 from deja_indicadores_api.core.database import Base
 from deja_indicadores_api.indicators.models import IndicatorModel
 from deja_indicadores_api.measurements.models import MeasurementModel
-
+from deja_indicadores_api.tenant_management.models import (
+    EnvironmentModel,
+    OrganizationModel,
+    TenantModel,
+)
+from deja_indicadores_api.user_management.models import UserModel
 
 config = context.config
 settings = get_settings()
@@ -24,6 +29,10 @@ _registered_models = (
     CompanyModel,
     IndicatorModel,
     MeasurementModel,
+    OrganizationModel,
+    TenantModel,
+    EnvironmentModel,
+    UserModel,
 )
 
 

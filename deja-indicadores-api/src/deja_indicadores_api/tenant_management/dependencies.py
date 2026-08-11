@@ -15,7 +15,6 @@ from deja_indicadores_api.tenant_management.service import (
     TenantService,
 )
 
-
 DatabaseSession = Annotated[Session, Depends(get_db_session)]
 
 

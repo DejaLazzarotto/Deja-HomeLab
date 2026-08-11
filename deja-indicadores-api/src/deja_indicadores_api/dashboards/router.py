@@ -10,7 +10,6 @@ from deja_indicadores_api.dashboards.schemas import (
     DashboardOverviewResponse,
 )
 
-
 router = APIRouter(prefix="/dashboards", tags=["Dashboards e Relatórios"])
 
 

@@ -1,5 +1,5 @@
 from datetime import date
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 from deja_indicadores_api.companies.exceptions import CompanyNotFoundError
 from deja_indicadores_api.companies.repository import CompanyRepository

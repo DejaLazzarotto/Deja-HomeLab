@@ -8,7 +8,6 @@ from deja_indicadores_api.core.database import get_db_session
 from deja_indicadores_api.dashboards.repository import DashboardRepository
 from deja_indicadores_api.dashboards.service import DashboardService
 
-
 DatabaseSession = Annotated[Session, Depends(get_db_session)]
 
 

@@ -4,7 +4,6 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict
 
-from deja_indicadores_api.companies.models import CompanyStatus
 from deja_indicadores_api.indicators.models import (
     IndicatorDirection,
     IndicatorStatus,
