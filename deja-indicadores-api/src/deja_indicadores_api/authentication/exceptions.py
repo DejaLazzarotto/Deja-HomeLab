@@ -38,3 +38,13 @@ class InvalidAccessTokenError(AuthenticationError):
 
     def __init__(self) -> None:
         super().__init__("Token de acesso inválido.")
+
+
+class AuthorizationError(ApplicationError):
+    """Usuário autenticado sem permissão para executar a operação."""
+
+    status_code = 403
+    error_code = "access_forbidden"
+
+    def __init__(self) -> None:
+        super().__init__("Acesso não permitido.")

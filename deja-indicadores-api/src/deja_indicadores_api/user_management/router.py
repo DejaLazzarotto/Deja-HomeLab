@@ -1,11 +1,16 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Path, Query, status
+from fastapi import APIRouter, Depends, Path, Query, status
 
+from deja_indicadores_api.authentication.dependencies import require_roles
+from deja_indicadores_api.authentication.schemas import AuthenticatedUser
 from deja_indicadores_api.user_management.dependencies import (
     UserServiceDependency,
 )
-from deja_indicadores_api.user_management.models import UserStatus
+from deja_indicadores_api.user_management.models import (
+    UserRole,
+    UserStatus,
+)
 from deja_indicadores_api.user_management.schemas import (
     UserCreate,
     UserPasswordSet,
@@ -59,6 +64,16 @@ StatusFilter = Annotated[
     Query(description="Filtra usuários pelo status."),
 ]
 
+UserAdministrator = Annotated[
+    AuthenticatedUser,
+    Depends(
+        require_roles(
+            UserRole.ORGANIZATION_ADMIN,
+            UserRole.TENANT_ADMIN,
+        )
+    ),
+]
+
 
 @router.get(
     "/users",
@@ -66,14 +81,16 @@ StatusFilter = Annotated[
 )
 def list_users(
     service: UserServiceDependency,
+    current_user: UserAdministrator,
     organization_id: OrganizationFilter = None,
     tenant_id: TenantFilter = None,
     environment_id: EnvironmentFilter = None,
     user_status: StatusFilter = None,
 ) -> list[UserResponse]:
-    """Lista usuários com filtros institucionais opcionais."""
+    """Lista usuários dentro do escopo do administrador."""
 
     return service.list(
+        current_user,
         organization_id=organization_id,
         tenant_id=tenant_id,
         environment_id=environment_id,
@@ -88,10 +105,11 @@ def list_users(
 def get_user(
     user_id: UserId,
     service: UserServiceDependency,
+    current_user: UserAdministrator,
 ) -> UserResponse:
-    """Consulta um usuário pelo identificador."""
+    """Consulta um usuário permitido pelo escopo do administrador."""
 
-    return service.find_by_id(user_id)
+    return service.find_by_id(user_id, current_user)
 
 
 @router.post(
@@ -102,10 +120,11 @@ def get_user(
 def create_user(
     input_data: UserCreate,
     service: UserServiceDependency,
+    current_user: UserAdministrator,
 ) -> UserResponse:
-    """Cadastra um novo usuário institucional."""
+    """Cadastra um usuário dentro do escopo do administrador."""
 
-    return service.create(input_data)
+    return service.create(input_data, current_user)
 
 
 @router.put(
@@ -116,10 +135,11 @@ def update_user(
     user_id: UserId,
     input_data: UserUpdate,
     service: UserServiceDependency,
+    current_user: UserAdministrator,
 ) -> UserResponse:
-    """Atualiza integralmente ou desativa um usuário."""
+    """Atualiza um usuário dentro do escopo do administrador."""
 
-    return service.update(user_id, input_data)
+    return service.update(user_id, input_data, current_user)
 
 
 @router.put(
@@ -130,7 +150,12 @@ def set_user_password(
     user_id: UserId,
     input_data: UserPasswordSet,
     service: UserServiceDependency,
+    current_user: UserAdministrator,
 ) -> UserResponse:
-    """Define ou altera a senha de um usuário."""
+    """Define a senha de um usuário permitido pelo escopo."""
 
-    return service.set_password(user_id, input_data)
+    return service.set_password(
+        user_id,
+        input_data,
+        current_user,
+    )

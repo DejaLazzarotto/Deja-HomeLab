@@ -25,7 +25,13 @@ def create_organization(
     )
 
     assert response.status_code == 201, response.text
-    return response.json()
+
+    organization = response.json()
+    client.app.state.set_current_test_organization(
+        str(organization["id"])
+    )
+
+    return organization
 
 
 def create_tenant(
@@ -102,6 +108,8 @@ def create_user(
 ) -> dict[str, object]:
     """Cadastra um usuário e retorna sua representação pública."""
 
+    client.app.state.set_current_test_organization(organization_id)
+
     response = client.post(
         USERS_URL,
         json={
@@ -115,7 +123,7 @@ def create_user(
         },
     )
 
-    assert response.status_code == 201
+    assert response.status_code == 201, response.text
     return response.json()
 
 
@@ -878,6 +886,10 @@ def test_same_email_is_allowed_in_different_organizations(
         str(first_organization["id"]),
         email="admin@deja.com",
         role="organization_admin",
+    )
+
+    client.app.state.set_current_test_organization(
+        str(second_organization["id"])
     )
 
     response = client.post(

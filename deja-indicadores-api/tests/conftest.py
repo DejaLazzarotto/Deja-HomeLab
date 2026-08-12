@@ -112,6 +112,7 @@ def test_app(
     """Cria uma aplicação com as dependências substituídas para testes."""
 
     app = create_app()
+    app.state.test_session_factory = test_session_factory
 
     def override_get_db_session() -> Generator[Session, None, None]:
         session = test_session_factory()

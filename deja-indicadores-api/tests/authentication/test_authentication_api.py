@@ -1,7 +1,17 @@
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
 from deja_indicadores_api.core.config import Settings
-from deja_indicadores_api.core.security import AccessTokenService
+from deja_indicadores_api.core.security import (
+    AccessTokenService,
+    PasswordService,
+)
+from deja_indicadores_api.user_management.models import (
+    UserModel,
+    UserRole,
+    UserStatus,
+)
 
 ORGANIZATIONS_URL = "/api/v1/organizations"
 TENANTS_URL = "/api/v1/tenants"
@@ -76,23 +86,37 @@ def create_user(
     role: str = "organization_admin",
     status: str = "active",
 ) -> dict[str, object]:
-    """Cadastra um usuário para os testes de autenticação."""
+    """Insere um usuário diretamente para os testes de autenticação."""
 
-    response = client.post(
-        USERS_URL,
-        json={
-            "organization_id": organization_id,
-            "tenant_id": tenant_id,
-            "environment_id": environment_id,
-            "name": "Usuário Principal",
-            "email": email,
-            "role": role,
-            "status": status,
-        },
+    user = UserModel(
+        id=str(uuid4()),
+        organization_id=organization_id,
+        tenant_id=tenant_id,
+        environment_id=environment_id,
+        name="Usuário Principal",
+        email=email,
+        password_hash=None,
+        role=UserRole(role),
+        status=UserStatus(status),
     )
 
-    assert response.status_code == 201, response.text
-    return response.json()
+    session_factory = client.app.state.test_session_factory
+
+    with session_factory() as session:
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+
+    return {
+        "id": user.id,
+        "organization_id": user.organization_id,
+        "tenant_id": user.tenant_id,
+        "environment_id": user.environment_id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role.value,
+        "status": user.status.value,
+    }
 
 
 def set_password(
@@ -100,14 +124,17 @@ def set_password(
     user_id: str,
     password: str = "SenhaSegura123!",
 ) -> None:
-    """Define a senha do usuário informado."""
+    """Define diretamente a senha do usuário de autenticação."""
 
-    response = client.put(
-        f"{USERS_URL}/{user_id}/password",
-        json={"password": password},
-    )
+    session_factory = client.app.state.test_session_factory
 
-    assert response.status_code == 200, response.text
+    with session_factory() as session:
+        user = session.get(UserModel, user_id)
+
+        assert user is not None
+
+        user.password_hash = PasswordService().hash(password)
+        session.commit()
 
 
 def create_access_token_service(
@@ -155,14 +182,10 @@ def test_login_issues_access_token_with_institutional_claims(
     body = response.json()
 
     assert body["token_type"] == "bearer"
-    assert body["expires_in"] == (
-        test_settings.access_token_expire_minutes * 60
-    )
+    assert body["expires_in"] == (test_settings.access_token_expire_minutes * 60)
     assert body["access_token"]
 
-    payload = create_access_token_service(test_settings).decode(
-        body["access_token"]
-    )
+    payload = create_access_token_service(test_settings).decode(body["access_token"])
 
     assert payload["sub"] == user["id"]
     assert payload["organization_id"] == organization["id"]
@@ -223,9 +246,7 @@ def test_login_rejects_invalid_credentials_without_revealing_field(
 
     invalid_credentials = [
         {
-            "organization_id": (
-                "00000000-0000-0000-0000-000000000000"
-            ),
+            "organization_id": ("00000000-0000-0000-0000-000000000000"),
             "email": "usuario@deja.com",
             "password": "SenhaSegura123!",
         },
@@ -353,9 +374,7 @@ def test_login_rejects_invalid_email(
     response = client.post(
         LOGIN_URL,
         json={
-            "organization_id": (
-                "00000000-0000-0000-0000-000000000000"
-            ),
+            "organization_id": ("00000000-0000-0000-0000-000000000000"),
             "email": "email-invalido",
             "password": "SenhaSegura123!",
         },

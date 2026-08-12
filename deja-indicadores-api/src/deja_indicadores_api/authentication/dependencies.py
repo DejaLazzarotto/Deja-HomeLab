@@ -1,20 +1,27 @@
+from collections.abc import Callable
 from typing import Annotated
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from deja_indicadores_api.authentication.authorization import (
+    AuthorizationService,
+)
 from deja_indicadores_api.authentication.exceptions import (
     InvalidAccessTokenError,
 )
 from deja_indicadores_api.authentication.schemas import AuthenticatedUser
-from deja_indicadores_api.authentication.service import AuthenticationService
+from deja_indicadores_api.authentication.service import (
+    AuthenticationService,
+)
 from deja_indicadores_api.core.config import Settings, get_settings
 from deja_indicadores_api.core.database import get_db_session
 from deja_indicadores_api.core.security import (
     AccessTokenService,
     PasswordService,
 )
+from deja_indicadores_api.user_management.models import UserRole
 from deja_indicadores_api.user_management.repository import UserRepository
 
 DatabaseSession = Annotated[Session, Depends(get_db_session)]
@@ -74,3 +81,23 @@ CurrentUser = Annotated[
     AuthenticatedUser,
     Depends(get_current_user),
 ]
+
+
+def require_roles(
+    *allowed_roles: UserRole,
+) -> Callable[[AuthenticatedUser], AuthenticatedUser]:
+    """Cria uma dependência que exige um dos papéis informados."""
+
+    authorization_service = AuthorizationService()
+
+    def authorize(
+        current_user: CurrentUser,
+    ) -> AuthenticatedUser:
+        authorization_service.require_roles(
+            current_user,
+            allowed_roles,
+        )
+
+        return current_user
+
+    return authorize

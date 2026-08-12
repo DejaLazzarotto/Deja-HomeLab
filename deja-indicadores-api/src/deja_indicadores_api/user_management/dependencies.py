@@ -3,6 +3,9 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from deja_indicadores_api.authentication.authorization import (
+    AuthorizationService,
+)
 from deja_indicadores_api.core.database import get_db_session
 from deja_indicadores_api.core.security import PasswordService
 from deja_indicadores_api.tenant_management.repository import (
@@ -26,6 +29,7 @@ def get_user_service(
     tenant_repository = TenantRepository(session)
     environment_repository = EnvironmentRepository(session)
     password_service = PasswordService()
+    authorization_service = AuthorizationService()
 
     return UserService(
         user_repository,
@@ -33,6 +37,7 @@ def get_user_service(
         tenant_repository,
         environment_repository,
         password_service,
+        authorization_service,
     )
 
 

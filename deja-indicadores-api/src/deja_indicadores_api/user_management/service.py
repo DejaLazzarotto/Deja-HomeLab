@@ -1,5 +1,9 @@
 from uuid import uuid4
 
+from deja_indicadores_api.authentication.authorization import (
+    AuthorizationService,
+)
+from deja_indicadores_api.authentication.schemas import AuthenticatedUser
 from deja_indicadores_api.core.security import PasswordService
 from deja_indicadores_api.tenant_management.exceptions import (
     EnvironmentNotFoundError,
@@ -36,6 +40,13 @@ from deja_indicadores_api.user_management.schemas import (
     UserUpdate,
 )
 
+USER_ADMINISTRATOR_ROLES = frozenset(
+    {
+        UserRole.ORGANIZATION_ADMIN,
+        UserRole.TENANT_ADMIN,
+    }
+)
+
 
 class UserService:
     """Regras de aplicação para usuários institucionais."""
@@ -47,42 +58,67 @@ class UserService:
         tenant_repository: TenantRepository,
         environment_repository: EnvironmentRepository,
         password_service: PasswordService,
+        authorization_service: AuthorizationService,
     ) -> None:
         self._user_repository = user_repository
         self._organization_repository = organization_repository
         self._tenant_repository = tenant_repository
         self._environment_repository = environment_repository
         self._password_service = password_service
+        self._authorization_service = authorization_service
 
     def list(
         self,
+        current_user: AuthenticatedUser,
         organization_id: str | None = None,
         tenant_id: str | None = None,
         environment_id: str | None = None,
         status: UserStatus | None = None,
     ) -> list[UserModel]:
-        """Lista usuários com filtros institucionais opcionais."""
+        """Lista usuários dentro do escopo do administrador."""
 
-        return self._user_repository.list(
+        self._require_user_administrator(current_user)
+
+        (
+            effective_organization_id,
+            effective_tenant_id,
+            effective_environment_id,
+        ) = self._authorization_service.resolve_list_scope(
+            current_user,
             organization_id=organization_id,
             tenant_id=tenant_id,
             environment_id=environment_id,
+        )
+
+        return self._user_repository.list(
+            organization_id=effective_organization_id,
+            tenant_id=effective_tenant_id,
+            environment_id=effective_environment_id,
             status=status,
         )
 
-    def find_by_id(self, user_id: str) -> UserModel:
-        """Retorna um usuário pelo identificador."""
+    def find_by_id(
+        self,
+        user_id: str,
+        current_user: AuthenticatedUser,
+    ) -> UserModel:
+        """Retorna um usuário permitido pelo escopo do administrador."""
 
-        user = self._user_repository.find_by_id(user_id)
-
-        if user is None:
-            raise UserNotFoundError(user_id)
+        self._require_user_administrator(current_user)
+        user = self._find_by_id(user_id)
+        self._require_user_scope(current_user, user)
 
         return user
 
-    def create(self, input_data: UserCreate) -> UserModel:
-        """Cadastra um novo usuário institucional."""
+    def create(
+        self,
+        input_data: UserCreate,
+        current_user: AuthenticatedUser,
+    ) -> UserModel:
+        """Cadastra um usuário dentro do escopo do administrador."""
 
+        self._require_user_administrator(current_user)
+        self._require_input_scope(current_user, input_data)
         self._validate_institutional_scope(input_data)
 
         existing_user = (
@@ -109,10 +145,14 @@ class UserService:
         self,
         user_id: str,
         input_data: UserUpdate,
+        current_user: AuthenticatedUser,
     ) -> UserModel:
-        """Atualiza integralmente um usuário existente."""
+        """Atualiza um usuário dentro do escopo do administrador."""
 
-        user = self.find_by_id(user_id)
+        self._require_user_administrator(current_user)
+        user = self._find_by_id(user_id)
+        self._require_user_scope(current_user, user)
+        self._require_input_scope(current_user, input_data)
         self._validate_institutional_scope(input_data)
 
         email_owner = (
@@ -137,15 +177,67 @@ class UserService:
         self,
         user_id: str,
         input_data: UserPasswordSet,
+        current_user: AuthenticatedUser,
     ) -> UserModel:
-        """Define ou altera a senha de um usuário."""
+        """Define a senha de um usuário permitido pelo escopo."""
 
-        user = self.find_by_id(user_id)
+        self._require_user_administrator(current_user)
+        user = self._find_by_id(user_id)
+        self._require_user_scope(current_user, user)
         user.password_hash = self._password_service.hash(
             input_data.password
         )
 
         return self._user_repository.update(user)
+
+    def _find_by_id(self, user_id: str) -> UserModel:
+        """Retorna um usuário existente sem aplicar autorização."""
+
+        user = self._user_repository.find_by_id(user_id)
+
+        if user is None:
+            raise UserNotFoundError(user_id)
+
+        return user
+
+    def _require_user_administrator(
+        self,
+        current_user: AuthenticatedUser,
+    ) -> None:
+        """Exige papel autorizado para administrar usuários."""
+
+        self._authorization_service.require_roles(
+            current_user,
+            USER_ADMINISTRATOR_ROLES,
+        )
+
+    def _require_user_scope(
+        self,
+        current_user: AuthenticatedUser,
+        user: UserModel,
+    ) -> None:
+        """Exige que o usuário-alvo pertença ao escopo permitido."""
+
+        self._authorization_service.require_scope(
+            current_user,
+            organization_id=user.organization_id,
+            tenant_id=user.tenant_id,
+            environment_id=user.environment_id,
+        )
+
+    def _require_input_scope(
+        self,
+        current_user: AuthenticatedUser,
+        input_data: UserCreate | UserUpdate,
+    ) -> None:
+        """Exige que o payload permaneça no escopo permitido."""
+
+        self._authorization_service.require_scope(
+            current_user,
+            organization_id=input_data.organization_id,
+            tenant_id=input_data.tenant_id,
+            environment_id=input_data.environment_id,
+        )
 
     def _validate_institutional_scope(
         self,
