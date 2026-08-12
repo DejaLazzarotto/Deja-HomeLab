@@ -74,7 +74,7 @@ class AccessTokenService:
         )
 
     def decode(self, token: str) -> dict[str, object]:
-        """Decodifica e valida a assinatura e as claims obrigatórias."""
+        """Decodifica e valida assinatura, expiração e claims obrigatórias."""
 
         return jwt.decode(
             token,

@@ -1,9 +1,15 @@
+from jwt.exceptions import InvalidTokenError
+from pydantic import ValidationError
+
 from deja_indicadores_api.authentication.exceptions import (
     InactiveUserError,
+    InvalidAccessTokenError,
     InvalidCredentialsError,
 )
 from deja_indicadores_api.authentication.schemas import (
+    AccessTokenClaims,
     AccessTokenResponse,
+    AuthenticatedUser,
     LoginRequest,
 )
 from deja_indicadores_api.core.security import (
@@ -15,7 +21,7 @@ from deja_indicadores_api.user_management.repository import UserRepository
 
 
 class AuthenticationService:
-    """Autentica usuários e emite tokens de acesso."""
+    """Autentica usuários e valida identidades por token."""
 
     def __init__(
         self,
@@ -59,4 +65,36 @@ class AuthenticationService:
         return AccessTokenResponse(
             access_token=access_token,
             expires_in=self._access_token_service.expires_in_seconds,
+        )
+
+    def authenticate(self, token: str) -> AuthenticatedUser:
+        """Valida o token e retorna a identidade persistida do usuário."""
+
+        try:
+            payload = self._access_token_service.decode(token)
+            claims = AccessTokenClaims.model_validate(payload)
+        except (InvalidTokenError, ValidationError):
+            raise InvalidAccessTokenError from None
+
+        user = self._user_repository.find_by_id(claims.sub)
+
+        if user is None or user.status != UserStatus.ACTIVE:
+            raise InvalidAccessTokenError
+
+        if (
+            user.organization_id != claims.organization_id
+            or user.tenant_id != claims.tenant_id
+            or user.environment_id != claims.environment_id
+            or user.role != claims.role
+        ):
+            raise InvalidAccessTokenError
+
+        return AuthenticatedUser(
+            id=user.id,
+            organization_id=user.organization_id,
+            tenant_id=user.tenant_id,
+            environment_id=user.environment_id,
+            name=user.name,
+            email=user.email,
+            role=user.role,
         )

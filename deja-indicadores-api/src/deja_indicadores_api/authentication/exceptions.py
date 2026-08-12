@@ -29,3 +29,12 @@ class InactiveUserError(AuthenticationError):
 
     def __init__(self) -> None:
         super().__init__("O usuário está inativo.")
+
+
+class InvalidAccessTokenError(AuthenticationError):
+    """Token de acesso ausente, inválido ou sem identidade válida."""
+
+    error_code = "invalid_access_token"
+
+    def __init__(self) -> None:
+        super().__init__("Token de acesso inválido.")
