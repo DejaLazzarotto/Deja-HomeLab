@@ -16,6 +16,7 @@ def application_error_handler(
             "error": exception.error_code,
             "message": exception.message,
         },
+        headers=exception.headers,
     )
 
 

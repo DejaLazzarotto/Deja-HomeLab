@@ -1,12 +1,20 @@
+from collections.abc import Mapping
+
+
 class ApplicationError(Exception):
     """Erro-base controlado pela aplicação."""
 
     status_code = 400
     error_code = "application_error"
 
-    def __init__(self, message: str) -> None:
+    def __init__(
+        self,
+        message: str,
+        headers: Mapping[str, str] | None = None,
+    ) -> None:
         super().__init__(message)
         self.message = message
+        self.headers = dict(headers) if headers is not None else None
 
 
 class ResourceNotFoundError(ApplicationError):

@@ -7,7 +7,7 @@ from sqlalchemy import Engine, create_engine, delete
 from sqlalchemy.orm import Session, sessionmaker
 
 from deja_indicadores_api.companies.models import CompanyModel
-from deja_indicadores_api.core.config import Settings
+from deja_indicadores_api.core.config import Settings, get_settings
 from deja_indicadores_api.core.database import Base, get_db_session
 from deja_indicadores_api.indicators.models import IndicatorModel
 from deja_indicadores_api.main import create_app
@@ -107,8 +107,9 @@ def clean_database(
 @pytest.fixture()
 def test_app(
     test_session_factory: sessionmaker[Session],
+    test_settings: Settings,
 ) -> Generator[FastAPI, None, None]:
-    """Cria uma aplicação com a sessão de produção substituída pela de testes."""
+    """Cria uma aplicação com as dependências substituídas para testes."""
 
     app = create_app()
 
@@ -120,7 +121,11 @@ def test_app(
         finally:
             session.close()
 
+    def override_get_settings() -> Settings:
+        return test_settings
+
     app.dependency_overrides[get_db_session] = override_get_db_session
+    app.dependency_overrides[get_settings] = override_get_settings
 
     try:
         yield app
