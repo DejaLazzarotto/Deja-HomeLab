@@ -17,6 +17,7 @@ from deja_indicadores_api.core.database import Base
 class UserRole(StrEnum):
     """Papéis institucionais permitidos para usuários."""
 
+    PLATFORM_ADMIN = "platform_admin"
     ORGANIZATION_ADMIN = "organization_admin"
     TENANT_ADMIN = "tenant_admin"
     MANAGER = "manager"
@@ -44,14 +45,14 @@ class UserModel(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    organization_id: Mapped[str] = mapped_column(
+    organization_id: Mapped[str | None] = mapped_column(
         String(36),
         ForeignKey(
             "organizations.id",
             name="fk_users_organization_id",
             ondelete="RESTRICT",
         ),
-        nullable=False,
+        nullable=True,
         index=True,
     )
     tenant_id: Mapped[str | None] = mapped_column(
@@ -87,7 +88,9 @@ class UserModel(Base):
     role: Mapped[UserRole] = mapped_column(
         Enum(
             UserRole,
-            values_callable=lambda roles: [role.value for role in roles],
+            values_callable=lambda roles: [
+                role.value for role in roles
+            ],
             name="user_role",
         ),
         nullable=False,

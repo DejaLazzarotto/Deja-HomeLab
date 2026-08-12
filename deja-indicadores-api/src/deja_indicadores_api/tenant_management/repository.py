@@ -14,12 +14,21 @@ class OrganizationRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def list(self) -> list[OrganizationModel]:
-        """Lista as organizações ordenadas pelo nome."""
+    def list(
+        self,
+        organization_id: str | None = None,
+    ) -> list[OrganizationModel]:
+        """Lista organizações ordenadas pelo nome e com escopo opcional."""
 
-        statement = select(OrganizationModel).order_by(
-            OrganizationModel.name
-        )
+        statement = select(OrganizationModel)
+
+        if organization_id is not None:
+            statement = statement.where(
+                OrganizationModel.id == organization_id
+            )
+
+        statement = statement.order_by(OrganizationModel.name)
+
         return list(self._session.scalars(statement).all())
 
     def find_by_id(
@@ -75,10 +84,25 @@ class TenantRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def list(self) -> list[TenantModel]:
-        """Lista os tenants ordenados pelo nome."""
+    def list(
+        self,
+        organization_id: str | None = None,
+        tenant_id: str | None = None,
+    ) -> list[TenantModel]:
+        """Lista tenants ordenados pelo nome e com filtros opcionais."""
 
-        statement = select(TenantModel).order_by(TenantModel.name)
+        statement = select(TenantModel)
+
+        if organization_id is not None:
+            statement = statement.where(
+                TenantModel.organization_id == organization_id
+            )
+
+        if tenant_id is not None:
+            statement = statement.where(TenantModel.id == tenant_id)
+
+        statement = statement.order_by(TenantModel.name)
+
         return list(self._session.scalars(statement).all())
 
     def find_by_id(self, tenant_id: str) -> TenantModel | None:
@@ -137,12 +161,36 @@ class EnvironmentRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def list(self) -> list[EnvironmentModel]:
-        """Lista os ambientes ordenados pelo nome."""
+    def list(
+        self,
+        organization_id: str | None = None,
+        tenant_id: str | None = None,
+        environment_id: str | None = None,
+    ) -> list[EnvironmentModel]:
+        """Lista ambientes ordenados pelo nome e com filtros opcionais."""
 
-        statement = select(EnvironmentModel).order_by(
-            EnvironmentModel.name
-        )
+        statement = select(EnvironmentModel)
+
+        if organization_id is not None:
+            statement = statement.join(
+                TenantModel,
+                EnvironmentModel.tenant_id == TenantModel.id,
+            ).where(
+                TenantModel.organization_id == organization_id
+            )
+
+        if tenant_id is not None:
+            statement = statement.where(
+                EnvironmentModel.tenant_id == tenant_id
+            )
+
+        if environment_id is not None:
+            statement = statement.where(
+                EnvironmentModel.id == environment_id
+            )
+
+        statement = statement.order_by(EnvironmentModel.name)
+
         return list(self._session.scalars(statement).all())
 
     def find_by_id(

@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import jwt
+from jwt.exceptions import MissingRequiredClaimError
 from pwdlib import PasswordHash
 
 
@@ -45,7 +46,7 @@ class AccessTokenService:
         self,
         *,
         subject: str,
-        organization_id: str,
+        organization_id: str | None,
         tenant_id: str | None,
         environment_id: str | None,
         role: str,
@@ -53,7 +54,9 @@ class AccessTokenService:
         """Gera um token de acesso com o escopo institucional do usuário."""
 
         issued_at = datetime.now(UTC)
-        expires_at = issued_at + timedelta(minutes=self._expire_minutes)
+        expires_at = issued_at + timedelta(
+            minutes=self._expire_minutes
+        )
 
         payload = {
             "sub": subject,
@@ -76,14 +79,13 @@ class AccessTokenService:
     def decode(self, token: str) -> dict[str, object]:
         """Decodifica e valida assinatura, expiração e claims obrigatórias."""
 
-        return jwt.decode(
+        payload = jwt.decode(
             token,
             self._secret_key,
             algorithms=[self._algorithm],
             options={
                 "require": [
                     "sub",
-                    "organization_id",
                     "role",
                     "type",
                     "iat",
@@ -92,3 +94,8 @@ class AccessTokenService:
                 ],
             },
         )
+
+        if "organization_id" not in payload:
+            raise MissingRequiredClaimError("organization_id")
+
+        return payload

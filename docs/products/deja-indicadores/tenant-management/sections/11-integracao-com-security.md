@@ -28,7 +28,9 @@ Compete ao Tenant Management:
 - identificar Organização;
 - identificar Tenant;
 - identificar Ambiente;
-- fornecer o contexto organizacional aos consumidores.
+- fornecer o contexto organizacional aos consumidores;
+- preservar os limites estruturais entre Organizações, Tenants e Ambientes;
+- impedir operações fora do escopo institucional autorizado.
 
 O Tenant Management não autentica usuários nem concede permissões.
 
@@ -92,13 +94,138 @@ Essas informações são utilizadas exclusivamente para aplicação das polític
 
 ---
 
+# Papéis Institucionais
+
+A Gestão Institucional utiliza os seguintes papéis:
+
+## Platform Admin
+
+O `platform_admin` representa uma identidade administrativa interna da Deja Platform.
+
+Esse papel:
+
+- não pertence a uma Organização cliente;
+- não pertence a um Tenant;
+- não pertence a um Ambiente;
+- possui alcance institucional global;
+- provisiona e administra Organizações;
+- administra Tenants e Ambientes;
+- executa operações estruturais reservadas à plataforma.
+
+O papel deve ser concedido somente a identidades internas controladas e auditáveis.
+
+## Organization Admin
+
+O `organization_admin` representa o administrador de uma Organização cliente.
+
+Esse papel:
+
+- pertence obrigatoriamente a uma Organização;
+- não pertence a um Tenant;
+- não pertence a um Ambiente;
+- consulta e atualiza somente a própria Organização;
+- administra Tenants e Ambientes pertencentes à própria Organização;
+- não cria nem exclui Organizações;
+- não acessa recursos de outras Organizações.
+
+## Tenant Admin
+
+O `tenant_admin` representa o administrador de um Tenant.
+
+Esse papel:
+
+- pertence obrigatoriamente a uma Organização e a um Tenant;
+- não pertence a um Ambiente;
+- consulta somente a própria Organização;
+- consulta e atualiza somente o próprio Tenant;
+- administra Ambientes pertencentes ao próprio Tenant;
+- não cria nem exclui Tenants;
+- não acessa outros Tenants ou Organizações.
+
+## Manager
+
+O `manager` representa um gestor operacional.
+
+Esse papel:
+
+- pertence obrigatoriamente a uma Organização, a um Tenant e a um Ambiente;
+- possui acesso somente de consulta à própria Organização;
+- possui acesso somente de consulta ao próprio Tenant;
+- possui acesso somente de consulta ao próprio Ambiente;
+- não executa operações estruturais de criação, atualização ou exclusão.
+
+## Analyst e Viewer
+
+Os papéis `analyst` e `viewer` não possuem acesso direto às rotas administrativas da Gestão Institucional.
+
+O acesso funcional desses papéis deve ocorrer pelas capacidades de negócio autorizadas para seus respectivos contextos.
+
+---
+
+# Matriz de Permissões
+
+## Organizações
+
+| Operação | platform_admin | organization_admin | tenant_admin | manager | analyst | viewer |
+|---|---:|---:|---:|---:|---:|---:|
+| Listar | Global | Própria | Própria | Própria | Negado | Negado |
+| Consultar | Global | Própria | Própria | Própria | Negado | Negado |
+| Criar | Permitido | Negado | Negado | Negado | Negado | Negado |
+| Atualizar | Global | Própria | Negado | Negado | Negado | Negado |
+| Excluir | Permitido | Negado | Negado | Negado | Negado | Negado |
+
+## Tenants
+
+| Operação | platform_admin | organization_admin | tenant_admin | manager | analyst | viewer |
+|---|---:|---:|---:|---:|---:|---:|
+| Listar | Global | Própria organização | Próprio | Próprio | Negado | Negado |
+| Consultar | Global | Própria organização | Próprio | Próprio | Negado | Negado |
+| Criar | Permitido | Própria organização | Negado | Negado | Negado | Negado |
+| Atualizar | Global | Própria organização | Próprio | Negado | Negado | Negado |
+| Excluir | Permitido | Própria organização | Negado | Negado | Negado | Negado |
+
+## Ambientes
+
+| Operação | platform_admin | organization_admin | tenant_admin | manager | analyst | viewer |
+|---|---:|---:|---:|---:|---:|---:|
+| Listar | Global | Própria organização | Próprio tenant | Próprio | Negado | Negado |
+| Consultar | Global | Própria organização | Próprio tenant | Próprio | Negado | Negado |
+| Criar | Permitido | Própria organização | Próprio tenant | Negado | Negado | Negado |
+| Atualizar | Global | Própria organização | Próprio tenant | Negado | Negado | Negado |
+| Excluir | Permitido | Própria organização | Próprio tenant | Negado | Negado | Negado |
+
+---
+
+# Regras de Escopo
+
+Toda operação protegida deve avaliar simultaneamente o papel e o escopo institucional da identidade.
+
+As seguintes regras são obrigatórias:
+
+- `platform_admin` opera sem vínculo com Organização, Tenant ou Ambiente;
+- `organization_admin` permanece limitado à Organização presente em sua identidade autenticada;
+- `tenant_admin` permanece limitado à Organização e ao Tenant presentes em sua identidade autenticada;
+- `manager` permanece limitado à Organização, ao Tenant e ao Ambiente presentes em sua identidade autenticada;
+- filtros de listagem não podem ampliar o escopo da identidade;
+- tentativas de acesso cruzado devem ser negadas;
+- payloads de criação e atualização devem permanecer dentro do escopo autorizado;
+- a autorização deve ser aplicada nas rotas e novamente na camada de serviço;
+- a ausência de autenticação deve produzir erro de autenticação;
+- papel ou escopo insuficiente deve produzir erro de autorização.
+
+Uma listagem autorizada nunca deve retornar recursos externos ao escopo efetivo da identidade.
+
+---
+
 # Controle de Acesso
 
 As permissões concedidas pelo Security devem ser avaliadas sempre dentro do Tenant Context ativo.
 
-Mesmo que uma identidade possua privilégios elevados, seu escopo permanece limitado ao contexto organizacional autorizado.
+Privilégios administrativos de clientes não concedem alcance global.
 
-O acesso entre Tenants distintos depende de mecanismos institucionais explícitos e auditáveis.
+Somente o `platform_admin` pode executar operações entre Organizações distintas, e toda utilização desse papel deve ser explicitamente autenticada e auditada.
+
+O acesso entre Tenants distintos depende do papel, do escopo institucional e das políticas vigentes.
 
 ---
 
@@ -111,7 +238,32 @@ Durante o provisionamento de novas Organizações, Tenants ou Ambientes, o Tenan
 - papéis institucionais;
 - estruturas de autorização.
 
-A implementação desses mecanismos permanece sob responsabilidade do Security.
+A criação e a exclusão de Organizações são operações reservadas ao `platform_admin`.
+
+Após a criação de uma Organização, deve ser possível associar seu primeiro `organization_admin` sem conceder a esse usuário privilégios globais.
+
+A implementação dos mecanismos de identidade e autorização permanece sob responsabilidade do Security.
+
+---
+
+# Defesa em Profundidade
+
+A autorização da Gestão Institucional deve ser aplicada em mais de uma camada.
+
+As rotas devem:
+
+- exigir Bearer token;
+- validar os papéis permitidos;
+- rejeitar operações não autorizadas antes da execução funcional.
+
+Os serviços devem:
+
+- repetir as validações de papel;
+- validar o escopo do recurso encontrado;
+- validar o escopo dos dados recebidos;
+- aplicar escopo obrigatório às listagens.
+
+Essa duplicação intencional evita que chamadas internas ou futuras integrações contornem as políticas aplicadas na camada HTTP.
 
 ---
 
@@ -121,7 +273,9 @@ Eventos relevantes da integração devem produzir registros institucionais, incl
 
 - resolução de contexto;
 - validações de acesso;
+- acessos globais de `platform_admin`;
 - falhas de autorização;
+- tentativas de acesso cruzado;
 - mudanças estruturais;
 - provisionamentos.
 
@@ -146,6 +300,7 @@ A integração entre Tenant Management e Security proporciona:
 - autenticação contextualizada;
 - autorização consistente;
 - isolamento entre Tenants;
+- segregação entre administração da plataforma e administração de clientes;
 - aplicação uniforme das políticas de acesso;
 - rastreabilidade completa;
 - redução de riscos de acesso indevido;
@@ -155,4 +310,4 @@ A integração entre Tenant Management e Security proporciona:
 
 # Resultado Esperado
 
-Ao final desta definição, o Tenant Management e o Security atuam de forma integrada e complementar, garantindo que toda operação executada na Deja Platform esteja simultaneamente associada a um contexto organizacional válido e submetida às políticas institucionais de autenticação e autorização.
+Ao final desta definição, o Tenant Management e o Security atuam de forma integrada e complementar, garantindo que toda operação executada na Deja Platform esteja simultaneamente associada a um contexto institucional válido e submetida às políticas de autenticação, papel e escopo da Deja Platform.

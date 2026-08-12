@@ -16,7 +16,11 @@ from deja_indicadores_api.core.security import (
     AccessTokenService,
     PasswordService,
 )
-from deja_indicadores_api.user_management.models import UserStatus
+from deja_indicadores_api.user_management.models import (
+    UserModel,
+    UserRole,
+    UserStatus,
+)
 from deja_indicadores_api.user_management.repository import UserRepository
 
 
@@ -54,6 +58,9 @@ class AuthenticationService:
         if user.status != UserStatus.ACTIVE:
             raise InactiveUserError
 
+        if not self._has_valid_role_scope(user):
+            raise InvalidCredentialsError
+
         access_token = self._access_token_service.create(
             subject=user.id,
             organization_id=user.organization_id,
@@ -78,7 +85,11 @@ class AuthenticationService:
 
         user = self._user_repository.find_by_id(claims.sub)
 
-        if user is None or user.status != UserStatus.ACTIVE:
+        if (
+            user is None
+            or user.status != UserStatus.ACTIVE
+            or not self._has_valid_role_scope(user)
+        ):
             raise InvalidAccessTokenError
 
         if (
@@ -97,4 +108,34 @@ class AuthenticationService:
             name=user.name,
             email=user.email,
             role=user.role,
+        )
+
+    def _has_valid_role_scope(self, user: UserModel) -> bool:
+        """Valida os vínculos obrigatórios do papel autenticado."""
+
+        if user.role == UserRole.PLATFORM_ADMIN:
+            return (
+                user.organization_id is None
+                and user.tenant_id is None
+                and user.environment_id is None
+            )
+
+        if user.organization_id is None:
+            return False
+
+        if user.role == UserRole.ORGANIZATION_ADMIN:
+            return (
+                user.tenant_id is None
+                and user.environment_id is None
+            )
+
+        if user.role == UserRole.TENANT_ADMIN:
+            return (
+                user.tenant_id is not None
+                and user.environment_id is None
+            )
+
+        return (
+            user.tenant_id is not None
+            and user.environment_id is not None
         )

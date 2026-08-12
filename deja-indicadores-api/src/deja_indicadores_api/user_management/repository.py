@@ -53,10 +53,10 @@ class UserRepository:
 
     def find_by_organization_and_email(
         self,
-        organization_id: str,
+        organization_id: str | None,
         email: str,
     ) -> UserModel | None:
-        """Localiza um usuário pelo e-mail dentro da organização."""
+        """Localiza um usuário pelo e-mail dentro do seu escopo."""
 
         statement = select(UserModel).where(
             UserModel.organization_id == organization_id,

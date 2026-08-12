@@ -17,15 +17,27 @@ class UserNotFoundError(ResourceNotFoundError):
 
 
 class UserEmailAlreadyExistsError(ResourceConflictError):
-    """E-mail já utilizado por outro usuário na organização."""
+    """E-mail já utilizado por outro usuário no mesmo escopo."""
 
     error_code = "user_email_already_exists"
 
-    def __init__(self, organization_id: str, email: str) -> None:
-        super().__init__(
-            f"A organização com ID '{organization_id}' já possui "
-            f"um usuário com o e-mail '{email}'."
-        )
+    def __init__(
+        self,
+        organization_id: str | None,
+        email: str,
+    ) -> None:
+        if organization_id is None:
+            message = (
+                "A plataforma já possui um administrador global "
+                f"com o e-mail '{email}'."
+            )
+        else:
+            message = (
+                f"A organização com ID '{organization_id}' já possui "
+                f"um usuário com o e-mail '{email}'."
+            )
+
+        super().__init__(message)
 
 
 class TenantDoesNotBelongToOrganizationError(ApplicationError):

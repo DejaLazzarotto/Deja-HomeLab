@@ -7,6 +7,12 @@ from deja_indicadores_api.core.security import (
     AccessTokenService,
     PasswordService,
 )
+from deja_indicadores_api.tenant_management.models import (
+    EnvironmentModel,
+    OrganizationModel,
+    TenantManagementStatus,
+    TenantModel,
+)
 from deja_indicadores_api.user_management.models import (
     UserModel,
     UserRole,
@@ -24,61 +30,88 @@ def create_organization(
     client: TestClient,
     name: str = "Organização Principal",
 ) -> dict[str, object]:
-    """Cadastra uma organização para os testes."""
+    """Insere uma organização diretamente para os testes."""
 
-    response = client.post(
-        ORGANIZATIONS_URL,
-        json={
-            "name": name,
-            "status": "active",
-        },
+    organization = OrganizationModel(
+        id=str(uuid4()),
+        name=name,
+        status=TenantManagementStatus.ACTIVE,
     )
+    session_factory = client.app.state.test_session_factory
 
-    assert response.status_code == 201, response.text
-    return response.json()
+    with session_factory() as session:
+        session.add(organization)
+        session.commit()
+        session.refresh(organization)
+
+    return {
+        "id": organization.id,
+        "name": organization.name,
+        "status": organization.status.value,
+    }
 
 
 def create_tenant(
     client: TestClient,
     organization_id: str,
+    *,
+    name: str = "Tenant Principal",
 ) -> dict[str, object]:
-    """Cadastra um tenant para os testes."""
+    """Insere um tenant diretamente para os testes."""
 
-    response = client.post(
-        TENANTS_URL,
-        json={
-            "organization_id": organization_id,
-            "name": "Tenant Principal",
-            "status": "active",
-        },
+    tenant = TenantModel(
+        id=str(uuid4()),
+        organization_id=organization_id,
+        name=name,
+        status=TenantManagementStatus.ACTIVE,
     )
+    session_factory = client.app.state.test_session_factory
 
-    assert response.status_code == 201, response.text
-    return response.json()
+    with session_factory() as session:
+        session.add(tenant)
+        session.commit()
+        session.refresh(tenant)
+
+    return {
+        "id": tenant.id,
+        "organization_id": tenant.organization_id,
+        "name": tenant.name,
+        "status": tenant.status.value,
+    }
 
 
 def create_environment(
     client: TestClient,
     tenant_id: str,
+    *,
+    name: str = "Produção",
 ) -> dict[str, object]:
-    """Cadastra um ambiente para os testes."""
+    """Insere um ambiente diretamente para os testes."""
 
-    response = client.post(
-        ENVIRONMENTS_URL,
-        json={
-            "tenant_id": tenant_id,
-            "name": "Produção",
-            "status": "active",
-        },
+    environment = EnvironmentModel(
+        id=str(uuid4()),
+        tenant_id=tenant_id,
+        name=name,
+        status=TenantManagementStatus.ACTIVE,
     )
+    session_factory = client.app.state.test_session_factory
 
-    assert response.status_code == 201, response.text
-    return response.json()
+    with session_factory() as session:
+        session.add(environment)
+        session.commit()
+        session.refresh(environment)
+
+    return {
+        "id": environment.id,
+        "tenant_id": environment.tenant_id,
+        "name": environment.name,
+        "status": environment.status.value,
+    }
 
 
 def create_user(
     client: TestClient,
-    organization_id: str,
+    organization_id: str | None,
     *,
     tenant_id: str | None = None,
     environment_id: str | None = None,
@@ -182,10 +215,14 @@ def test_login_issues_access_token_with_institutional_claims(
     body = response.json()
 
     assert body["token_type"] == "bearer"
-    assert body["expires_in"] == (test_settings.access_token_expire_minutes * 60)
+    assert body["expires_in"] == (
+        test_settings.access_token_expire_minutes * 60
+    )
     assert body["access_token"]
 
-    payload = create_access_token_service(test_settings).decode(body["access_token"])
+    payload = create_access_token_service(test_settings).decode(
+        body["access_token"]
+    )
 
     assert payload["sub"] == user["id"]
     assert payload["organization_id"] == organization["id"]
@@ -195,6 +232,42 @@ def test_login_issues_access_token_with_institutional_claims(
     assert payload["type"] == "access"
     assert payload["jti"]
     assert payload["exp"] > payload["iat"]
+
+
+def test_login_platform_admin_has_global_null_scope(
+    client: TestClient,
+    test_settings: Settings,
+) -> None:
+    """Emite token global sem vínculos de cliente."""
+
+    user = create_user(
+        client,
+        None,
+        email="platform.admin@deja.com",
+        role="platform_admin",
+    )
+    set_password(client, str(user["id"]))
+
+    response = client.post(
+        LOGIN_URL,
+        json={
+            "organization_id": None,
+            "email": "platform.admin@deja.com",
+            "password": "SenhaSegura123!",
+        },
+    )
+
+    assert response.status_code == 200
+
+    payload = create_access_token_service(test_settings).decode(
+        response.json()["access_token"]
+    )
+
+    assert payload["sub"] == user["id"]
+    assert payload["organization_id"] is None
+    assert payload["tenant_id"] is None
+    assert payload["environment_id"] is None
+    assert payload["role"] == "platform_admin"
 
 
 def test_login_organization_admin_has_null_operational_scope(
@@ -246,7 +319,9 @@ def test_login_rejects_invalid_credentials_without_revealing_field(
 
     invalid_credentials = [
         {
-            "organization_id": ("00000000-0000-0000-0000-000000000000"),
+            "organization_id": (
+                "00000000-0000-0000-0000-000000000000"
+            ),
             "email": "usuario@deja.com",
             "password": "SenhaSegura123!",
         },
@@ -374,7 +449,9 @@ def test_login_rejects_invalid_email(
     response = client.post(
         LOGIN_URL,
         json={
-            "organization_id": ("00000000-0000-0000-0000-000000000000"),
+            "organization_id": (
+                "00000000-0000-0000-0000-000000000000"
+            ),
             "email": "email-invalido",
             "password": "SenhaSegura123!",
         },

@@ -16,6 +16,8 @@ def create_organization(
 ) -> dict[str, object]:
     """Cadastra uma organização para os testes."""
 
+    client.app.state.set_platform_test_administrator()
+
     response = client.post(
         ORGANIZATIONS_URL,
         json={
@@ -27,9 +29,7 @@ def create_organization(
     assert response.status_code == 201, response.text
 
     organization = response.json()
-    client.app.state.set_current_test_organization(
-        str(organization["id"])
-    )
+    client.app.state.set_current_test_organization(str(organization["id"]))
 
     return organization
 
@@ -40,6 +40,8 @@ def create_tenant(
     name: str = "Tenant Principal",
 ) -> dict[str, object]:
     """Cadastra um tenant para os testes."""
+
+    client.app.state.set_current_test_organization(organization_id)
 
     response = client.post(
         TENANTS_URL,
@@ -665,6 +667,7 @@ def test_tenant_must_belong_to_user_organization(
         client,
         str(first_organization["id"]),
     )
+    client.app.state.set_current_test_organization(str(second_organization["id"]))
 
     response = client.post(
         USERS_URL,
@@ -680,9 +683,7 @@ def test_tenant_must_belong_to_user_organization(
     )
 
     assert response.status_code == 400
-    assert response.json()["error"] == (
-        "tenant_does_not_belong_to_organization"
-    )
+    assert response.json()["error"] == ("tenant_does_not_belong_to_organization")
 
 
 def test_environment_requires_tenant(
@@ -737,9 +738,7 @@ def test_environment_must_belong_to_user_tenant(
 
     assert first_tenant["id"] != second_tenant["id"]
     assert response.status_code == 400
-    assert response.json()["error"] == (
-        "environment_does_not_belong_to_tenant"
-    )
+    assert response.json()["error"] == ("environment_does_not_belong_to_tenant")
 
 
 def test_organization_admin_rejects_tenant_scope(
@@ -888,9 +887,7 @@ def test_same_email_is_allowed_in_different_organizations(
         role="organization_admin",
     )
 
-    client.app.state.set_current_test_organization(
-        str(second_organization["id"])
-    )
+    client.app.state.set_current_test_organization(str(second_organization["id"]))
 
     response = client.post(
         USERS_URL,
@@ -1133,6 +1130,7 @@ def test_user_filters_require_36_characters(
     )
 
     assert response.status_code == 422
+
 
 def test_set_user_password_stores_argon2_hash(
     client: TestClient,

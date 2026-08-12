@@ -9,7 +9,8 @@ from deja_indicadores_api.user_management.models import UserRole
 class LoginRequest(BaseModel):
     """Credenciais necessárias para iniciar uma sessão."""
 
-    organization_id: str = Field(
+    organization_id: str | None = Field(
+        default=None,
         min_length=36,
         max_length=36,
     )
@@ -42,7 +43,10 @@ class AccessTokenClaims(BaseModel):
     """Claims obrigatórias aceitas em um token de acesso."""
 
     sub: str = Field(min_length=36, max_length=36)
-    organization_id: str = Field(min_length=36, max_length=36)
+    organization_id: str | None = Field(
+        min_length=36,
+        max_length=36,
+    )
     tenant_id: str | None = Field(min_length=36, max_length=36)
     environment_id: str | None = Field(min_length=36, max_length=36)
     role: UserRole
@@ -56,7 +60,7 @@ class AuthenticatedUser(BaseModel):
     """Identidade e escopo institucional do usuário autenticado."""
 
     id: str
-    organization_id: str
+    organization_id: str | None
     tenant_id: str | None
     environment_id: str | None
     name: str

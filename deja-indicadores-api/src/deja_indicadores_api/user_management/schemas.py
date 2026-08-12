@@ -17,7 +17,8 @@ from deja_indicadores_api.user_management.models import (
 class UserBase(BaseModel):
     """Campos compartilhados de um usuário institucional."""
 
-    organization_id: str = Field(
+    organization_id: str | None = Field(
+        default=None,
         min_length=36,
         max_length=36,
     )

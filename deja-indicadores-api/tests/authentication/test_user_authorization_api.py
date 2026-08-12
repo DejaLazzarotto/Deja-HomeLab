@@ -5,7 +5,6 @@ from fastapi.testclient import TestClient
 
 from deja_indicadores_api.core.config import Settings
 from tests.authentication.test_authentication_api import (
-    TENANTS_URL,
     USERS_URL,
     create_environment,
     create_organization,
@@ -33,19 +32,13 @@ def create_named_tenant(
     organization_id: str,
     name: str,
 ) -> dict[str, object]:
-    """Cadastra um tenant com nome controlado."""
+    """Insere um tenant com nome controlado."""
 
-    response = client.post(
-        TENANTS_URL,
-        json={
-            "organization_id": organization_id,
-            "name": name,
-            "status": "active",
-        },
+    return create_tenant(
+        client,
+        organization_id,
+        name=name,
     )
-
-    assert response.status_code == 201, response.text
-    return response.json()
 
 
 def assert_access_forbidden(response: object) -> None:

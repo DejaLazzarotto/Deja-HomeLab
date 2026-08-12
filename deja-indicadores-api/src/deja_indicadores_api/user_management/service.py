@@ -42,6 +42,7 @@ from deja_indicadores_api.user_management.schemas import (
 
 USER_ADMINISTRATOR_ROLES = frozenset(
     {
+        UserRole.PLATFORM_ADMIN,
         UserRole.ORGANIZATION_ADMIN,
         UserRole.TENANT_ADMIN,
     }
@@ -244,6 +245,24 @@ class UserService:
         input_data: UserCreate | UserUpdate,
     ) -> None:
         """Valida a consistência entre vínculos e papel do usuário."""
+
+        if input_data.role == UserRole.PLATFORM_ADMIN:
+            if (
+                input_data.organization_id is not None
+                or input_data.tenant_id is not None
+                or input_data.environment_id is not None
+            ):
+                raise RoleScopeMismatchError(
+                    input_data.role.value,
+                    "não permite organização, tenant nem ambiente",
+                )
+            return
+
+        if input_data.organization_id is None:
+            raise RoleScopeMismatchError(
+                input_data.role.value,
+                "exige organização",
+            )
 
         organization = self._require_organization(
             input_data.organization_id

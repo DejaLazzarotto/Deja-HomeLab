@@ -68,6 +68,7 @@ UserAdministrator = Annotated[
     AuthenticatedUser,
     Depends(
         require_roles(
+            UserRole.PLATFORM_ADMIN,
             UserRole.ORGANIZATION_ADMIN,
             UserRole.TENANT_ADMIN,
         )

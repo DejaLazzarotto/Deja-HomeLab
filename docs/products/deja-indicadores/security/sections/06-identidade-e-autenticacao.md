@@ -30,12 +30,12 @@ Representa usuários da plataforma.
 
 Exemplos:
 
-- administradores;
-- operadores;
+- administradores da plataforma;
+- administradores de organizações;
+- administradores de tenants;
 - gestores;
-- usuários finais.
-
----
+- analistas;
+- usuários de consulta.
 
 ### Identidade de serviço
 
@@ -48,8 +48,6 @@ Exemplos:
 - serviços internos;
 - integrações.
 
----
-
 ### Identidade de componente
 
 Representa componentes arquiteturais da plataforma.
@@ -60,8 +58,6 @@ Exemplos:
 - Workflow Engine;
 - Intelligence Core;
 - Workspace Runtime.
-
----
 
 ### Identidade de agente
 
@@ -75,36 +71,96 @@ Exemplos:
 
 ---
 
-# Modelo de identidade
+# Modelo de Identidade
 
 Uma identidade pode possuir:
 
 - identificador único;
 - tipo;
 - atributos;
-- organização associada;
+- papel institucional;
+- Organização associada;
+- Tenant associado;
+- Ambiente associado;
 - permissões relacionadas;
 - estado operacional;
 - histórico de atividades.
 
+Os vínculos com Organização, Tenant e Ambiente são opcionais no modelo geral, mas sua obrigatoriedade depende do papel institucional da identidade.
+
 ---
 
-# Ciclo de vida da identidade
+# Escopos de Identidade Humana
+
+As identidades humanas administrativas e operacionais seguem os seguintes escopos:
+
+## Identidade Global
+
+A identidade com papel `platform_admin` representa um administrador interno da Deja Platform.
+
+Ela não possui vínculo com Organização, Tenant ou Ambiente.
+
+A ausência desses vínculos é obrigatória e representa alcance global controlado, não ausência de validação.
+
+## Identidade Organizacional
+
+A identidade com papel `organization_admin` pertence obrigatoriamente a uma Organização.
+
+Ela não pode possuir vínculo com Tenant nem Ambiente.
+
+## Identidade de Tenant
+
+A identidade com papel `tenant_admin` pertence obrigatoriamente a uma Organização e a um Tenant.
+
+Ela não pode possuir vínculo com Ambiente.
+
+## Identidade de Ambiente
+
+As identidades com papéis `manager`, `analyst` e `viewer` pertencem obrigatoriamente a uma Organização, a um Tenant e a um Ambiente.
+
+---
+
+# Regras de Consistência
+
+Toda identidade humana deve respeitar as seguintes regras:
+
+| Papel | Organização | Tenant | Ambiente |
+|---|---:|---:|---:|
+| `platform_admin` | Proibida | Proibido | Proibido |
+| `organization_admin` | Obrigatória | Proibido | Proibido |
+| `tenant_admin` | Obrigatória | Obrigatório | Proibido |
+| `manager` | Obrigatória | Obrigatório | Obrigatório |
+| `analyst` | Obrigatória | Obrigatório | Obrigatório |
+| `viewer` | Obrigatória | Obrigatório | Obrigatório |
+
+Além da presença dos vínculos:
+
+- o Tenant deve pertencer à Organização informada;
+- o Ambiente deve pertencer ao Tenant informado;
+- papéis globais não podem receber escopo de cliente;
+- papéis institucionais não podem operar fora do escopo presente na identidade autenticada.
+
+Identidades inconsistentes devem ser rejeitadas antes de sua ativação.
+
+---
+
+# Ciclo de Vida da Identidade
 
 O ciclo de vida contempla:
 
+```text
 Created
-↓
+   ↓
 Activated
-↓
+   ↓
 Used
-↓
+   ↓
 Suspended
-↓
+   ↓
 Revoked
-↓
+   ↓
 Archived
-
+```
 
 Cada transição deve ser controlada e auditável.
 
@@ -120,7 +176,7 @@ A autenticação ocorre antes de qualquer operação que exija proteção.
 
 ---
 
-## Métodos de autenticação
+## Métodos de Autenticação
 
 A arquitetura suporta diferentes mecanismos:
 
@@ -132,7 +188,24 @@ A arquitetura suporta diferentes mecanismos:
 
 ---
 
-# Sessões e contexto
+# Contexto Autenticado
+
+Após uma autenticação bem-sucedida, o Security disponibiliza o contexto necessário para autorização.
+
+Para identidades humanas, o contexto autenticado deve incluir:
+
+- identificador da identidade;
+- papel institucional;
+- identificador da Organização, quando aplicável;
+- identificador do Tenant, quando aplicável;
+- identificador do Ambiente, quando aplicável;
+- estado da identidade.
+
+O contexto autenticado deve refletir os vínculos persistidos da identidade e não pode aceitar escopo fornecido livremente pelo cliente.
+
+---
+
+# Sessões e Contexto
 
 Após uma autenticação bem-sucedida, o Security mantém informações de contexto.
 
@@ -146,7 +219,7 @@ O contexto pode incluir:
 
 ---
 
-# Autenticação de serviços
+# Autenticação de Serviços
 
 Serviços internos e externos devem possuir mecanismos próprios de autenticação.
 
@@ -154,7 +227,7 @@ Nenhum serviço deve assumir confiança automática por estar dentro da platafor
 
 ---
 
-# Integração com autorização
+# Integração com Autorização
 
 A autenticação responde:
 
@@ -168,18 +241,19 @@ As responsabilidades permanecem separadas.
 
 Fluxo:
 
+```text
 Identity
-↓
+   ↓
 Authentication
-↓
+   ↓
 Authorization
-↓
+   ↓
 Execution
-
+```
 
 ---
 
-# Segurança de identidade
+# Segurança de Identidade
 
 O Security deve proteger:
 
@@ -188,6 +262,14 @@ O Security deve proteger:
 - tokens;
 - certificados;
 - atributos sensíveis.
+
+Papéis de alcance global exigem controles adicionais, incluindo:
+
+- concessão restrita;
+- credenciais individualizadas;
+- rastreabilidade completa;
+- revisão periódica;
+- revogação imediata quando necessária.
 
 ---
 
@@ -200,12 +282,16 @@ Exemplos:
 - criação de identidade;
 - autenticação realizada;
 - falha de autenticação;
+- alteração de papel;
+- alteração de escopo;
 - alteração de atributos;
 - revogação de acesso.
 
+A autenticação de uma identidade `platform_admin` deve ser identificável nos registros de auditoria.
+
 ---
 
-# Integração institucional
+# Integração Institucional
 
 A identidade e autenticação são utilizadas por:
 
@@ -221,11 +307,12 @@ A identidade e autenticação são utilizadas por:
 
 ---
 
-# Benefícios arquiteturais
+# Benefícios Arquiteturais
 
 Este modelo proporciona:
 
 - identificação confiável;
+- separação entre identidades globais e identidades de clientes;
 - controle centralizado;
 - rastreabilidade completa;
 - suporte a múltiplos tipos de entidades;
