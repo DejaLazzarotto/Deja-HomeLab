@@ -19,7 +19,7 @@ def authenticate_indicator_client(
     client: TestClient,
     test_settings: Settings,
 ) -> None:
-    """Autentica os consumidores das rotas de indicadores."""
+    """Autentica os consumidores das rotas de medições."""
 
     administrator = create_user(
         client,
@@ -28,6 +28,7 @@ def authenticate_indicator_client(
         role="platform_admin",
     )
     client.headers.update(authorization_headers(test_settings, administrator))
+    client.app.state.measurement_administrator_id = administrator["id"]
 
 
 def company_payload(
@@ -159,12 +160,13 @@ def test_create_measurement(client: TestClient) -> None:
     assert response.status_code == 201
 
     body = response.json()
+    administrator_id = client.app.state.measurement_administrator_id
 
     assert body["indicator_id"] == indicator["id"]
     assert body["reference_date"] == "2026-08-01"
     assert Decimal(body["actual_value"]) == Decimal("87500.2500")
     assert body["observation"] == "Fechamento validado."
-    assert body["created_by"] is None
+    assert body["created_by"] == administrator_id
     assert body["id"]
     assert body["created_at"]
     assert body["updated_at"]

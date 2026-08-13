@@ -285,6 +285,60 @@ As seguintes regras são obrigatórias:
 - a existência da empresa, a unicidade do nome por empresa e as demais regras funcionais da Gestão de Indicadores permanecem preservadas;
 - a exclusão de indicadores com medições cadastradas permanece bloqueada.
 
+# Matriz de Acesso da Gestão de Medições
+
+A Gestão de Medições é uma capacidade operacional protegida cujo escopo institucional é herdado obrigatoriamente do indicador e da empresa vinculados.
+
+A medição permanece vinculada diretamente apenas por `indicator_id`. Empresa, Organização, Tenant e Ambiente não devem ser duplicados no registro da medição, pois são resolvidos pela hierarquia:
+
+```text
+Medição
+    │
+    └── Indicador
+            │
+            └── Empresa
+                    │
+                    └── Ambiente
+                            │
+                            └── Tenant
+                                    │
+                                    └── Organização
+```
+
+A matriz de permissões da capacidade é:
+
+| Papel | Listar e consultar | Criar, atualizar e excluir | Escopo obrigatório |
+|---|---|---|---|
+| `platform_admin` | permitido | permitido | global |
+| `organization_admin` | permitido | permitido | própria Organização |
+| `tenant_admin` | permitido | permitido | próprio Tenant |
+| `manager` | permitido | permitido | próprio Ambiente |
+| `analyst` | permitido | permitido | próprio Ambiente |
+| `viewer` | permitido | negado | próprio Ambiente |
+
+As seguintes regras são obrigatórias:
+
+- todas as rotas de medições exigem autenticação Bearer;
+- toda medição pertence diretamente a um único indicador;
+- empresa, Ambiente, Tenant e Organização são resolvidos pela hierarquia institucional real do indicador;
+- listagens aplicam automaticamente o escopo obrigatório da identidade;
+- listagens podem ser restringidas por empresa, indicador, Organização, Tenant, Ambiente e período de referência;
+- filtros incompatíveis com o escopo autenticado devem ser negados;
+- filtros por empresas ou indicadores fora do escopo autenticado devem ser negados;
+- recursos individuais devem ter seu escopo validado após a resolução interna do indicador e da empresa;
+- criações devem validar o indicador informado e toda a sua hierarquia institucional;
+- atualizações devem validar tanto o indicador atual quanto o indicador de destino;
+- nenhuma identidade limitada pode criar, consultar, atualizar, transferir ou excluir medições fora do próprio escopo;
+- o `analyst` pode criar, consultar, atualizar e excluir medições dentro do próprio Ambiente;
+- o `viewer` possui acesso exclusivamente de leitura;
+- o usuário autenticado responsável pela criação deve ser registrado em `created_by`;
+- a identidade criadora deve ser preservada durante atualizações;
+- auditoria ampliada e registro de `updated_by` poderão ser incorporados em evolução posterior;
+- exclusão lógica poderá ser avaliada em evolução posterior sem alterar a política atual;
+- as validações de papel e escopo devem existir tanto na entrada HTTP quanto na camada de serviço;
+- consultas persistentes devem aplicar os filtros institucionais efetivos;
+- a existência do indicador, a unicidade por indicador e data de referência e as demais regras funcionais da Gestão de Medições permanecem preservadas.
+
 ---
 
 # Controle Baseado em Escopo

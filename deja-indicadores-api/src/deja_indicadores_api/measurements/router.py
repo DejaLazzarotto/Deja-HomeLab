@@ -1,8 +1,10 @@
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Path, Query, Response, status
+from fastapi import APIRouter, Depends, Path, Query, Response, status
 
+from deja_indicadores_api.authentication.dependencies import require_roles
+from deja_indicadores_api.authentication.schemas import AuthenticatedUser
 from deja_indicadores_api.measurements.dependencies import (
     MeasurementServiceDependency,
 )
@@ -11,6 +13,7 @@ from deja_indicadores_api.measurements.schemas import (
     MeasurementResponse,
     MeasurementUpdate,
 )
+from deja_indicadores_api.user_management.models import UserRole
 
 router = APIRouter(prefix="/measurements", tags=["Coleta Manual de Dados"])
 
@@ -41,6 +44,33 @@ IndicatorIdFilter = Annotated[
     ),
 ]
 
+OrganizationFilter = Annotated[
+    str | None,
+    Query(
+        min_length=36,
+        max_length=36,
+        description="Filtra medições pela organização.",
+    ),
+]
+
+TenantFilter = Annotated[
+    str | None,
+    Query(
+        min_length=36,
+        max_length=36,
+        description="Filtra medições pelo tenant.",
+    ),
+]
+
+EnvironmentFilter = Annotated[
+    str | None,
+    Query(
+        min_length=36,
+        max_length=36,
+        description="Filtra medições pelo ambiente.",
+    ),
+]
+
 StartDateFilter = Annotated[
     date | None,
     Query(
@@ -55,20 +85,55 @@ EndDateFilter = Annotated[
     ),
 ]
 
+MeasurementReader = Annotated[
+    AuthenticatedUser,
+    Depends(
+        require_roles(
+            UserRole.PLATFORM_ADMIN,
+            UserRole.ORGANIZATION_ADMIN,
+            UserRole.TENANT_ADMIN,
+            UserRole.MANAGER,
+            UserRole.ANALYST,
+            UserRole.VIEWER,
+        )
+    ),
+]
+
+MeasurementEditor = Annotated[
+    AuthenticatedUser,
+    Depends(
+        require_roles(
+            UserRole.PLATFORM_ADMIN,
+            UserRole.ORGANIZATION_ADMIN,
+            UserRole.TENANT_ADMIN,
+            UserRole.MANAGER,
+            UserRole.ANALYST,
+        )
+    ),
+]
+
 
 @router.get("", response_model=list[MeasurementResponse])
 def list_measurements(
     service: MeasurementServiceDependency,
+    current_user: MeasurementReader,
     company_id: CompanyIdFilter = None,
     indicator_id: IndicatorIdFilter = None,
+    organization_id: OrganizationFilter = None,
+    tenant_id: TenantFilter = None,
+    environment_id: EnvironmentFilter = None,
     start_date: StartDateFilter = None,
     end_date: EndDateFilter = None,
 ) -> list[MeasurementResponse]:
-    """Lista medições de acordo com os filtros informados."""
+    """Lista medições dentro do escopo permitido."""
 
     return service.list(
+        current_user,
         company_id=company_id,
         indicator_id=indicator_id,
+        organization_id=organization_id,
+        tenant_id=tenant_id,
+        environment_id=environment_id,
         start_date=start_date,
         end_date=end_date,
     )
@@ -78,10 +143,11 @@ def list_measurements(
 def get_measurement(
     measurement_id: MeasurementId,
     service: MeasurementServiceDependency,
+    current_user: MeasurementReader,
 ) -> MeasurementResponse:
-    """Consulta uma medição pelo identificador."""
+    """Consulta uma medição dentro do escopo permitido."""
 
-    return service.find_by_id(measurement_id)
+    return service.find_by_id(measurement_id, current_user)
 
 
 @router.post(
@@ -92,10 +158,11 @@ def get_measurement(
 def create_measurement(
     input_data: MeasurementCreate,
     service: MeasurementServiceDependency,
+    current_user: MeasurementEditor,
 ) -> MeasurementResponse:
-    """Cadastra uma medição manual."""
+    """Cadastra uma medição manual dentro do escopo permitido."""
 
-    return service.create(input_data)
+    return service.create(input_data, current_user)
 
 
 @router.put(
@@ -106,10 +173,15 @@ def update_measurement(
     measurement_id: MeasurementId,
     input_data: MeasurementUpdate,
     service: MeasurementServiceDependency,
+    current_user: MeasurementEditor,
 ) -> MeasurementResponse:
-    """Atualiza integralmente uma medição manual."""
+    """Atualiza integralmente uma medição dentro do escopo permitido."""
 
-    return service.update(measurement_id, input_data)
+    return service.update(
+        measurement_id,
+        input_data,
+        current_user,
+    )
 
 
 @router.delete(
@@ -119,8 +191,9 @@ def update_measurement(
 def delete_measurement(
     measurement_id: MeasurementId,
     service: MeasurementServiceDependency,
+    current_user: MeasurementEditor,
 ) -> Response:
-    """Exclui uma medição manual."""
+    """Exclui uma medição operacional dentro do escopo permitido."""
 
-    service.delete(measurement_id)
+    service.delete(measurement_id, current_user)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

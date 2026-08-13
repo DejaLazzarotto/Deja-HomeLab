@@ -116,6 +116,48 @@ A Gestão de Indicadores deve respeitar as seguintes regras de isolamento:
 
 A associação direta à empresa preserva o modelo de domínio e herda integralmente o isolamento operacional entre Ambientes e o isolamento institucional entre Tenants e Organizações.
 
+# Isolamento da Gestão de Medições
+
+Toda medição cadastrada na Deja Indicadores pertence obrigatoriamente a um único indicador.
+
+O indicador constitui o vínculo persistente direto da medição. A empresa, o Ambiente, o Tenant e a Organização proprietários são determinados pela hierarquia institucional do indicador, evitando colunas redundantes e combinações inconsistentes de escopo.
+
+A hierarquia institucional da medição é:
+
+```text
+Medição
+    │
+    └── Indicador
+            │
+            └── Empresa
+                    │
+                    └── Ambiente
+                            │
+                            └── Tenant
+                                    │
+                                    └── Organização
+```
+
+A Gestão de Medições deve respeitar as seguintes regras de isolamento:
+
+- medições sem indicador não podem existir;
+- uma medição não pode pertencer simultaneamente a mais de um indicador;
+- `company_id`, `organization_id`, `tenant_id` e `environment_id` não devem ser duplicados na medição;
+- listagens devem aplicar filtros institucionais derivados da identidade autenticada;
+- filtros explícitos por empresa, indicador, Organização, Tenant ou Ambiente não podem ampliar o escopo autenticado;
+- filtros por período devem ser combinados com o escopo institucional obrigatório;
+- consultas individuais devem resolver o indicador, a empresa e a hierarquia real antes de retornar a medição;
+- criações devem validar o indicador informado e toda a sua hierarquia institucional;
+- atualizações devem validar tanto o indicador atual quanto o indicador de destino;
+- transferências entre indicadores devem ser negadas quando a origem ou o destino exceder o escopo da identidade;
+- exclusões devem validar a hierarquia institucional antes de remover a medição;
+- o autor autenticado da criação deve ser registrado sem alterar o vínculo institucional do recurso;
+- referências indiretas por dashboards ou relatórios não podem ampliar o acesso à medição;
+- somente identidades com alcance global autorizado podem operar medições entre diferentes Organizações;
+- o isolamento deve ser repetido nas camadas de entrada, serviço e persistência.
+
+A associação direta ao indicador preserva o modelo de domínio e herda integralmente o isolamento da empresa, dos Ambientes, dos Tenants e das Organizações.
+
 ---
 
 # Isolamento de Dados
