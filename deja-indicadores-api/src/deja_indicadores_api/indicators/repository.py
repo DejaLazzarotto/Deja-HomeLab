@@ -1,7 +1,12 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from deja_indicadores_api.companies.models import CompanyModel
 from deja_indicadores_api.indicators.models import IndicatorModel
+from deja_indicadores_api.tenant_management.models import (
+    EnvironmentModel,
+    TenantModel,
+)
 
 
 class IndicatorRepository:
@@ -10,14 +15,50 @@ class IndicatorRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def list(self, company_id: str | None = None) -> list[IndicatorModel]:
-        """Lista indicadores, opcionalmente filtrados por empresa."""
+    def list(
+        self,
+        *,
+        company_id: str | None = None,
+        organization_id: str | None = None,
+        tenant_id: str | None = None,
+        environment_id: str | None = None,
+    ) -> list[IndicatorModel]:
+        """Lista indicadores dentro dos filtros institucionais."""
 
-        statement = select(IndicatorModel)
+        statement = (
+            select(IndicatorModel)
+            .join(
+                CompanyModel,
+                IndicatorModel.company_id == CompanyModel.id,
+            )
+            .join(
+                EnvironmentModel,
+                CompanyModel.environment_id == EnvironmentModel.id,
+            )
+            .join(
+                TenantModel,
+                EnvironmentModel.tenant_id == TenantModel.id,
+            )
+        )
 
         if company_id is not None:
             statement = statement.where(
                 IndicatorModel.company_id == company_id
+            )
+
+        if organization_id is not None:
+            statement = statement.where(
+                TenantModel.organization_id == organization_id
+            )
+
+        if tenant_id is not None:
+            statement = statement.where(
+                TenantModel.id == tenant_id
+            )
+
+        if environment_id is not None:
+            statement = statement.where(
+                EnvironmentModel.id == environment_id
             )
 
         statement = statement.order_by(IndicatorModel.name)

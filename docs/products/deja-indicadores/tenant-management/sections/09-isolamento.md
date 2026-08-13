@@ -92,6 +92,30 @@ A Gestão de Empresas deve respeitar as seguintes regras de isolamento:
 
 A associação direta ao Ambiente preserva simultaneamente o isolamento operacional entre ambientes e o isolamento institucional entre tenants e organizações.
 
+# Isolamento da Gestão de Indicadores
+
+Todo indicador cadastrado na Deja Indicadores pertence obrigatoriamente a uma única empresa.
+
+A empresa constitui o vínculo persistente direto do indicador. O Ambiente, o Tenant e a Organização proprietários são determinados pela hierarquia institucional da empresa, evitando colunas redundantes e combinações inconsistentes de escopo.
+
+A Gestão de Indicadores deve respeitar as seguintes regras de isolamento:
+
+- indicadores sem empresa não podem existir;
+- um indicador não pode pertencer simultaneamente a mais de uma empresa;
+- `organization_id`, `tenant_id` e `environment_id` não devem ser duplicados no indicador;
+- listagens devem aplicar filtros institucionais derivados da identidade autenticada;
+- filtros explícitos por empresa, Organização, Tenant ou Ambiente não podem ampliar o escopo autenticado;
+- consultas individuais devem resolver a empresa e validar sua hierarquia real antes de retornar o indicador;
+- criações devem validar a empresa informada e toda a sua hierarquia institucional;
+- atualizações devem validar tanto a empresa atual quanto a empresa de destino;
+- transferências entre empresas devem ser negadas quando a origem ou o destino exceder o escopo da identidade;
+- exclusões devem validar o escopo da empresa antes de avaliar dependências funcionais;
+- referências indiretas por medições, dashboards ou relatórios não podem ampliar o acesso ao indicador;
+- somente identidades com alcance global autorizado podem operar indicadores entre diferentes Organizações;
+- o isolamento deve ser repetido nas camadas de entrada, serviço e persistência.
+
+A associação direta à empresa preserva o modelo de domínio e herda integralmente o isolamento operacional entre Ambientes e o isolamento institucional entre Tenants e Organizações.
+
 ---
 
 # Isolamento de Dados

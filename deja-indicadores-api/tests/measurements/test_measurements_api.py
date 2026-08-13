@@ -1,11 +1,33 @@
 from decimal import Decimal
 from uuid import uuid4
 
+import pytest
 from fastapi.testclient import TestClient
 
+from deja_indicadores_api.core.config import Settings
+from tests.authentication.test_authentication_api import create_user
+from tests.authentication.test_user_authorization_api import (
+    authorization_headers,
+)
 from tests.indicators.test_indicators_api import (
     create_company as insert_test_company,
 )
+
+
+@pytest.fixture(autouse=True)
+def authenticate_indicator_client(
+    client: TestClient,
+    test_settings: Settings,
+) -> None:
+    """Autentica os consumidores das rotas de indicadores."""
+
+    administrator = create_user(
+        client,
+        None,
+        email="platform.admin.measurements@deja.com",
+        role="platform_admin",
+    )
+    client.headers.update(authorization_headers(test_settings, administrator))
 
 
 def company_payload(

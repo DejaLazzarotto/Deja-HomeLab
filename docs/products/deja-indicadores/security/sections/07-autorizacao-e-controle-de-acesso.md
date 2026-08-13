@@ -235,6 +235,56 @@ As seguintes regras são obrigatórias:
 - consultas persistentes devem aplicar os filtros institucionais efetivos;
 - a unicidade documental e as demais regras funcionais da Gestão de Empresas permanecem preservadas.
 
+# Matriz de Acesso da Gestão de Indicadores
+
+A Gestão de Indicadores é uma capacidade operacional protegida cujo escopo institucional é herdado obrigatoriamente da empresa vinculada.
+
+O indicador permanece vinculado diretamente apenas por `company_id`. Organização, Tenant e Ambiente não devem ser duplicados no registro do indicador, pois são resolvidos pela hierarquia:
+
+```text
+Indicador
+    │
+    └── Empresa
+            │
+            └── Ambiente
+                    │
+                    └── Tenant
+                            │
+                            └── Organização
+```
+
+A matriz de permissões da capacidade é:
+
+| Papel | Listar e consultar | Criar e atualizar | Excluir | Escopo obrigatório |
+|---|---|---|---|---|
+| `platform_admin` | permitido | permitido | permitido | global |
+| `organization_admin` | permitido | permitido | permitido | própria Organização |
+| `tenant_admin` | permitido | permitido | permitido | próprio Tenant |
+| `manager` | permitido | permitido | permitido | próprio Ambiente |
+| `analyst` | permitido | permitido | negado | próprio Ambiente |
+| `viewer` | permitido | negado | negado | próprio Ambiente |
+
+As seguintes regras são obrigatórias:
+
+- todas as rotas de indicadores exigem autenticação Bearer;
+- todo indicador pertence diretamente a uma única empresa;
+- Ambiente, Tenant e Organização são resolvidos pela hierarquia institucional real da empresa;
+- listagens aplicam automaticamente o escopo obrigatório da identidade;
+- listagens podem ser restringidas por empresa, Organização, Tenant e Ambiente;
+- filtros incompatíveis com o escopo autenticado devem ser negados;
+- filtros por empresas fora do escopo autenticado devem ser negados;
+- recursos individuais devem ter seu escopo validado após a resolução interna da empresa;
+- criações devem validar a empresa informada e toda a sua hierarquia;
+- atualizações devem validar tanto a empresa atual quanto a empresa de destino;
+- nenhuma identidade limitada pode criar, consultar, atualizar, transferir ou excluir indicadores fora do próprio escopo;
+- o `analyst` pode criar e atualizar indicadores dentro do próprio Ambiente, mas não pode excluí-los;
+- o `viewer` possui acesso exclusivamente de leitura;
+- exclusões permanecem restritas aos papéis de gestão;
+- as validações de papel e escopo devem existir tanto na entrada HTTP quanto na camada de serviço;
+- consultas persistentes devem aplicar os filtros institucionais efetivos;
+- a existência da empresa, a unicidade do nome por empresa e as demais regras funcionais da Gestão de Indicadores permanecem preservadas;
+- a exclusão de indicadores com medições cadastradas permanece bloqueada.
+
 ---
 
 # Controle Baseado em Escopo

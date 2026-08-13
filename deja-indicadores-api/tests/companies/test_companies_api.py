@@ -93,6 +93,7 @@ def create_company(
 def create_indicator(
     client: TestClient,
     company_id: str,
+    headers: Mapping[str, str],
 ) -> dict[str, object]:
     """Cadastra um indicador para a empresa informada."""
 
@@ -107,6 +108,7 @@ def create_indicator(
             "target_value": "15.5000",
             "status": "active",
         },
+        headers=headers,
     )
 
     assert response.status_code == 201
@@ -315,7 +317,11 @@ def test_delete_company_rejects_when_it_has_indicators(
         environment_id,
         headers,
     )
-    create_indicator(client, str(company["id"]))
+    create_indicator(
+        client,
+        str(company["id"]),
+        headers,
+    )
 
     response = client.delete(
         f"{COMPANIES_URL}/{company['id']}",
