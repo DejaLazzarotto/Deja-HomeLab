@@ -8,6 +8,7 @@ from deja_indicadores_api.companies.models import CompanyStatus
 class CompanyBase(BaseModel):
     """Campos compartilhados para criação e atualização de empresas."""
 
+    environment_id: str = Field(min_length=36, max_length=36)
     legal_name: str = Field(min_length=1, max_length=255)
     trade_name: str = Field(min_length=1, max_length=255)
     document: str = Field(min_length=11, max_length=14)

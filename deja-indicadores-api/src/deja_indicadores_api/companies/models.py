@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import DateTime, Enum, String, func
+from sqlalchemy import DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from deja_indicadores_api.core.database import Base
@@ -20,6 +20,16 @@ class CompanyModel(Base):
     __tablename__ = "companies"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    environment_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey(
+            "environments.id",
+            name="fk_companies_environment_id",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+        index=True,
+    )
     legal_name: Mapped[str] = mapped_column(String(255), nullable=False)
     trade_name: Mapped[str] = mapped_column(String(255), nullable=False)
     document: Mapped[str] = mapped_column(

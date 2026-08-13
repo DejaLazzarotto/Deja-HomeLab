@@ -2,13 +2,17 @@ from datetime import datetime
 
 from fastapi.testclient import TestClient
 
+from tests.indicators.test_indicators_api import (
+    create_company as insert_test_company,
+)
+
 
 def create_company(client: TestClient) -> dict:
-    """Cria uma empresa para os cenários de relatório."""
+    """Insere uma empresa para os cenários de relatório."""
 
-    response = client.post(
-        "/api/companies",
-        json={
+    return insert_test_company(
+        client,
+        {
             "legal_name": "Empresa Relatório Ltda",
             "trade_name": "Empresa Relatório",
             "document": "55555555000155",
@@ -17,9 +21,6 @@ def create_company(client: TestClient) -> dict:
             "status": "active",
         },
     )
-
-    assert response.status_code == 201
-    return response.json()
 
 
 def create_indicator(
@@ -77,9 +78,10 @@ def test_get_management_report_without_data(
     data = response.json()
 
     assert data["title"] == "Relatório Gerencial de Indicadores"
-    assert datetime.fromisoformat(
-        data["generated_at"].replace("Z", "+00:00")
-    ).tzinfo is not None
+    assert (
+        datetime.fromisoformat(data["generated_at"].replace("Z", "+00:00")).tzinfo
+        is not None
+    )
     assert data["filters"] == {
         "company_id": None,
         "start_date": None,

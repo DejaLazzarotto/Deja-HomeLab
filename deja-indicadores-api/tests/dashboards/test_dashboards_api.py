@@ -2,6 +2,10 @@ from decimal import Decimal
 
 from fastapi.testclient import TestClient
 
+from tests.indicators.test_indicators_api import (
+    create_company as insert_test_company,
+)
+
 
 def create_company(
     client: TestClient,
@@ -11,11 +15,11 @@ def create_company(
     document: str,
     status: str = "active",
 ) -> dict:
-    """Cria uma empresa para os cenários do dashboard."""
+    """Insere uma empresa para os cenários do dashboard."""
 
-    response = client.post(
-        "/api/companies",
-        json={
+    return insert_test_company(
+        client,
+        {
             "legal_name": legal_name,
             "trade_name": trade_name,
             "document": document,
@@ -24,9 +28,6 @@ def create_company(
             "status": status,
         },
     )
-
-    assert response.status_code == 201
-    return response.json()
 
 
 def create_indicator(
@@ -208,14 +209,9 @@ def test_get_dashboard_overview_with_consolidated_data(
     assert revenue["direction"] == "higher_is_better"
     assert Decimal(revenue["target_value"]) == Decimal("1000.0000")
     assert revenue["current_measurement"]["id"] == latest_revenue["id"]
-    assert (
-        Decimal(revenue["achievement_percentage"])
-        == Decimal("120.0000")
-    )
+    assert Decimal(revenue["achievement_percentage"]) == Decimal("120.0000")
     assert revenue["situation"] == "on_target"
-    assert [
-        measurement["id"] for measurement in revenue["history"]
-    ] == [
+    assert [measurement["id"] for measurement in revenue["history"]] == [
         first_revenue["id"],
         latest_revenue["id"],
     ]
@@ -231,10 +227,7 @@ def test_get_dashboard_overview_with_consolidated_data(
     complaints = data["indicators"][2]
 
     assert complaints["id"] == complaints_indicator["id"]
-    assert (
-        Decimal(complaints["achievement_percentage"])
-        == Decimal("83.3333")
-    )
+    assert Decimal(complaints["achievement_percentage"]) == Decimal("83.3333")
     assert complaints["situation"] == "above_target"
 
 
@@ -337,10 +330,7 @@ def test_get_dashboard_overview_filters_company_and_period(
     assert [item["id"] for item in indicator["history"]] == [
         included_measurement["id"],
     ]
-    assert (
-        Decimal(indicator["achievement_percentage"])
-        == Decimal("98.9899")
-    )
+    assert Decimal(indicator["achievement_percentage"]) == Decimal("98.9899")
     assert indicator["situation"] == "below_target"
 
 
@@ -427,8 +417,7 @@ def test_get_dashboard_overview_handles_zero_divisors(
     assert response.status_code == 200
 
     indicators = {
-        indicator["name"]: indicator
-        for indicator in response.json()["indicators"]
+        indicator["name"]: indicator for indicator in response.json()["indicators"]
     }
 
     assert indicators["Crescimento"]["achievement_percentage"] is None

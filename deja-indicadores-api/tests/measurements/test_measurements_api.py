@@ -3,6 +3,10 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
+from tests.indicators.test_indicators_api import (
+    create_company as insert_test_company,
+)
+
 
 def company_payload(
     *,
@@ -62,15 +66,17 @@ def create_company(
     name: str = "Empresa de Teste",
     document: str = "12345678000190",
 ) -> dict[str, object]:
-    """Cadastra e retorna uma empresa válida."""
+    """Insere e retorna uma empresa válida para os testes."""
 
-    response = client.post(
-        "/api/companies",
-        json=company_payload(name=name, document=document),
+    payload = company_payload(
+        name=name,
+        document=document,
     )
 
-    assert response.status_code == 201
-    return response.json()
+    return insert_test_company(
+        client,
+        {field_name: str(value) for field_name, value in payload.items()},
+    )
 
 
 def create_indicator(
@@ -225,9 +231,7 @@ def test_list_measurements_ordered_by_reference_date(
     response = client.get("/api/measurements")
 
     assert response.status_code == 200
-    assert [
-        item["reference_date"] for item in response.json()
-    ] == [
+    assert [item["reference_date"] for item in response.json()] == [
         "2026-06-10",
         "2026-07-10",
         "2026-08-10",
@@ -337,9 +341,7 @@ def test_list_measurements_filtered_by_inclusive_period(
     )
 
     assert response.status_code == 200
-    assert [
-        item["reference_date"] for item in response.json()
-    ] == [
+    assert [item["reference_date"] for item in response.json()] == [
         "2026-07-01",
         "2026-07-31",
     ]
@@ -407,9 +409,7 @@ def test_get_measurement(client: TestClient) -> None:
     indicator = create_indicator(client, company["id"])
     measurement = create_measurement(client, indicator["id"])
 
-    response = client.get(
-        f"/api/measurements/{measurement['id']}"
-    )
+    response = client.get(f"/api/measurements/{measurement['id']}")
 
     assert response.status_code == 200
     assert response.json()["id"] == measurement["id"]
@@ -532,12 +532,8 @@ def test_delete_measurement(client: TestClient) -> None:
     indicator = create_indicator(client, company["id"])
     measurement = create_measurement(client, indicator["id"])
 
-    delete_response = client.delete(
-        f"/api/measurements/{measurement['id']}"
-    )
-    get_response = client.get(
-        f"/api/measurements/{measurement['id']}"
-    )
+    delete_response = client.delete(f"/api/measurements/{measurement['id']}")
+    get_response = client.get(f"/api/measurements/{measurement['id']}")
 
     assert delete_response.status_code == 204
     assert get_response.status_code == 404

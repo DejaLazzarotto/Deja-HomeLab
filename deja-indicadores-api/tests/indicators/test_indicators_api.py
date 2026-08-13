@@ -2,6 +2,16 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
+from deja_indicadores_api.companies.models import (
+    CompanyModel,
+    CompanyStatus,
+)
+from tests.authentication.test_authentication_api import (
+    create_environment,
+    create_organization,
+    create_tenant,
+)
+
 COMPANIES_URL = "/api/companies"
 INDICATORS_URL = "/api/indicators"
 
@@ -26,14 +36,58 @@ SECOND_COMPANY = {
 
 def create_company(
     client: TestClient,
-    payload: dict[str, str] = COMPANY,
+    payload: dict[str, object] = COMPANY,
 ) -> dict[str, object]:
-    """Cadastra uma empresa e retorna o corpo da resposta."""
+    """Insere uma empresa diretamente para os testes consumidores."""
 
-    response = client.post(COMPANIES_URL, json=payload)
+    resource_id = str(uuid4())
+    organization = create_organization(
+        client,
+        name=f"Organização {resource_id}",
+    )
+    tenant = create_tenant(
+        client,
+        str(organization["id"]),
+    )
+    environment = create_environment(
+        client,
+        str(tenant["id"]),
+    )
+    document = str(payload["document"])
+    normalized_document = "".join(
+        character for character in document if character.isdigit()
+    )
+    email = payload.get("email")
+    phone = payload.get("phone")
+    company = CompanyModel(
+        id=str(uuid4()),
+        environment_id=str(environment["id"]),
+        legal_name=str(payload["legal_name"]).strip(),
+        trade_name=str(payload["trade_name"]).strip(),
+        document=normalized_document,
+        email=(str(email).strip().lower() if email is not None else None),
+        phone=(str(phone).strip() if phone is not None else None),
+        status=CompanyStatus(str(payload["status"])),
+    )
+    session_factory = client.app.state.test_session_factory
 
-    assert response.status_code == 201
-    return response.json()
+    with session_factory() as session:
+        session.add(company)
+        session.commit()
+        session.refresh(company)
+
+    return {
+        "id": company.id,
+        "environment_id": company.environment_id,
+        "legal_name": company.legal_name,
+        "trade_name": company.trade_name,
+        "document": company.document,
+        "email": company.email,
+        "phone": company.phone,
+        "status": company.status.value,
+        "created_at": company.created_at.isoformat(),
+        "updated_at": company.updated_at.isoformat(),
+    }
 
 
 def indicator_payload(
@@ -219,9 +273,7 @@ def test_update_indicator(client: TestClient) -> None:
     assert body["id"] == indicator["id"]
     assert body["company_id"] == company["id"]
     assert body["name"] == "Margem operacional"
-    assert body["description"] == (
-        "Resultado operacional sobre a receita."
-    )
+    assert body["description"] == ("Resultado operacional sobre a receita.")
     assert body["direction"] == "lower_is_better"
     assert body["target_value"] == "12.2500"
     assert body["status"] == "inactive"

@@ -72,6 +72,28 @@ Essa separação evita contaminação entre diferentes estágios do ciclo de vid
 
 ---
 
+# Isolamento da Gestão de Empresas
+
+Toda empresa cadastrada na Deja Indicadores pertence obrigatoriamente a um único Ambiente.
+
+O Ambiente constitui o vínculo persistente direto da empresa. O Tenant e a Organização proprietários são determinados pela hierarquia institucional do Ambiente, evitando duplicidade de identificadores e combinações inconsistentes de escopo.
+
+A Gestão de Empresas deve respeitar as seguintes regras de isolamento:
+
+- empresas sem Ambiente não podem existir;
+- uma empresa não pode pertencer simultaneamente a mais de um Ambiente;
+- listagens devem aplicar filtros institucionais derivados da identidade autenticada;
+- consultas individuais devem validar a hierarquia real da empresa antes de retornar seus dados;
+- criações e atualizações devem resolver o Ambiente informado e validar seu Tenant e sua Organização;
+- operações entre Organizações, Tenants ou Ambientes distintos devem ser negadas quando excederem o escopo da identidade;
+- referências indiretas por indicadores, medições, dashboards ou relatórios não podem ampliar o acesso à empresa;
+- somente identidades com alcance global autorizado podem operar empresas entre diferentes Organizações;
+- o isolamento deve ser repetido nas camadas de entrada, serviço e persistência.
+
+A associação direta ao Ambiente preserva simultaneamente o isolamento operacional entre ambientes e o isolamento institucional entre tenants e organizações.
+
+---
+
 # Isolamento de Dados
 
 Todo dado institucional deverá estar associado ao Tenant correspondente.

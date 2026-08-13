@@ -193,6 +193,48 @@ O `viewer` possui permissões funcionais somente de consulta dentro do próprio 
 
 Esse papel não recebe acesso administrativo por padrão.
 
+# Matriz de Acesso da Gestão de Empresas
+
+A Gestão de Empresas é uma capacidade operacional protegida e vinculada obrigatoriamente a um Ambiente.
+
+A propriedade institucional de uma empresa é resolvida pela hierarquia:
+
+```text
+Empresa
+    │
+    └── Ambiente
+            │
+            └── Tenant
+                    │
+                    └── Organização
+```
+
+A matriz de permissões da capacidade é:
+
+| Papel | Listar e consultar | Criar, atualizar e excluir | Escopo obrigatório |
+|---|---|---|---|
+| `platform_admin` | permitido | permitido | global |
+| `organization_admin` | permitido | permitido | própria Organização |
+| `tenant_admin` | permitido | permitido | próprio Tenant |
+| `manager` | permitido | permitido | próprio Ambiente |
+| `analyst` | permitido | negado | próprio Ambiente |
+| `viewer` | permitido | negado | próprio Ambiente |
+
+As seguintes regras são obrigatórias:
+
+- todas as rotas de empresas exigem autenticação Bearer;
+- toda empresa pertence diretamente a um único Ambiente;
+- Organização e Tenant são resolvidos pela hierarquia institucional do Ambiente;
+- listagens aplicam automaticamente o escopo obrigatório da identidade;
+- filtros incompatíveis com o escopo autenticado devem ser negados;
+- recursos individuais devem ter seu escopo validado após a resolução interna;
+- criações e atualizações devem validar o Ambiente informado e toda a sua hierarquia;
+- nenhuma identidade limitada pode criar, consultar, atualizar ou excluir empresas fora do próprio escopo;
+- `analyst` e `viewer` possuem acesso exclusivamente de leitura;
+- as validações de papel e escopo devem existir tanto na entrada HTTP quanto na camada de serviço;
+- consultas persistentes devem aplicar os filtros institucionais efetivos;
+- a unicidade documental e as demais regras funcionais da Gestão de Empresas permanecem preservadas.
+
 ---
 
 # Controle Baseado em Escopo

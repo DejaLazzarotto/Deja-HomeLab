@@ -81,13 +81,13 @@ def clear_database(
     """Remove os registros respeitando a ordem das chaves estrangeiras."""
 
     with test_session_factory() as session:
+        session.execute(delete(MeasurementModel))
+        session.execute(delete(IndicatorModel))
+        session.execute(delete(CompanyModel))
         session.execute(delete(UserModel))
         session.execute(delete(EnvironmentModel))
         session.execute(delete(TenantModel))
         session.execute(delete(OrganizationModel))
-        session.execute(delete(MeasurementModel))
-        session.execute(delete(IndicatorModel))
-        session.execute(delete(CompanyModel))
         session.commit()
 
 

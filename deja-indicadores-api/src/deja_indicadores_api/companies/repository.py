@@ -2,6 +2,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from deja_indicadores_api.companies.models import CompanyModel
+from deja_indicadores_api.tenant_management.models import (
+    EnvironmentModel,
+    TenantModel,
+)
 
 
 class CompanyRepository:
@@ -10,10 +14,43 @@ class CompanyRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def list(self) -> list[CompanyModel]:
-        """Lista as empresas ordenadas pelo nome fantasia."""
+    def list(
+        self,
+        *,
+        organization_id: str | None = None,
+        tenant_id: str | None = None,
+        environment_id: str | None = None,
+    ) -> list[CompanyModel]:
+        """Lista empresas dentro dos filtros institucionais informados."""
 
-        statement = select(CompanyModel).order_by(CompanyModel.trade_name)
+        statement = (
+            select(CompanyModel)
+            .join(
+                EnvironmentModel,
+                CompanyModel.environment_id == EnvironmentModel.id,
+            )
+            .join(
+                TenantModel,
+                EnvironmentModel.tenant_id == TenantModel.id,
+            )
+        )
+
+        if organization_id is not None:
+            statement = statement.where(
+                TenantModel.organization_id == organization_id
+            )
+
+        if tenant_id is not None:
+            statement = statement.where(
+                TenantModel.id == tenant_id
+            )
+
+        if environment_id is not None:
+            statement = statement.where(
+                EnvironmentModel.id == environment_id
+            )
+
+        statement = statement.order_by(CompanyModel.trade_name)
         return list(self._session.scalars(statement).all())
 
     def find_by_id(self, company_id: str) -> CompanyModel | None:
