@@ -341,6 +341,63 @@ As seguintes regras são obrigatórias:
 
 ---
 
+# Matriz de Acesso dos Dashboards
+
+Os Dashboards constituem uma capacidade gerencial exclusivamente de consulta. Seu escopo institucional é herdado das empresas, dos indicadores e das medições utilizados nas agregações.
+
+Os dados consolidados são resolvidos pela hierarquia:
+
+```text
+Dashboard
+    │
+    ├── Empresa
+    │       │
+    │       └── Ambiente
+    │               │
+    │               └── Tenant
+    │                       │
+    │                       └── Organização
+    │
+    └── Indicador
+            │
+            └── Medição
+```
+
+A matriz de permissões da capacidade é:
+
+| Papel | Consultar visão gerencial | Escopo obrigatório |
+|---|---|---|
+| `platform_admin` | permitido | global |
+| `organization_admin` | permitido | própria Organização |
+| `tenant_admin` | permitido | próprio Tenant |
+| `manager` | permitido | próprio Ambiente |
+| `analyst` | permitido | próprio Ambiente |
+| `viewer` | permitido | próprio Ambiente |
+
+As seguintes regras são obrigatórias:
+
+- todas as rotas de dashboards exigem autenticação Bearer;
+- dashboards são exclusivamente de leitura e não expõem operações de criação, atualização ou exclusão;
+- empresas, indicadores e medições somente podem participar de agregações quando pertencem ao escopo efetivo da identidade;
+- listagens, contagens, agrupamentos por status, históricos e KPIs devem aplicar o mesmo escopo institucional;
+- o escopo é resolvido pela relação entre empresa, Ambiente, Tenant e Organização;
+- medições herdam o escopo do indicador e da empresa vinculados;
+- consultas podem ser restringidas por Organização, Tenant, Ambiente, empresa, indicador e período de referência;
+- filtros institucionais compatíveis podem restringir adicionalmente o resultado;
+- filtros que tentem ampliar o escopo autenticado devem ser negados;
+- filtros por empresas ou indicadores existentes fora do escopo autenticado devem ser negados;
+- empresas ou indicadores inexistentes preservam a semântica funcional de recurso não encontrado;
+- filtros simultâneos de empresa e indicador autorizados, mas sem relação entre si, devem produzir um dashboard vazio;
+- a ausência de dados no escopo autorizado deve produzir totais zerados e coleções vazias;
+- identidades limitadas não podem incorporar dados de outras Organizações, Tenants ou Ambientes em totais, status, KPIs ou históricos;
+- as validações de papel e escopo devem existir tanto na entrada HTTP quanto na camada de serviço;
+- o escopo institucional deve ser aplicado diretamente nas consultas persistentes;
+- dados globais não devem ser carregados para posterior filtragem apenas em memória;
+- consumidores internos do dashboard, incluindo relatórios, devem propagar a identidade autenticada e não podem contornar a autorização;
+- o cálculo de atingimento, a situação perante a meta, os filtros inclusivos de período e as demais regras funcionais permanecem preservados.
+
+---
+
 # Controle Baseado em Escopo
 
 As decisões de autorização devem considerar os seguintes níveis:

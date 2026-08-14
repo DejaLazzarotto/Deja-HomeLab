@@ -1,5 +1,6 @@
 from datetime import UTC, date, datetime
 
+from deja_indicadores_api.authentication.schemas import AuthenticatedUser
 from deja_indicadores_api.dashboards.service import DashboardService
 from deja_indicadores_api.reports.schemas import (
     ManagementReportFilters,
@@ -15,13 +16,16 @@ class ReportService:
 
     def get_management_report(
         self,
+        current_user: AuthenticatedUser,
+        *,
         company_id: str | None = None,
         start_date: date | None = None,
         end_date: date | None = None,
     ) -> ManagementReportResponse:
-        """Gera o relatório gerencial básico."""
+        """Gera o relatório gerencial dentro do escopo permitido."""
 
         overview = self._dashboard_service.get_overview(
+            current_user,
             company_id=company_id,
             start_date=start_date,
             end_date=end_date,

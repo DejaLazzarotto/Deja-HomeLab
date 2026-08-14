@@ -1,14 +1,17 @@
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
+from deja_indicadores_api.authentication.dependencies import require_roles
+from deja_indicadores_api.authentication.schemas import AuthenticatedUser
 from deja_indicadores_api.reports.dependencies import (
     ReportServiceDependency,
 )
 from deja_indicadores_api.reports.schemas import (
     ManagementReportResponse,
 )
+from deja_indicadores_api.user_management.models import UserRole
 
 router = APIRouter(prefix="/reports", tags=["Relatórios"])
 
@@ -35,6 +38,20 @@ EndDateFilter = Annotated[
     ),
 ]
 
+ReportReader = Annotated[
+    AuthenticatedUser,
+    Depends(
+        require_roles(
+            UserRole.PLATFORM_ADMIN,
+            UserRole.ORGANIZATION_ADMIN,
+            UserRole.TENANT_ADMIN,
+            UserRole.MANAGER,
+            UserRole.ANALYST,
+            UserRole.VIEWER,
+        )
+    ),
+]
+
 
 @router.get(
     "/management",
@@ -42,13 +59,15 @@ EndDateFilter = Annotated[
 )
 def get_management_report(
     service: ReportServiceDependency,
+    current_user: ReportReader,
     company_id: CompanyIdFilter = None,
     start_date: StartDateFilter = None,
     end_date: EndDateFilter = None,
 ) -> ManagementReportResponse:
-    """Retorna o relatório gerencial básico dos indicadores."""
+    """Retorna o relatório gerencial dentro do escopo permitido."""
 
     return service.get_management_report(
+        current_user,
         company_id=company_id,
         start_date=start_date,
         end_date=end_date,

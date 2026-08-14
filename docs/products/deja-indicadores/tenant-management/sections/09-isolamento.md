@@ -160,6 +160,51 @@ A associação direta ao indicador preserva o modelo de domínio e herda integra
 
 ---
 
+# Isolamento dos Dashboards
+
+Os Dashboards da Deja Indicadores não constituem uma nova unidade de propriedade institucional. Eles consolidam empresas, indicadores e medições cujo escopo é herdado da hierarquia persistente desses recursos.
+
+A resolução institucional utilizada nas agregações é:
+
+```text
+Medição
+    │
+    └── Indicador
+            │
+            └── Empresa
+                    │
+                    └── Ambiente
+                            │
+                            └── Tenant
+                                    │
+                                    └── Organização
+```
+
+Os Dashboards devem respeitar as seguintes regras de isolamento:
+
+- toda consulta exige identidade autenticada e papel de leitura permitido;
+- `platform_admin` pode consultar agregações globais;
+- `organization_admin` recebe somente dados da própria Organização;
+- `tenant_admin` recebe somente dados do próprio Tenant;
+- `manager`, `analyst` e `viewer` recebem somente dados do próprio Ambiente;
+- filtros de Organização, Tenant, Ambiente, empresa e indicador não podem ampliar o escopo autenticado;
+- filtros por período devem ser combinados com o escopo institucional obrigatório;
+- contagens de empresas, indicadores e medições devem utilizar o mesmo recorte institucional;
+- agrupamentos por status devem excluir integralmente recursos fora do escopo;
+- indicadores, medições atuais, percentuais de atingimento, situações e históricos devem ser calculados somente com dados autorizados;
+- um dashboard vazio dentro do escopo não pode incorporar dados existentes em outro Ambiente, Tenant ou Organização;
+- consultas persistentes devem aplicar junções e filtros institucionais antes da materialização dos resultados;
+- o carregamento global seguido de filtragem apenas em memória é proibido;
+- filtros por empresa ou indicador devem validar a hierarquia institucional real do recurso;
+- filtros válidos, porém sem correspondência entre empresa e indicador, devem produzir agregações vazias;
+- relatórios e outros consumidores internos devem propagar a identidade autenticada ao dashboard;
+- nenhum consumidor interno pode utilizar o dashboard como caminho alternativo para contornar o isolamento;
+- o isolamento deve ser repetido nas camadas de entrada, serviço e persistência.
+
+A aplicação uniforme do escopo em todas as consultas impede que totais, KPIs, agrupamentos ou históricos misturem dados pertencentes a domínios institucionais distintos.
+
+---
+
 # Isolamento de Dados
 
 Todo dado institucional deverá estar associado ao Tenant correspondente.
