@@ -205,6 +205,32 @@ Após a execução:
 
 ---
 
+## Superfície pública da API do Deja Indicadores
+
+A superfície pública funcional da API deve permanecer limitada ao estritamente necessário.
+
+No MVP comercial, são públicas intencionalmente:
+
+- `GET /health`, para verificação de disponibilidade;
+- `POST /api/v1/auth/login`, para autenticação e emissão do Bearer token.
+
+As demais rotas funcionais exigem identidade autenticada e aplicam, conforme a operação:
+
+- validação de papel na entrada HTTP;
+- revalidação na camada de serviço;
+- resolução do escopo institucional;
+- filtragem persistente no SQL.
+
+A documentação interativa da API segue a política do ambiente:
+
+- em `development` e `testing`, `/docs`, `/docs/oauth2-redirect`, `/redoc` e `/openapi.json` permanecem disponíveis para desenvolvimento e validação;
+- em `production`, esses endpoints não são registrados e retornam HTTP 404;
+- a desativação em produção reduz a exposição desnecessária da estrutura e dos contratos internos da API.
+
+Essa política não substitui autenticação nem autorização das rotas funcionais.
+
+---
+
 ## Modelo institucional
 
 O modelo de segurança estabelece que toda operação na Deja Platform deve possuir:

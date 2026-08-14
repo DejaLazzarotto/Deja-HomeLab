@@ -68,6 +68,69 @@ def test_users_require_bearer_token(
     assert response.headers["www-authenticate"] == "Bearer"
 
 
+def test_platform_admin_manages_users_globally(
+    client: TestClient,
+    test_settings: Settings,
+) -> None:
+    """Permite administração global de usuários com Bearer real."""
+
+    first_organization = create_organization(client)
+    second_organization = create_organization(
+        client,
+        name="Organização Secundária",
+    )
+    platform_administrator = create_user(
+        client,
+        None,
+        email="platform.admin@deja.com",
+        role="platform_admin",
+    )
+    first_user = create_user(
+        client,
+        str(first_organization["id"]),
+        email="usuario.principal@deja.com",
+    )
+    second_user = create_user(
+        client,
+        str(second_organization["id"]),
+        email="usuario.secundario@deja.com",
+    )
+    headers = authorization_headers(
+        test_settings,
+        platform_administrator,
+    )
+
+    response = client.get(
+        USERS_URL,
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+
+    returned_ids = {user["id"] for user in response.json()}
+
+    assert platform_administrator["id"] in returned_ids
+    assert first_user["id"] in returned_ids
+    assert second_user["id"] in returned_ids
+
+    create_response = client.post(
+        USERS_URL,
+        json={
+            "organization_id": second_organization["id"],
+            "tenant_id": None,
+            "environment_id": None,
+            "name": "Administrador Secundário",
+            "email": "admin.secundario@deja.com",
+            "role": "organization_admin",
+            "status": "active",
+        },
+        headers=headers,
+    )
+
+    assert create_response.status_code == 201
+    assert create_response.json()["organization_id"] == second_organization["id"]
+
+
 @pytest.mark.parametrize(
     "role",
     [
@@ -141,10 +204,7 @@ def test_organization_admin_lists_only_own_organization(
 
     assert response.status_code == 200
 
-    returned_ids = {
-        user["id"]
-        for user in response.json()
-    }
+    returned_ids = {user["id"] for user in response.json()}
 
     assert administrator["id"] in returned_ids
     assert own_user["id"] in returned_ids
@@ -294,10 +354,7 @@ def test_tenant_admin_lists_and_reads_only_own_tenant(
 
     assert response.status_code == 200
 
-    returned_ids = {
-        user["id"]
-        for user in response.json()
-    }
+    returned_ids = {user["id"] for user in response.json()}
 
     assert administrator["id"] in returned_ids
     assert own_user["id"] in returned_ids
