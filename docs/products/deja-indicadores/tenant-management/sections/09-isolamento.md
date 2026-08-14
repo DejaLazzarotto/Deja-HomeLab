@@ -205,6 +205,36 @@ A aplicação uniforme do escopo em todas as consultas impede que totais, KPIs, 
 
 ---
 
+# Isolamento dos Relatórios
+
+Os Relatórios da Deja Indicadores não constituem uma nova unidade de propriedade institucional nem mantêm um escopo paralelo. Eles reutilizam as agregações protegidas dos Dashboards e herdam integralmente o isolamento das empresas, dos indicadores e das medições consolidados.
+
+Os Relatórios devem respeitar as seguintes regras de isolamento:
+
+- toda consulta exige identidade autenticada e papel de leitura permitido;
+- `platform_admin` pode consultar relatórios globais;
+- `organization_admin` recebe somente dados da própria Organização;
+- `tenant_admin` recebe somente dados do próprio Tenant;
+- `manager`, `analyst` e `viewer` recebem somente dados do próprio Ambiente;
+- a identidade autenticada deve ser propagada da rota para o serviço de relatórios e deste para o serviço de dashboard;
+- filtros de Organização, Tenant, Ambiente, empresa e indicador não podem ampliar o escopo autenticado;
+- filtros por período devem ser combinados com o escopo institucional obrigatório;
+- filtros institucionais compatíveis podem restringir adicionalmente o resultado;
+- filtros por empresas ou indicadores existentes fora do escopo devem ser negados;
+- recursos inexistentes devem preservar a semântica funcional de recurso não encontrado;
+- empresa e indicador autorizados, mas sem relação entre si, devem produzir relatório vazio;
+- um relatório vazio dentro do escopo não pode incorporar dados existentes em outro Ambiente, Tenant ou Organização;
+- totais, agrupamentos, indicadores, medições atuais, percentuais de atingimento, situações e históricos devem utilizar exatamente o mesmo recorte institucional do dashboard;
+- os metadados devem registrar os filtros explicitamente solicitados, sem apresentar filtros institucionais implícitos como parâmetros enviados pelo consumidor;
+- consultas persistentes reutilizadas pelo relatório devem aplicar junções e filtros institucionais antes da materialização dos resultados;
+- o carregamento global seguido de filtragem apenas em memória é proibido;
+- nenhuma chamada interna pode omitir a identidade autenticada ou utilizar o relatório como caminho alternativo para contornar o isolamento;
+- o isolamento deve ser repetido na entrada HTTP, no serviço de relatórios, no serviço de dashboard e na persistência.
+
+A reutilização do Dashboard protegido garante que relatórios não misturem dados pertencentes a Organizações, Tenants ou Ambientes distintos e evita a duplicação de regras institucionais de consulta.
+
+---
+
 # Isolamento de Dados
 
 Todo dado institucional deverá estar associado ao Tenant correspondente.

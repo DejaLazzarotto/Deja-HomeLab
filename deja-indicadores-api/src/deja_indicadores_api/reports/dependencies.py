@@ -2,6 +2,9 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from deja_indicadores_api.authentication.authorization import (
+    AuthorizationService,
+)
 from deja_indicadores_api.dashboards.dependencies import (
     DashboardServiceDependency,
 )
@@ -13,7 +16,12 @@ def get_report_service(
 ) -> ReportService:
     """Cria o serviço de relatórios para a requisição."""
 
-    return ReportService(dashboard_service)
+    authorization_service = AuthorizationService()
+
+    return ReportService(
+        dashboard_service,
+        authorization_service,
+    )
 
 
 ReportServiceDependency = Annotated[

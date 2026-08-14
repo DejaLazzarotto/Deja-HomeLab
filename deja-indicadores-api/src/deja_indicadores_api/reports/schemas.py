@@ -8,9 +8,13 @@ from deja_indicadores_api.dashboards.schemas import (
 
 
 class ManagementReportFilters(BaseModel):
-    """Filtros efetivamente aplicados ao relatório gerencial."""
+    """Filtros efetivamente solicitados para o relatório gerencial."""
 
     company_id: str | None
+    indicator_id: str | None
+    organization_id: str | None
+    tenant_id: str | None
+    environment_id: str | None
     start_date: date | None
     end_date: date | None
 

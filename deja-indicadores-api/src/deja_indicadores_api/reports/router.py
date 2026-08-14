@@ -24,6 +24,42 @@ CompanyIdFilter = Annotated[
     ),
 ]
 
+IndicatorIdFilter = Annotated[
+    str | None,
+    Query(
+        min_length=36,
+        max_length=36,
+        description="Filtra o relatório pelo UUID do indicador.",
+    ),
+]
+
+OrganizationFilter = Annotated[
+    str | None,
+    Query(
+        min_length=36,
+        max_length=36,
+        description="Filtra o relatório pela organização.",
+    ),
+]
+
+TenantFilter = Annotated[
+    str | None,
+    Query(
+        min_length=36,
+        max_length=36,
+        description="Filtra o relatório pelo tenant.",
+    ),
+]
+
+EnvironmentFilter = Annotated[
+    str | None,
+    Query(
+        min_length=36,
+        max_length=36,
+        description="Filtra o relatório pelo ambiente.",
+    ),
+]
+
 StartDateFilter = Annotated[
     date | None,
     Query(
@@ -61,6 +97,10 @@ def get_management_report(
     service: ReportServiceDependency,
     current_user: ReportReader,
     company_id: CompanyIdFilter = None,
+    indicator_id: IndicatorIdFilter = None,
+    organization_id: OrganizationFilter = None,
+    tenant_id: TenantFilter = None,
+    environment_id: EnvironmentFilter = None,
     start_date: StartDateFilter = None,
     end_date: EndDateFilter = None,
 ) -> ManagementReportResponse:
@@ -69,6 +109,10 @@ def get_management_report(
     return service.get_management_report(
         current_user,
         company_id=company_id,
+        indicator_id=indicator_id,
+        organization_id=organization_id,
+        tenant_id=tenant_id,
+        environment_id=environment_id,
         start_date=start_date,
         end_date=end_date,
     )

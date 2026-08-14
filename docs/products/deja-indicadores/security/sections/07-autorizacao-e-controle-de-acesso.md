@@ -398,6 +398,45 @@ As seguintes regras são obrigatórias:
 
 ---
 
+# Matriz de Acesso dos Relatórios
+
+Os Relatórios constituem uma capacidade gerencial exclusivamente de consulta. Seu escopo institucional é herdado integralmente do Dashboard utilizado para consolidar empresas, indicadores e medições.
+
+A matriz de permissões da capacidade é:
+
+| Papel | Consultar relatório gerencial | Escopo obrigatório |
+|---|---|---|
+| `platform_admin` | permitido | global |
+| `organization_admin` | permitido | própria Organização |
+| `tenant_admin` | permitido | próprio Tenant |
+| `manager` | permitido | próprio Ambiente |
+| `analyst` | permitido | próprio Ambiente |
+| `viewer` | permitido | próprio Ambiente |
+
+As seguintes regras são obrigatórias:
+
+- todas as rotas de relatórios exigem autenticação Bearer;
+- relatórios são exclusivamente de leitura e não expõem operações de criação, atualização ou exclusão;
+- a identidade autenticada deve ser propagada da entrada HTTP para o serviço de relatórios e deste para o serviço de dashboard;
+- a validação dos papéis leitores deve ocorrer na entrada HTTP e novamente na camada de serviço de relatórios;
+- o serviço de dashboard deve repetir suas próprias validações de papel, recursos e escopo;
+- relatórios podem ser restringidos por Organização, Tenant, Ambiente, empresa, indicador e período de referência;
+- filtros institucionais compatíveis podem restringir adicionalmente o resultado;
+- filtros que tentem ampliar o escopo autenticado devem ser negados;
+- filtros por empresas ou indicadores existentes fora do escopo autenticado devem ser negados;
+- empresas ou indicadores inexistentes preservam a semântica funcional de recurso não encontrado;
+- filtros simultâneos de empresa e indicador autorizados, mas sem relação entre si, devem produzir um relatório vazio;
+- a ausência de dados no escopo autorizado deve produzir totais zerados e coleções vazias;
+- os metadados do relatório devem refletir exatamente os filtros solicitados pelo consumidor;
+- filtros institucionais aplicados implicitamente pela autorização não devem ser apresentados como se tivessem sido solicitados pelo consumidor;
+- identidades limitadas não podem incorporar dados de outras Organizações, Tenants ou Ambientes em totais, agrupamentos, KPIs ou históricos;
+- o escopo institucional deve ser aplicado diretamente nas consultas persistentes reutilizadas pelo dashboard;
+- dados globais não devem ser carregados para posterior filtragem apenas em memória;
+- chamadas internas não podem utilizar o relatório ou o dashboard sem propagar uma identidade autenticada;
+- títulos, data de geração, cálculos gerenciais, filtros inclusivos de período e contratos funcionais permanecem preservados.
+
+---
+
 # Controle Baseado em Escopo
 
 As decisões de autorização devem considerar os seguintes níveis:

@@ -14,11 +14,11 @@ from tests.indicators.test_indicators_api import (
 
 
 @pytest.fixture(autouse=True)
-def authenticate_indicator_client(
+def authenticate_report_client(
     client: TestClient,
     test_settings: Settings,
 ) -> None:
-    """Autentica os consumidores das rotas de indicadores."""
+    """Autentica os consumidores das rotas de relatórios."""
 
     administrator = create_user(
         client,
@@ -106,6 +106,10 @@ def test_get_management_report_without_data(
     )
     assert data["filters"] == {
         "company_id": None,
+        "indicator_id": None,
+        "organization_id": None,
+        "tenant_id": None,
+        "environment_id": None,
         "start_date": None,
         "end_date": None,
     }
@@ -134,6 +138,7 @@ def test_get_management_report_with_filters_and_data(
         "/api/reports/management",
         params={
             "company_id": company["id"],
+            "indicator_id": indicator["id"],
             "start_date": "2026-08-01",
             "end_date": "2026-08-31",
         },
@@ -145,6 +150,10 @@ def test_get_management_report_with_filters_and_data(
 
     assert data["filters"] == {
         "company_id": company["id"],
+        "indicator_id": indicator["id"],
+        "organization_id": None,
+        "tenant_id": None,
+        "environment_id": None,
         "start_date": "2026-08-01",
         "end_date": "2026-08-31",
     }
