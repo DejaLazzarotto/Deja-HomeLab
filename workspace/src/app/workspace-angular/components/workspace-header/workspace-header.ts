@@ -1,20 +1,21 @@
-/*
- * Deja Workspace Angular Integration
- *
- * Workspace Header Component
- *
- * Cabeçalho institucional responsável pela identificação visual
- * principal da Deja Platform.
- */
-
 import {
   ChangeDetectionStrategy,
   Component,
+  inject,
 } from '@angular/core';
 
-/**
- * Cabeçalho permanente da Workspace Shell.
- */
+import {
+  Router,
+} from '@angular/router';
+
+import {
+  AuthenticationService,
+} from '../../../deja-indicadores/authentication/application/authentication.service';
+
+import {
+  UserRole,
+} from '../../../deja-indicadores/authentication/domain/authenticated-user';
+
 @Component({
   selector: 'deja-workspace-header',
   standalone: true,
@@ -24,14 +25,37 @@ import {
 })
 export class WorkspaceHeaderComponent {
 
-  /**
-   * Nome institucional exibido pela Shell.
-   */
+  private readonly authentication =
+    inject(AuthenticationService);
+
+  private readonly router =
+    inject(Router);
+
   readonly platformName = 'Deja Platform';
 
-  /**
-   * Nome da aplicação atualmente hospedada.
-   */
-  readonly applicationName = 'Workspace';
+  readonly applicationName = 'Deja Indicadores';
+
+  readonly user = this.authentication.user;
+
+  roleLabel(
+    role: UserRole,
+  ): string {
+    const labels: Record<UserRole, string> = {
+      platform_admin: 'Administrador da plataforma',
+      organization_admin: 'Administrador da organização',
+      tenant_admin: 'Administrador do tenant',
+      manager: 'Gestor',
+      analyst: 'Analista',
+      viewer: 'Visualizador',
+    };
+
+    return labels[role];
+  }
+
+  logout(): void {
+    this.authentication.logout();
+
+    void this.router.navigateByUrl('/login');
+  }
 
 }
