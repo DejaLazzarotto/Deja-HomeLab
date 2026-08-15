@@ -11,6 +11,7 @@ import {
 } from './company';
 
 export interface CompanyInput {
+  readonly environmentId: string;
   readonly legalName: string;
   readonly tradeName: string;
   readonly document: string;

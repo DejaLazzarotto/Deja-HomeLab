@@ -12,6 +12,7 @@ export type CompanyStatus =
 
 export interface Company {
   readonly id: string;
+  readonly environmentId: string;
   readonly legalName: string;
   readonly tradeName: string;
   readonly document: string;

@@ -240,6 +240,109 @@
   line-height: 1.6;
 }
 
+.company-list__message {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  border: 1px solid;
+  border-radius: var(--workspace-radius-md);
+}
+
+.company-list__message--success {
+  color: var(--workspace-color-success);
+  background: rgb(65 205 142 / 8%);
+  border-color: var(--workspace-color-success);
+}
+
+.company-list__message--error {
+  color: var(--workspace-color-danger);
+  background: rgb(255 92 92 / 8%);
+  border-color: var(--workspace-color-danger);
+}
+
+.company-list__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--workspace-spacing-lg);
+  padding: var(--workspace-spacing-lg);
+  background: var(--workspace-color-background);
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
+}
+
+.company-list__form-header h3 {
+  margin: 0;
+  color: var(--workspace-color-text);
+  font-size: 1rem;
+}
+
+.company-list__form-header p {
+  margin: 0.3rem 0 0;
+  color: var(--workspace-color-text-muted);
+  font-size: 0.8rem;
+}
+
+.company-list__form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--workspace-spacing-md);
+}
+
+.company-list__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--workspace-spacing-xs);
+  min-width: 0;
+}
+
+.company-list__field span {
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.company-list__field input,
+.company-list__field select {
+  width: 100%;
+  min-height: 2.65rem;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem;
+  color: var(--workspace-color-text);
+  font: inherit;
+  font-size: 0.82rem;
+  background: var(--workspace-color-surface);
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-sm);
+  outline: none;
+}
+
+.company-list__field input:focus,
+.company-list__field select:focus {
+  border-color: var(--workspace-color-primary);
+  box-shadow: 0 0 0 2px rgb(77 158 255 / 16%);
+}
+
+.company-list__form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--workspace-spacing-sm);
+}
+
+.company-list button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+@media (min-width: 48rem) {
+  .company-list__form-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 40rem) {
   .company-list {
     padding: var(--workspace-spacing-md);

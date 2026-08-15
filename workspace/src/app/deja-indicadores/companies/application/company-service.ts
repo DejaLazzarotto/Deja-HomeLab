@@ -29,14 +29,14 @@ export class CompanyService {
     private readonly repository: CompanyRepository,
   ) {}
 
-  list(): readonly Company[] {
+  list(): Promise<readonly Company[]> {
     return this.repository.list();
   }
 
-  findById(
+  async findById(
     id: string,
-  ): Company {
-    const company = this.repository.findById(id);
+  ): Promise<Company> {
+    const company = await this.repository.findById(id);
 
     if (!company) {
       throw new CompanyNotFoundError(id);
@@ -47,21 +47,21 @@ export class CompanyService {
 
   create(
     input: CompanyInput,
-  ): Company {
+  ): Promise<Company> {
     return this.repository.create(input);
   }
 
   update(
     id: string,
     input: CompanyInput,
-  ): Company {
+  ): Promise<Company> {
     return this.repository.update(id, input);
   }
 
   delete(
     id: string,
-  ): void {
-    this.repository.delete(id);
+  ): Promise<void> {
+    return this.repository.delete(id);
   }
 
 }

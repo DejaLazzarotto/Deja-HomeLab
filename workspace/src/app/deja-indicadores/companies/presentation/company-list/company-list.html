@@ -24,16 +24,203 @@
       </p>
     </div>
 
-    <button
-      class="company-list__create-button"
-      type="button"
-    >
-      Nova empresa
-    </button>
+    @if (canManage && !formVisible()) {
+      <button
+        class="company-list__create-button"
+        type="button"
+        (click)="openCreate()"
+      >
+        Nova empresa
+      </button>
+    }
 
   </header>
 
-  @if (companies().length > 0) {
+  @if (operationMessage()) {
+    <p class="company-list__message company-list__message--success">
+      {{ operationMessage() }}
+    </p>
+  }
+
+  @if (operationError()) {
+    <p class="company-list__message company-list__message--error">
+      {{ operationError() }}
+    </p>
+  }
+
+  @if (formVisible()) {
+
+    <form
+      class="company-list__form"
+      #companyForm="ngForm"
+      (ngSubmit)="save()"
+    >
+
+      <div class="company-list__form-header">
+        <div>
+          <h3>
+            {{ editingCompanyId() ? 'Editar empresa' : 'Nova empresa' }}
+          </h3>
+
+          <p>
+            Preencha os dados institucionais da empresa.
+          </p>
+        </div>
+      </div>
+
+      <div class="company-list__form-grid">
+
+        <label class="company-list__field">
+          <span>Ambiente</span>
+
+          <select
+            name="environmentId"
+            required
+            [(ngModel)]="form.environmentId"
+          >
+            <option value="" disabled>
+              Selecione o ambiente
+            </option>
+
+            @for (
+              environment of environments;
+              track environment.id
+            ) {
+              <option [value]="environment.id">
+                {{ environment.name }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="company-list__field">
+          <span>Razão social</span>
+
+          <input
+            name="legalName"
+            type="text"
+            maxlength="255"
+            required
+            [(ngModel)]="form.legalName"
+          >
+        </label>
+
+        <label class="company-list__field">
+          <span>Nome fantasia</span>
+
+          <input
+            name="tradeName"
+            type="text"
+            maxlength="255"
+            required
+            [(ngModel)]="form.tradeName"
+          >
+        </label>
+
+        <label class="company-list__field">
+          <span>CPF ou CNPJ</span>
+
+          <input
+            name="document"
+            type="text"
+            inputmode="numeric"
+            maxlength="18"
+            required
+            [(ngModel)]="form.document"
+          >
+        </label>
+
+        <label class="company-list__field">
+          <span>E-mail</span>
+
+          <input
+            name="email"
+            type="email"
+            maxlength="255"
+            [(ngModel)]="form.email"
+          >
+        </label>
+
+        <label class="company-list__field">
+          <span>Telefone</span>
+
+          <input
+            name="phone"
+            type="tel"
+            maxlength="20"
+            [(ngModel)]="form.phone"
+          >
+        </label>
+
+        <label class="company-list__field">
+          <span>Status</span>
+
+          <select
+            name="status"
+            required
+            [(ngModel)]="form.status"
+          >
+            <option value="active">Ativa</option>
+            <option value="inactive">Inativa</option>
+          </select>
+        </label>
+
+      </div>
+
+      <div class="company-list__form-actions">
+
+        <button
+          class="company-list__action"
+          type="button"
+          [disabled]="saving()"
+          (click)="cancelForm()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          class="company-list__create-button"
+          type="submit"
+          [disabled]="companyForm.invalid || saving()"
+        >
+          {{ saving() ? 'Salvando...' : 'Salvar empresa' }}
+        </button>
+
+      </div>
+
+    </form>
+
+  }
+
+  @if (loading()) {
+
+    <div class="company-list__empty">
+      <h3>Carregando empresas...</h3>
+
+      <p>
+        Aguarde enquanto consultamos os dados da API.
+      </p>
+    </div>
+
+  } @else if (errorMessage()) {
+
+    <div class="company-list__empty">
+      <h3>Falha ao carregar</h3>
+
+      <p>
+        {{ errorMessage() }}
+      </p>
+
+      <button
+        class="company-list__create-button"
+        type="button"
+        (click)="refresh()"
+      >
+        Tentar novamente
+      </button>
+    </div>
+
+  } @else if (companies().length > 0) {
 
     <div class="company-list__table-container">
 
@@ -41,28 +228,19 @@
 
         <thead>
           <tr>
-            <th scope="col">
-              Empresa
-            </th>
+            <th scope="col">Empresa</th>
+            <th scope="col">Documento</th>
+            <th scope="col">Contato</th>
+            <th scope="col">Status</th>
 
-            <th scope="col">
-              Documento
-            </th>
-
-            <th scope="col">
-              Contato
-            </th>
-
-            <th scope="col">
-              Status
-            </th>
-
-            <th
-              class="company-list__actions-heading"
-              scope="col"
-            >
-              Ações
-            </th>
+            @if (canManage) {
+              <th
+                class="company-list__actions-heading"
+                scope="col"
+              >
+                Ações
+              </th>
+            }
           </tr>
         </thead>
 
@@ -77,13 +255,8 @@
 
               <td>
                 <div class="company-list__company">
-                  <strong>
-                    {{ company.tradeName }}
-                  </strong>
-
-                  <span>
-                    {{ company.legalName }}
-                  </span>
+                  <strong>{{ company.tradeName }}</strong>
+                  <span>{{ company.legalName }}</span>
                 </div>
               </td>
 
@@ -95,24 +268,15 @@
                 <div class="company-list__contact">
 
                   @if (company.email) {
-                    <span>
-                      {{ company.email }}
-                    </span>
+                    <span>{{ company.email }}</span>
                   }
 
                   @if (company.phone) {
-                    <span>
-                      {{ company.phone }}
-                    </span>
+                    <span>{{ company.phone }}</span>
                   }
 
-                  @if (
-                    !company.email
-                    && !company.phone
-                  ) {
-                    <span>
-                      Não informado
-                    </span>
+                  @if (!company.email && !company.phone) {
+                    <span>Não informado</span>
                   }
 
                 </div>
@@ -128,25 +292,34 @@
                 </span>
               </td>
 
-              <td>
-                <div class="company-list__actions">
+              @if (canManage) {
+                <td>
+                  <div class="company-list__actions">
 
-                  <button
-                    class="company-list__action"
-                    type="button"
-                  >
-                    Editar
-                  </button>
+                    <button
+                      class="company-list__action"
+                      type="button"
+                      (click)="openEdit(company)"
+                    >
+                      Editar
+                    </button>
 
-                  <button
-                    class="company-list__action company-list__action--danger"
-                    type="button"
-                  >
-                    Excluir
-                  </button>
+                    <button
+                      class="company-list__action company-list__action--danger"
+                      type="button"
+                      [disabled]="deletingCompanyId() === company.id"
+                      (click)="deleteCompany(company)"
+                    >
+                      {{
+                        deletingCompanyId() === company.id
+                          ? 'Excluindo...'
+                          : 'Excluir'
+                      }}
+                    </button>
 
-                </div>
-              </td>
+                  </div>
+                </td>
+              }
 
             </tr>
 
@@ -162,20 +335,21 @@
 
     <div class="company-list__empty">
 
-      <h3>
-        Nenhuma empresa cadastrada
-      </h3>
+      <h3>Nenhuma empresa cadastrada</h3>
 
       <p>
-        Cadastre a primeira empresa para iniciar o gerenciamento de clientes.
+        Nenhuma empresa foi encontrada no seu escopo de acesso.
       </p>
 
-      <button
-        class="company-list__create-button"
-        type="button"
-      >
-        Cadastrar primeira empresa
-      </button>
+      @if (canManage) {
+        <button
+          class="company-list__create-button"
+          type="button"
+          (click)="openCreate()"
+        >
+          Cadastrar primeira empresa
+        </button>
+      }
 
     </div>
 

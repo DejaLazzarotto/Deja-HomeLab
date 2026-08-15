@@ -15,9 +15,9 @@ import {
 } from './company-input';
 
 export interface CompanyRepository {
-  list(): readonly Company[];
-  findById(id: string): Company | undefined;
-  create(input: CompanyInput): Company;
-  update(id: string, input: CompanyInput): Company;
-  delete(id: string): void;
+  list(): Promise<readonly Company[]>;
+  findById(id: string): Promise<Company | undefined>;
+  create(input: CompanyInput): Promise<Company>;
+  update(id: string, input: CompanyInput): Promise<Company>;
+  delete(id: string): Promise<void>;
 }

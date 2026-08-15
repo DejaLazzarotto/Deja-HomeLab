@@ -36,19 +36,19 @@ export class InMemoryCompanyRepository implements CompanyRepository {
 
   private readonly validator = new CompanyValidator();
 
-  list(): readonly Company[] {
+  async list(): Promise<readonly Company[]> {
     return Array.from(this.companies.values());
   }
 
-  findById(
+  async findById(
     id: string,
-  ): Company | undefined {
+  ): Promise<Company | undefined> {
     return this.companies.get(id);
   }
 
-  create(
+  async create(
     input: CompanyInput,
-  ): Company {
+  ): Promise<Company> {
     const validatedInput = this.validator.validate(input);
 
     this.ensureDocumentIsAvailable(validatedInput.document);
@@ -67,10 +67,10 @@ export class InMemoryCompanyRepository implements CompanyRepository {
     return company;
   }
 
-  update(
+  async update(
     id: string,
     input: CompanyInput,
-  ): Company {
+  ): Promise<Company> {
     const currentCompany = this.companies.get(id);
 
     if (!currentCompany) {
@@ -95,9 +95,9 @@ export class InMemoryCompanyRepository implements CompanyRepository {
     return company;
   }
 
-  delete(
+  async delete(
     id: string,
-  ): void {
+  ): Promise<void> {
     if (!this.companies.has(id)) {
       throw new CompanyNotFoundError(id);
     }
@@ -109,12 +109,13 @@ export class InMemoryCompanyRepository implements CompanyRepository {
     document: string,
     currentCompanyId?: string,
   ): void {
-    const companyWithDocument = this.list().find(
-      company => (
-        company.document === document
-        && company.id !== currentCompanyId
-      ),
-    );
+    const companyWithDocument =
+      Array.from(this.companies.values()).find(
+        company => (
+          company.document === document
+          && company.id !== currentCompanyId
+        ),
+      );
 
     if (companyWithDocument) {
       throw new CompanyDocumentAlreadyExistsError(document);

@@ -11,76 +11,47 @@
  * o Workspace SDK e o framework.
  */
 
-import {
-  Injectable,
-} from '@angular/core';
+import { Injectable } from '@angular/core';
 
 import {
   WorkspaceDashboardId,
+  WorkspaceNavigationId,
 } from '../../core/workspace-sdk/contracts/workspace-contracts';
 
-import {
-  WorkspaceDashboardResolver,
-} from '../../core/workspace-sdk/runtime/workspace-dashboard-resolver';
+import { WorkspaceDashboardResolver } from '../../core/workspace-sdk/runtime/workspace-dashboard-resolver';
 
-import {
-  WorkspaceRenderContext,
-} from '../../core/workspace-sdk/runtime/workspace-render-context';
+import { WorkspaceRenderContext } from '../../core/workspace-sdk/runtime/workspace-render-context';
 
-import {
-  WorkspaceResolvedDashboard,
-} from '../../core/workspace-sdk/runtime/workspace-resolved-dashboard';
+import { WorkspaceResolvedDashboard } from '../../core/workspace-sdk/runtime/workspace-resolved-dashboard';
 
-import {
-  WorkspaceRuntime,
-} from '../../core/workspace-sdk/runtime/workspace-runtime';
+import { WorkspaceRuntime } from '../../core/workspace-sdk/runtime/workspace-runtime';
 
-import {
-  WorkspaceBootstrapService,
-} from '../bootstrap/workspace-bootstrap.service';
+import { WorkspaceBootstrapService } from '../bootstrap/workspace-bootstrap.service';
 
-import {
-  AngularWorkspaceRenderHost,
-} from '../rendering/angular-workspace-render-host';
+import { AngularWorkspaceRenderHost } from '../rendering/angular-workspace-render-host';
 
 /**
  * Erro lançado quando o Workspace Runtime não possui
  * um Layout Engine configurado.
  */
-export class WorkspaceShellLayoutEngineNotAvailableError
-  extends Error {
-
+export class WorkspaceShellLayoutEngineNotAvailableError extends Error {
   constructor() {
+    super('Workspace Shell requires a configured Workspace Layout Engine.');
 
-    super(
-      'Workspace Shell requires a configured Workspace Layout Engine.',
-    );
-
-    this.name =
-      'WorkspaceShellLayoutEngineNotAvailableError';
-
+    this.name = 'WorkspaceShellLayoutEngineNotAvailableError';
   }
-
 }
 
 /**
  * Erro lançado quando não existe nenhum Dashboard habilitado
  * para a inicialização visual do Workspace.
  */
-export class WorkspaceShellDashboardNotAvailableError
-  extends Error {
-
+export class WorkspaceShellDashboardNotAvailableError extends Error {
   constructor() {
+    super('No enabled Workspace Dashboard is available for initial rendering.');
 
-    super(
-      'No enabled Workspace Dashboard is available for initial rendering.',
-    );
-
-    this.name =
-      'WorkspaceShellDashboardNotAvailableError';
-
+    this.name = 'WorkspaceShellDashboardNotAvailableError';
   }
-
 }
 
 /**
@@ -90,7 +61,6 @@ export class WorkspaceShellDashboardNotAvailableError
   providedIn: 'root',
 })
 export class WorkspaceShellController {
-
   /**
    * Contexto atualmente utilizado pela renderização.
    */
@@ -99,45 +69,34 @@ export class WorkspaceShellController {
   /**
    * Dashboard atualmente apresentado pela Shell.
    */
-  private currentDashboard?:
-    WorkspaceResolvedDashboard;
+  private currentDashboard?: WorkspaceResolvedDashboard;
 
   /**
    * Indica se a camada visual da Shell está ativa.
    */
   private active = false;
 
-  constructor(
-    private readonly bootstrap:
-      WorkspaceBootstrapService,
-  ) {}
+  constructor(private readonly bootstrap: WorkspaceBootstrapService) {}
 
   /**
    * Retorna o Runtime oficial associado à Shell.
    */
   getRuntime(): WorkspaceRuntime {
-
     return this.bootstrap.getRuntime();
-
   }
 
   /**
    * Retorna o Dashboard atualmente apresentado.
    */
-  getCurrentDashboard():
-    WorkspaceResolvedDashboard | undefined {
-
+  getCurrentDashboard(): WorkspaceResolvedDashboard | undefined {
     return this.currentDashboard;
-
   }
 
   /**
    * Indica se a Shell está visualmente ativa.
    */
   isActive(): boolean {
-
     return this.active;
-
   }
 
   /**
@@ -147,32 +106,59 @@ export class WorkspaceShellController {
    * Dashboard habilitado segundo a ordenação institucional
    * do registry é utilizado.
    */
-  async start(
-    host: AngularWorkspaceRenderHost,
-    dashboardId?: WorkspaceDashboardId,
-  ): Promise<void> {
-
+  async start(host: AngularWorkspaceRenderHost, dashboardId?: WorkspaceDashboardId): Promise<void> {
     const runtime = this.getRuntime();
 
-    const dashboard =
-      await this.resolveInitialDashboard(
-        runtime,
-        dashboardId,
-      );
+    const dashboard = await this.resolveInitialDashboard(runtime, dashboardId);
 
     const context: WorkspaceRenderContext = {
       technology: 'angular',
       host,
     };
 
-    await runtime.renderDashboard(
-      dashboard,
-      context,
-    );
+    await runtime.renderDashboard(dashboard, context);
 
     this.renderContext = context;
     this.currentDashboard = dashboard;
     this.active = true;
+  }
+
+  /**
+   * Navega e apresenta o Dashboard resolvido na área central.
+   */
+  async navigate(
+    navigationId: WorkspaceNavigationId,
+  ): Promise<void> {
+
+    if (!this.renderContext) {
+      throw new Error(
+        'Workspace Shell is not ready for navigation.',
+      );
+    }
+
+    const runtime = this.getRuntime();
+
+    const result = await runtime.navigate(
+      navigationId,
+    );
+
+    await runtime.renderDashboard(
+      result.dashboard,
+      this.renderContext,
+    );
+
+    this.currentDashboard = result.dashboard;
+
+    if (
+      window.location.pathname
+      !== result.dashboard.dashboard.route
+    ) {
+      window.history.pushState(
+        {},
+        '',
+        result.dashboard.dashboard.route,
+      );
+    }
 
   }
 
@@ -180,24 +166,18 @@ export class WorkspaceShellController {
    * Encerra a camada visual do Workspace.
    */
   async stop(): Promise<void> {
-
     if (!this.renderContext) {
-
       this.currentDashboard = undefined;
       this.active = false;
 
       return;
-
     }
 
-    await this.getRuntime().disposeRenderer(
-      this.renderContext,
-    );
+    await this.getRuntime().disposeRenderer(this.renderContext);
 
     this.renderContext = undefined;
     this.currentDashboard = undefined;
     this.active = false;
-
   }
 
   /**
@@ -207,28 +187,33 @@ export class WorkspaceShellController {
     runtime: WorkspaceRuntime,
     dashboardId?: WorkspaceDashboardId,
   ): Promise<WorkspaceResolvedDashboard> {
-
-    const layoutEngine =
-      runtime.getLayoutEngine();
+    const layoutEngine = runtime.getLayoutEngine();
 
     if (!layoutEngine) {
       throw new WorkspaceShellLayoutEngineNotAvailableError();
     }
 
-    const resolver =
-      new WorkspaceDashboardResolver(
-        runtime.registries,
-        layoutEngine,
-      );
+    const resolver = new WorkspaceDashboardResolver(runtime.registries, layoutEngine);
 
     if (dashboardId) {
       return resolver.resolve(dashboardId);
     }
 
-    const dashboard =
+       const dashboards =
       runtime.registries.dashboards.list({
         enabled: true,
-      })[0];
+      });
+
+    const routeDashboard = dashboards.find(
+      dashboard => (
+        dashboard.route
+        === window.location.pathname
+      ),
+    );
+
+    const dashboard =
+      routeDashboard
+      ?? dashboards[0];
 
     if (!dashboard) {
       throw new WorkspaceShellDashboardNotAvailableError();
@@ -237,7 +222,5 @@ export class WorkspaceShellController {
     return resolver.resolveDashboard(
       dashboard,
     );
-
   }
-
 }

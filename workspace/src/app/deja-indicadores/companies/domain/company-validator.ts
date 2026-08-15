@@ -20,6 +20,7 @@ export class CompanyValidator {
     input: CompanyInput,
   ): CompanyInput {
     const normalizedInput: CompanyInput = {
+      environmentId: input.environmentId.trim(),
       legalName: input.legalName.trim(),
       tradeName: input.tradeName.trim(),
       document: this.normalizeDocument(input.document),
@@ -27,6 +28,13 @@ export class CompanyValidator {
       phone: input.phone.trim(),
       status: input.status,
     };
+
+    if (normalizedInput.environmentId.length !== 36) {
+      throw new InvalidCompanyError(
+        'environmentId',
+        'Company environment is required.',
+      );
+    }
 
     if (!normalizedInput.legalName) {
       throw new InvalidCompanyError(

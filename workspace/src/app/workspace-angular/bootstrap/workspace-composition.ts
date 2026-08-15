@@ -49,6 +49,10 @@ import { WorkspaceWidget } from '../../core/workspace-sdk/runtime/workspace-widg
 
 import { WorkspaceWelcomeWidgetComponent } from '../components/workspace-welcome-widget/workspace-welcome-widget';
 
+import {
+  WorkspaceCompanyManagementWidgetComponent,
+} from '../components/workspace-company-management-widget/workspace-company-management-widget';
+
 
 /**
  * Composition Root oficial do Workspace.
@@ -107,6 +111,9 @@ export class WorkspaceComposition {
 
   private static readonly WELCOME_WIDGET_ID =
     'deja.workspace.widget.welcome';
+
+  private static readonly COMPANY_MANAGEMENT_WIDGET_ID =
+    'deja.workspace.widget.company-management';
 
   private static readonly ANALYTICS_ACTION_ID =
     'deja.workspace.widget.welcome.analytics';
@@ -488,6 +495,42 @@ export class WorkspaceComposition {
     };
 
 
+    const companyManagementWidget: WorkspaceWidget = {
+      id: this.COMPANY_MANAGEMENT_WIDGET_ID,
+      owner: this.CORE_OWNER,
+      title: 'Gestão de Empresas',
+      description:
+        'Consulta e gerenciamento das empresas do Deja Indicadores.',
+      category: 'management',
+      widgetType: 'company-management',
+      supportedSurfaces: [
+        'dashboard',
+      ],
+      capabilities: [
+        'resizable',
+      ],
+      size: {
+        default: {
+          columns: 12,
+          rows: 8,
+        },
+        minimum: {
+          columns: 6,
+          rows: 4,
+        },
+      },
+      component:
+        WorkspaceCompanyManagementWidgetComponent,
+      priority: 20,
+      enabled: true,
+      tags: [
+        'deja-indicadores',
+        'companies',
+        'management',
+      ],
+    };
+
+
     registries.layoutRegions.register(
       mainRegion,
     );
@@ -500,6 +543,11 @@ export class WorkspaceComposition {
 
     registries.widgets.register(
       welcomeWidget,
+    );
+
+
+    registries.widgets.register(
+      companyManagementWidget,
     );
 
 
@@ -553,6 +601,23 @@ export class WorkspaceComposition {
         metadata: {
           type: 'applications',
         },
+        widgets: [
+          {
+            id:
+              'deja.workspace.widget-instance.company-management',
+            widgetId:
+              companyManagementWidget.id,
+            regionId:
+              mainRegion.id,
+            position: {
+              column: 1,
+              row: 1,
+              columnSpan: 12,
+              rowSpan: 8,
+            },
+            enabled: true,
+          },
+        ],
       },
 
 

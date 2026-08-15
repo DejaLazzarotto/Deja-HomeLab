@@ -24,6 +24,10 @@ import {
   WorkspaceIconProvider,
 } from '../../services/workspace-icon-provider';
 
+import {
+  WorkspaceShellController,
+} from '../../services/workspace-shell-controller';
+
 /**
  * Sidebar permanente da Workspace Shell.
  *
@@ -43,8 +47,12 @@ import {
 export class WorkspaceSidebarComponent {
 
   constructor(
-    private readonly bootstrapService: WorkspaceBootstrapService,
-    readonly iconProvider: WorkspaceIconProvider,
+    private readonly bootstrapService:
+      WorkspaceBootstrapService,
+    private readonly shell:
+      WorkspaceShellController,
+    readonly iconProvider:
+      WorkspaceIconProvider,
   ) {}
 
   /**
@@ -55,9 +63,7 @@ export class WorkspaceSidebarComponent {
    * ponto responsável pela composição.
    */
   private get runtime() {
-
     return this.bootstrapService.getRuntime();
-
   }
 
   /**
@@ -67,9 +73,7 @@ export class WorkspaceSidebarComponent {
    * através da API pública do Runtime.
    */
   get navigation(): readonly WorkspaceNavigation[] {
-
     return this.runtime.visibleNavigations();
-
   }
 
   /**
@@ -78,11 +82,9 @@ export class WorkspaceSidebarComponent {
   async navigate(
     navigation: WorkspaceNavigation,
   ): Promise<void> {
-
-    await this.runtime.navigate(
+    await this.shell.navigate(
       navigation.id,
     );
-
   }
 
   /**
@@ -91,11 +93,9 @@ export class WorkspaceSidebarComponent {
   isActive(
     navigation: WorkspaceNavigation,
   ): boolean {
-
     return this.runtime.isNavigationActive(
       navigation.id,
     );
-
   }
 
   /**
@@ -104,11 +104,9 @@ export class WorkspaceSidebarComponent {
   resolveIcon(
     navigation: WorkspaceNavigation,
   ): string | undefined {
-
     return this.iconProvider.resolve(
       navigation.icon,
     );
-
   }
 
 }

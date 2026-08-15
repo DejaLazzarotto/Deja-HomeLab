@@ -7,19 +7,33 @@
  */
 
 import {
+  HttpClient,
+} from '@angular/common/http';
+
+import {
   CompanyService,
 } from './application';
 
 import {
-  InMemoryCompanyRepository,
+  HttpCompanyRepository,
 } from './infrastructure';
 
 export class CompaniesComposition {
 
-  private readonly repository = new InMemoryCompanyRepository();
+  private readonly repository: HttpCompanyRepository;
 
-  readonly service = new CompanyService(
-    this.repository,
-  );
+  readonly service: CompanyService;
+
+  constructor(
+    http: HttpClient,
+  ) {
+    this.repository = new HttpCompanyRepository(
+      http,
+    );
+
+    this.service = new CompanyService(
+      this.repository,
+    );
+  }
 
 }
