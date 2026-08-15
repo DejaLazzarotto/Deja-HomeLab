@@ -26,20 +26,22 @@ class OrganizationModel(Base):
     """Modelo persistente de uma organização."""
 
     __tablename__ = "organizations"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            name="uq_organizations_name",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
-        unique=True,
-        index=True,
     )
     status: Mapped[TenantManagementStatus] = mapped_column(
         Enum(
             TenantManagementStatus,
-            values_callable=lambda statuses: [
-                status.value for status in statuses
-            ],
+            values_callable=lambda statuses: [status.value for status in statuses],
             name="organization_status",
         ),
         nullable=False,
@@ -85,9 +87,7 @@ class TenantModel(Base):
     status: Mapped[TenantManagementStatus] = mapped_column(
         Enum(
             TenantManagementStatus,
-            values_callable=lambda statuses: [
-                status.value for status in statuses
-            ],
+            values_callable=lambda statuses: [status.value for status in statuses],
             name="tenant_status",
         ),
         nullable=False,
@@ -133,9 +133,7 @@ class EnvironmentModel(Base):
     status: Mapped[TenantManagementStatus] = mapped_column(
         Enum(
             TenantManagementStatus,
-            values_callable=lambda statuses: [
-                status.value for status in statuses
-            ],
+            values_callable=lambda statuses: [status.value for status in statuses],
             name="environment_status",
         ),
         nullable=False,

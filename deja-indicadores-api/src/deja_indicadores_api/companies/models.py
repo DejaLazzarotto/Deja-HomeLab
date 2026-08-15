@@ -1,7 +1,14 @@
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, func
+from sqlalchemy import (
+    DateTime,
+    Enum,
+    ForeignKey,
+    String,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from deja_indicadores_api.core.database import Base
@@ -18,6 +25,12 @@ class CompanyModel(Base):
     """Modelo persistente de uma empresa cliente."""
 
     __tablename__ = "companies"
+    __table_args__ = (
+        UniqueConstraint(
+            "document",
+            name="uq_companies_document",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     environment_id: Mapped[str] = mapped_column(
@@ -35,8 +48,6 @@ class CompanyModel(Base):
     document: Mapped[str] = mapped_column(
         String(14),
         nullable=False,
-        unique=True,
-        index=True,
     )
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
