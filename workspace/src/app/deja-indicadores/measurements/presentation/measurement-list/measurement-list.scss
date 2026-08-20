@@ -1,0 +1,365 @@
+/*
+ * Deja Indicadores
+ *
+ * Measurements Presentation
+ *
+ * Estilos Mobile First da Coleta Manual.
+ */
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.measurement-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--workspace-spacing-lg);
+  min-width: 0;
+  padding: var(--workspace-spacing-md);
+  color: var(--workspace-color-text);
+  background: var(--workspace-color-surface);
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-lg);
+  box-shadow: var(--workspace-shadow-sm);
+}
+
+.measurement-list__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--workspace-spacing-md);
+}
+
+.measurement-list__heading {
+  display: flex;
+  flex: 1 1 20rem;
+  flex-direction: column;
+  gap: var(--workspace-spacing-xs);
+  min-width: 0;
+}
+
+.measurement-list__eyebrow {
+  color: var(--workspace-color-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.measurement-list__title {
+  margin: 0;
+  color: var(--workspace-color-text);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  line-height: 1.2;
+}
+
+.measurement-list__description {
+  max-width: 44rem;
+  margin: 0;
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.measurement-list__primary-button {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.65rem 1rem;
+  color: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--workspace-color-primary);
+  border: 1px solid transparent;
+  border-radius: var(--workspace-radius-md);
+  transition:
+    filter var(--workspace-transition-fast),
+    transform var(--workspace-transition-fast);
+}
+
+.measurement-list__primary-button:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.measurement-list__primary-button:focus-visible,
+.measurement-list__action:focus-visible {
+  outline: 2px solid var(--workspace-color-primary);
+  outline-offset: 2px;
+}
+
+.measurement-list__message {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  border: 1px solid;
+  border-radius: var(--workspace-radius-md);
+}
+
+.measurement-list__message--success {
+  color: var(--workspace-color-success);
+  background: rgb(65 205 142 / 8%);
+  border-color: var(--workspace-color-success);
+}
+
+.measurement-list__message--error {
+  color: var(--workspace-color-danger);
+  background: rgb(255 92 92 / 8%);
+  border-color: var(--workspace-color-danger);
+}
+
+.measurement-list__filters,
+.measurement-list__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--workspace-spacing-lg);
+  padding: var(--workspace-spacing-md);
+  background: var(--workspace-color-background);
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
+}
+
+.measurement-list__filters-header h3,
+.measurement-list__form-header h3 {
+  margin: 0;
+  color: var(--workspace-color-text);
+  font-size: 1rem;
+}
+
+.measurement-list__filters-header p,
+.measurement-list__form-header p {
+  margin: 0.3rem 0 0;
+  color: var(--workspace-color-text-muted);
+  font-size: 0.8rem;
+}
+
+.measurement-list__filter-grid,
+.measurement-list__form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--workspace-spacing-md);
+}
+
+.measurement-list__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--workspace-spacing-xs);
+  min-width: 0;
+}
+
+.measurement-list__field span {
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.measurement-list__field input,
+.measurement-list__field select,
+.measurement-list__field textarea {
+  width: 100%;
+  min-height: 2.65rem;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem;
+  color: var(--workspace-color-text);
+  font: inherit;
+  font-size: 0.82rem;
+  background: var(--workspace-color-surface);
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-sm);
+  outline: none;
+}
+
+.measurement-list__field textarea {
+  resize: vertical;
+}
+
+.measurement-list__field input:focus,
+.measurement-list__field select:focus,
+.measurement-list__field textarea:focus {
+  border-color: var(--workspace-color-primary);
+  box-shadow: 0 0 0 2px rgb(77 158 255 / 16%);
+}
+
+.measurement-list__filter-actions,
+.measurement-list__form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--workspace-spacing-sm);
+}
+
+.measurement-list__table-container {
+  min-width: 0;
+  overflow-x: auto;
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
+}
+
+.measurement-list__table {
+  width: 100%;
+  min-width: 64rem;
+  border-collapse: collapse;
+}
+
+.measurement-list__table th,
+.measurement-list__table td {
+  padding: 0.9rem 1rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--workspace-color-border);
+}
+
+.measurement-list__table th {
+  color: var(--workspace-color-text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: var(--workspace-color-background);
+  text-transform: uppercase;
+}
+
+.measurement-list__table td {
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.82rem;
+}
+
+.measurement-list__table tbody tr {
+  transition: background var(--workspace-transition-fast);
+}
+
+.measurement-list__table tbody tr:hover {
+  background: var(--workspace-color-overlay);
+}
+
+.measurement-list__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.measurement-list__date,
+.measurement-list__indicator,
+.measurement-list__value {
+  color: var(--workspace-color-text);
+  font-size: 0.86rem;
+}
+
+.measurement-list__indicator {
+  max-width: 18rem;
+}
+
+.measurement-list__observation {
+  display: block;
+  max-width: 22rem;
+  overflow: hidden;
+  color: var(--workspace-color-text-muted);
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.measurement-list__actions-heading {
+  text-align: right !important;
+}
+
+.measurement-list__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--workspace-spacing-xs);
+}
+
+.measurement-list__action {
+  padding: 0.4rem 0.65rem;
+  color: var(--workspace-color-text-secondary);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-sm);
+  transition:
+    color var(--workspace-transition-fast),
+    background var(--workspace-transition-fast),
+    border-color var(--workspace-transition-fast);
+}
+
+.measurement-list__action:hover {
+  color: var(--workspace-color-text);
+  background: var(--workspace-color-overlay);
+  border-color: var(--workspace-color-border-strong);
+}
+
+.measurement-list__action--danger:hover {
+  color: var(--workspace-color-danger);
+  background: rgb(255 92 92 / 8%);
+  border-color: var(--workspace-color-danger);
+}
+
+.measurement-list__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--workspace-spacing-sm);
+  padding: clamp(2rem, 8vw, 4rem) var(--workspace-spacing-lg);
+  text-align: center;
+  background: var(--workspace-color-background);
+  border: 1px dashed var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
+}
+
+.measurement-list__empty h3 {
+  margin: 0;
+  color: var(--workspace-color-text);
+  font-size: 1rem;
+}
+
+.measurement-list__empty p {
+  max-width: 32rem;
+  margin: 0 0 var(--workspace-spacing-sm);
+  color: var(--workspace-color-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.measurement-list button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+@media (min-width: 40rem) {
+  .measurement-list {
+    padding: var(--workspace-spacing-lg);
+  }
+
+  .measurement-list__primary-button {
+    width: auto;
+  }
+
+  .measurement-list__filters,
+  .measurement-list__form {
+    padding: var(--workspace-spacing-lg);
+  }
+}
+
+@media (min-width: 48rem) {
+  .measurement-list__filter-grid,
+  .measurement-list__form-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .measurement-list__field--wide {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 72rem) {
+  .measurement-list__filter-grid {
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+  }
+}

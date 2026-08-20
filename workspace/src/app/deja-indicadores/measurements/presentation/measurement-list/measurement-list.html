@@ -1,0 +1,469 @@
+<!--
+  Deja Indicadores
+
+  Measurements Presentation
+
+  Estrutura visual da Coleta Manual.
+-->
+
+<section class="measurement-list">
+
+  <header class="measurement-list__header">
+
+    <div class="measurement-list__heading">
+      <span class="measurement-list__eyebrow">
+        Operação
+      </span>
+
+      <h2 class="measurement-list__title">
+        Coleta Manual
+      </h2>
+
+      <p class="measurement-list__description">
+        Consulte e registre os valores realizados dos
+        indicadores disponíveis no seu escopo de acesso.
+      </p>
+    </div>
+
+    @if (canEdit && !formVisible()) {
+      <button
+        class="measurement-list__primary-button"
+        type="button"
+        [disabled]="!hasActiveIndicators()"
+        (click)="openCreate()"
+      >
+        Nova medição
+      </button>
+    }
+
+  </header>
+
+  @if (operationMessage()) {
+    <p
+      class="measurement-list__message measurement-list__message--success"
+    >
+      {{ operationMessage() }}
+    </p>
+  }
+
+  @if (operationError()) {
+    <p
+      class="measurement-list__message measurement-list__message--error"
+    >
+      {{ operationError() }}
+    </p>
+  }
+
+  <form
+    class="measurement-list__filters"
+    (ngSubmit)="applyFilters()"
+  >
+
+    <div class="measurement-list__filters-header">
+      <h3>Filtros</h3>
+
+      <p>
+        Refine a consulta por empresa, indicador ou período.
+      </p>
+    </div>
+
+    <div class="measurement-list__filter-grid">
+
+      <label class="measurement-list__field">
+        <span>Empresa</span>
+
+        <select
+          name="filterCompanyId"
+          [(ngModel)]="filterCompanyId"
+          (ngModelChange)="filterCompanyChanged()"
+        >
+          <option value="">Todas as empresas</option>
+
+          @for (
+            company of companies;
+            track company.id
+          ) {
+            <option [value]="company.id">
+              {{ company.name }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label class="measurement-list__field">
+        <span>Indicador</span>
+
+        <select
+          name="filterIndicatorId"
+          [(ngModel)]="filterIndicatorId"
+        >
+          <option value="">Todos os indicadores</option>
+
+          @for (
+            indicator of filteredIndicators();
+            track indicator.id
+          ) {
+            <option [value]="indicator.id">
+              {{ indicator.name }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label class="measurement-list__field">
+        <span>Data inicial</span>
+
+        <input
+          name="filterStartDate"
+          type="date"
+          [(ngModel)]="filterStartDate"
+        >
+      </label>
+
+      <label class="measurement-list__field">
+        <span>Data final</span>
+
+        <input
+          name="filterEndDate"
+          type="date"
+          [(ngModel)]="filterEndDate"
+        >
+      </label>
+
+    </div>
+
+    <div class="measurement-list__filter-actions">
+
+      <button
+        class="measurement-list__action"
+        type="button"
+        [disabled]="loading()"
+        (click)="clearFilters()"
+      >
+        Limpar
+      </button>
+
+      <button
+        class="measurement-list__primary-button"
+        type="submit"
+        [disabled]="loading()"
+      >
+        Aplicar filtros
+      </button>
+
+    </div>
+
+  </form>
+
+  @if (formVisible()) {
+
+    <form
+      class="measurement-list__form"
+      #measurementForm="ngForm"
+      (ngSubmit)="save()"
+    >
+
+      <div class="measurement-list__form-header">
+        <h3>
+          {{
+            editingMeasurementId()
+              ? 'Editar medição'
+              : 'Nova medição'
+          }}
+        </h3>
+
+        <p>
+          Informe o valor realizado para o indicador.
+        </p>
+      </div>
+
+      <div class="measurement-list__form-grid">
+
+        <label class="measurement-list__field">
+          <span>Empresa</span>
+
+          <select
+            name="formCompanyId"
+            required
+            [(ngModel)]="formCompanyId"
+            (ngModelChange)="formCompanyChanged()"
+          >
+            <option value="" disabled>
+              Selecione a empresa
+            </option>
+
+            @for (
+              company of companies;
+              track company.id
+            ) {
+              <option [value]="company.id">
+                {{ company.name }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="measurement-list__field">
+          <span>Indicador</span>
+
+          <select
+            name="indicatorId"
+            required
+            [(ngModel)]="form.indicatorId"
+          >
+            <option value="" disabled>
+              Selecione o indicador
+            </option>
+
+            @for (
+              indicator of formIndicators();
+              track indicator.id
+            ) {
+              <option [value]="indicator.id">
+                {{ indicator.name }} ({{ indicator.unit }})
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="measurement-list__field">
+          <span>Data de referência</span>
+
+          <input
+            name="referenceDate"
+            type="date"
+            required
+            [(ngModel)]="form.referenceDate"
+          >
+        </label>
+
+        <label class="measurement-list__field">
+          <span>Valor realizado</span>
+
+          <input
+            name="actualValue"
+            type="number"
+            step="0.0001"
+            required
+            [(ngModel)]="form.actualValue"
+          >
+        </label>
+
+        <label
+          class="measurement-list__field measurement-list__field--wide"
+        >
+          <span>Observação</span>
+
+          <textarea
+            name="observation"
+            rows="4"
+            [(ngModel)]="form.observation"
+          ></textarea>
+        </label>
+
+      </div>
+
+      <div class="measurement-list__form-actions">
+
+        <button
+          class="measurement-list__action"
+          type="button"
+          [disabled]="saving()"
+          (click)="cancelForm()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          class="measurement-list__primary-button"
+          type="submit"
+          [disabled]="measurementForm.invalid || saving()"
+        >
+          {{
+            saving()
+              ? 'Salvando...'
+              : 'Salvar medição'
+          }}
+        </button>
+
+      </div>
+
+    </form>
+
+  }
+
+  @if (loading()) {
+
+    <div class="measurement-list__empty">
+      <h3>Carregando medições...</h3>
+
+      <p>
+        Aguarde enquanto consultamos os dados da API.
+      </p>
+    </div>
+
+  } @else if (errorMessage()) {
+
+    <div class="measurement-list__empty">
+      <h3>Falha ao carregar</h3>
+
+      <p>
+        {{ errorMessage() }}
+      </p>
+
+      <button
+        class="measurement-list__primary-button"
+        type="button"
+        (click)="refresh()"
+      >
+        Tentar novamente
+      </button>
+    </div>
+
+  } @else if (measurements().length > 0) {
+
+    <div class="measurement-list__table-container">
+
+      <table class="measurement-list__table">
+
+        <thead>
+          <tr>
+            <th scope="col">Data</th>
+            <th scope="col">Indicador</th>
+            <th scope="col">Empresa</th>
+            <th scope="col">Valor realizado</th>
+            <th scope="col">Observação</th>
+
+            @if (canEdit || canDelete) {
+              <th
+                class="measurement-list__actions-heading"
+                scope="col"
+              >
+                Ações
+              </th>
+            }
+          </tr>
+        </thead>
+
+        <tbody>
+
+          @for (
+            measurement of measurements();
+            track measurement.id
+          ) {
+
+            <tr>
+
+              <td>
+                <strong class="measurement-list__date">
+                  {{
+                    formatReferenceDate(
+                      measurement.referenceDate
+                    )
+                  }}
+                </strong>
+              </td>
+
+              <td>
+                <strong class="measurement-list__indicator">
+                  {{
+                    indicatorName(
+                      measurement.indicatorId
+                    )
+                  }}
+                </strong>
+              </td>
+
+              <td>
+                {{ companyName(measurement) }}
+              </td>
+
+              <td>
+                <strong class="measurement-list__value">
+                  {{ formatActualValue(measurement) }}
+                </strong>
+              </td>
+
+              <td>
+                <span class="measurement-list__observation">
+                  {{ measurement.observation || '—' }}
+                </span>
+              </td>
+
+              @if (canEdit || canDelete) {
+                <td>
+                  <div class="measurement-list__actions">
+
+                    @if (canEdit) {
+                      <button
+                        class="measurement-list__action"
+                        type="button"
+                        (click)="openEdit(measurement)"
+                      >
+                        Editar
+                      </button>
+                    }
+
+                    @if (canDelete) {
+                      <button
+                        class="measurement-list__action measurement-list__action--danger"
+                        type="button"
+                        [disabled]="deletingMeasurementId() === measurement.id"
+                        (click)="deleteMeasurement(measurement)"
+                      >
+                        {{
+                          deletingMeasurementId() === measurement.id
+                            ? 'Excluindo...'
+                            : 'Excluir'
+                        }}
+                      </button>
+                    }
+
+                  </div>
+                </td>
+              }
+
+            </tr>
+
+          }
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  } @else {
+
+    <div class="measurement-list__empty">
+
+      <h3>Nenhuma medição encontrada</h3>
+
+      <p>
+        Não existem medições para os filtros e o escopo
+        de acesso atuais.
+      </p>
+
+      @if (canEdit && hasActiveIndicators()) {
+        <button
+          class="measurement-list__primary-button"
+          type="button"
+          (click)="openCreate()"
+        >
+          Lançar primeira medição
+        </button>
+      } @else if (
+        canEdit
+        && !hasActiveIndicators()
+      ) {
+        <p>
+          É necessário possuir um indicador ativo antes
+          de lançar medições.
+        </p>
+      }
+
+    </div>
+
+  }
+
+</section>

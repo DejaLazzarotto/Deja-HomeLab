@@ -1,33 +1,27 @@
-import {
-  Routes,
-} from '@angular/router';
+import { Routes } from '@angular/router';
 
-import {
-  administrationGuard,
-} from './deja-indicadores/authentication/application/administration.guard';
+import { administrationGuard } from './deja-indicadores/authentication/application/administration.guard';
 
-import {
-  authenticationGuard,
-} from './deja-indicadores/authentication/application/authentication.guard';
+import { authenticationGuard } from './deja-indicadores/authentication/application/authentication.guard';
 
-const workspacePage = () => import(
-  './workspace-angular/components/workspace-page/workspace-page'
-).then(module => module.WorkspacePageComponent);
+const workspacePage = () =>
+  import('./workspace-angular/components/workspace-page/workspace-page').then(
+    (module) => module.WorkspacePageComponent,
+  );
 
 export const routes: Routes = [
   {
     path: 'login',
     title: 'Entrar | Deja Indicadores',
-    loadComponent: () => import(
-      './deja-indicadores/authentication/presentation/login/login'
-    ).then(module => module.LoginComponent),
+    loadComponent: () =>
+      import('./deja-indicadores/authentication/presentation/login/login').then(
+        (module) => module.LoginComponent,
+      ),
   },
   {
     path: '',
     title: 'Deja Indicadores',
-    canActivate: [
-      authenticationGuard,
-    ],
+    canActivate: [authenticationGuard],
     loadComponent: workspacePage,
   },
   {
@@ -38,9 +32,7 @@ export const routes: Routes = [
   {
     path: 'administration/companies',
     title: 'Empresas | Administração | Deja Indicadores',
-    canActivate: [
-      administrationGuard,
-    ],
+    canActivate: [administrationGuard],
     loadComponent: workspacePage,
   },
   {
@@ -56,9 +48,13 @@ export const routes: Routes = [
   {
     path: 'operation/indicators',
     title: 'Indicadores | Operação | Deja Indicadores',
-    canActivate: [
-      authenticationGuard,
-    ],
+    canActivate: [authenticationGuard],
+    loadComponent: workspacePage,
+  },
+  {
+    path: 'operation/measurements',
+    title: 'Coleta Manual | Operação | Deja Indicadores',
+    canActivate: [authenticationGuard],
     loadComponent: workspacePage,
   },
   {
@@ -69,25 +65,19 @@ export const routes: Routes = [
   {
     path: 'reports',
     title: 'Relatórios | Deja Indicadores',
-    canActivate: [
-      authenticationGuard,
-    ],
+    canActivate: [authenticationGuard],
     loadComponent: workspacePage,
   },
   {
     path: 'activity',
     title: 'Atividades | Deja Indicadores',
-    canActivate: [
-      authenticationGuard,
-    ],
+    canActivate: [authenticationGuard],
     loadComponent: workspacePage,
   },
   {
     path: 'timeline',
     title: 'Linha do tempo | Deja Indicadores',
-    canActivate: [
-      authenticationGuard,
-    ],
+    canActivate: [authenticationGuard],
     loadComponent: workspacePage,
   },
   {

@@ -53,6 +53,8 @@ import { WorkspaceCompanyManagementWidgetComponent } from '../components/workspa
 
 import { WorkspaceIndicatorManagementWidgetComponent } from '../components/workspace-indicator-management-widget/workspace-indicator-management-widget';
 
+import { WorkspaceMeasurementManagementWidgetComponent } from '../components/workspace-measurement-management-widget/workspace-measurement-management-widget';
+
 /**
  * Composition Root oficial do Workspace.
  */
@@ -67,6 +69,9 @@ export class WorkspaceComposition {
 
   private static readonly INDICATORS_DASHBOARD_ID = 'deja.workspace.dashboard.operation.indicators';
 
+  private static readonly MEASUREMENTS_DASHBOARD_ID =
+    'deja.workspace.dashboard.operation.measurements';
+
   private static readonly ACTIVITY_DASHBOARD_ID = 'deja.workspace.dashboard.activity';
 
   private static readonly TIMELINE_DASHBOARD_ID = 'deja.workspace.dashboard.timeline';
@@ -79,6 +84,9 @@ export class WorkspaceComposition {
 
   private static readonly INDICATORS_NAVIGATION_ID =
     'deja.workspace.navigation.operation.indicators';
+
+  private static readonly MEASUREMENTS_NAVIGATION_ID =
+    'deja.workspace.navigation.operation.measurements';
 
   private static readonly ACTIVITY_NAVIGATION_ID = 'deja.workspace.navigation.activity';
 
@@ -94,6 +102,9 @@ export class WorkspaceComposition {
 
   private static readonly INDICATOR_MANAGEMENT_WIDGET_ID =
     'deja.workspace.widget.indicator-management';
+
+  private static readonly MEASUREMENT_MANAGEMENT_WIDGET_ID =
+    'deja.workspace.widget.measurement-management';
 
   private static readonly INDICATORS_ACTION_ID = 'deja.workspace.widget.welcome.indicators';
 
@@ -287,6 +298,20 @@ export class WorkspaceComposition {
       },
 
       {
+        id: this.MEASUREMENTS_NAVIGATION_ID,
+        ownerId: this.CORE_OWNER,
+        dashboardId: this.MEASUREMENTS_DASHBOARD_ID,
+        title: 'Coleta Manual',
+        description: 'Acesso ao lançamento manual de medições.',
+        icon: 'analytics',
+        order: 40,
+        enabled: true,
+        metadata: {
+          section: 'operation',
+        },
+      },
+
+      {
         id: this.ACTIVITY_NAVIGATION_ID,
         ownerId: this.CORE_OWNER,
         dashboardId: this.ACTIVITY_DASHBOARD_ID,
@@ -420,6 +445,31 @@ export class WorkspaceComposition {
       tags: ['deja-indicadores', 'indicators', 'operation'],
     };
 
+    const measurementManagementWidget: WorkspaceWidget = {
+      id: this.MEASUREMENT_MANAGEMENT_WIDGET_ID,
+      owner: this.CORE_OWNER,
+      title: 'Coleta Manual',
+      description: 'Consulta e lançamento manual de medições operacionais.',
+      category: 'operation',
+      widgetType: 'measurement-management',
+      supportedSurfaces: ['dashboard'],
+      capabilities: ['resizable'],
+      size: {
+        default: {
+          columns: 12,
+          rows: 8,
+        },
+        minimum: {
+          columns: 6,
+          rows: 4,
+        },
+      },
+      component: WorkspaceMeasurementManagementWidgetComponent,
+      priority: 40,
+      enabled: true,
+      tags: ['deja-indicadores', 'measurements', 'operation'],
+    };
+
     registries.layoutRegions.register(mainRegion);
 
     registries.layouts.register(initialLayout);
@@ -429,6 +479,8 @@ export class WorkspaceComposition {
     registries.widgets.register(companyManagementWidget);
 
     registries.widgets.register(indicatorManagementWidget);
+
+    registries.widgets.register(measurementManagementWidget);
 
     registries.dashboards.registerMany([
       {
@@ -520,6 +572,36 @@ export class WorkspaceComposition {
           {
             id: 'deja.workspace.widget-instance.indicator-management',
             widgetId: indicatorManagementWidget.id,
+            regionId: mainRegion.id,
+            position: {
+              column: 1,
+              row: 1,
+              columnSpan: 12,
+              rowSpan: 8,
+            },
+            enabled: true,
+          },
+        ],
+      },
+
+      {
+        id: this.MEASUREMENTS_DASHBOARD_ID,
+        owner: this.CORE_OWNER,
+        title: 'Coleta Manual',
+        description: 'Lançamento operacional de medições manuais.',
+        route: '/operation/measurements',
+        layoutId: initialLayout.id,
+        priority: 40,
+        enabled: true,
+        tags: ['operation', 'measurements'],
+        metadata: {
+          type: 'operation',
+          section: 'measurements',
+        },
+        widgets: [
+          {
+            id: 'deja.workspace.widget-instance.measurement-management',
+            widgetId: measurementManagementWidget.id,
             regionId: mainRegion.id,
             position: {
               column: 1,
