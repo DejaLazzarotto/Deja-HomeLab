@@ -2,15 +2,20 @@
  * Deja Workspace Angular Integration
  *
  * Workspace Sidebar Component
- *
- * Barra lateral institucional responsável pela navegação
- * principal da Deja Platform.
  */
 
 import {
   ChangeDetectionStrategy,
   Component,
 } from '@angular/core';
+
+import {
+  canAccessAdministration,
+} from '../../../deja-indicadores/authentication/application/administration.guard';
+
+import {
+  AuthenticationService,
+} from '../../../deja-indicadores/authentication/application/authentication.service';
 
 import {
   WorkspaceNavigation,
@@ -28,15 +33,18 @@ import {
   WorkspaceShellController,
 } from '../../services/workspace-shell-controller';
 
-/**
- * Sidebar permanente da Workspace Shell.
- *
- * A Sidebar não mantém conhecimento sobre Dashboards,
- * aplicações ou rotas específicas.
- *
- * Toda navegação é resolvida exclusivamente pelo
- * Workspace Runtime através dos Registries institucionais.
- */
+type NavigationSectionId =
+  | 'home'
+  | 'administration'
+  | 'operation'
+  | 'analysis';
+
+interface NavigationSection {
+  readonly id: NavigationSectionId;
+  readonly title: string | null;
+  readonly items: readonly WorkspaceNavigation[];
+}
+
 @Component({
   selector: 'deja-workspace-sidebar',
   standalone: true,
@@ -46,7 +54,34 @@ import {
 })
 export class WorkspaceSidebarComponent {
 
+  private readonly administrationNavigationId =
+    'deja.workspace.navigation.administration';
+
+  private readonly sectionDefinitions: readonly {
+    id: NavigationSectionId;
+    title: string | null;
+  }[] = [
+    {
+      id: 'home',
+      title: null,
+    },
+    {
+      id: 'administration',
+      title: 'Administração',
+    },
+    {
+      id: 'operation',
+      title: 'Operação',
+    },
+    {
+      id: 'analysis',
+      title: 'Análise',
+    },
+  ];
+
   constructor(
+    private readonly authentication:
+      AuthenticationService,
     private readonly bootstrapService:
       WorkspaceBootstrapService,
     private readonly shell:
@@ -55,30 +90,33 @@ export class WorkspaceSidebarComponent {
       WorkspaceIconProvider,
   ) {}
 
-  /**
-   * Runtime oficial do Workspace.
-   *
-   * Obtido através do Bootstrap Service,
-   * preservando o Composition Root como único
-   * ponto responsável pela composição.
-   */
   private get runtime() {
     return this.bootstrapService.getRuntime();
   }
 
-  /**
-   * Retorna as navegações institucionais habilitadas.
-   *
-   * A Sidebar consome exclusivamente o Registry
-   * através da API pública do Runtime.
-   */
-  get navigation(): readonly WorkspaceNavigation[] {
-    return this.runtime.visibleNavigations();
+  get navigationSections(): readonly NavigationSection[] {
+    const user = this.authentication.user();
+
+    const navigation = this.runtime
+      .visibleNavigations()
+      .filter(item => (
+        item.id !== this.administrationNavigationId
+        || (
+          user !== null
+          && canAccessAdministration(user.role)
+        )
+      ));
+
+    return this.sectionDefinitions
+      .map(section => ({
+        ...section,
+        items: navigation.filter(
+          item => item.metadata?.['section'] === section.id,
+        ),
+      }))
+      .filter(section => section.items.length > 0);
   }
 
-  /**
-   * Executa uma navegação institucional.
-   */
   async navigate(
     navigation: WorkspaceNavigation,
   ): Promise<void> {
@@ -87,9 +125,6 @@ export class WorkspaceSidebarComponent {
     );
   }
 
-  /**
-   * Verifica se a navegação está ativa.
-   */
   isActive(
     navigation: WorkspaceNavigation,
   ): boolean {
@@ -98,9 +133,6 @@ export class WorkspaceSidebarComponent {
     );
   }
 
-  /**
-   * Resolve o recurso físico do ícone institucional.
-   */
   resolveIcon(
     navigation: WorkspaceNavigation,
   ): string | undefined {

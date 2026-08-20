@@ -3,6 +3,10 @@ import {
 } from '@angular/router';
 
 import {
+  administrationGuard,
+} from './deja-indicadores/authentication/application/administration.guard';
+
+import {
   authenticationGuard,
 } from './deja-indicadores/authentication/application/authentication.guard';
 
@@ -27,12 +31,22 @@ export const routes: Routes = [
     loadComponent: workspacePage,
   },
   {
-    path: 'applications',
-    title: 'Empresas | Deja Indicadores',
+    path: 'administration',
+    redirectTo: 'administration/companies',
+    pathMatch: 'full',
+  },
+  {
+    path: 'administration/companies',
+    title: 'Empresas | Administração | Deja Indicadores',
     canActivate: [
-      authenticationGuard,
+      administrationGuard,
     ],
     loadComponent: workspacePage,
+  },
+  {
+    path: 'applications',
+    redirectTo: 'administration/companies',
+    pathMatch: 'full',
   },
   {
     path: 'reports',

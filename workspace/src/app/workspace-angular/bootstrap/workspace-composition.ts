@@ -66,8 +66,8 @@ export class WorkspaceComposition {
   private static readonly INITIAL_DASHBOARD_ID =
     'deja.workspace.dashboard.initial';
 
-  private static readonly APPLICATIONS_DASHBOARD_ID =
-    'deja.workspace.dashboard.applications';
+  private static readonly ADMINISTRATION_DASHBOARD_ID =
+    'deja.workspace.dashboard.administration';
 
   private static readonly REPORTS_DASHBOARD_ID =
     'deja.workspace.dashboard.reports';
@@ -85,8 +85,8 @@ export class WorkspaceComposition {
   private static readonly INITIAL_NAVIGATION_ID =
     'deja.workspace.navigation.initial';
 
-  private static readonly APPLICATIONS_NAVIGATION_ID =
-    'deja.workspace.navigation.applications';
+  private static readonly ADMINISTRATION_NAVIGATION_ID =
+    'deja.workspace.navigation.administration';
 
   private static readonly REPORTS_NAVIGATION_ID =
     'deja.workspace.navigation.reports';
@@ -346,30 +346,39 @@ export class WorkspaceComposition {
         icon: 'dashboard',
         order: 10,
         enabled: true,
+        metadata: {
+          section: 'home',
+        },
       },
 
       {
-        id: this.APPLICATIONS_NAVIGATION_ID,
+        id: this.ADMINISTRATION_NAVIGATION_ID,
         ownerId: this.CORE_OWNER,
-        dashboardId: this.APPLICATIONS_DASHBOARD_ID,
-        title: 'Applications',
+        dashboardId: this.ADMINISTRATION_DASHBOARD_ID,
+        title: 'Empresas',
         description:
-          'Acesso às aplicações da plataforma.',
+          'Acesso à administração do Deja Indicadores.',
         icon: 'applications',
         order: 20,
         enabled: true,
+        metadata: {
+          section: 'administration',
+        },
       },
 
       {
         id: this.REPORTS_NAVIGATION_ID,
         ownerId: this.CORE_OWNER,
         dashboardId: this.REPORTS_DASHBOARD_ID,
-        title: 'Reports',
+        title: 'Relatórios',
         description:
-          'Acesso aos relatórios da plataforma.',
+          'Acesso aos relatórios e análises dos indicadores.',
         icon: 'reports',
         order: 30,
         enabled: true,
+        metadata: {
+          section: 'analysis',
+        },
       },
 
       {
@@ -382,6 +391,9 @@ export class WorkspaceComposition {
         order: 40,
         enabled: true,
         visible: false,
+        metadata: {
+          section: 'analysis',
+        },
       },
 
       {
@@ -394,6 +406,9 @@ export class WorkspaceComposition {
         order: 50,
         enabled: true,
         visible: false,
+        metadata: {
+          section: 'operation',
+        },
       },
 
       {
@@ -406,6 +421,9 @@ export class WorkspaceComposition {
         order: 60,
         enabled: true,
         visible: false,
+        metadata: {
+          section: 'analysis',
+        },
       },
 
     ]);
@@ -586,20 +604,22 @@ export class WorkspaceComposition {
 
 
       {
-        id: this.APPLICATIONS_DASHBOARD_ID,
+        id: this.ADMINISTRATION_DASHBOARD_ID,
         owner: this.CORE_OWNER,
-        title: 'Applications',
+        title: 'Administração',
         description:
-          'Dashboard institucional de aplicações.',
-        route: '/applications',
+          'Gestão administrativa de empresas.',
+        route: '/administration/companies',
         layoutId: initialLayout.id,
         priority: 20,
         enabled: true,
         tags: [
-          'applications',
+          'administration',
+          'companies',
         ],
         metadata: {
-          type: 'applications',
+          type: 'administration',
+          section: 'companies',
         },
         widgets: [
           {
@@ -624,7 +644,7 @@ export class WorkspaceComposition {
       {
         id: this.REPORTS_DASHBOARD_ID,
         owner: this.CORE_OWNER,
-        title: 'Reports',
+        title: 'Relatórios',
         description:
           'Dashboard institucional de relatórios.',
         route: '/reports',

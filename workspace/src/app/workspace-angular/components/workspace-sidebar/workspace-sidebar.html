@@ -5,37 +5,60 @@
     aria-label="Navegação principal">
 
     @for (
-      item of navigation;
-      track item.id
+      section of navigationSections;
+      track section.id
     ) {
 
-      <button
-        class="workspace-sidebar__item"
-        [class.workspace-sidebar__item--active]="isActive(item)"
-        type="button"
-        (click)="navigate(item)">
+      <section class="workspace-sidebar__section">
 
-        <span
-          class="workspace-sidebar__icon"
-          aria-hidden="true">
+        @if (section.title) {
 
-          @if (resolveIcon(item); as icon) {
+          <h2 class="workspace-sidebar__section-title">
+            {{ section.title }}
+          </h2>
 
-            <img
-              class="workspace-sidebar__icon-image"
-              [src]="icon"
-              [alt]="item.title"
-            />
+        }
+
+        <div class="workspace-sidebar__section-items">
+
+          @for (
+            item of section.items;
+            track item.id
+          ) {
+
+            <button
+              class="workspace-sidebar__item"
+              [class.workspace-sidebar__item--active]="isActive(item)"
+              type="button"
+              (click)="navigate(item)">
+
+              <span
+                class="workspace-sidebar__icon"
+                aria-hidden="true">
+
+                @if (resolveIcon(item); as icon) {
+
+                  <img
+                    class="workspace-sidebar__icon-image"
+                    [src]="icon"
+                    [alt]="item.title"
+                  />
+
+                }
+
+              </span>
+
+              <span class="workspace-sidebar__title">
+                {{ item.title }}
+              </span>
+
+            </button>
 
           }
 
-        </span>
+        </div>
 
-        <span class="workspace-sidebar__title">
-          {{ item.title }}
-        </span>
-
-      </button>
+      </section>
 
     }
 
