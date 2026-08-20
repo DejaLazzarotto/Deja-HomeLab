@@ -49,219 +49,133 @@ import { WorkspaceWidget } from '../../core/workspace-sdk/runtime/workspace-widg
 
 import { WorkspaceWelcomeWidgetComponent } from '../components/workspace-welcome-widget/workspace-welcome-widget';
 
-import {
-  WorkspaceCompanyManagementWidgetComponent,
-} from '../components/workspace-company-management-widget/workspace-company-management-widget';
+import { WorkspaceCompanyManagementWidgetComponent } from '../components/workspace-company-management-widget/workspace-company-management-widget';
 
+import { WorkspaceIndicatorManagementWidgetComponent } from '../components/workspace-indicator-management-widget/workspace-indicator-management-widget';
 
 /**
  * Composition Root oficial do Workspace.
  */
 export class WorkspaceComposition {
+  private static readonly CORE_OWNER = 'deja.workspace.core';
 
-  private static readonly CORE_OWNER =
-    'deja.workspace.core';
+  private static readonly INITIAL_DASHBOARD_ID = 'deja.workspace.dashboard.initial';
 
+  private static readonly ADMINISTRATION_DASHBOARD_ID = 'deja.workspace.dashboard.administration';
 
-  private static readonly INITIAL_DASHBOARD_ID =
-    'deja.workspace.dashboard.initial';
+  private static readonly REPORTS_DASHBOARD_ID = 'deja.workspace.dashboard.reports';
 
-  private static readonly ADMINISTRATION_DASHBOARD_ID =
-    'deja.workspace.dashboard.administration';
+  private static readonly INDICATORS_DASHBOARD_ID = 'deja.workspace.dashboard.operation.indicators';
 
-  private static readonly REPORTS_DASHBOARD_ID =
-    'deja.workspace.dashboard.reports';
+  private static readonly ACTIVITY_DASHBOARD_ID = 'deja.workspace.dashboard.activity';
 
-  private static readonly ANALYTICS_DASHBOARD_ID =
-    'deja.workspace.dashboard.analytics';
+  private static readonly TIMELINE_DASHBOARD_ID = 'deja.workspace.dashboard.timeline';
 
-  private static readonly ACTIVITY_DASHBOARD_ID =
-    'deja.workspace.dashboard.activity';
+  private static readonly INITIAL_NAVIGATION_ID = 'deja.workspace.navigation.initial';
 
-  private static readonly TIMELINE_DASHBOARD_ID =
-    'deja.workspace.dashboard.timeline';
+  private static readonly ADMINISTRATION_NAVIGATION_ID = 'deja.workspace.navigation.administration';
 
+  private static readonly REPORTS_NAVIGATION_ID = 'deja.workspace.navigation.reports';
 
-  private static readonly INITIAL_NAVIGATION_ID =
-    'deja.workspace.navigation.initial';
+  private static readonly INDICATORS_NAVIGATION_ID =
+    'deja.workspace.navigation.operation.indicators';
 
-  private static readonly ADMINISTRATION_NAVIGATION_ID =
-    'deja.workspace.navigation.administration';
+  private static readonly ACTIVITY_NAVIGATION_ID = 'deja.workspace.navigation.activity';
 
-  private static readonly REPORTS_NAVIGATION_ID =
-    'deja.workspace.navigation.reports';
+  private static readonly TIMELINE_NAVIGATION_ID = 'deja.workspace.navigation.timeline';
 
-  private static readonly ANALYTICS_NAVIGATION_ID =
-    'deja.workspace.navigation.analytics';
+  private static readonly INITIAL_LAYOUT_ID = 'deja.workspace.layout.initial';
 
-  private static readonly ACTIVITY_NAVIGATION_ID =
-    'deja.workspace.navigation.activity';
+  private static readonly MAIN_REGION_ID = 'deja.workspace.region.main';
 
-  private static readonly TIMELINE_NAVIGATION_ID =
-    'deja.workspace.navigation.timeline';
+  private static readonly WELCOME_WIDGET_ID = 'deja.workspace.widget.welcome';
 
+  private static readonly COMPANY_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.company-management';
 
-  private static readonly INITIAL_LAYOUT_ID =
-    'deja.workspace.layout.initial';
+  private static readonly INDICATOR_MANAGEMENT_WIDGET_ID =
+    'deja.workspace.widget.indicator-management';
 
+  private static readonly INDICATORS_ACTION_ID = 'deja.workspace.widget.welcome.indicators';
 
-  private static readonly MAIN_REGION_ID =
-    'deja.workspace.region.main';
+  private static readonly ACTIVITY_ACTION_ID = 'deja.workspace.widget.welcome.activity';
 
-
-  private static readonly WELCOME_WIDGET_ID =
-    'deja.workspace.widget.welcome';
-
-  private static readonly COMPANY_MANAGEMENT_WIDGET_ID =
-    'deja.workspace.widget.company-management';
-
-  private static readonly ANALYTICS_ACTION_ID =
-    'deja.workspace.widget.welcome.analytics';
-
-  private static readonly ACTIVITY_ACTION_ID =
-    'deja.workspace.widget.welcome.activity';
-
-  private static readonly TIMELINE_ACTION_ID =
-    'deja.workspace.widget.welcome.timeline';
-
+  private static readonly TIMELINE_ACTION_ID = 'deja.workspace.widget.welcome.timeline';
 
   static create(): WorkspaceRuntime {
+    const registries = new WorkspaceRegistries();
 
-    const registries =
-      new WorkspaceRegistries();
+    this.registerInitialResources(registries);
 
+    const layoutStorage = new WorkspaceLocalStorageLayoutStorage();
 
-    this.registerInitialResources(
+    const layoutEngine = new WorkspaceLayoutEngineRuntime(registries, layoutStorage);
+
+    const layoutPersistence = new WorkspaceLayoutPersistence(layoutStorage);
+
+    const layoutEvents = new WorkspaceLayoutEventDispatcher();
+
+    const layoutHookRegistry = new WorkspaceLayoutHookRegistry();
+
+    const layoutHooks = new WorkspaceLayoutHookDispatcher(layoutHookRegistry);
+
+    const layoutExtensionRegistry = new WorkspaceLayoutExtensionRegistry();
+
+    const layoutExtensions = new WorkspaceLayoutExtensionDispatcher(layoutExtensionRegistry);
+
+    const layoutObservability = new WorkspaceLayoutObservability();
+
+    const layoutFactory = new WorkspaceLayoutFactory(
+      layoutPersistence,
+      layoutEvents,
+      layoutHooks,
+      layoutExtensions,
+      layoutObservability,
+    );
+
+    const layoutManager = layoutFactory.create();
+
+    const editingFactory = new WorkspaceEditingFactory(layoutManager);
+
+    const editingManager = editingFactory.createManager();
+
+    const runtime = new WorkspaceRuntime(
       registries,
+      undefined,
+      undefined,
+      undefined,
+      layoutEngine,
+      layoutManager,
+      editingManager,
     );
 
+    this.registerInitialActions(runtime);
 
-    const layoutStorage =
-      new WorkspaceLocalStorageLayoutStorage();
-
-
-    const layoutEngine =
-      new WorkspaceLayoutEngineRuntime(
-        registries,
-        layoutStorage,
-      );
-
-
-    const layoutPersistence =
-      new WorkspaceLayoutPersistence(
-        layoutStorage,
-      );
-
-
-    const layoutEvents =
-      new WorkspaceLayoutEventDispatcher();
-
-
-    const layoutHookRegistry =
-      new WorkspaceLayoutHookRegistry();
-
-
-    const layoutHooks =
-      new WorkspaceLayoutHookDispatcher(
-        layoutHookRegistry,
-      );
-
-
-    const layoutExtensionRegistry =
-      new WorkspaceLayoutExtensionRegistry();
-
-
-    const layoutExtensions =
-      new WorkspaceLayoutExtensionDispatcher(
-        layoutExtensionRegistry,
-      );
-
-
-    const layoutObservability =
-      new WorkspaceLayoutObservability();
-
-
-    const layoutFactory =
-      new WorkspaceLayoutFactory(
-        layoutPersistence,
-        layoutEvents,
-        layoutHooks,
-        layoutExtensions,
-        layoutObservability,
-      );
-
-
-    const layoutManager =
-      layoutFactory.create();
-
-
-    const editingFactory =
-      new WorkspaceEditingFactory(
-        layoutManager,
-      );
-
-
-    const editingManager =
-      editingFactory.createManager();
-
-
-    const runtime =
-      new WorkspaceRuntime(
-        registries,
-        undefined,
-        undefined,
-        undefined,
-        layoutEngine,
-        layoutManager,
-        editingManager,
-      );
-
-
-    this.registerInitialActions(
-      runtime,
-    );
-
-    this.registerInitialNavigations(
-      runtime,
-    );
-
+    this.registerInitialNavigations(runtime);
 
     return runtime;
-
   }
-
 
   /**
    * Registra as Actions institucionais iniciais.
    */
-  private static registerInitialActions(
-    runtime: WorkspaceRuntime,
-  ): void {
+  private static registerInitialActions(runtime: WorkspaceRuntime): void {
     runtime.registerActions([
       {
-        id: this.ANALYTICS_ACTION_ID,
+        id: this.INDICATORS_ACTION_ID,
         ownerId: this.CORE_OWNER,
-        label: 'Analytics',
-        description:
-          'Acessa indicadores e visualizações do Workspace.',
+        label: 'Indicadores',
+        description: 'Acessa a gestão operacional de indicadores.',
         category: 'welcome',
-        keywords: [
-          'analytics',
-          'indicadores',
-          'visualizações',
-        ],
+        keywords: ['operação', 'indicadores', 'metas'],
         order: 10,
         visible: true,
         enabled: true,
         execute: async () => {
-          await runtime.navigate(
-            this.ANALYTICS_NAVIGATION_ID,
-          );
+          await runtime.navigate(this.INDICATORS_NAVIGATION_ID);
 
           return {
             success: true,
-            message:
-              'Analytics aberto com sucesso.',
+            message: 'Indicadores abertos com sucesso.',
             completedAt: new Date(),
           };
         },
@@ -271,26 +185,18 @@ export class WorkspaceComposition {
         id: this.ACTIVITY_ACTION_ID,
         ownerId: this.CORE_OWNER,
         label: 'Activity',
-        description:
-          'Acessa eventos e atividades recentes do Workspace.',
+        description: 'Acessa eventos e atividades recentes do Workspace.',
         category: 'welcome',
-        keywords: [
-          'activity',
-          'eventos',
-          'atividades',
-        ],
+        keywords: ['activity', 'eventos', 'atividades'],
         order: 20,
         visible: true,
         enabled: true,
         execute: async () => {
-          await runtime.navigate(
-            this.ACTIVITY_NAVIGATION_ID,
-          );
+          await runtime.navigate(this.ACTIVITY_NAVIGATION_ID);
 
           return {
             success: true,
-            message:
-              'Activity aberto com sucesso.',
+            message: 'Activity aberto com sucesso.',
             completedAt: new Date(),
           };
         },
@@ -300,26 +206,18 @@ export class WorkspaceComposition {
         id: this.TIMELINE_ACTION_ID,
         ownerId: this.CORE_OWNER,
         label: 'Timeline',
-        description:
-          'Acessa marcos e a evolução operacional do Workspace.',
+        description: 'Acessa marcos e a evolução operacional do Workspace.',
         category: 'welcome',
-        keywords: [
-          'timeline',
-          'marcos',
-          'evolução',
-        ],
+        keywords: ['timeline', 'marcos', 'evolução'],
         order: 30,
         visible: true,
         enabled: true,
         execute: async () => {
-          await runtime.navigate(
-            this.TIMELINE_NAVIGATION_ID,
-          );
+          await runtime.navigate(this.TIMELINE_NAVIGATION_ID);
 
           return {
             success: true,
-            message:
-              'Timeline aberta com sucesso.',
+            message: 'Timeline aberta com sucesso.',
             completedAt: new Date(),
           };
         },
@@ -330,19 +228,14 @@ export class WorkspaceComposition {
   /**
    * Registra as navegações institucionais.
    */
-  private static registerInitialNavigations(
-    runtime: WorkspaceRuntime,
-  ): void {
-
+  private static registerInitialNavigations(runtime: WorkspaceRuntime): void {
     runtime.registerNavigations([
-
       {
         id: this.INITIAL_NAVIGATION_ID,
         ownerId: this.CORE_OWNER,
         dashboardId: this.INITIAL_DASHBOARD_ID,
         title: 'Início',
-        description:
-          'Abre o Dashboard inicial da Deja Platform.',
+        description: 'Abre o Dashboard inicial da Deja Platform.',
         icon: 'dashboard',
         order: 10,
         enabled: true,
@@ -356,8 +249,7 @@ export class WorkspaceComposition {
         ownerId: this.CORE_OWNER,
         dashboardId: this.ADMINISTRATION_DASHBOARD_ID,
         title: 'Empresas',
-        description:
-          'Acesso à administração do Deja Indicadores.',
+        description: 'Acesso à administração do Deja Indicadores.',
         icon: 'applications',
         order: 20,
         enabled: true,
@@ -371,8 +263,7 @@ export class WorkspaceComposition {
         ownerId: this.CORE_OWNER,
         dashboardId: this.REPORTS_DASHBOARD_ID,
         title: 'Relatórios',
-        description:
-          'Acesso aos relatórios e análises dos indicadores.',
+        description: 'Acesso aos relatórios e análises dos indicadores.',
         icon: 'reports',
         order: 30,
         enabled: true,
@@ -382,17 +273,16 @@ export class WorkspaceComposition {
       },
 
       {
-        id: this.ANALYTICS_NAVIGATION_ID,
+        id: this.INDICATORS_NAVIGATION_ID,
         ownerId: this.CORE_OWNER,
-        dashboardId: this.ANALYTICS_DASHBOARD_ID,
-        title: 'Analytics',
-        description:
-          'Acesso aos indicadores e visualizações do Workspace.',
-        order: 40,
+        dashboardId: this.INDICATORS_DASHBOARD_ID,
+        title: 'Indicadores',
+        description: 'Acesso à gestão operacional de indicadores.',
+        icon: 'indicators',
+        order: 30,
         enabled: true,
-        visible: false,
         metadata: {
-          section: 'analysis',
+          section: 'operation',
         },
       },
 
@@ -401,8 +291,7 @@ export class WorkspaceComposition {
         ownerId: this.CORE_OWNER,
         dashboardId: this.ACTIVITY_DASHBOARD_ID,
         title: 'Activity',
-        description:
-          'Acesso aos eventos e atividades recentes do Workspace.',
+        description: 'Acesso aos eventos e atividades recentes do Workspace.',
         order: 50,
         enabled: true,
         visible: false,
@@ -416,8 +305,7 @@ export class WorkspaceComposition {
         ownerId: this.CORE_OWNER,
         dashboardId: this.TIMELINE_DASHBOARD_ID,
         title: 'Timeline',
-        description:
-          'Acesso aos marcos e à evolução operacional do Workspace.',
+        description: 'Acesso aos marcos e à evolução operacional do Workspace.',
         order: 60,
         enabled: true,
         visible: false,
@@ -425,73 +313,47 @@ export class WorkspaceComposition {
           section: 'analysis',
         },
       },
-
     ]);
-
   }
 
-
-  private static registerInitialResources(
-    registries: WorkspaceRegistries,
-  ): void {
-
+  private static registerInitialResources(registries: WorkspaceRegistries): void {
     const mainRegion: WorkspaceLayoutRegion = {
       id: this.MAIN_REGION_ID,
       owner: this.CORE_OWNER,
       title: 'Região principal',
-      description:
-        'Região principal do Dashboard inicial do Workspace.',
+      description: 'Região principal do Dashboard inicial do Workspace.',
       regionType: 'main',
       priority: 10,
       enabled: true,
-      tags: [
-        'core',
-        'initial',
-        'main',
-      ],
+      tags: ['core', 'initial', 'main'],
     };
-
 
     const initialLayout: WorkspaceLayout = {
       id: this.INITIAL_LAYOUT_ID,
       owner: this.CORE_OWNER,
       title: 'Layout inicial',
-      description:
-        'Layout institucional utilizado pelos Dashboards iniciais.',
+      description: 'Layout institucional utilizado pelos Dashboards iniciais.',
       type: 'grid',
-      regionIds: [
-        mainRegion.id,
-      ],
+      regionIds: [mainRegion.id],
       version: '1.0.0',
       priority: 10,
       enabled: true,
-      tags: [
-        'core',
-        'initial',
-        'dashboard',
-      ],
+      tags: ['core', 'initial', 'dashboard'],
       configuration: {
         columns: 12,
         rowHeight: 'auto',
       },
     };
 
-
     const welcomeWidget: WorkspaceWidget = {
       id: this.WELCOME_WIDGET_ID,
       owner: this.CORE_OWNER,
       title: 'Bem-vindo à Deja Platform',
-      description:
-        'Primeiro Widget institucional do Workspace.',
+      description: 'Primeiro Widget institucional do Workspace.',
       category: 'system',
       widgetType: 'welcome',
-      supportedSurfaces: [
-        'dashboard',
-      ],
-      capabilities: [
-        'resizable',
-        'movable',
-      ],
+      supportedSurfaces: ['dashboard'],
+      capabilities: ['resizable', 'movable'],
       size: {
         default: {
           columns: 12,
@@ -505,28 +367,18 @@ export class WorkspaceComposition {
       component: WorkspaceWelcomeWidgetComponent,
       priority: 10,
       enabled: true,
-      tags: [
-        'core',
-        'initial',
-        'welcome',
-      ],
+      tags: ['core', 'initial', 'welcome'],
     };
-
 
     const companyManagementWidget: WorkspaceWidget = {
       id: this.COMPANY_MANAGEMENT_WIDGET_ID,
       owner: this.CORE_OWNER,
       title: 'Gestão de Empresas',
-      description:
-        'Consulta e gerenciamento das empresas do Deja Indicadores.',
+      description: 'Consulta e gerenciamento das empresas do Deja Indicadores.',
       category: 'management',
       widgetType: 'company-management',
-      supportedSurfaces: [
-        'dashboard',
-      ],
-      capabilities: [
-        'resizable',
-      ],
+      supportedSurfaces: ['dashboard'],
+      capabilities: ['resizable'],
       size: {
         default: {
           columns: 12,
@@ -537,58 +389,61 @@ export class WorkspaceComposition {
           rows: 4,
         },
       },
-      component:
-        WorkspaceCompanyManagementWidgetComponent,
+      component: WorkspaceCompanyManagementWidgetComponent,
       priority: 20,
       enabled: true,
-      tags: [
-        'deja-indicadores',
-        'companies',
-        'management',
-      ],
+      tags: ['deja-indicadores', 'companies', 'management'],
     };
 
+    const indicatorManagementWidget: WorkspaceWidget = {
+      id: this.INDICATOR_MANAGEMENT_WIDGET_ID,
+      owner: this.CORE_OWNER,
+      title: 'Gestão de Indicadores',
+      description: 'Consulta e gerenciamento dos indicadores operacionais.',
+      category: 'operation',
+      widgetType: 'indicator-management',
+      supportedSurfaces: ['dashboard'],
+      capabilities: ['resizable'],
+      size: {
+        default: {
+          columns: 12,
+          rows: 8,
+        },
+        minimum: {
+          columns: 6,
+          rows: 4,
+        },
+      },
+      component: WorkspaceIndicatorManagementWidgetComponent,
+      priority: 30,
+      enabled: true,
+      tags: ['deja-indicadores', 'indicators', 'operation'],
+    };
 
-    registries.layoutRegions.register(
-      mainRegion,
-    );
+    registries.layoutRegions.register(mainRegion);
 
+    registries.layouts.register(initialLayout);
 
-    registries.layouts.register(
-      initialLayout,
-    );
+    registries.widgets.register(welcomeWidget);
 
+    registries.widgets.register(companyManagementWidget);
 
-    registries.widgets.register(
-      welcomeWidget,
-    );
-
-
-    registries.widgets.register(
-      companyManagementWidget,
-    );
-
+    registries.widgets.register(indicatorManagementWidget);
 
     registries.dashboards.registerMany([
-
       {
         id: this.INITIAL_DASHBOARD_ID,
         owner: this.CORE_OWNER,
         title: 'Dashboard inicial',
-        description:
-          'Primeiro Dashboard institucional.',
+        description: 'Primeiro Dashboard institucional.',
         route: '/',
         layoutId: initialLayout.id,
         priority: 10,
         enabled: true,
-        tags: [
-          'core',
-          'initial',
-        ],
+        tags: ['core', 'initial'],
         widgets: [
           {
-            id:
-              'deja.workspace.widget-instance.welcome',
+            id: 'deja.workspace.widget-instance.welcome',
             widgetId: welcomeWidget.id,
             regionId: mainRegion.id,
             position: {
@@ -602,33 +457,25 @@ export class WorkspaceComposition {
         ],
       },
 
-
       {
         id: this.ADMINISTRATION_DASHBOARD_ID,
         owner: this.CORE_OWNER,
         title: 'Administração',
-        description:
-          'Gestão administrativa de empresas.',
+        description: 'Gestão administrativa de empresas.',
         route: '/administration/companies',
         layoutId: initialLayout.id,
         priority: 20,
         enabled: true,
-        tags: [
-          'administration',
-          'companies',
-        ],
+        tags: ['administration', 'companies'],
         metadata: {
           type: 'administration',
           section: 'companies',
         },
         widgets: [
           {
-            id:
-              'deja.workspace.widget-instance.company-management',
-            widgetId:
-              companyManagementWidget.id,
-            regionId:
-              mainRegion.id,
+            id: 'deja.workspace.widget-instance.company-management',
+            widgetId: companyManagementWidget.id,
+            regionId: mainRegion.id,
             position: {
               column: 1,
               row: 1,
@@ -640,56 +487,61 @@ export class WorkspaceComposition {
         ],
       },
 
-
       {
         id: this.REPORTS_DASHBOARD_ID,
         owner: this.CORE_OWNER,
         title: 'Relatórios',
-        description:
-          'Dashboard institucional de relatórios.',
+        description: 'Dashboard institucional de relatórios.',
         route: '/reports',
         layoutId: initialLayout.id,
         priority: 30,
         enabled: true,
-        tags: [
-          'reports',
-        ],
+        tags: ['reports'],
         metadata: {
           type: 'reports',
         },
       },
 
       {
-        id: this.ANALYTICS_DASHBOARD_ID,
+        id: this.INDICATORS_DASHBOARD_ID,
         owner: this.CORE_OWNER,
-        title: 'Analytics',
-        description:
-          'Dashboard institucional de indicadores e visualizações.',
-        route: '/analytics',
+        title: 'Indicadores',
+        description: 'Gestão operacional dos indicadores.',
+        route: '/operation/indicators',
         layoutId: initialLayout.id,
-        priority: 40,
+        priority: 30,
         enabled: true,
-        tags: [
-          'analytics',
-        ],
+        tags: ['operation', 'indicators'],
         metadata: {
-          type: 'analytics',
+          type: 'operation',
+          section: 'indicators',
         },
+        widgets: [
+          {
+            id: 'deja.workspace.widget-instance.indicator-management',
+            widgetId: indicatorManagementWidget.id,
+            regionId: mainRegion.id,
+            position: {
+              column: 1,
+              row: 1,
+              columnSpan: 12,
+              rowSpan: 8,
+            },
+            enabled: true,
+          },
+        ],
       },
 
       {
         id: this.ACTIVITY_DASHBOARD_ID,
         owner: this.CORE_OWNER,
         title: 'Activity',
-        description:
-          'Dashboard institucional de eventos e atividades recentes.',
+        description: 'Dashboard institucional de eventos e atividades recentes.',
         route: '/activity',
         layoutId: initialLayout.id,
         priority: 50,
         enabled: true,
-        tags: [
-          'activity',
-        ],
+        tags: ['activity'],
         metadata: {
           type: 'activity',
         },
@@ -699,22 +551,16 @@ export class WorkspaceComposition {
         id: this.TIMELINE_DASHBOARD_ID,
         owner: this.CORE_OWNER,
         title: 'Timeline',
-        description:
-          'Dashboard institucional de marcos e evolução operacional.',
+        description: 'Dashboard institucional de marcos e evolução operacional.',
         route: '/timeline',
         layoutId: initialLayout.id,
         priority: 60,
         enabled: true,
-        tags: [
-          'timeline',
-        ],
+        tags: ['timeline'],
         metadata: {
           type: 'timeline',
         },
       },
-
     ]);
-
   }
-
 }

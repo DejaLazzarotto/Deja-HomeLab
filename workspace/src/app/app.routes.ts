@@ -49,8 +49,13 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
-    path: 'reports',
-    title: 'Relatórios | Deja Indicadores',
+    path: 'operation',
+    redirectTo: 'operation/indicators',
+    pathMatch: 'full',
+  },
+  {
+    path: 'operation/indicators',
+    title: 'Indicadores | Operação | Deja Indicadores',
     canActivate: [
       authenticationGuard,
     ],
@@ -58,7 +63,12 @@ export const routes: Routes = [
   },
   {
     path: 'analytics',
-    title: 'Indicadores | Deja Indicadores',
+    redirectTo: 'operation/indicators',
+    pathMatch: 'full',
+  },
+  {
+    path: 'reports',
+    title: 'Relatórios | Deja Indicadores',
     canActivate: [
       authenticationGuard,
     ],

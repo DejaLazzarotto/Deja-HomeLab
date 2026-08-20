@@ -1,0 +1,382 @@
+<!--
+  Deja Indicadores
+
+  Indicators Presentation
+
+  Estrutura visual da Gestão de Indicadores.
+-->
+
+<section class="indicator-list">
+
+  <header class="indicator-list__header">
+
+    <div class="indicator-list__heading">
+      <span class="indicator-list__eyebrow">
+        Operação
+      </span>
+
+      <h2 class="indicator-list__title">
+        Indicadores
+      </h2>
+
+      <p class="indicator-list__description">
+        Consulte e gerencie os indicadores das empresas
+        disponíveis no seu escopo de acesso.
+      </p>
+    </div>
+
+    @if (canEdit && !formVisible()) {
+      <button
+        class="indicator-list__create-button"
+        type="button"
+        [disabled]="companies.length === 0"
+        (click)="openCreate()"
+      >
+        Novo indicador
+      </button>
+    }
+
+  </header>
+
+  @if (operationMessage()) {
+    <p class="indicator-list__message indicator-list__message--success">
+      {{ operationMessage() }}
+    </p>
+  }
+
+  @if (operationError()) {
+    <p class="indicator-list__message indicator-list__message--error">
+      {{ operationError() }}
+    </p>
+  }
+
+  @if (formVisible()) {
+
+    <form
+      class="indicator-list__form"
+      #indicatorForm="ngForm"
+      (ngSubmit)="save()"
+    >
+
+      <div class="indicator-list__form-header">
+        <h3>
+          {{
+            editingIndicatorId()
+              ? 'Editar indicador'
+              : 'Novo indicador'
+          }}
+        </h3>
+
+        <p>
+          Preencha os dados operacionais do indicador.
+        </p>
+      </div>
+
+      <div class="indicator-list__form-grid">
+
+        <label class="indicator-list__field">
+          <span>Empresa</span>
+
+          <select
+            name="companyId"
+            required
+            [(ngModel)]="form.companyId"
+          >
+            <option value="" disabled>
+              Selecione a empresa
+            </option>
+
+            @for (
+              company of companies;
+              track company.id
+            ) {
+              <option [value]="company.id">
+                {{ company.name }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="indicator-list__field">
+          <span>Nome</span>
+
+          <input
+            name="name"
+            type="text"
+            maxlength="255"
+            required
+            [(ngModel)]="form.name"
+          >
+        </label>
+
+        <label class="indicator-list__field">
+          <span>Unidade</span>
+
+          <input
+            name="unit"
+            type="text"
+            maxlength="50"
+            placeholder="%, R$, unidades..."
+            required
+            [(ngModel)]="form.unit"
+          >
+        </label>
+
+        <label class="indicator-list__field">
+          <span>Meta</span>
+
+          <input
+            name="targetValue"
+            type="number"
+            step="0.0001"
+            required
+            [(ngModel)]="form.targetValue"
+          >
+        </label>
+
+        <label class="indicator-list__field">
+          <span>Direção</span>
+
+          <select
+            name="direction"
+            required
+            [(ngModel)]="form.direction"
+          >
+            <option value="higher_is_better">
+              Maior é melhor
+            </option>
+
+            <option value="lower_is_better">
+              Menor é melhor
+            </option>
+          </select>
+        </label>
+
+        <label class="indicator-list__field">
+          <span>Status</span>
+
+          <select
+            name="status"
+            required
+            [(ngModel)]="form.status"
+          >
+            <option value="active">Ativo</option>
+            <option value="inactive">Inativo</option>
+          </select>
+        </label>
+
+        <label class="indicator-list__field indicator-list__field--wide">
+          <span>Descrição</span>
+
+          <textarea
+            name="description"
+            rows="4"
+            [(ngModel)]="form.description"
+          ></textarea>
+        </label>
+
+      </div>
+
+      <div class="indicator-list__form-actions">
+
+        <button
+          class="indicator-list__action"
+          type="button"
+          [disabled]="saving()"
+          (click)="cancelForm()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          class="indicator-list__create-button"
+          type="submit"
+          [disabled]="indicatorForm.invalid || saving()"
+        >
+          {{
+            saving()
+              ? 'Salvando...'
+              : 'Salvar indicador'
+          }}
+        </button>
+
+      </div>
+
+    </form>
+
+  }
+
+  @if (loading()) {
+
+    <div class="indicator-list__empty">
+      <h3>Carregando indicadores...</h3>
+
+      <p>
+        Aguarde enquanto consultamos os dados da API.
+      </p>
+    </div>
+
+  } @else if (errorMessage()) {
+
+    <div class="indicator-list__empty">
+      <h3>Falha ao carregar</h3>
+
+      <p>
+        {{ errorMessage() }}
+      </p>
+
+      <button
+        class="indicator-list__create-button"
+        type="button"
+        (click)="refresh()"
+      >
+        Tentar novamente
+      </button>
+    </div>
+
+  } @else if (indicators().length > 0) {
+
+    <div class="indicator-list__table-container">
+
+      <table class="indicator-list__table">
+
+        <thead>
+          <tr>
+            <th scope="col">Indicador</th>
+            <th scope="col">Empresa</th>
+            <th scope="col">Meta</th>
+            <th scope="col">Direção</th>
+            <th scope="col">Status</th>
+
+            @if (canEdit || canDelete) {
+              <th
+                class="indicator-list__actions-heading"
+                scope="col"
+              >
+                Ações
+              </th>
+            }
+          </tr>
+        </thead>
+
+        <tbody>
+
+          @for (
+            indicator of indicators();
+            track indicator.id
+          ) {
+
+            <tr>
+
+              <td>
+                <div class="indicator-list__indicator">
+                  <strong>{{ indicator.name }}</strong>
+
+                  @if (indicator.description) {
+                    <span>{{ indicator.description }}</span>
+                  }
+                </div>
+              </td>
+
+              <td>
+                {{ companyName(indicator.companyId) }}
+              </td>
+
+              <td>
+                <strong class="indicator-list__target">
+                  {{ formatTarget(indicator.targetValue) }}
+                  {{ indicator.unit }}
+                </strong>
+              </td>
+
+              <td>
+                {{ directionLabel(indicator) }}
+              </td>
+
+              <td>
+                <span
+                  class="indicator-list__status"
+                  [class.indicator-list__status--active]="indicator.status === 'active'"
+                  [class.indicator-list__status--inactive]="indicator.status === 'inactive'"
+                >
+                  {{
+                    indicator.status === 'active'
+                      ? 'Ativo'
+                      : 'Inativo'
+                  }}
+                </span>
+              </td>
+
+              @if (canEdit || canDelete) {
+                <td>
+                  <div class="indicator-list__actions">
+
+                    @if (canEdit) {
+                      <button
+                        class="indicator-list__action"
+                        type="button"
+                        (click)="openEdit(indicator)"
+                      >
+                        Editar
+                      </button>
+                    }
+
+                    @if (canDelete) {
+                      <button
+                        class="indicator-list__action indicator-list__action--danger"
+                        type="button"
+                        [disabled]="deletingIndicatorId() === indicator.id"
+                        (click)="deleteIndicator(indicator)"
+                      >
+                        {{
+                          deletingIndicatorId() === indicator.id
+                            ? 'Excluindo...'
+                            : 'Excluir'
+                        }}
+                      </button>
+                    }
+
+                  </div>
+                </td>
+              }
+
+            </tr>
+
+          }
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  } @else {
+
+    <div class="indicator-list__empty">
+
+      <h3>Nenhum indicador cadastrado</h3>
+
+      <p>
+        Nenhum indicador foi encontrado no seu escopo de acesso.
+      </p>
+
+      @if (canEdit && companies.length > 0) {
+        <button
+          class="indicator-list__create-button"
+          type="button"
+          (click)="openCreate()"
+        >
+          Cadastrar primeiro indicador
+        </button>
+      } @else if (canEdit && companies.length === 0) {
+        <p>
+          É necessário possuir uma empresa acessível antes
+          de cadastrar indicadores.
+        </p>
+      }
+
+    </div>
+
+  }
+
+</section>
