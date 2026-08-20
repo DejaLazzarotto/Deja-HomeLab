@@ -1,0 +1,590 @@
+<!--
+  Deja Indicadores
+
+  Users Presentation
+
+  Estrutura visual da Gestão de Usuários.
+-->
+
+<section class="user-list">
+
+  <header class="user-list__header">
+
+    <div class="user-list__heading">
+      <span class="user-list__eyebrow">
+        Deja Indicadores
+      </span>
+
+      <h2 class="user-list__title">
+        Usuários
+      </h2>
+
+      <p class="user-list__description">
+        Gerencie usuários, papéis, status, escopos e senhas.
+      </p>
+    </div>
+
+    @if (!formVisible() && !passwordFormVisible()) {
+      <button
+        class="user-list__primary-button"
+        type="button"
+        (click)="openCreate()"
+      >
+        Novo usuário
+      </button>
+    }
+
+  </header>
+
+  @if (operationMessage()) {
+    <p class="user-list__message user-list__message--success">
+      {{ operationMessage() }}
+    </p>
+  }
+
+  @if (operationError()) {
+    <p class="user-list__message user-list__message--error">
+      {{ operationError() }}
+    </p>
+  }
+
+  @if (formVisible()) {
+
+    <form
+      class="user-list__form"
+      #userForm="ngForm"
+      (ngSubmit)="save()"
+    >
+
+      <div class="user-list__form-header">
+        <div>
+          <h3>
+            {{ editingUserId() ? 'Editar usuário' : 'Novo usuário' }}
+          </h3>
+
+          <p>
+            Informe os dados de acesso e o escopo institucional.
+          </p>
+        </div>
+      </div>
+
+      <div class="user-list__form-grid">
+
+        <label class="user-list__field">
+          <span>Nome</span>
+
+          <input
+            name="name"
+            type="text"
+            maxlength="255"
+            required
+            [(ngModel)]="form.name"
+          >
+        </label>
+
+        <label class="user-list__field">
+          <span>E-mail</span>
+
+          <input
+            name="email"
+            type="email"
+            maxlength="255"
+            required
+            [(ngModel)]="form.email"
+          >
+        </label>
+
+        <label class="user-list__field">
+          <span>Papel</span>
+
+          <select
+            name="role"
+            required
+            [(ngModel)]="form.role"
+            (ngModelChange)="onRoleChange()"
+          >
+            @for (role of roleOptions; track role.value) {
+              <option [value]="role.value">
+                {{ role.label }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="user-list__field">
+          <span>Status</span>
+
+          <select
+            name="status"
+            required
+            [(ngModel)]="form.status"
+          >
+            <option value="active">Ativo</option>
+            <option value="inactive">Inativo</option>
+          </select>
+        </label>
+
+        @if (form.role !== 'platform_admin') {
+          <label class="user-list__field">
+            <span>Organização</span>
+
+            <select
+              name="organizationId"
+              required
+              [(ngModel)]="form.organizationId"
+              (ngModelChange)="onOrganizationChange()"
+            >
+              <option [ngValue]="null" disabled>
+                Selecione a organização
+              </option>
+
+              @for (
+                organization of organizations;
+                track organization.id
+              ) {
+                <option [value]="organization.id">
+                  {{ organization.name }}
+                </option>
+              }
+            </select>
+          </label>
+        }
+
+        @if (
+          form.role !== 'platform_admin'
+          && form.role !== 'organization_admin'
+        ) {
+          <label class="user-list__field">
+            <span>Tenant</span>
+
+            <select
+              name="tenantId"
+              required
+              [(ngModel)]="form.tenantId"
+              (ngModelChange)="onTenantChange()"
+            >
+              <option [ngValue]="null" disabled>
+                Selecione o tenant
+              </option>
+
+              @for (tenant of formTenants; track tenant.id) {
+                <option [value]="tenant.id">
+                  {{ tenant.name }}
+                </option>
+              }
+            </select>
+          </label>
+        }
+
+        @if (
+          form.role === 'manager'
+          || form.role === 'analyst'
+          || form.role === 'viewer'
+        ) {
+          <label class="user-list__field">
+            <span>Ambiente</span>
+
+            <select
+              name="environmentId"
+              required
+              [(ngModel)]="form.environmentId"
+            >
+              <option [ngValue]="null" disabled>
+                Selecione o ambiente
+              </option>
+
+              @for (
+                environment of formEnvironments;
+                track environment.id
+              ) {
+                <option [value]="environment.id">
+                  {{ environment.name }}
+                </option>
+              }
+            </select>
+          </label>
+        }
+
+        @if (!editingUserId()) {
+          <label class="user-list__field">
+            <span>Senha inicial</span>
+
+            <input
+              name="password"
+              type="password"
+              minlength="8"
+              maxlength="128"
+              autocomplete="new-password"
+              required
+              [(ngModel)]="password"
+            >
+          </label>
+
+          <label class="user-list__field">
+            <span>Confirmar senha</span>
+
+            <input
+              name="passwordConfirmation"
+              type="password"
+              minlength="8"
+              maxlength="128"
+              autocomplete="new-password"
+              required
+              [(ngModel)]="passwordConfirmation"
+            >
+          </label>
+        }
+
+      </div>
+
+      <div class="user-list__form-actions">
+
+        <button
+          class="user-list__action"
+          type="button"
+          [disabled]="saving()"
+          (click)="cancelForm()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          class="user-list__primary-button"
+          type="submit"
+          [disabled]="userForm.invalid || saving()"
+        >
+          {{ saving() ? 'Salvando...' : 'Salvar usuário' }}
+        </button>
+
+      </div>
+
+    </form>
+
+  }
+
+  @if (passwordFormVisible() && passwordUser()) {
+
+    <form
+      class="user-list__form"
+      #passwordForm="ngForm"
+      (ngSubmit)="savePassword()"
+    >
+
+      <div class="user-list__form-header">
+        <div>
+          <h3>Redefinir senha</h3>
+
+          <p>
+            Defina uma nova senha para {{ passwordUser()?.name }}.
+          </p>
+        </div>
+      </div>
+
+      <div class="user-list__form-grid">
+
+        <label class="user-list__field">
+          <span>Nova senha</span>
+
+          <input
+            name="newPassword"
+            type="password"
+            minlength="8"
+            maxlength="128"
+            autocomplete="new-password"
+            required
+            [(ngModel)]="password"
+          >
+        </label>
+
+        <label class="user-list__field">
+          <span>Confirmar nova senha</span>
+
+          <input
+            name="newPasswordConfirmation"
+            type="password"
+            minlength="8"
+            maxlength="128"
+            autocomplete="new-password"
+            required
+            [(ngModel)]="passwordConfirmation"
+          >
+        </label>
+
+      </div>
+
+      <div class="user-list__form-actions">
+
+        <button
+          class="user-list__action"
+          type="button"
+          [disabled]="savingPassword()"
+          (click)="cancelPassword()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          class="user-list__primary-button"
+          type="submit"
+          [disabled]="passwordForm.invalid || savingPassword()"
+        >
+          {{
+            savingPassword()
+              ? 'Salvando...'
+              : 'Redefinir senha'
+          }}
+        </button>
+
+      </div>
+
+    </form>
+
+  }
+
+  <form
+    class="user-list__filters"
+    (ngSubmit)="applyFilters()"
+  >
+
+    <label class="user-list__field">
+      <span>Organização</span>
+
+      <select
+        name="filterOrganizationId"
+        [(ngModel)]="filterOrganizationId"
+        (ngModelChange)="onFilterOrganizationChange()"
+      >
+        <option [ngValue]="null">Todas</option>
+
+        @for (
+          organization of organizations;
+          track organization.id
+        ) {
+          <option [value]="organization.id">
+            {{ organization.name }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="user-list__field">
+      <span>Tenant</span>
+
+      <select
+        name="filterTenantId"
+        [(ngModel)]="filterTenantId"
+        (ngModelChange)="onFilterTenantChange()"
+      >
+        <option [ngValue]="null">Todos</option>
+
+        @for (tenant of filterTenants; track tenant.id) {
+          <option [value]="tenant.id">
+            {{ tenant.name }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="user-list__field">
+      <span>Ambiente</span>
+
+      <select
+        name="filterEnvironmentId"
+        [(ngModel)]="filterEnvironmentId"
+      >
+        <option [ngValue]="null">Todos</option>
+
+        @for (
+          environment of filterEnvironments;
+          track environment.id
+        ) {
+          <option [value]="environment.id">
+            {{ environment.name }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="user-list__field">
+      <span>Status</span>
+
+      <select
+        name="filterStatus"
+        [(ngModel)]="filterStatus"
+      >
+        <option [ngValue]="null">Todos</option>
+        <option value="active">Ativos</option>
+        <option value="inactive">Inativos</option>
+      </select>
+    </label>
+
+    <div class="user-list__filter-actions">
+      <button
+        class="user-list__action"
+        type="button"
+        (click)="clearFilters()"
+      >
+        Limpar
+      </button>
+
+      <button
+        class="user-list__primary-button"
+        type="submit"
+      >
+        Filtrar
+      </button>
+    </div>
+
+  </form>
+
+  @if (loading()) {
+
+    <div class="user-list__empty">
+      <h3>Carregando usuários...</h3>
+
+      <p>
+        Aguarde enquanto consultamos os dados da API.
+      </p>
+    </div>
+
+  } @else if (errorMessage()) {
+
+    <div class="user-list__empty">
+      <h3>Falha ao carregar</h3>
+
+      <p>
+        {{ errorMessage() }}
+      </p>
+
+      <button
+        class="user-list__primary-button"
+        type="button"
+        (click)="refresh()"
+      >
+        Tentar novamente
+      </button>
+    </div>
+
+  } @else if (users().length > 0) {
+
+    <div class="user-list__table-container">
+
+      <table class="user-list__table">
+
+        <thead>
+          <tr>
+            <th scope="col">Usuário</th>
+            <th scope="col">Papel</th>
+            <th scope="col">Escopo</th>
+            <th scope="col">Status</th>
+            <th
+              class="user-list__actions-heading"
+              scope="col"
+            >
+              Ações
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          @for (user of users(); track user.id) {
+
+            <tr>
+
+              <td>
+                <div class="user-list__identity">
+                  <strong>{{ user.name }}</strong>
+                  <span>{{ user.email }}</span>
+                </div>
+              </td>
+
+              <td>
+                {{ roleLabel(user.role) }}
+              </td>
+
+              <td>
+                <div class="user-list__scope">
+                  <span>
+                    {{ organizationName(user.organizationId) }}
+                  </span>
+
+                  @if (user.tenantId) {
+                    <span>
+                      {{ tenantName(user.tenantId) }}
+                    </span>
+                  }
+
+                  @if (user.environmentId) {
+                    <span>
+                      {{ environmentName(user.environmentId) }}
+                    </span>
+                  }
+                </div>
+              </td>
+
+              <td>
+                <span
+                  class="user-list__status"
+                  [class.user-list__status--active]="user.status === 'active'"
+                  [class.user-list__status--inactive]="user.status === 'inactive'"
+                >
+                  {{ user.status === 'active' ? 'Ativo' : 'Inativo' }}
+                </span>
+              </td>
+
+              <td>
+                <div class="user-list__actions">
+
+                  <button
+                    class="user-list__action"
+                    type="button"
+                    (click)="openEdit(user)"
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    class="user-list__action"
+                    type="button"
+                    (click)="openPassword(user)"
+                  >
+                    Redefinir senha
+                  </button>
+
+                </div>
+              </td>
+
+            </tr>
+
+          }
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  } @else {
+
+    <div class="user-list__empty">
+
+      <h3>Nenhum usuário encontrado</h3>
+
+      <p>
+        Nenhum usuário foi encontrado no escopo e nos filtros informados.
+      </p>
+
+      <button
+        class="user-list__primary-button"
+        type="button"
+        (click)="openCreate()"
+      >
+        Cadastrar primeiro usuário
+      </button>
+
+    </div>
+
+  }
+
+</section>

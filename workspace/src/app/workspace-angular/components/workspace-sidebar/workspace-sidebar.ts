@@ -14,6 +14,10 @@ import {
 } from '../../../deja-indicadores/authentication/application/administration.guard';
 
 import {
+  canAccessUserAdministration,
+} from '../../../deja-indicadores/authentication/application/user-administration.guard';
+
+import {
   AuthenticationService,
 } from '../../../deja-indicadores/authentication/application/authentication.service';
 
@@ -57,6 +61,9 @@ export class WorkspaceSidebarComponent {
   private readonly administrationNavigationId =
     'deja.workspace.navigation.administration';
 
+  private readonly usersNavigationId =
+  'deja.workspace.navigation.administration.users';
+
   private readonly sectionDefinitions: readonly {
     id: NavigationSectionId;
     title: string | null;
@@ -99,13 +106,23 @@ export class WorkspaceSidebarComponent {
 
     const navigation = this.runtime
       .visibleNavigations()
-      .filter(item => (
-        item.id !== this.administrationNavigationId
-        || (
-          user !== null
-          && canAccessAdministration(user.role)
-        )
-      ));
+            .filter(item => {
+        if (item.id === this.administrationNavigationId) {
+          return (
+            user !== null
+            && canAccessAdministration(user.role)
+          );
+        }
+
+        if (item.id === this.usersNavigationId) {
+          return (
+            user !== null
+            && canAccessUserAdministration(user.role)
+          );
+        }
+
+        return true;
+      });
 
     return this.sectionDefinitions
       .map(section => ({

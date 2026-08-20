@@ -55,6 +55,8 @@ import { WorkspaceIndicatorManagementWidgetComponent } from '../components/works
 
 import { WorkspaceMeasurementManagementWidgetComponent } from '../components/workspace-measurement-management-widget/workspace-measurement-management-widget';
 
+import { WorkspaceUserManagementWidgetComponent } from '../components/workspace-user-management-widget/workspace-user-management-widget';
+
 /**
  * Composition Root oficial do Workspace.
  */
@@ -64,6 +66,9 @@ export class WorkspaceComposition {
   private static readonly INITIAL_DASHBOARD_ID = 'deja.workspace.dashboard.initial';
 
   private static readonly ADMINISTRATION_DASHBOARD_ID = 'deja.workspace.dashboard.administration';
+
+  private static readonly USERS_DASHBOARD_ID =
+  'deja.workspace.dashboard.administration.users';
 
   private static readonly REPORTS_DASHBOARD_ID = 'deja.workspace.dashboard.reports';
 
@@ -79,6 +84,9 @@ export class WorkspaceComposition {
   private static readonly INITIAL_NAVIGATION_ID = 'deja.workspace.navigation.initial';
 
   private static readonly ADMINISTRATION_NAVIGATION_ID = 'deja.workspace.navigation.administration';
+
+  private static readonly USERS_NAVIGATION_ID =
+  'deja.workspace.navigation.administration.users';
 
   private static readonly REPORTS_NAVIGATION_ID = 'deja.workspace.navigation.reports';
 
@@ -99,6 +107,9 @@ export class WorkspaceComposition {
   private static readonly WELCOME_WIDGET_ID = 'deja.workspace.widget.welcome';
 
   private static readonly COMPANY_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.company-management';
+
+  private static readonly USER_MANAGEMENT_WIDGET_ID =
+  'deja.workspace.widget.user-management';
 
   private static readonly INDICATOR_MANAGEMENT_WIDGET_ID =
     'deja.workspace.widget.indicator-management';
@@ -269,6 +280,21 @@ export class WorkspaceComposition {
         },
       },
 
+            {
+        id: this.USERS_NAVIGATION_ID,
+        ownerId: this.CORE_OWNER,
+        dashboardId: this.USERS_DASHBOARD_ID,
+        title: 'Usuários',
+        description: 'Acesso à administração de usuários e permissões.',
+        icon: 'users',
+        order: 25,
+        enabled: true,
+        metadata: {
+          section: 'administration',
+          permission: 'user-administration',
+        },
+      },
+
       {
         id: this.REPORTS_NAVIGATION_ID,
         ownerId: this.CORE_OWNER,
@@ -420,6 +446,31 @@ export class WorkspaceComposition {
       tags: ['deja-indicadores', 'companies', 'management'],
     };
 
+        const userManagementWidget: WorkspaceWidget = {
+      id: this.USER_MANAGEMENT_WIDGET_ID,
+      owner: this.CORE_OWNER,
+      title: 'Gestão de Usuários',
+      description: 'Consulta e administração dos usuários institucionais.',
+      category: 'management',
+      widgetType: 'user-management',
+      supportedSurfaces: ['dashboard'],
+      capabilities: ['resizable'],
+      size: {
+        default: {
+          columns: 12,
+          rows: 8,
+        },
+        minimum: {
+          columns: 6,
+          rows: 4,
+        },
+      },
+      component: WorkspaceUserManagementWidgetComponent,
+      priority: 25,
+      enabled: true,
+      tags: ['deja-indicadores', 'users', 'management'],
+    };
+
     const indicatorManagementWidget: WorkspaceWidget = {
       id: this.INDICATOR_MANAGEMENT_WIDGET_ID,
       owner: this.CORE_OWNER,
@@ -478,6 +529,8 @@ export class WorkspaceComposition {
 
     registries.widgets.register(companyManagementWidget);
 
+    registries.widgets.register(userManagementWidget);
+
     registries.widgets.register(indicatorManagementWidget);
 
     registries.widgets.register(measurementManagementWidget);
@@ -527,6 +580,37 @@ export class WorkspaceComposition {
           {
             id: 'deja.workspace.widget-instance.company-management',
             widgetId: companyManagementWidget.id,
+            regionId: mainRegion.id,
+            position: {
+              column: 1,
+              row: 1,
+              columnSpan: 12,
+              rowSpan: 8,
+            },
+            enabled: true,
+          },
+        ],
+      },
+
+            {
+        id: this.USERS_DASHBOARD_ID,
+        owner: this.CORE_OWNER,
+        title: 'Usuários',
+        description: 'Gestão administrativa de usuários e permissões.',
+        route: '/administration/users',
+        layoutId: initialLayout.id,
+        priority: 25,
+        enabled: true,
+        tags: ['administration', 'users'],
+        metadata: {
+          type: 'administration',
+          section: 'users',
+          permission: 'user-administration',
+        },
+        widgets: [
+          {
+            id: 'deja.workspace.widget-instance.user-management',
+            widgetId: userManagementWidget.id,
             regionId: mainRegion.id,
             position: {
               column: 1,

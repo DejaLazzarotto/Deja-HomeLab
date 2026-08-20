@@ -4,6 +4,8 @@ import { administrationGuard } from './deja-indicadores/authentication/applicati
 
 import { authenticationGuard } from './deja-indicadores/authentication/application/authentication.guard';
 
+import { userAdministrationGuard } from './deja-indicadores/authentication/application/user-administration.guard';
+
 const workspacePage = () =>
   import('./workspace-angular/components/workspace-page/workspace-page').then(
     (module) => module.WorkspacePageComponent,
@@ -33,6 +35,12 @@ export const routes: Routes = [
     path: 'administration/companies',
     title: 'Empresas | Administração | Deja Indicadores',
     canActivate: [administrationGuard],
+    loadComponent: workspacePage,
+  },
+  {
+    path: 'administration/users',
+    title: 'Usuários | Administração | Deja Indicadores',
+    canActivate: [userAdministrationGuard],
     loadComponent: workspacePage,
   },
   {
