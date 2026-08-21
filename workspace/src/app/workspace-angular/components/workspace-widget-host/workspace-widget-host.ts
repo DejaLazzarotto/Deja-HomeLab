@@ -10,6 +10,7 @@
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   ComponentRef,
   Input,
@@ -123,6 +124,8 @@ WorkspaceWidgetRenderController {
   constructor(
     private readonly widgetComponentCache:
       WorkspaceWidgetComponentCache,
+    private readonly changeDetectorRef:
+      ChangeDetectorRef,
   ) {}
 
   /**
@@ -259,6 +262,8 @@ WorkspaceWidgetRenderController {
     }
 
     this.resolvedWidget = widget;
+
+    this.changeDetectorRef.detectChanges();
 
     const componentType =
       this.resolveComponentType(widget);
