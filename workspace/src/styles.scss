@@ -9,10 +9,10 @@ body {
 }
 
 body {
-  background: var(--workspace-color-background);
   color: var(--workspace-color-text);
   font-family: var(--workspace-font-family);
   font-size: var(--workspace-font-size-md);
+  background: var(--workspace-color-background);
   overflow: hidden;
 }
 
@@ -20,4 +20,46 @@ body {
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+@media print {
+  html,
+  body {
+    width: auto;
+    height: auto;
+    color: #111;
+    background: #fff;
+    overflow: visible;
+  }
+
+  deja-workspace-header,
+  deja-workspace-sidebar,
+  deja-workspace-status-bar,
+  .workspace-dashboard__header,
+  .workspace-dashboard__region-header,
+  .workspace-widget-host__header {
+    display: none !important;
+  }
+
+  .workspace-root,
+  .workspace-main,
+  .workspace-main__content,
+  .workspace-dashboard,
+  .workspace-dashboard__layout,
+  .workspace-dashboard__region,
+  .workspace-dashboard__region-widgets,
+  .workspace-widget-host,
+  .workspace-widget-host__content {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    color: #111 !important;
+    background: #fff !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
 }

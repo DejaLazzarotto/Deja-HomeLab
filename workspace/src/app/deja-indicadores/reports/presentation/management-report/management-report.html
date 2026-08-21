@@ -1,0 +1,273 @@
+<section class="management-report">
+  <header class="report-header">
+    <div>
+      <p class="report-eyebrow">Análise operacional</p>
+      <h1>Relatório gerencial</h1>
+      <p>
+        Consulte resultados e metas dentro do seu escopo.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="print-button"
+      [disabled]="!report() || loading()"
+      (click)="print()"
+    >
+      Imprimir
+    </button>
+  </header>
+
+  <section class="filters">
+    <div class="filters-grid">
+      <label>
+        <span>Organização</span>
+
+        <select
+          [(ngModel)]="filterOrganizationId"
+          (ngModelChange)="organizationChanged()"
+        >
+          <option value="">Todas</option>
+
+          @for (
+            organization of organizations;
+            track organization.id
+          ) {
+            <option [value]="organization.id">
+              {{ organization.name }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Tenant</span>
+
+        <select
+          [(ngModel)]="filterTenantId"
+          (ngModelChange)="tenantChanged()"
+        >
+          <option value="">Todos</option>
+
+          @for (tenant of filteredTenants(); track tenant.id) {
+            <option [value]="tenant.id">
+              {{ tenant.name }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Ambiente</span>
+
+        <select [(ngModel)]="filterEnvironmentId">
+          <option value="">Todos</option>
+
+          @for (
+            environment of filteredEnvironments();
+            track environment.id
+          ) {
+            <option [value]="environment.id">
+              {{ environment.name }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Empresa</span>
+
+        <select
+          [(ngModel)]="filterCompanyId"
+          (ngModelChange)="companyChanged()"
+        >
+          <option value="">Todas</option>
+
+          @for (company of companies; track company.id) {
+            <option [value]="company.id">
+              {{ company.name }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Indicador</span>
+
+        <select [(ngModel)]="filterIndicatorId">
+          <option value="">Todos</option>
+
+          @for (
+            indicator of filteredIndicators();
+            track indicator.id
+          ) {
+            <option [value]="indicator.id">
+              {{ indicator.name }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Data inicial</span>
+
+        <input
+          type="date"
+          [(ngModel)]="filterStartDate"
+        >
+      </label>
+
+      <label>
+        <span>Data final</span>
+
+        <input
+          type="date"
+          [(ngModel)]="filterEndDate"
+        >
+      </label>
+    </div>
+
+    <div class="filter-actions">
+      <button
+        type="button"
+        class="primary-button"
+        [disabled]="loading()"
+        (click)="generate()"
+      >
+        Gerar relatório
+      </button>
+
+      <button
+        type="button"
+        class="secondary-button"
+        [disabled]="loading()"
+        (click)="clearFilters()"
+      >
+        Limpar
+      </button>
+    </div>
+  </section>
+
+  @if (errorMessage()) {
+    <section class="state-message state-message--error">
+      {{ errorMessage() }}
+    </section>
+  }
+
+  @if (loading()) {
+    <section class="state-message">
+      Gerando relatório...
+    </section>
+  } @else if (report(); as data) {
+    <article class="report-document">
+      <header class="document-header">
+        <div>
+          <h2>{{ data.title }}</h2>
+
+          <p>
+            Gerado em {{ formatGeneratedAt(data.generatedAt) }}
+          </p>
+        </div>
+      </header>
+
+      <section class="summary-grid">
+        <div>
+          <span>Empresas</span>
+          <strong>{{ data.overview.totals.companies }}</strong>
+        </div>
+
+        <div>
+          <span>Indicadores</span>
+          <strong>{{ data.overview.totals.indicators }}</strong>
+        </div>
+
+        <div>
+          <span>Medições</span>
+          <strong>{{ data.overview.totals.measurements }}</strong>
+        </div>
+      </section>
+
+      @if (data.overview.indicators.length === 0) {
+        <section class="state-message">
+          Nenhum indicador encontrado.
+        </section>
+      } @else {
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>Indicador</th>
+                <th>Meta</th>
+                <th>Resultado atual</th>
+                <th>Atingimento</th>
+                <th>Situação</th>
+                <th>Referência</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (
+                indicator of data.overview.indicators;
+                track indicator.id
+              ) {
+                <tr>
+                  <td>{{ indicator.companyTradeName }}</td>
+                  <td>{{ indicator.name }}</td>
+
+                  <td>
+                    {{
+                      formatValue(
+                        indicator.targetValue,
+                        indicator.unit
+                      )
+                    }}
+                  </td>
+
+                  <td>
+                    @if (indicator.currentMeasurement) {
+                      {{
+                        formatValue(
+                          indicator.currentMeasurement.actualValue,
+                          indicator.unit
+                        )
+                      }}
+                    } @else {
+                      —
+                    }
+                  </td>
+
+                  <td>
+                    {{
+                      formatPercentage(
+                        indicator.achievementPercentage
+                      )
+                    }}
+                  </td>
+
+                  <td>
+                    <span [class]="situationClass(indicator)">
+                      {{ situationLabel(indicator) }}
+                    </span>
+                  </td>
+
+                  <td>
+                    @if (indicator.currentMeasurement) {
+                      {{
+                        formatReferenceDate(
+                          indicator.currentMeasurement.referenceDate
+                        )
+                      }}
+                    } @else {
+                      —
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+  }
+</section>

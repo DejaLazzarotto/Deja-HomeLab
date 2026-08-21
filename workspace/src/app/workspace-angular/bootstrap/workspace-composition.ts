@@ -57,6 +57,10 @@ import { WorkspaceMeasurementManagementWidgetComponent } from '../components/wor
 
 import { WorkspaceUserManagementWidgetComponent } from '../components/workspace-user-management-widget/workspace-user-management-widget';
 
+import { WorkspaceDashboardOverviewWidgetComponent } from '../components/workspace-dashboard-overview-widget/workspace-dashboard-overview-widget';
+
+import { WorkspaceManagementReportWidgetComponent } from '../components/workspace-management-report-widget/workspace-management-report-widget';
+
 /**
  * Composition Root oficial do Workspace.
  */
@@ -67,8 +71,7 @@ export class WorkspaceComposition {
 
   private static readonly ADMINISTRATION_DASHBOARD_ID = 'deja.workspace.dashboard.administration';
 
-  private static readonly USERS_DASHBOARD_ID =
-  'deja.workspace.dashboard.administration.users';
+  private static readonly USERS_DASHBOARD_ID = 'deja.workspace.dashboard.administration.users';
 
   private static readonly REPORTS_DASHBOARD_ID = 'deja.workspace.dashboard.reports';
 
@@ -85,8 +88,7 @@ export class WorkspaceComposition {
 
   private static readonly ADMINISTRATION_NAVIGATION_ID = 'deja.workspace.navigation.administration';
 
-  private static readonly USERS_NAVIGATION_ID =
-  'deja.workspace.navigation.administration.users';
+  private static readonly USERS_NAVIGATION_ID = 'deja.workspace.navigation.administration.users';
 
   private static readonly REPORTS_NAVIGATION_ID = 'deja.workspace.navigation.reports';
 
@@ -106,16 +108,19 @@ export class WorkspaceComposition {
 
   private static readonly WELCOME_WIDGET_ID = 'deja.workspace.widget.welcome';
 
+  private static readonly DASHBOARD_OVERVIEW_WIDGET_ID = 'deja.workspace.widget.dashboard-overview';
+
   private static readonly COMPANY_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.company-management';
 
-  private static readonly USER_MANAGEMENT_WIDGET_ID =
-  'deja.workspace.widget.user-management';
+  private static readonly USER_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.user-management';
 
   private static readonly INDICATOR_MANAGEMENT_WIDGET_ID =
     'deja.workspace.widget.indicator-management';
 
   private static readonly MEASUREMENT_MANAGEMENT_WIDGET_ID =
     'deja.workspace.widget.measurement-management';
+
+  private static readonly MANAGEMENT_REPORT_WIDGET_ID = 'deja.workspace.widget.management-report';
 
   private static readonly INDICATORS_ACTION_ID = 'deja.workspace.widget.welcome.indicators';
 
@@ -280,7 +285,7 @@ export class WorkspaceComposition {
         },
       },
 
-            {
+      {
         id: this.USERS_NAVIGATION_ID,
         ownerId: this.CORE_OWNER,
         dashboardId: this.USERS_DASHBOARD_ID,
@@ -421,6 +426,31 @@ export class WorkspaceComposition {
       tags: ['core', 'initial', 'welcome'],
     };
 
+    const dashboardOverviewWidget: WorkspaceWidget = {
+      id: this.DASHBOARD_OVERVIEW_WIDGET_ID,
+      owner: this.CORE_OWNER,
+      title: 'Dashboard de Indicadores',
+      description: 'Visão gerencial dos resultados e metas operacionais.',
+      category: 'analysis',
+      widgetType: 'dashboard-overview',
+      supportedSurfaces: ['dashboard'],
+      capabilities: ['resizable'],
+      size: {
+        default: {
+          columns: 12,
+          rows: 10,
+        },
+        minimum: {
+          columns: 6,
+          rows: 6,
+        },
+      },
+      component: WorkspaceDashboardOverviewWidgetComponent,
+      priority: 10,
+      enabled: true,
+      tags: ['deja-indicadores', 'dashboard', 'analysis'],
+    };
+
     const companyManagementWidget: WorkspaceWidget = {
       id: this.COMPANY_MANAGEMENT_WIDGET_ID,
       owner: this.CORE_OWNER,
@@ -446,7 +476,7 @@ export class WorkspaceComposition {
       tags: ['deja-indicadores', 'companies', 'management'],
     };
 
-        const userManagementWidget: WorkspaceWidget = {
+    const userManagementWidget: WorkspaceWidget = {
       id: this.USER_MANAGEMENT_WIDGET_ID,
       owner: this.CORE_OWNER,
       title: 'Gestão de Usuários',
@@ -521,11 +551,38 @@ export class WorkspaceComposition {
       tags: ['deja-indicadores', 'measurements', 'operation'],
     };
 
+    const managementReportWidget: WorkspaceWidget = {
+      id: this.MANAGEMENT_REPORT_WIDGET_ID,
+      owner: this.CORE_OWNER,
+      title: 'Relatório Gerencial',
+      description: 'Consulta gerencial dos indicadores e resultados.',
+      category: 'analysis',
+      widgetType: 'management-report',
+      supportedSurfaces: ['dashboard'],
+      capabilities: ['resizable'],
+      size: {
+        default: {
+          columns: 12,
+          rows: 10,
+        },
+        minimum: {
+          columns: 6,
+          rows: 6,
+        },
+      },
+      component: WorkspaceManagementReportWidgetComponent,
+      priority: 50,
+      enabled: true,
+      tags: ['deja-indicadores', 'reports', 'analysis'],
+    };
+
     registries.layoutRegions.register(mainRegion);
 
     registries.layouts.register(initialLayout);
 
     registries.widgets.register(welcomeWidget);
+
+    registries.widgets.register(dashboardOverviewWidget);
 
     registries.widgets.register(companyManagementWidget);
 
@@ -535,27 +592,33 @@ export class WorkspaceComposition {
 
     registries.widgets.register(measurementManagementWidget);
 
+    registries.widgets.register(managementReportWidget);
+
     registries.dashboards.registerMany([
       {
         id: this.INITIAL_DASHBOARD_ID,
         owner: this.CORE_OWNER,
-        title: 'Dashboard inicial',
-        description: 'Primeiro Dashboard institucional.',
+        title: 'Dashboard operacional',
+        description: 'Visão gerencial dos indicadores e metas.',
         route: '/',
         layoutId: initialLayout.id,
         priority: 10,
         enabled: true,
-        tags: ['core', 'initial'],
+        tags: ['deja-indicadores', 'dashboard', 'operation'],
+        metadata: {
+          type: 'dashboard',
+          section: 'overview',
+        },
         widgets: [
           {
-            id: 'deja.workspace.widget-instance.welcome',
-            widgetId: welcomeWidget.id,
+            id: 'deja.workspace.widget-instance.dashboard-overview',
+            widgetId: dashboardOverviewWidget.id,
             regionId: mainRegion.id,
             position: {
               column: 1,
               row: 1,
               columnSpan: 12,
-              rowSpan: 4,
+              rowSpan: 10,
             },
             enabled: true,
           },
@@ -592,7 +655,7 @@ export class WorkspaceComposition {
         ],
       },
 
-            {
+      {
         id: this.USERS_DASHBOARD_ID,
         owner: this.CORE_OWNER,
         title: 'Usuários',
@@ -627,15 +690,30 @@ export class WorkspaceComposition {
         id: this.REPORTS_DASHBOARD_ID,
         owner: this.CORE_OWNER,
         title: 'Relatórios',
-        description: 'Dashboard institucional de relatórios.',
+        description: 'Relatórios gerenciais dos indicadores.',
         route: '/reports',
         layoutId: initialLayout.id,
         priority: 30,
         enabled: true,
-        tags: ['reports'],
+        tags: ['reports', 'analysis'],
         metadata: {
           type: 'reports',
+          section: 'management',
         },
+        widgets: [
+          {
+            id: 'deja.workspace.widget-instance.management-report',
+            widgetId: managementReportWidget.id,
+            regionId: mainRegion.id,
+            position: {
+              column: 1,
+              row: 1,
+              columnSpan: 12,
+              rowSpan: 10,
+            },
+            enabled: true,
+          },
+        ],
       },
 
       {
