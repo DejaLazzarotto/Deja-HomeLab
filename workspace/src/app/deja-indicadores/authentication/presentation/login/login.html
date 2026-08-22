@@ -5,43 +5,32 @@
 
       <h1>Deja Indicadores</h1>
 
-      <p>
-        Entre para acessar indicadores, medições e resultados.
-      </p>
+      <p>Entre para acessar indicadores, medições e resultados.</p>
     </header>
 
-    <form
-      class="login__form"
-      [formGroup]="form"
-      (ngSubmit)="submit()"
-      autocomplete="off"
-    >
-      <label for="organizationId">
-        Identificador da organização
-        <span>(opcional)</span>
+    <form class="login__form" [formGroup]="form" (ngSubmit)="submit()" autocomplete="off">
+      <label for="organizationCode">
+        Código da organização
+        <span>(opcional para Platform Admin)</span>
       </label>
 
       <input
-        id="organizationId"
-        name="deja-organization-id"
+        id="organizationCode"
+        name="deja-organization-code"
         type="text"
-        formControlName="organizationId"
+        formControlName="organizationCode"
         autocomplete="off"
-        placeholder="UUID da organização"
-      >
+        autocapitalize="characters"
+        placeholder="Ex.: EMPRESA-PRINCIPAL"
+      />
 
-      @if (
-        form.controls.organizationId.touched
-        && form.controls.organizationId.invalid
-      ) {
+      @if (form.controls.organizationCode.touched && form.controls.organizationCode.invalid) {
         <small class="login__field-error">
-          Informe um identificador com 36 caracteres.
+          Use de 3 a 32 letras, números ou hífens, sem espaços.
         </small>
       }
 
-      <label for="email">
-        E-mail
-      </label>
+      <label for="email"> E-mail </label>
 
       <input
         id="email"
@@ -50,20 +39,13 @@
         formControlName="email"
         autocomplete="off"
         placeholder="seu-email@empresa.com.br"
-      >
+      />
 
-      @if (
-        form.controls.email.touched
-        && form.controls.email.invalid
-      ) {
-        <small class="login__field-error">
-          Informe um e-mail válido.
-        </small>
+      @if (form.controls.email.touched && form.controls.email.invalid) {
+        <small class="login__field-error"> Informe um e-mail válido. </small>
       }
 
-      <label for="password">
-        Senha
-      </label>
+      <label for="password"> Senha </label>
 
       <input
         id="password"
@@ -72,30 +54,19 @@
         formControlName="password"
         autocomplete="new-password"
         placeholder="Sua senha"
-      >
+      />
 
-      @if (
-        form.controls.password.touched
-        && form.controls.password.invalid
-      ) {
-        <small class="login__field-error">
-          A senha deve possuir entre 8 e 128 caracteres.
-        </small>
+      @if (form.controls.password.touched && form.controls.password.invalid) {
+        <small class="login__field-error"> A senha deve possuir entre 8 e 128 caracteres. </small>
       }
 
       @if (errorMessage()) {
-        <p
-          class="login__error"
-          role="alert"
-        >
+        <p class="login__error" role="alert">
           {{ errorMessage() }}
         </p>
       }
 
-      <button
-        type="submit"
-        [disabled]="submitting()"
-      >
+      <button type="submit" [disabled]="submitting()">
         {{ submitting() ? 'Entrando...' : 'Entrar' }}
       </button>
     </form>

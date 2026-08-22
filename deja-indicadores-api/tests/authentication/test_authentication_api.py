@@ -29,11 +29,13 @@ LOGIN_URL = "/api/v1/auth/login"
 def create_organization(
     client: TestClient,
     name: str = "Organização Principal",
+    code: str | None = None,
 ) -> dict[str, object]:
     """Insere uma organização diretamente para os testes."""
 
     organization = OrganizationModel(
         id=str(uuid4()),
+        code=code or f"ORG-{uuid4().hex[:12].upper()}",
         name=name,
         status=TenantManagementStatus.ACTIVE,
     )
@@ -46,6 +48,7 @@ def create_organization(
 
     return {
         "id": organization.id,
+        "code": organization.code,
         "name": organization.name,
         "status": organization.status.value,
     }
@@ -204,7 +207,7 @@ def test_login_issues_access_token_with_institutional_claims(
     response = client.post(
         LOGIN_URL,
         json={
-            "organization_id": organization["id"],
+            "organization_code": f"  {organization['code']}  ".lower(),
             "email": "  ANALISTA@deja.com  ",
             "password": "SenhaSegura123!",
         },
@@ -215,14 +218,10 @@ def test_login_issues_access_token_with_institutional_claims(
     body = response.json()
 
     assert body["token_type"] == "bearer"
-    assert body["expires_in"] == (
-        test_settings.access_token_expire_minutes * 60
-    )
+    assert body["expires_in"] == (test_settings.access_token_expire_minutes * 60)
     assert body["access_token"]
 
-    payload = create_access_token_service(test_settings).decode(
-        body["access_token"]
-    )
+    payload = create_access_token_service(test_settings).decode(body["access_token"])
 
     assert payload["sub"] == user["id"]
     assert payload["organization_id"] == organization["id"]
@@ -251,7 +250,7 @@ def test_login_platform_admin_has_global_null_scope(
     response = client.post(
         LOGIN_URL,
         json={
-            "organization_id": None,
+            "organization_code": None,
             "email": "platform.admin@deja.com",
             "password": "SenhaSegura123!",
         },
@@ -259,9 +258,7 @@ def test_login_platform_admin_has_global_null_scope(
 
     assert response.status_code == 200
 
-    payload = create_access_token_service(test_settings).decode(
-        response.json()["access_token"]
-    )
+    payload = create_access_token_service(test_settings).decode(response.json()["access_token"])
 
     assert payload["sub"] == user["id"]
     assert payload["organization_id"] is None
@@ -287,7 +284,7 @@ def test_login_organization_admin_has_null_operational_scope(
     response = client.post(
         LOGIN_URL,
         json={
-            "organization_id": organization["id"],
+            "organization_code": organization["code"],
             "email": "admin@deja.com",
             "password": "SenhaSegura123!",
         },
@@ -295,9 +292,7 @@ def test_login_organization_admin_has_null_operational_scope(
 
     assert response.status_code == 200
 
-    payload = create_access_token_service(test_settings).decode(
-        response.json()["access_token"]
-    )
+    payload = create_access_token_service(test_settings).decode(response.json()["access_token"])
 
     assert payload["tenant_id"] is None
     assert payload["environment_id"] is None
@@ -319,19 +314,17 @@ def test_login_rejects_invalid_credentials_without_revealing_field(
 
     invalid_credentials = [
         {
-            "organization_id": (
-                "00000000-0000-0000-0000-000000000000"
-            ),
+            "organization_code": "ORG-INEXISTENTE",
             "email": "usuario@deja.com",
             "password": "SenhaSegura123!",
         },
         {
-            "organization_id": organization["id"],
+            "organization_code": organization["code"],
             "email": "inexistente@deja.com",
             "password": "SenhaSegura123!",
         },
         {
-            "organization_id": organization["id"],
+            "organization_code": organization["code"],
             "email": "usuario@deja.com",
             "password": "SenhaIncorreta123!",
         },
@@ -363,7 +356,7 @@ def test_login_rejects_user_without_password(
     response = client.post(
         LOGIN_URL,
         json={
-            "organization_id": organization["id"],
+            "organization_code": organization["code"],
             "email": "sem.senha@deja.com",
             "password": "SenhaSegura123!",
         },
@@ -391,7 +384,7 @@ def test_login_rejects_inactive_user(
     response = client.post(
         LOGIN_URL,
         json={
-            "organization_id": organization["id"],
+            "organization_code": organization["code"],
             "email": "inativo@deja.com",
             "password": "SenhaSegura123!",
         },
@@ -415,7 +408,7 @@ def test_login_rejects_short_password(
     response = client.post(
         LOGIN_URL,
         json={
-            "organization_id": organization["id"],
+            "organization_code": organization["code"],
             "email": "usuario@deja.com",
             "password": "curta",
         },
@@ -424,15 +417,15 @@ def test_login_rejects_short_password(
     assert response.status_code == 422
 
 
-def test_login_rejects_invalid_organization_id(
+def test_login_rejects_invalid_organization_code(
     client: TestClient,
 ) -> None:
-    """Rejeita identificador de organização com tamanho inválido."""
+    """Rejeita código de organização fora do formato permitido."""
 
     response = client.post(
         LOGIN_URL,
         json={
-            "organization_id": "invalid-id",
+            "organization_code": "codigo invalido",
             "email": "usuario@deja.com",
             "password": "SenhaSegura123!",
         },
@@ -449,9 +442,7 @@ def test_login_rejects_invalid_email(
     response = client.post(
         LOGIN_URL,
         json={
-            "organization_id": (
-                "00000000-0000-0000-0000-000000000000"
-            ),
+            "organization_code": "ORG-INEXISTENTE",
             "email": "email-invalido",
             "password": "SenhaSegura123!",
         },

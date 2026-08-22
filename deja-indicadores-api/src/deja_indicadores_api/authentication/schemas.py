@@ -9,16 +9,31 @@ from deja_indicadores_api.user_management.models import UserRole
 class LoginRequest(BaseModel):
     """Credenciais necessárias para iniciar uma sessão."""
 
-    organization_id: str | None = Field(
+    organization_code: str | None = Field(
         default=None,
-        min_length=36,
-        max_length=36,
+        min_length=3,
+        max_length=32,
+        pattern=r"^[A-Z0-9]+(?:-[A-Z0-9]+)*$",
     )
     email: EmailStr
     password: str = Field(
         min_length=8,
         max_length=128,
     )
+
+    @field_validator("organization_code", mode="before")
+    @classmethod
+    def normalize_organization_code(
+        cls,
+        value: object,
+    ) -> object:
+        """Normaliza o código amigável da organização."""
+
+        if isinstance(value, str):
+            normalized_value = value.strip().upper()
+            return normalized_value or None
+
+        return value
 
     @field_validator("email", mode="before")
     @classmethod

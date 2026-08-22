@@ -24,6 +24,22 @@ class NamedResourceBase(BaseModel):
 class OrganizationBase(NamedResourceBase):
     """Campos compartilhados de uma organização."""
 
+    code: str = Field(
+        min_length=3,
+        max_length=32,
+        pattern=r"^[A-Z0-9]+(?:-[A-Z0-9]+)*$",
+    )
+
+    @field_validator("code", mode="before")
+    @classmethod
+    def normalize_code(cls, value: object) -> object:
+        """Normaliza o código amigável da organização."""
+
+        if isinstance(value, str):
+            return value.strip().upper()
+
+        return value
+
 
 class OrganizationCreate(OrganizationBase):
     """Dados aceitos no cadastro de uma organização."""

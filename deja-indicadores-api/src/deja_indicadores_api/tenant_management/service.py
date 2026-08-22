@@ -7,6 +7,7 @@ from deja_indicadores_api.authentication.schemas import AuthenticatedUser
 from deja_indicadores_api.tenant_management.exceptions import (
     EnvironmentNameAlreadyExistsError,
     EnvironmentNotFoundError,
+    OrganizationCodeAlreadyExistsError,
     OrganizationHasTenantsError,
     OrganizationNameAlreadyExistsError,
     OrganizationNotFoundError,
@@ -100,11 +101,9 @@ class OrganizationService:
             current_user,
             INSTITUTIONAL_READER_ROLES,
         )
-        effective_organization_id = (
-            self._authorization_service.resolve_organization_list_scope(
-                current_user,
-                organization_id,
-            )
+        effective_organization_id = self._authorization_service.resolve_organization_list_scope(
+            current_user,
+            organization_id,
         )
 
         return self._organization_repository.list(
@@ -139,9 +138,12 @@ class OrganizationService:
 
         self._require_roles(current_user, PLATFORM_ADMIN_ROLE)
 
-        existing_organization = (
-            self._organization_repository.find_by_name(input_data.name)
-        )
+        code_owner = self._organization_repository.find_by_code(input_data.code)
+
+        if code_owner is not None:
+            raise OrganizationCodeAlreadyExistsError(input_data.code)
+
+        existing_organization = self._organization_repository.find_by_name(input_data.name)
 
         if existing_organization is not None:
             raise OrganizationNameAlreadyExistsError(input_data.name)
@@ -170,14 +172,14 @@ class OrganizationService:
             current_user,
             organization.id,
         )
-        name_owner = self._organization_repository.find_by_name(
-            input_data.name
-        )
+        code_owner = self._organization_repository.find_by_code(input_data.code)
 
-        if (
-            name_owner is not None
-            and name_owner.id != organization_id
-        ):
+        if code_owner is not None and code_owner.id != organization_id:
+            raise OrganizationCodeAlreadyExistsError(input_data.code)
+
+        name_owner = self._organization_repository.find_by_name(input_data.name)
+
+        if name_owner is not None and name_owner.id != organization_id:
             raise OrganizationNameAlreadyExistsError(input_data.name)
 
         for field_name, value in input_data.model_dump().items():
@@ -195,9 +197,7 @@ class OrganizationService:
         self._require_roles(current_user, PLATFORM_ADMIN_ROLE)
         organization = self._find_by_id(organization_id)
 
-        if self._tenant_repository.exists_for_organization(
-            organization_id
-        ):
+        if self._tenant_repository.exists_for_organization(organization_id):
             raise OrganizationHasTenantsError(organization_id)
 
         self._organization_repository.delete(organization)
@@ -208,9 +208,7 @@ class OrganizationService:
     ) -> OrganizationModel:
         """Retorna uma organização existente sem aplicar autorização."""
 
-        organization = self._organization_repository.find_by_id(
-            organization_id
-        )
+        organization = self._organization_repository.find_by_id(organization_id)
 
         if organization is None:
             raise OrganizationNotFoundError(organization_id)
@@ -307,19 +305,15 @@ class TenantService:
         """Cadastra um tenant dentro do escopo permitido."""
 
         self._require_roles(current_user, TENANT_CREATOR_ROLES)
-        organization = self._require_organization(
-            input_data.organization_id
-        )
+        organization = self._require_organization(input_data.organization_id)
         self._authorization_service.require_organization_scope(
             current_user,
             organization.id,
         )
 
-        existing_tenant = (
-            self._tenant_repository.find_by_organization_and_name(
-                input_data.organization_id,
-                input_data.name,
-            )
+        existing_tenant = self._tenant_repository.find_by_organization_and_name(
+            input_data.organization_id,
+            input_data.name,
         )
 
         if existing_tenant is not None:
@@ -346,19 +340,15 @@ class TenantService:
         self._require_roles(current_user, TENANT_EDITOR_ROLES)
         tenant = self._find_by_id(tenant_id)
         self._require_tenant_scope(current_user, tenant)
-        organization = self._require_organization(
-            input_data.organization_id
-        )
+        organization = self._require_organization(input_data.organization_id)
         self._authorization_service.require_organization_scope(
             current_user,
             organization.id,
         )
 
-        name_owner = (
-            self._tenant_repository.find_by_organization_and_name(
-                input_data.organization_id,
-                input_data.name,
-            )
+        name_owner = self._tenant_repository.find_by_organization_and_name(
+            input_data.organization_id,
+            input_data.name,
         )
 
         if name_owner is not None and name_owner.id != tenant_id:
@@ -404,9 +394,7 @@ class TenantService:
     ) -> OrganizationModel:
         """Garante que a organização informada exista."""
 
-        organization = self._organization_repository.find_by_id(
-            organization_id
-        )
+        organization = self._organization_repository.find_by_id(organization_id)
 
         if organization is None:
             raise OrganizationNotFoundError(organization_id)
@@ -521,11 +509,9 @@ class EnvironmentService:
             tenant_id=tenant.id,
         )
 
-        existing_environment = (
-            self._environment_repository.find_by_tenant_and_name(
-                input_data.tenant_id,
-                input_data.name,
-            )
+        existing_environment = self._environment_repository.find_by_tenant_and_name(
+            input_data.tenant_id,
+            input_data.name,
         )
 
         if existing_environment is not None:
@@ -567,17 +553,12 @@ class EnvironmentService:
             tenant_id=target_tenant.id,
         )
 
-        name_owner = (
-            self._environment_repository.find_by_tenant_and_name(
-                input_data.tenant_id,
-                input_data.name,
-            )
+        name_owner = self._environment_repository.find_by_tenant_and_name(
+            input_data.tenant_id,
+            input_data.name,
         )
 
-        if (
-            name_owner is not None
-            and name_owner.id != environment_id
-        ):
+        if name_owner is not None and name_owner.id != environment_id:
             raise EnvironmentNameAlreadyExistsError(
                 input_data.tenant_id,
                 input_data.name,
@@ -614,9 +595,7 @@ class EnvironmentService:
     ) -> EnvironmentModel:
         """Retorna um ambiente existente sem aplicar autorização."""
 
-        environment = self._environment_repository.find_by_id(
-            environment_id
-        )
+        environment = self._environment_repository.find_by_id(environment_id)
 
         if environment is None:
             raise EnvironmentNotFoundError(environment_id)

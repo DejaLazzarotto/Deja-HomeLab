@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -21,6 +23,7 @@ def create_organization(
     response = client.post(
         ORGANIZATIONS_URL,
         json={
+            "code": f"ORG-{uuid4().hex[:12].upper()}",
             "name": name,
             "status": "active",
         },

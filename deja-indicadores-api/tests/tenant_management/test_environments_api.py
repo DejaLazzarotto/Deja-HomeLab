@@ -11,6 +11,7 @@ def create_organization(client: TestClient) -> dict[str, object]:
     response = client.post(
         ORGANIZATIONS_URL,
         json={
+            "code": "ORG-PRINCIPAL",
             "name": "Organização Principal",
             "status": "active",
         },
@@ -166,9 +167,7 @@ def test_get_environment_by_id(client: TestClient) -> None:
         str(tenant["id"]),
     )
 
-    response = client.get(
-        f"{ENVIRONMENTS_URL}/{environment['id']}"
-    )
+    response = client.get(f"{ENVIRONMENTS_URL}/{environment['id']}")
 
     assert response.status_code == 200
     assert response.json() == environment
@@ -244,16 +243,12 @@ def test_delete_environment(client: TestClient) -> None:
         str(tenant["id"]),
     )
 
-    response = client.delete(
-        f"{ENVIRONMENTS_URL}/{environment['id']}"
-    )
+    response = client.delete(f"{ENVIRONMENTS_URL}/{environment['id']}")
 
     assert response.status_code == 204
     assert response.content == b""
 
-    get_response = client.get(
-        f"{ENVIRONMENTS_URL}/{environment['id']}"
-    )
+    get_response = client.get(f"{ENVIRONMENTS_URL}/{environment['id']}")
 
     assert get_response.status_code == 404
     assert get_response.json()["error"] == "environment_not_found"
@@ -301,9 +296,7 @@ def test_create_environment_rejects_duplicate_name_in_tenant(
     )
 
     assert response.status_code == 409
-    assert response.json()["error"] == (
-        "environment_name_already_exists"
-    )
+    assert response.json()["error"] == ("environment_name_already_exists")
 
 
 def test_same_environment_name_is_allowed_in_different_tenants(
@@ -364,9 +357,7 @@ def test_update_environment_rejects_duplicate_name(
     )
 
     assert response.status_code == 409
-    assert response.json()["error"] == (
-        "environment_name_already_exists"
-    )
+    assert response.json()["error"] == ("environment_name_already_exists")
 
 
 def test_tenant_with_environment_cannot_be_deleted(
@@ -394,9 +385,7 @@ def test_get_unknown_environment_returns_not_found(
 
     environment_id = "00000000-0000-0000-0000-000000000000"
 
-    response = client.get(
-        f"{ENVIRONMENTS_URL}/{environment_id}"
-    )
+    response = client.get(f"{ENVIRONMENTS_URL}/{environment_id}")
 
     assert response.status_code == 404
     assert response.json()["error"] == "environment_not_found"
@@ -430,9 +419,7 @@ def test_delete_unknown_environment_returns_not_found(
 
     environment_id = "00000000-0000-0000-0000-000000000000"
 
-    response = client.delete(
-        f"{ENVIRONMENTS_URL}/{environment_id}"
-    )
+    response = client.delete(f"{ENVIRONMENTS_URL}/{environment_id}")
 
     assert response.status_code == 404
     assert response.json()["error"] == "environment_not_found"

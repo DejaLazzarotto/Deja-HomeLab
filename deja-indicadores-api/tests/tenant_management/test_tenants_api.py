@@ -4,6 +4,7 @@ ORGANIZATIONS_URL = "/api/v1/organizations"
 TENANTS_URL = "/api/v1/tenants"
 
 ORGANIZATION_PAYLOAD = {
+    "code": "ORG-PRINCIPAL",
     "name": "Organização Principal",
     "status": "active",
 }
@@ -177,6 +178,7 @@ def test_move_tenant_to_another_organization(
     second_response = client.post(
         ORGANIZATIONS_URL,
         json={
+            "code": "ORG-SECUNDARIA",
             "name": "Organização Secundária",
             "status": "active",
         },
@@ -278,6 +280,7 @@ def test_same_tenant_name_is_allowed_in_different_organizations(
     second_response = client.post(
         ORGANIZATIONS_URL,
         json={
+            "code": "ORG-SECUNDARIA",
             "name": "Organização Secundária",
             "status": "active",
         },
@@ -346,9 +349,7 @@ def test_organization_with_tenant_cannot_be_deleted(
         str(organization["id"]),
     )
 
-    response = client.delete(
-        f"{ORGANIZATIONS_URL}/{organization['id']}"
-    )
+    response = client.delete(f"{ORGANIZATIONS_URL}/{organization['id']}")
 
     assert response.status_code == 409
     assert response.json()["error"] == "organization_has_tenants"

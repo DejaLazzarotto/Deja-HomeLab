@@ -3,11 +3,13 @@ from fastapi.testclient import TestClient
 ORGANIZATIONS_URL = "/api/v1/organizations"
 
 FIRST_ORGANIZATION = {
+    "code": "  org-principal  ",
     "name": "  Organização Principal  ",
     "status": "active",
 }
 
 SECOND_ORGANIZATION = {
+    "code": "ORG-SECUNDARIA",
     "name": "Organização Secundária",
     "status": "inactive",
 }
@@ -41,6 +43,7 @@ def test_create_organization(client: TestClient) -> None:
     body = response.json()
 
     assert len(body["id"]) == 36
+    assert body["code"] == "ORG-PRINCIPAL"
     assert body["name"] == "Organização Principal"
     assert body["status"] == "active"
     assert body["created_at"]
@@ -54,7 +57,10 @@ def test_create_organization_uses_default_status(
 
     response = client.post(
         ORGANIZATIONS_URL,
-        json={"name": "Nova Organização"},
+        json={
+            "code": "NOVA-ORGANIZACAO",
+            "name": "Nova Organização",
+        },
     )
 
     assert response.status_code == 201
@@ -87,9 +93,7 @@ def test_get_organization_by_id(client: TestClient) -> None:
 
     organization = create_organization(client)
 
-    response = client.get(
-        f"{ORGANIZATIONS_URL}/{organization['id']}"
-    )
+    response = client.get(f"{ORGANIZATIONS_URL}/{organization['id']}")
 
     assert response.status_code == 200
     assert response.json() == organization
@@ -103,6 +107,7 @@ def test_update_organization(client: TestClient) -> None:
     response = client.put(
         f"{ORGANIZATIONS_URL}/{organization['id']}",
         json={
+            "code": "ORG-ATUALIZADA",
             "name": "  Organização Atualizada  ",
             "status": "inactive",
         },
@@ -113,6 +118,7 @@ def test_update_organization(client: TestClient) -> None:
     body = response.json()
 
     assert body["id"] == organization["id"]
+    assert body["code"] == "ORG-ATUALIZADA"
     assert body["name"] == "Organização Atualizada"
     assert body["status"] == "inactive"
     assert body["created_at"] == organization["created_at"]
@@ -124,16 +130,12 @@ def test_delete_organization(client: TestClient) -> None:
 
     organization = create_organization(client)
 
-    response = client.delete(
-        f"{ORGANIZATIONS_URL}/{organization['id']}"
-    )
+    response = client.delete(f"{ORGANIZATIONS_URL}/{organization['id']}")
 
     assert response.status_code == 204
     assert response.content == b""
 
-    get_response = client.get(
-        f"{ORGANIZATIONS_URL}/{organization['id']}"
-    )
+    get_response = client.get(f"{ORGANIZATIONS_URL}/{organization['id']}")
 
     assert get_response.status_code == 404
     assert get_response.json()["error"] == "organization_not_found"
@@ -149,15 +151,58 @@ def test_create_organization_rejects_duplicate_name(
     response = client.post(
         ORGANIZATIONS_URL,
         json={
+            "code": "ORG-NOME-DUPLICADO",
             "name": "Organização Principal",
             "status": "inactive",
         },
     )
 
     assert response.status_code == 409
-    assert response.json()["error"] == (
-        "organization_name_already_exists"
+    assert response.json()["error"] == ("organization_name_already_exists")
+
+
+def test_create_organization_rejects_duplicate_code(
+    client: TestClient,
+) -> None:
+    """Rejeita o cadastro de organizações com códigos duplicados."""
+
+    first_organization = create_organization(client)
+
+    response = client.post(
+        ORGANIZATIONS_URL,
+        json={
+            "code": str(first_organization["code"]).lower(),
+            "name": "Organização com Código Duplicado",
+            "status": "inactive",
+        },
     )
+
+    assert response.status_code == 409
+    assert response.json()["error"] == ("organization_code_already_exists")
+
+
+def test_update_organization_rejects_duplicate_code(
+    client: TestClient,
+) -> None:
+    """Rejeita a atualização para o código de outra organização."""
+
+    first_organization = create_organization(client)
+    second_organization = create_organization(
+        client,
+        SECOND_ORGANIZATION,
+    )
+
+    response = client.put(
+        f"{ORGANIZATIONS_URL}/{second_organization['id']}",
+        json={
+            "code": first_organization["code"],
+            "name": second_organization["name"],
+            "status": "active",
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"] == ("organization_code_already_exists")
 
 
 def test_update_organization_rejects_duplicate_name(
@@ -174,15 +219,14 @@ def test_update_organization_rejects_duplicate_name(
     response = client.put(
         f"{ORGANIZATIONS_URL}/{second_organization['id']}",
         json={
+            "code": second_organization["code"],
             "name": first_organization["name"],
             "status": "active",
         },
     )
 
     assert response.status_code == 409
-    assert response.json()["error"] == (
-        "organization_name_already_exists"
-    )
+    assert response.json()["error"] == ("organization_name_already_exists")
 
 
 def test_get_unknown_organization_returns_not_found(
@@ -192,9 +236,7 @@ def test_get_unknown_organization_returns_not_found(
 
     organization_id = "00000000-0000-0000-0000-000000000000"
 
-    response = client.get(
-        f"{ORGANIZATIONS_URL}/{organization_id}"
-    )
+    response = client.get(f"{ORGANIZATIONS_URL}/{organization_id}")
 
     assert response.status_code == 404
     assert response.json()["error"] == "organization_not_found"
@@ -210,6 +252,7 @@ def test_update_unknown_organization_returns_not_found(
     response = client.put(
         f"{ORGANIZATIONS_URL}/{organization_id}",
         json={
+            "code": "ORG-INEXISTENTE",
             "name": "Organização Inexistente",
             "status": "active",
         },
@@ -226,9 +269,7 @@ def test_delete_unknown_organization_returns_not_found(
 
     organization_id = "00000000-0000-0000-0000-000000000000"
 
-    response = client.delete(
-        f"{ORGANIZATIONS_URL}/{organization_id}"
-    )
+    response = client.delete(f"{ORGANIZATIONS_URL}/{organization_id}")
 
     assert response.status_code == 404
     assert response.json()["error"] == "organization_not_found"
@@ -242,6 +283,7 @@ def test_create_organization_rejects_blank_name(
     response = client.post(
         ORGANIZATIONS_URL,
         json={
+            "code": "ORG-NOME-VAZIO",
             "name": "   ",
             "status": "active",
         },
@@ -258,6 +300,7 @@ def test_create_organization_rejects_invalid_status(
     response = client.post(
         ORGANIZATIONS_URL,
         json={
+            "code": "ORG-STATUS-INVALIDO",
             "name": "Organização Inválida",
             "status": "unknown",
         },
@@ -271,8 +314,6 @@ def test_organization_id_requires_36_characters(
 ) -> None:
     """Rejeita identificador que não possui 36 caracteres."""
 
-    response = client.get(
-        f"{ORGANIZATIONS_URL}/invalid-id"
-    )
+    response = client.get(f"{ORGANIZATIONS_URL}/invalid-id")
 
     assert response.status_code == 422

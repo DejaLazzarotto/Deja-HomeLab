@@ -1,5 +1,5 @@
 export interface LoginCredentials {
-  organizationId: string | null;
+  organizationCode: string | null;
   email: string;
   password: string;
 }

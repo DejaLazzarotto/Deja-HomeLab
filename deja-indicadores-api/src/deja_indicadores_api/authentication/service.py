@@ -16,6 +16,9 @@ from deja_indicadores_api.core.security import (
     AccessTokenService,
     PasswordService,
 )
+from deja_indicadores_api.tenant_management.repository import (
+    OrganizationRepository,
+)
 from deja_indicadores_api.user_management.models import (
     UserModel,
     UserRole,
@@ -30,18 +33,30 @@ class AuthenticationService:
     def __init__(
         self,
         user_repository: UserRepository,
+        organization_repository: OrganizationRepository,
         password_service: PasswordService,
         access_token_service: AccessTokenService,
     ) -> None:
         self._user_repository = user_repository
+        self._organization_repository = organization_repository
         self._password_service = password_service
         self._access_token_service = access_token_service
 
     def login(self, input_data: LoginRequest) -> AccessTokenResponse:
         """Valida as credenciais e emite um token JWT."""
 
+        organization_id: str | None = None
+
+        if input_data.organization_code is not None:
+            organization = self._organization_repository.find_by_code(input_data.organization_code)
+
+            if organization is None:
+                raise InvalidCredentialsError
+
+            organization_id = organization.id
+
         user = self._user_repository.find_by_organization_and_email(
-            input_data.organization_id,
+            organization_id,
             str(input_data.email),
         )
 
@@ -85,11 +100,7 @@ class AuthenticationService:
 
         user = self._user_repository.find_by_id(claims.sub)
 
-        if (
-            user is None
-            or user.status != UserStatus.ACTIVE
-            or not self._has_valid_role_scope(user)
-        ):
+        if user is None or user.status != UserStatus.ACTIVE or not self._has_valid_role_scope(user):
             raise InvalidAccessTokenError
 
         if (
@@ -124,18 +135,9 @@ class AuthenticationService:
             return False
 
         if user.role == UserRole.ORGANIZATION_ADMIN:
-            return (
-                user.tenant_id is None
-                and user.environment_id is None
-            )
+            return user.tenant_id is None and user.environment_id is None
 
         if user.role == UserRole.TENANT_ADMIN:
-            return (
-                user.tenant_id is not None
-                and user.environment_id is None
-            )
+            return user.tenant_id is not None and user.environment_id is None
 
-        return (
-            user.tenant_id is not None
-            and user.environment_id is not None
-        )
+        return user.tenant_id is not None and user.environment_id is not None

@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -92,10 +94,7 @@ def test_platform_admin_manages_global_institutional_scope(
     )
 
     assert list_response.status_code == 200
-    assert {
-        organization["id"]
-        for organization in list_response.json()
-    } == {
+    assert {organization["id"] for organization in list_response.json()} == {
         first_organization["id"],
         second_organization["id"],
     }
@@ -103,6 +102,7 @@ def test_platform_admin_manages_global_institutional_scope(
     create_response = client.post(
         ORGANIZATIONS_URL,
         json={
+            "code": f"ORG-{uuid4().hex[:12].upper()}",
             "name": "Organização Provisionada",
             "status": "active",
         },
@@ -189,10 +189,9 @@ def test_organization_admin_is_limited_to_own_organization(
     )
 
     assert organization_response.status_code == 200
-    assert [
-        organization["id"]
-        for organization in organization_response.json()
-    ] == [own_organization["id"]]
+    assert [organization["id"] for organization in organization_response.json()] == [
+        own_organization["id"]
+    ]
 
     cross_organization_response = client.get(
         f"{ORGANIZATIONS_URL}/{other_organization['id']}",
@@ -228,6 +227,7 @@ def test_organization_admin_is_limited_to_own_organization(
     create_organization_response = client.post(
         ORGANIZATIONS_URL,
         json={
+            "code": f"ORG-{uuid4().hex[:12].upper()}",
             "name": "Organização Indevida",
             "status": "active",
         },
@@ -394,18 +394,27 @@ def test_manager_has_read_only_access_to_own_hierarchy(
     )
     headers = authorization_headers(test_settings, manager)
 
-    assert client.get(
-        f"{ORGANIZATIONS_URL}/{organization['id']}",
-        headers=headers,
-    ).status_code == 200
-    assert client.get(
-        f"{TENANTS_URL}/{own_tenant['id']}",
-        headers=headers,
-    ).status_code == 200
-    assert client.get(
-        f"{ENVIRONMENTS_URL}/{own_environment['id']}",
-        headers=headers,
-    ).status_code == 200
+    assert (
+        client.get(
+            f"{ORGANIZATIONS_URL}/{organization['id']}",
+            headers=headers,
+        ).status_code
+        == 200
+    )
+    assert (
+        client.get(
+            f"{TENANTS_URL}/{own_tenant['id']}",
+            headers=headers,
+        ).status_code
+        == 200
+    )
+    assert (
+        client.get(
+            f"{ENVIRONMENTS_URL}/{own_environment['id']}",
+            headers=headers,
+        ).status_code
+        == 200
+    )
 
     cross_response = client.get(
         f"{ENVIRONMENTS_URL}/{other_environment['id']}",

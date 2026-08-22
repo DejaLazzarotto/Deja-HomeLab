@@ -23,9 +23,7 @@ class OrganizationRepository:
         statement = select(OrganizationModel)
 
         if organization_id is not None:
-            statement = statement.where(
-                OrganizationModel.id == organization_id
-            )
+            statement = statement.where(OrganizationModel.id == organization_id)
 
         statement = statement.order_by(OrganizationModel.name)
 
@@ -39,15 +37,22 @@ class OrganizationRepository:
 
         return self._session.get(OrganizationModel, organization_id)
 
+    def find_by_code(
+        self,
+        code: str,
+    ) -> OrganizationModel | None:
+        """Localiza uma organização pelo código amigável."""
+
+        statement = select(OrganizationModel).where(OrganizationModel.code == code)
+        return self._session.scalar(statement)
+
     def find_by_name(
         self,
         name: str,
     ) -> OrganizationModel | None:
         """Localiza uma organização pelo nome."""
 
-        statement = select(OrganizationModel).where(
-            OrganizationModel.name == name
-        )
+        statement = select(OrganizationModel).where(OrganizationModel.name == name)
         return self._session.scalar(statement)
 
     def add(
@@ -94,9 +99,7 @@ class TenantRepository:
         statement = select(TenantModel)
 
         if organization_id is not None:
-            statement = statement.where(
-                TenantModel.organization_id == organization_id
-            )
+            statement = statement.where(TenantModel.organization_id == organization_id)
 
         if tenant_id is not None:
             statement = statement.where(TenantModel.id == tenant_id)
@@ -126,11 +129,7 @@ class TenantRepository:
     def exists_for_organization(self, organization_id: str) -> bool:
         """Verifica se a organização possui tenants cadastrados."""
 
-        statement = select(
-            exists().where(
-                TenantModel.organization_id == organization_id
-            )
-        )
+        statement = select(exists().where(TenantModel.organization_id == organization_id))
         return bool(self._session.scalar(statement))
 
     def add(self, tenant: TenantModel) -> TenantModel:
@@ -175,19 +174,13 @@ class EnvironmentRepository:
             statement = statement.join(
                 TenantModel,
                 EnvironmentModel.tenant_id == TenantModel.id,
-            ).where(
-                TenantModel.organization_id == organization_id
-            )
+            ).where(TenantModel.organization_id == organization_id)
 
         if tenant_id is not None:
-            statement = statement.where(
-                EnvironmentModel.tenant_id == tenant_id
-            )
+            statement = statement.where(EnvironmentModel.tenant_id == tenant_id)
 
         if environment_id is not None:
-            statement = statement.where(
-                EnvironmentModel.id == environment_id
-            )
+            statement = statement.where(EnvironmentModel.id == environment_id)
 
         statement = statement.order_by(EnvironmentModel.name)
 
@@ -217,9 +210,7 @@ class EnvironmentRepository:
     def exists_for_tenant(self, tenant_id: str) -> bool:
         """Verifica se o tenant possui ambientes cadastrados."""
 
-        statement = select(
-            exists().where(EnvironmentModel.tenant_id == tenant_id)
-        )
+        statement = select(exists().where(EnvironmentModel.tenant_id == tenant_id))
         return bool(self._session.scalar(statement))
 
     def add(

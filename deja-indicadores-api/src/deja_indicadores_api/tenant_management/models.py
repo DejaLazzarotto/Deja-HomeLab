@@ -31,9 +31,17 @@ class OrganizationModel(Base):
             "name",
             name="uq_organizations_name",
         ),
+        UniqueConstraint(
+            "code",
+            name="uq_organizations_code",
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    code: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+    )
     name: Mapped[str] = mapped_column(
         String(255),
         nullable=False,

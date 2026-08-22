@@ -33,9 +33,7 @@ def create_signed_token(
     payload: dict[str, object] = {
         "sub": user["id"],
         "organization_id": (
-            organization_id
-            if organization_id is not None
-            else user["organization_id"]
+            organization_id if organization_id is not None else user["organization_id"]
         ),
         "tenant_id": user["tenant_id"],
         "environment_id": user["environment_id"],
@@ -89,7 +87,7 @@ def test_me_returns_authenticated_user_and_institutional_scope(
     login_response = client.post(
         LOGIN_URL,
         json={
-            "organization_id": organization["id"],
+            "organization_code": organization["code"],
             "email": "identidade@deja.com",
             "password": "SenhaSegura123!",
         },
@@ -100,9 +98,7 @@ def test_me_returns_authenticated_user_and_institutional_scope(
     response = client.get(
         ME_URL,
         headers={
-            "Authorization": (
-                f"Bearer {login_response.json()['access_token']}"
-            ),
+            "Authorization": (f"Bearer {login_response.json()['access_token']}"),
         },
     )
 

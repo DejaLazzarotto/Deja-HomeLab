@@ -10,9 +10,16 @@ class OrganizationNotFoundError(ResourceNotFoundError):
     error_code = "organization_not_found"
 
     def __init__(self, organization_id: str) -> None:
-        super().__init__(
-            f"Organização com ID '{organization_id}' não encontrada."
-        )
+        super().__init__(f"Organização com ID '{organization_id}' não encontrada.")
+
+
+class OrganizationCodeAlreadyExistsError(ResourceConflictError):
+    """Código já utilizado por outra organização."""
+
+    error_code = "organization_code_already_exists"
+
+    def __init__(self, code: str) -> None:
+        super().__init__(f"Já existe uma organização com o código '{code}'.")
 
 
 class OrganizationNameAlreadyExistsError(ResourceConflictError):
@@ -21,9 +28,7 @@ class OrganizationNameAlreadyExistsError(ResourceConflictError):
     error_code = "organization_name_already_exists"
 
     def __init__(self, name: str) -> None:
-        super().__init__(
-            f"Já existe uma organização chamada '{name}'."
-        )
+        super().__init__(f"Já existe uma organização chamada '{name}'.")
 
 
 class OrganizationHasTenantsError(ResourceConflictError):
@@ -44,9 +49,7 @@ class TenantNotFoundError(ResourceNotFoundError):
     error_code = "tenant_not_found"
 
     def __init__(self, tenant_id: str) -> None:
-        super().__init__(
-            f"Tenant com ID '{tenant_id}' não encontrado."
-        )
+        super().__init__(f"Tenant com ID '{tenant_id}' não encontrado.")
 
 
 class TenantNameAlreadyExistsError(ResourceConflictError):
@@ -56,8 +59,7 @@ class TenantNameAlreadyExistsError(ResourceConflictError):
 
     def __init__(self, organization_id: str, name: str) -> None:
         super().__init__(
-            f"A organização com ID '{organization_id}' já possui "
-            f"um tenant chamado '{name}'."
+            f"A organização com ID '{organization_id}' já possui um tenant chamado '{name}'."
         )
 
 
@@ -68,8 +70,7 @@ class TenantHasEnvironmentsError(ResourceConflictError):
 
     def __init__(self, tenant_id: str) -> None:
         super().__init__(
-            f"O tenant com ID '{tenant_id}' possui ambientes "
-            "cadastrados e não pode ser excluído."
+            f"O tenant com ID '{tenant_id}' possui ambientes cadastrados e não pode ser excluído."
         )
 
 
@@ -79,9 +80,7 @@ class EnvironmentNotFoundError(ResourceNotFoundError):
     error_code = "environment_not_found"
 
     def __init__(self, environment_id: str) -> None:
-        super().__init__(
-            f"Ambiente com ID '{environment_id}' não encontrado."
-        )
+        super().__init__(f"Ambiente com ID '{environment_id}' não encontrado.")
 
 
 class EnvironmentNameAlreadyExistsError(ResourceConflictError):
@@ -90,7 +89,4 @@ class EnvironmentNameAlreadyExistsError(ResourceConflictError):
     error_code = "environment_name_already_exists"
 
     def __init__(self, tenant_id: str, name: str) -> None:
-        super().__init__(
-            f"O tenant com ID '{tenant_id}' já possui "
-            f"um ambiente chamado '{name}'."
-        )
+        super().__init__(f"O tenant com ID '{tenant_id}' já possui um ambiente chamado '{name}'.")
