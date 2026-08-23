@@ -3,6 +3,9 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from deja_indicadores_api.chamados.clients.models import (
+    ChamadosClientModel,
+)
 from deja_indicadores_api.companies.models import CompanyModel
 from deja_indicadores_api.core.config import get_settings
 from deja_indicadores_api.core.database import Base
@@ -18,7 +21,10 @@ from deja_indicadores_api.user_management.models import UserModel
 config = context.config
 settings = get_settings()
 
-config.set_main_option("sqlalchemy.url", settings.database_url)
+config.set_main_option(
+    "sqlalchemy.url",
+    settings.database_url,
+)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -26,6 +32,7 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 _registered_models = (
+    ChamadosClientModel,
     CompanyModel,
     IndicatorModel,
     MeasurementModel,
@@ -43,7 +50,9 @@ def run_migrations_offline() -> None:
         url=config.get_main_option("sqlalchemy.url"),
         target_metadata=target_metadata,
         literal_binds=True,
-        dialect_opts={"paramstyle": "named"},
+        dialect_opts={
+            "paramstyle": "named",
+        },
         compare_type=True,
     )
 
@@ -55,7 +64,10 @@ def run_migrations_online() -> None:
     """Executa migrations conectadas ao banco configurado."""
 
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        config.get_section(
+            config.config_ini_section,
+            {},
+        ),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )

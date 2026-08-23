@@ -6,12 +6,23 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine, delete
 from sqlalchemy.orm import Session, sessionmaker
 
+from deja_indicadores_api.chamados.clients.models import (
+    ChamadosClientModel,
+)
 from deja_indicadores_api.companies.models import CompanyModel
-from deja_indicadores_api.core.config import Settings, get_settings
-from deja_indicadores_api.core.database import Base, get_db_session
+from deja_indicadores_api.core.config import (
+    Settings,
+    get_settings,
+)
+from deja_indicadores_api.core.database import (
+    Base,
+    get_db_session,
+)
 from deja_indicadores_api.indicators.models import IndicatorModel
 from deja_indicadores_api.main import create_app
-from deja_indicadores_api.measurements.models import MeasurementModel
+from deja_indicadores_api.measurements.models import (
+    MeasurementModel,
+)
 from deja_indicadores_api.tenant_management.models import (
     EnvironmentModel,
     OrganizationModel,
@@ -84,6 +95,7 @@ def clear_database(
         session.execute(delete(MeasurementModel))
         session.execute(delete(IndicatorModel))
         session.execute(delete(CompanyModel))
+        session.execute(delete(ChamadosClientModel))
         session.execute(delete(UserModel))
         session.execute(delete(EnvironmentModel))
         session.execute(delete(TenantModel))
@@ -135,7 +147,9 @@ def test_app(
 
 
 @pytest.fixture()
-def client(test_app: FastAPI) -> Generator[TestClient, None, None]:
+def client(
+    test_app: FastAPI,
+) -> Generator[TestClient, None, None]:
     """Fornece um cliente HTTP conectado à aplicação isolada."""
 
     with TestClient(test_app) as test_client:
