@@ -1,0 +1,201 @@
+<section class="client-form">
+  <header>
+    <h2>{{ title() }}</h2>
+  </header>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <mat-form-field appearance="outline">
+      <mat-label>Ambiente</mat-label>
+
+      <mat-select formControlName="environmentId" (blur)="onFieldBlur('environmentId')">
+        @for (environment of environmentOptions(); track environment.id) {
+          <mat-option [value]="environment.id">
+            {{ environment.name }}
+          </mat-option>
+        }
+      </mat-select>
+
+      @if (
+        form.controls.environmentId.hasError('required') && form.controls.environmentId.touched
+      ) {
+        <mat-error> Selecione o ambiente. </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Razão social</mat-label>
+
+      <input
+        matInput
+        formControlName="companyName"
+        maxlength="255"
+        (blur)="onFieldBlur('companyName')"
+      />
+
+      @if (form.controls.companyName.hasError('required') && form.controls.companyName.touched) {
+        <mat-error> Informe a razão social. </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Nome fantasia</mat-label>
+
+      <input
+        matInput
+        formControlName="fantasyName"
+        maxlength="255"
+        (blur)="onFieldBlur('fantasyName')"
+      />
+
+      @if (form.controls.fantasyName.hasError('required') && form.controls.fantasyName.touched) {
+        <mat-error> Informe o nome fantasia. </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>CPF/CNPJ</mat-label>
+
+      <input
+        matInput
+        formControlName="document"
+        maxlength="18"
+        inputmode="numeric"
+        (input)="onDocumentInput()"
+        (blur)="onFieldBlur('document')"
+      />
+
+      @if (form.controls.document.hasError('required') && form.controls.document.touched) {
+        <mat-error> Informe o CPF ou CNPJ. </mat-error>
+      }
+
+      @if (form.controls.document.hasError('invalidDocument') && form.controls.document.touched) {
+        <mat-error> CPF ou CNPJ inválido. </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Contato principal</mat-label>
+
+      <input
+        matInput
+        formControlName="contactName"
+        maxlength="255"
+        (blur)="onFieldBlur('contactName')"
+      />
+
+      @if (form.controls.contactName.hasError('required') && form.controls.contactName.touched) {
+        <mat-error> Informe o contato principal. </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Telefone</mat-label>
+
+      <input
+        matInput
+        formControlName="phone"
+        maxlength="15"
+        inputmode="tel"
+        (input)="onPhoneInput()"
+        (blur)="onFieldBlur('phone')"
+      />
+
+      @if (form.controls.phone.hasError('required') && form.controls.phone.touched) {
+        <mat-error> Informe o telefone. </mat-error>
+      }
+
+      @if (form.controls.phone.hasError('invalidPhone') && form.controls.phone.touched) {
+        <mat-error> Telefone inválido. </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>WhatsApp</mat-label>
+
+      <input
+        matInput
+        formControlName="whatsapp"
+        maxlength="15"
+        inputmode="tel"
+        (input)="onWhatsappInput()"
+        (blur)="onFieldBlur('whatsapp')"
+      />
+
+      @if (form.controls.whatsapp.hasError('required') && form.controls.whatsapp.touched) {
+        <mat-error> Informe o WhatsApp. </mat-error>
+      }
+
+      @if (form.controls.whatsapp.hasError('invalidPhone') && form.controls.whatsapp.touched) {
+        <mat-error> WhatsApp inválido. </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>E-mail</mat-label>
+
+      <input
+        matInput
+        formControlName="email"
+        type="email"
+        maxlength="255"
+        (blur)="onFieldBlur('email')"
+      />
+
+      @if (form.controls.email.hasError('required') && form.controls.email.touched) {
+        <mat-error> Informe o e-mail. </mat-error>
+      }
+
+      @if (form.controls.email.hasError('invalidEmail') && form.controls.email.touched) {
+        <mat-error> E-mail inválido. </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Cidade</mat-label>
+
+      <input matInput formControlName="city" maxlength="100" (blur)="onFieldBlur('city')" />
+
+      @if (form.controls.city.hasError('required') && form.controls.city.touched) {
+        <mat-error> Informe a cidade. </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Estado</mat-label>
+
+      <input
+        matInput
+        formControlName="state"
+        maxlength="2"
+        (input)="onStateInput()"
+        (blur)="onFieldBlur('state')"
+      />
+
+      @if (form.controls.state.hasError('required') && form.controls.state.touched) {
+        <mat-error> Informe o estado. </mat-error>
+      }
+
+      @if (form.controls.state.hasError('minlength') && form.controls.state.touched) {
+        <mat-error> Use a sigla com duas letras. </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="client-form__full">
+      <mat-label>Observações</mat-label>
+
+      <textarea matInput rows="3" maxlength="1000" formControlName="notes"></textarea>
+
+      <mat-hint align="end"> {{ form.controls.notes.value.length }}/1000 </mat-hint>
+    </mat-form-field>
+
+    <mat-checkbox formControlName="active"> Cliente ativo </mat-checkbox>
+
+    <div class="client-form__actions">
+      <button mat-button type="button" [disabled]="saving()" (click)="onCancel()">Cancelar</button>
+
+      <button mat-flat-button type="submit" [disabled]="saving()">
+        {{ saving() ? 'Salvando...' : 'Salvar' }}
+      </button>
+    </div>
+  </form>
+</section>

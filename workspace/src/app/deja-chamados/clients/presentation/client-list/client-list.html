@@ -1,0 +1,17 @@
+<section class="client-list" aria-live="polite">
+  @if (loading()) {
+    <div class="client-list__state">Carregando clientes...</div>
+  } @else {
+    @for (client of clients(); track client.id) {
+      <deja-client-card
+        [client]="client"
+        [canManage]="canManage()"
+        [deleting]="deletingClientId() === client.id"
+        (edit)="edit.emit($event)"
+        (delete)="delete.emit($event)"
+      />
+    } @empty {
+      <div class="client-list__state">Nenhum cliente encontrado.</div>
+    }
+  }
+</section>

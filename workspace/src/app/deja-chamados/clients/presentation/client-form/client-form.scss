@@ -1,0 +1,49 @@
+/*
+ * Deja Chamados
+ *
+ * Clients Presentation
+ *
+ * Estilos do formulário de clientes.
+ */
+
+.client-form {
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  background: #1f242d;
+}
+
+.client-form h2 {
+  margin: 0 0 1rem;
+  color: #ffffff;
+  font-size: 1.125rem;
+}
+
+.client-form form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.client-form mat-form-field {
+  width: 100%;
+}
+
+.client-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+@media (min-width: 720px) {
+  .client-form form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .client-form__full,
+  .client-form mat-checkbox,
+  .client-form__actions {
+    grid-column: 1 / -1;
+  }
+}

@@ -1,0 +1,83 @@
+<section class="clients">
+  <header class="clients__header">
+    <div>
+      <h1>Clientes</h1>
+
+      <p>Cadastro e manutenção dos clientes atendidos.</p>
+    </div>
+
+    @if (canManage()) {
+      <button mat-flat-button type="button" (click)="openCreate()">
+        <mat-icon>add</mat-icon>
+        Novo cliente
+      </button>
+    }
+  </header>
+
+  <div class="clients__toolbar">
+    <mat-form-field appearance="outline">
+      <mat-label>Buscar cliente</mat-label>
+
+      <mat-icon matPrefix> search </mat-icon>
+
+      <input
+        matInput
+        [ngModel]="searchTerm()"
+        (ngModelChange)="onSearchTermChange($event)"
+        placeholder="Nome, documento, contato ou cidade"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Situação</mat-label>
+
+      <mat-select [ngModel]="activeFilter()" (ngModelChange)="onActiveFilterChange($event)">
+        <mat-option value="all"> Todos </mat-option>
+
+        <mat-option value="active"> Ativos </mat-option>
+
+        <mat-option value="inactive"> Inativos </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="clients__message clients__message--error" role="alert">
+      <span>{{ errorMessage() }}</span>
+
+      <button mat-button type="button" (click)="refresh()">Tentar novamente</button>
+    </div>
+  }
+
+  @if (operationMessage()) {
+    <div class="clients__message clients__message--success" role="status">
+      {{ operationMessage() }}
+    </div>
+  }
+
+  @if (operationError()) {
+    <div class="clients__message clients__message--error" role="alert">
+      {{ operationError() }}
+    </div>
+  }
+
+  @if (formVisible() && canManage()) {
+    <deja-client-form
+      [client]="selectedClient()"
+      [environments]="environments()"
+      [defaultEnvironmentId]="defaultEnvironmentId()"
+      [saving]="saving()"
+      (save)="saveClient($event)"
+      (cancel)="closeForm()"
+    />
+  }
+
+  <deja-client-list
+    [clients]="clients()"
+    [loading]="loading()"
+    [canManage]="canManage()"
+    [deletingClientId]="deletingClientId()"
+    (edit)="openEdit($event)"
+    (delete)="deleteClient($event)"
+  />
+</section>
