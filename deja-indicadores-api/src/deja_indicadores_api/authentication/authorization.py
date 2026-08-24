@@ -4,11 +4,14 @@ from deja_indicadores_api.authentication.exceptions import (
     AuthorizationError,
 )
 from deja_indicadores_api.authentication.schemas import AuthenticatedUser
+from deja_indicadores_api.module_management.exceptions import (
+    ModuleNotEnabledError,
+)
 from deja_indicadores_api.user_management.models import UserRole
 
 
 class AuthorizationService:
-    """Aplica regras reutilizáveis de papel e escopo institucional."""
+    """Aplica regras reutilizáveis de papel, escopo e módulos."""
 
     def require_roles(
         self,
@@ -19,6 +22,19 @@ class AuthorizationService:
 
         if current_user.role not in allowed_roles:
             raise AuthorizationError
+
+    def require_module(
+        self,
+        current_user: AuthenticatedUser,
+        module_key: str,
+    ) -> None:
+        """Exige um módulo liberado na sessão organizacional."""
+
+        if current_user.role == UserRole.PLATFORM_ADMIN:
+            return
+
+        if module_key not in current_user.enabled_modules:
+            raise ModuleNotEnabledError(module_key)
 
     def require_organization_scope(
         self,

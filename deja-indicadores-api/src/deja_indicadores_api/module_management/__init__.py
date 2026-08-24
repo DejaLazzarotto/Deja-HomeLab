@@ -1,0 +1,1 @@
+"""Gestão do catálogo e das liberações de módulos por organização."""

@@ -11,10 +11,16 @@ from deja_indicadores_api.dashboards.dependencies import (
 from deja_indicadores_api.dashboards.schemas import (
     DashboardOverviewResponse,
 )
+from deja_indicadores_api.module_management.dependencies import (
+    require_module,
+)
 from deja_indicadores_api.user_management.models import UserRole
 
-router = APIRouter(prefix="/dashboards", tags=["Dashboards e Relatórios"])
-
+router = APIRouter(
+    prefix="/dashboards",
+    tags=["Dashboards e Relatórios"],
+    dependencies=[Depends(require_module("indicators"))],
+)
 
 CompanyIdFilter = Annotated[
     str | None,

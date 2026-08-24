@@ -14,12 +14,20 @@ import {
 } from '../../../deja-indicadores/authentication/application/administration.guard';
 
 import {
+  AuthenticationService,
+} from '../../../deja-indicadores/authentication/application/authentication.service';
+
+import {
   canAccessUserAdministration,
 } from '../../../deja-indicadores/authentication/application/user-administration.guard';
 
 import {
-  AuthenticationService,
-} from '../../../deja-indicadores/authentication/application/authentication.service';
+  canAccessModule,
+} from '../../../deja-indicadores/module-management/application/module-access';
+
+import {
+  isModuleKey,
+} from '../../../deja-indicadores/module-management/domain/module-key';
 
 import {
   WorkspaceNavigation,
@@ -62,7 +70,10 @@ export class WorkspaceSidebarComponent {
     'deja.workspace.navigation.administration';
 
   private readonly usersNavigationId =
-  'deja.workspace.navigation.administration.users';
+    'deja.workspace.navigation.administration.users';
+
+  private readonly platformOrganizationsNavigationId =
+    'deja.workspace.navigation.platform.organizations';
 
   private readonly sectionDefinitions: readonly {
     id: NavigationSectionId;
@@ -106,7 +117,7 @@ export class WorkspaceSidebarComponent {
 
     const navigation = this.runtime
       .visibleNavigations()
-            .filter(item => {
+      .filter(item => {
         if (item.id === this.administrationNavigationId) {
           return (
             user !== null
@@ -119,6 +130,18 @@ export class WorkspaceSidebarComponent {
             user !== null
             && canAccessUserAdministration(user.role)
           );
+        }
+
+        if (
+          item.id === this.platformOrganizationsNavigationId
+        ) {
+          return user?.role === 'platform_admin';
+        }
+
+        const moduleKey = item.metadata?.['moduleKey'];
+
+        if (isModuleKey(moduleKey)) {
+          return canAccessModule(user, moduleKey);
         }
 
         return true;

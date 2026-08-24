@@ -9,6 +9,10 @@ from sqlalchemy.orm import Session
 
 from deja_indicadores_api.core.database import SessionLocal
 from deja_indicadores_api.core.security import PasswordService
+from deja_indicadores_api.module_management.models import (
+    ModuleModel,
+    OrganizationModuleModel,
+)
 from deja_indicadores_api.tenant_management.models import (
     EnvironmentModel,
     OrganizationModel,
@@ -28,6 +32,8 @@ _registered_models = (
     OrganizationModel,
     TenantModel,
     EnvironmentModel,
+    ModuleModel,
+    OrganizationModuleModel,
     UserModel,
 )
 

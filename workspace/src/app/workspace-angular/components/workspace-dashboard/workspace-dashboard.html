@@ -11,71 +11,90 @@
     }
   </header>
 
-  @if (hasResolvedLayout()) {
+  @if (!hasVisibleWidgets()) {
+    <section
+      class="workspace-dashboard__empty"
+      role="status"
+    >
+      <h2 class="workspace-dashboard__empty-title">
+        Nenhum módulo disponível
+      </h2>
+
+      <p class="workspace-dashboard__empty-description">
+        Não há widgets liberados para esta organização.
+      </p>
+    </section>
+  } @else if (hasResolvedLayout()) {
     <section
       class="workspace-dashboard__layout"
       [attr.data-layout-id]="resolvedDashboard.layout?.id"
       [attr.data-layout-type]="resolvedDashboard.layout?.type"
     >
       @for (region of resolvedDashboard.regions; track region.id) {
-        <section
-          class="workspace-dashboard__region"
-          [attr.data-region-id]="region.id"
-          [attr.data-region-type]="region.regionType"
-        >
-          <header class="workspace-dashboard__region-header">
-            <h2 class="workspace-dashboard__region-title">
-              {{ region.title }}
-            </h2>
+        @if (widgetsForRegion(region); as regionWidgets) {
+          @if (regionWidgets.length) {
+            <section
+              class="workspace-dashboard__region"
+              [attr.data-region-id]="region.id"
+              [attr.data-region-type]="region.regionType"
+            >
+              <header class="workspace-dashboard__region-header">
+                <h2 class="workspace-dashboard__region-title">
+                  {{ region.title }}
+                </h2>
 
-            @if (region.description) {
-              <p class="workspace-dashboard__region-description">
-                {{ region.description }}
-              </p>
-            }
-          </header>
+                @if (region.description) {
+                  <p class="workspace-dashboard__region-description">
+                    {{ region.description }}
+                  </p>
+                }
+              </header>
 
-          <section
-            class="workspace-dashboard__region-widgets"
-            [dejaWorkspaceGridContainer]="resolvedDashboard.gridConfiguration"
-          >
-            @for (widget of widgetsForRegion(region); track widget.id) {
-              <deja-workspace-widget-host
-                [runtime]="runtime"
-                [widgetInstance]="widget"
-                [dejaWorkspaceGridItem]="widget.position"
-              />
-            }
-          </section>
-        </section>
+              <section
+                class="workspace-dashboard__region-widgets"
+                [dejaWorkspaceGridContainer]="resolvedDashboard.gridConfiguration"
+              >
+                @for (widget of regionWidgets; track widget.id) {
+                  <deja-workspace-widget-host
+                    [runtime]="runtime"
+                    [widgetInstance]="widget"
+                    [dejaWorkspaceGridItem]="widget.position"
+                  />
+                }
+              </section>
+            </section>
+          }
+        }
       }
 
-      @if (unassignedWidgets().length) {
-        <section
-          class="
-            workspace-dashboard__region
-            workspace-dashboard__region--unassigned
-          "
-          data-region-type="unassigned"
-        >
+      @if (unassignedWidgets(); as unassigned) {
+        @if (unassigned.length) {
           <section
-            class="workspace-dashboard__region-widgets"
-            [dejaWorkspaceGridContainer]="resolvedDashboard.gridConfiguration"
+            class="
+              workspace-dashboard__region
+              workspace-dashboard__region--unassigned
+            "
+            data-region-type="unassigned"
           >
-            @for (widget of unassignedWidgets(); track widget.id) {
-              <deja-workspace-widget-host
-                [runtime]="runtime"
-                [widgetInstance]="widget"
-                [dejaWorkspaceGridItem]="widget.position"
-              />
-            }
+            <section
+              class="workspace-dashboard__region-widgets"
+              [dejaWorkspaceGridContainer]="resolvedDashboard.gridConfiguration"
+            >
+              @for (widget of unassigned; track widget.id) {
+                <deja-workspace-widget-host
+                  [runtime]="runtime"
+                  [widgetInstance]="widget"
+                  [dejaWorkspaceGridItem]="widget.position"
+                />
+              }
+            </section>
           </section>
-        </section>
+        }
       }
     </section>
   } @else {
     <section class="workspace-dashboard__widgets">
-      @for (widget of resolvedDashboard.widgets; track widget.id) {
+      @for (widget of visibleWidgets(); track widget.id) {
         <deja-workspace-widget-host
           [runtime]="runtime"
           [widgetInstance]="widget"

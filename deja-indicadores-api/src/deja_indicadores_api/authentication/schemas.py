@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from deja_indicadores_api.module_management.schemas import ModuleKey
 from deja_indicadores_api.user_management.models import UserRole
 
 
@@ -72,7 +73,7 @@ class AccessTokenClaims(BaseModel):
 
 
 class AuthenticatedUser(BaseModel):
-    """Identidade e escopo institucional do usuário autenticado."""
+    """Identidade, escopo e módulos do usuário autenticado."""
 
     id: str
     organization_id: str | None
@@ -81,3 +82,4 @@ class AuthenticatedUser(BaseModel):
     name: str
     email: EmailStr
     role: UserRole
+    enabled_modules: list[ModuleKey] = Field(default_factory=list)

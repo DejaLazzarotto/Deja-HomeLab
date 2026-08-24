@@ -16,6 +16,9 @@ from deja_indicadores_api.core.security import (
     AccessTokenService,
     PasswordService,
 )
+from deja_indicadores_api.module_management.repository import (
+    OrganizationModuleRepository,
+)
 from deja_indicadores_api.tenant_management.repository import (
     OrganizationRepository,
 )
@@ -34,11 +37,15 @@ class AuthenticationService:
         self,
         user_repository: UserRepository,
         organization_repository: OrganizationRepository,
+        organization_module_repository: OrganizationModuleRepository,
         password_service: PasswordService,
         access_token_service: AccessTokenService,
     ) -> None:
         self._user_repository = user_repository
         self._organization_repository = organization_repository
+        self._organization_module_repository = (
+            organization_module_repository
+        )
         self._password_service = password_service
         self._access_token_service = access_token_service
 
@@ -48,7 +55,9 @@ class AuthenticationService:
         organization_id: str | None = None
 
         if input_data.organization_code is not None:
-            organization = self._organization_repository.find_by_code(input_data.organization_code)
+            organization = self._organization_repository.find_by_code(
+                input_data.organization_code
+            )
 
             if organization is None:
                 raise InvalidCredentialsError
@@ -100,7 +109,11 @@ class AuthenticationService:
 
         user = self._user_repository.find_by_id(claims.sub)
 
-        if user is None or user.status != UserStatus.ACTIVE or not self._has_valid_role_scope(user):
+        if (
+            user is None
+            or user.status != UserStatus.ACTIVE
+            or not self._has_valid_role_scope(user)
+        ):
             raise InvalidAccessTokenError
 
         if (
@@ -111,6 +124,13 @@ class AuthenticationService:
         ):
             raise InvalidAccessTokenError
 
+        enabled_modules = (
+            self._organization_module_repository
+            .list_enabled_module_keys(user.organization_id)
+            if user.organization_id is not None
+            else []
+        )
+
         return AuthenticatedUser(
             id=user.id,
             organization_id=user.organization_id,
@@ -119,6 +139,7 @@ class AuthenticationService:
             name=user.name,
             email=user.email,
             role=user.role,
+            enabled_modules=enabled_modules,
         )
 
     def _has_valid_role_scope(self, user: UserModel) -> bool:
@@ -135,9 +156,18 @@ class AuthenticationService:
             return False
 
         if user.role == UserRole.ORGANIZATION_ADMIN:
-            return user.tenant_id is None and user.environment_id is None
+            return (
+                user.tenant_id is None
+                and user.environment_id is None
+            )
 
         if user.role == UserRole.TENANT_ADMIN:
-            return user.tenant_id is not None and user.environment_id is None
+            return (
+                user.tenant_id is not None
+                and user.environment_id is None
+            )
 
-        return user.tenant_id is not None and user.environment_id is not None
+        return (
+            user.tenant_id is not None
+            and user.environment_id is not None
+        )

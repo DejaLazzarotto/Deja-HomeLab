@@ -12,9 +12,16 @@ from deja_indicadores_api.indicators.schemas import (
     IndicatorResponse,
     IndicatorUpdate,
 )
+from deja_indicadores_api.module_management.dependencies import (
+    require_module,
+)
 from deja_indicadores_api.user_management.models import UserRole
 
-router = APIRouter(prefix="/indicators", tags=["Indicadores"])
+router = APIRouter(
+    prefix="/indicators",
+    tags=["Indicadores"],
+    dependencies=[Depends(require_module("indicators"))],
+)
 
 IndicatorId = Annotated[
     str,

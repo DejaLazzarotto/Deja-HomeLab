@@ -4,7 +4,11 @@ import { administrationGuard } from './deja-indicadores/authentication/applicati
 
 import { authenticationGuard } from './deja-indicadores/authentication/application/authentication.guard';
 
+import { platformAdministrationGuard } from './deja-indicadores/authentication/application/platform-administration.guard';
+
 import { userAdministrationGuard } from './deja-indicadores/authentication/application/user-administration.guard';
+
+import { moduleGuard } from './deja-indicadores/module-management/application/module.guard';
 
 const workspacePage = () =>
   import('./workspace-angular/components/workspace-page/workspace-page').then(
@@ -24,6 +28,12 @@ export const routes: Routes = [
     path: '',
     title: 'Deja Indicadores',
     canActivate: [authenticationGuard],
+    loadComponent: workspacePage,
+  },
+  {
+    path: 'platform/organizations',
+    title: 'Organizações | Plataforma | Deja Indicadores',
+    canActivate: [authenticationGuard, platformAdministrationGuard],
     loadComponent: workspacePage,
   },
   {
@@ -56,13 +66,13 @@ export const routes: Routes = [
   {
     path: 'operation/indicators',
     title: 'Indicadores | Operação | Deja Indicadores',
-    canActivate: [authenticationGuard],
+    canActivate: [authenticationGuard, moduleGuard('indicators')],
     loadComponent: workspacePage,
   },
   {
     path: 'operation/measurements',
     title: 'Coleta Manual | Operação | Deja Indicadores',
-    canActivate: [authenticationGuard],
+    canActivate: [authenticationGuard, moduleGuard('measurements')],
     loadComponent: workspacePage,
   },
   {
@@ -73,7 +83,7 @@ export const routes: Routes = [
   {
     path: 'reports',
     title: 'Relatórios | Deja Indicadores',
-    canActivate: [authenticationGuard],
+    canActivate: [authenticationGuard, moduleGuard('reports')],
     loadComponent: workspacePage,
   },
   {

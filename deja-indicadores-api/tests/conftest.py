@@ -23,6 +23,10 @@ from deja_indicadores_api.main import create_app
 from deja_indicadores_api.measurements.models import (
     MeasurementModel,
 )
+from deja_indicadores_api.module_management.models import (
+    ModuleModel,
+    OrganizationModuleModel,
+)
 from deja_indicadores_api.tenant_management.models import (
     EnvironmentModel,
     OrganizationModel,
@@ -92,6 +96,7 @@ def clear_database(
     """Remove os registros respeitando a ordem das chaves estrangeiras."""
 
     with test_session_factory() as session:
+        session.execute(delete(OrganizationModuleModel))
         session.execute(delete(MeasurementModel))
         session.execute(delete(IndicatorModel))
         session.execute(delete(CompanyModel))
@@ -100,6 +105,7 @@ def clear_database(
         session.execute(delete(EnvironmentModel))
         session.execute(delete(TenantModel))
         session.execute(delete(OrganizationModel))
+        session.execute(delete(ModuleModel))
         session.commit()
 
 

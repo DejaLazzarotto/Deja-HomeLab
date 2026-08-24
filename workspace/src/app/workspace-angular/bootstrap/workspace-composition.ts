@@ -55,6 +55,8 @@ import { WorkspaceIndicatorManagementWidgetComponent } from '../components/works
 
 import { WorkspaceMeasurementManagementWidgetComponent } from '../components/workspace-measurement-management-widget/workspace-measurement-management-widget';
 
+import { WorkspaceOrganizationManagementWidgetComponent } from '../components/workspace-organization-management-widget/workspace-organization-management-widget';
+
 import { WorkspaceUserManagementWidgetComponent } from '../components/workspace-user-management-widget/workspace-user-management-widget';
 
 import { WorkspaceDashboardOverviewWidgetComponent } from '../components/workspace-dashboard-overview-widget/workspace-dashboard-overview-widget';
@@ -73,6 +75,9 @@ export class WorkspaceComposition {
 
   private static readonly USERS_DASHBOARD_ID = 'deja.workspace.dashboard.administration.users';
 
+  private static readonly PLATFORM_ORGANIZATIONS_DASHBOARD_ID =
+    'deja.workspace.dashboard.platform.organizations';
+
   private static readonly REPORTS_DASHBOARD_ID = 'deja.workspace.dashboard.reports';
 
   private static readonly INDICATORS_DASHBOARD_ID = 'deja.workspace.dashboard.operation.indicators';
@@ -89,6 +94,9 @@ export class WorkspaceComposition {
   private static readonly ADMINISTRATION_NAVIGATION_ID = 'deja.workspace.navigation.administration';
 
   private static readonly USERS_NAVIGATION_ID = 'deja.workspace.navigation.administration.users';
+
+  private static readonly PLATFORM_ORGANIZATIONS_NAVIGATION_ID =
+    'deja.workspace.navigation.platform.organizations';
 
   private static readonly REPORTS_NAVIGATION_ID = 'deja.workspace.navigation.reports';
 
@@ -113,6 +121,9 @@ export class WorkspaceComposition {
   private static readonly COMPANY_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.company-management';
 
   private static readonly USER_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.user-management';
+
+  private static readonly ORGANIZATION_MANAGEMENT_WIDGET_ID =
+    'deja.workspace.widget.organization-management';
 
   private static readonly INDICATOR_MANAGEMENT_WIDGET_ID =
     'deja.workspace.widget.indicator-management';
@@ -301,6 +312,21 @@ export class WorkspaceComposition {
       },
 
       {
+        id: this.PLATFORM_ORGANIZATIONS_NAVIGATION_ID,
+        ownerId: this.CORE_OWNER,
+        dashboardId: this.PLATFORM_ORGANIZATIONS_DASHBOARD_ID,
+        title: 'Organizações',
+        description: 'Administração global de organizações e módulos.',
+        icon: 'applications',
+        order: 26,
+        enabled: true,
+        metadata: {
+          section: 'administration',
+          permission: 'platform-administration',
+        },
+      },
+
+      {
         id: this.REPORTS_NAVIGATION_ID,
         ownerId: this.CORE_OWNER,
         dashboardId: this.REPORTS_DASHBOARD_ID,
@@ -311,6 +337,7 @@ export class WorkspaceComposition {
         enabled: true,
         metadata: {
           section: 'analysis',
+          moduleKey: 'reports',
         },
       },
 
@@ -325,6 +352,7 @@ export class WorkspaceComposition {
         enabled: true,
         metadata: {
           section: 'operation',
+          moduleKey: 'indicators',
         },
       },
 
@@ -339,6 +367,7 @@ export class WorkspaceComposition {
         enabled: true,
         metadata: {
           section: 'operation',
+          moduleKey: 'measurements',
         },
       },
 
@@ -449,6 +478,9 @@ export class WorkspaceComposition {
       priority: 10,
       enabled: true,
       tags: ['deja-indicadores', 'dashboard', 'analysis'],
+      metadata: {
+        moduleKey: 'indicators',
+      },
     };
 
     const companyManagementWidget: WorkspaceWidget = {
@@ -501,6 +533,31 @@ export class WorkspaceComposition {
       tags: ['deja-indicadores', 'users', 'management'],
     };
 
+      const organizationManagementWidget: WorkspaceWidget = {
+      id: this.ORGANIZATION_MANAGEMENT_WIDGET_ID,
+      owner: this.CORE_OWNER,
+      title: 'Gestão de Organizações',
+      description: 'Administração global de organizações e módulos.',
+      category: 'administration',
+      widgetType: 'organization-management',
+      supportedSurfaces: ['dashboard'],
+      capabilities: ['resizable'],
+      size: {
+        default: {
+          columns: 12,
+          rows: 12,
+        },
+        minimum: {
+          columns: 8,
+          rows: 8,
+        },
+      },
+      component: WorkspaceOrganizationManagementWidgetComponent,
+      priority: 26,
+      enabled: true,
+      tags: ['platform', 'organizations', 'management'],
+    };
+
     const indicatorManagementWidget: WorkspaceWidget = {
       id: this.INDICATOR_MANAGEMENT_WIDGET_ID,
       owner: this.CORE_OWNER,
@@ -524,6 +581,9 @@ export class WorkspaceComposition {
       priority: 30,
       enabled: true,
       tags: ['deja-indicadores', 'indicators', 'operation'],
+      metadata: {
+        moduleKey: 'indicators',
+      },
     };
 
     const measurementManagementWidget: WorkspaceWidget = {
@@ -549,6 +609,9 @@ export class WorkspaceComposition {
       priority: 40,
       enabled: true,
       tags: ['deja-indicadores', 'measurements', 'operation'],
+      metadata: {
+        moduleKey: 'measurements',
+      },
     };
 
     const managementReportWidget: WorkspaceWidget = {
@@ -574,6 +637,9 @@ export class WorkspaceComposition {
       priority: 50,
       enabled: true,
       tags: ['deja-indicadores', 'reports', 'analysis'],
+      metadata: {
+        moduleKey: 'reports',
+      },
     };
 
     registries.layoutRegions.register(mainRegion);
@@ -587,6 +653,8 @@ export class WorkspaceComposition {
     registries.widgets.register(companyManagementWidget);
 
     registries.widgets.register(userManagementWidget);
+
+    registries.widgets.register(organizationManagementWidget);
 
     registries.widgets.register(indicatorManagementWidget);
 
@@ -687,6 +755,36 @@ export class WorkspaceComposition {
       },
 
       {
+        id: this.PLATFORM_ORGANIZATIONS_DASHBOARD_ID,
+        owner: this.CORE_OWNER,
+        title: 'Organizações',
+        description: 'Administração global de organizações e módulos.',
+        route: '/platform/organizations',
+        layoutId: initialLayout.id,
+        priority: 26,
+        enabled: true,
+        tags: ['platform', 'organizations', 'administration'],
+        metadata: {
+          type: 'platform-administration',
+          section: 'organizations',
+        },
+        widgets: [
+          {
+            id: 'deja.workspace.widget-instance.organization-management',
+            widgetId: organizationManagementWidget.id,
+            regionId: mainRegion.id,
+            position: {
+              column: 1,
+              row: 1,
+              columnSpan: 12,
+              rowSpan: 12,
+            },
+            enabled: true,
+          },
+        ],
+      },
+
+      {
         id: this.REPORTS_DASHBOARD_ID,
         owner: this.CORE_OWNER,
         title: 'Relatórios',
@@ -699,6 +797,7 @@ export class WorkspaceComposition {
         metadata: {
           type: 'reports',
           section: 'management',
+          moduleKey: 'reports',
         },
         widgets: [
           {
@@ -729,6 +828,7 @@ export class WorkspaceComposition {
         metadata: {
           type: 'operation',
           section: 'indicators',
+          moduleKey: 'indicators',
         },
         widgets: [
           {
@@ -759,6 +859,7 @@ export class WorkspaceComposition {
         metadata: {
           type: 'operation',
           section: 'measurements',
+          moduleKey: 'measurements',
         },
         widgets: [
           {

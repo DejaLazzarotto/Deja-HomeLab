@@ -67,6 +67,7 @@ describe('AuthenticationService', () => {
       name: 'Usuário Teste',
       email: 'usuario@deja.com',
       role: 'organization_admin',
+      enabled_modules: ['indicators', 'measurements'],
     });
 
     await expect(resultPromise).resolves.toEqual({
@@ -77,6 +78,7 @@ describe('AuthenticationService', () => {
       name: 'Usuário Teste',
       email: 'usuario@deja.com',
       role: 'organization_admin',
+      enabledModules: ['indicators', 'measurements'],
     });
 
     expect(localStorage.getItem('deja-indicadores.access-token')).toBe('access-token');
@@ -117,6 +119,7 @@ describe('AuthenticationService', () => {
       name: 'Platform Admin',
       email: 'platform.admin@deja.com',
       role: 'platform_admin',
+      enabled_modules: [],
     });
 
     await expect(resultPromise).resolves.toMatchObject({
@@ -124,6 +127,7 @@ describe('AuthenticationService', () => {
       tenantId: null,
       environmentId: null,
       role: 'platform_admin',
+      enabledModules: [],
     });
   });
 });

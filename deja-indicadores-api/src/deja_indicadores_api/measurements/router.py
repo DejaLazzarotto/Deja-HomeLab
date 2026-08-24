@@ -13,9 +13,16 @@ from deja_indicadores_api.measurements.schemas import (
     MeasurementResponse,
     MeasurementUpdate,
 )
+from deja_indicadores_api.module_management.dependencies import (
+    require_module,
+)
 from deja_indicadores_api.user_management.models import UserRole
 
-router = APIRouter(prefix="/measurements", tags=["Coleta Manual de Dados"])
+router = APIRouter(
+    prefix="/measurements",
+    tags=["Coleta Manual de Dados"],
+    dependencies=[Depends(require_module("measurements"))],
+)
 
 MeasurementId = Annotated[
     str,

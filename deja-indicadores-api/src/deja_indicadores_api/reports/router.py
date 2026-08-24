@@ -5,6 +5,9 @@ from fastapi import APIRouter, Depends, Query
 
 from deja_indicadores_api.authentication.dependencies import require_roles
 from deja_indicadores_api.authentication.schemas import AuthenticatedUser
+from deja_indicadores_api.module_management.dependencies import (
+    require_module,
+)
 from deja_indicadores_api.reports.dependencies import (
     ReportServiceDependency,
 )
@@ -13,7 +16,11 @@ from deja_indicadores_api.reports.schemas import (
 )
 from deja_indicadores_api.user_management.models import UserRole
 
-router = APIRouter(prefix="/reports", tags=["Relatórios"])
+router = APIRouter(
+    prefix="/reports",
+    tags=["Relatórios"],
+    dependencies=[Depends(require_module("reports"))],
+)
 
 CompanyIdFilter = Annotated[
     str | None,

@@ -1,3 +1,4 @@
+from collections.abc import Collection
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -6,6 +7,10 @@ from deja_indicadores_api.core.config import Settings
 from deja_indicadores_api.core.security import (
     AccessTokenService,
     PasswordService,
+)
+from deja_indicadores_api.module_management.models import (
+    ModuleModel,
+    OrganizationModuleModel,
 )
 from deja_indicadores_api.tenant_management.models import (
     EnvironmentModel,
@@ -25,13 +30,59 @@ ENVIRONMENTS_URL = "/api/v1/environments"
 USERS_URL = "/api/v1/users"
 LOGIN_URL = "/api/v1/auth/login"
 
+INITIAL_MODULES = (
+    {
+        "key": "indicators",
+        "name": "Indicadores",
+        "description": (
+            "Gestão de indicadores e visão geral no dashboard."
+        ),
+        "display_order": 10,
+    },
+    {
+        "key": "measurements",
+        "name": "Coleta Manual",
+        "description": (
+            "Lançamento e gerenciamento manual de medições."
+        ),
+        "display_order": 20,
+    },
+    {
+        "key": "reports",
+        "name": "Relatórios Gerenciais",
+        "description": (
+            "Consulta e emissão de relatórios gerenciais."
+        ),
+        "display_order": 30,
+    },
+)
+
 
 def create_organization(
     client: TestClient,
     name: str = "Organização Principal",
     code: str | None = None,
+    *,
+    enabled_modules: Collection[str] | None = None,
 ) -> dict[str, object]:
-    """Insere uma organização diretamente para os testes."""
+    """Insere uma organização com liberações explícitas para testes."""
+
+    catalog_keys = {
+        str(module_data["key"])
+        for module_data in INITIAL_MODULES
+    }
+    enabled_key_set = (
+        catalog_keys
+        if enabled_modules is None
+        else set(enabled_modules)
+    )
+    unknown_keys = enabled_key_set - catalog_keys
+
+    if unknown_keys:
+        raise ValueError(
+            "Os módulos de teste não pertencem ao catálogo inicial: "
+            f"{sorted(unknown_keys)}."
+        )
 
     organization = OrganizationModel(
         id=str(uuid4()),
@@ -43,6 +94,27 @@ def create_organization(
 
     with session_factory() as session:
         session.add(organization)
+
+        for module_data in INITIAL_MODULES:
+            module_key = str(module_data["key"])
+
+            if session.get(ModuleModel, module_key) is None:
+                session.add(ModuleModel(**module_data))
+
+        session.flush()
+        session.add_all(
+            [
+                OrganizationModuleModel(
+                    organization_id=organization.id,
+                    module_key=str(module_data["key"]),
+                    enabled=(
+                        module_data["key"]
+                        in enabled_key_set
+                    ),
+                )
+                for module_data in INITIAL_MODULES
+            ]
+        )
         session.commit()
         session.refresh(organization)
 
@@ -52,6 +124,8 @@ def create_organization(
         "name": organization.name,
         "status": organization.status.value,
     }
+
+
 
 
 def create_tenant(

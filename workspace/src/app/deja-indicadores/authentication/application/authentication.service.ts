@@ -4,6 +4,8 @@ import { HttpClient } from '@angular/common/http';
 
 import { Observable, catchError, map, of, switchMap, tap, throwError } from 'rxjs';
 
+import { ModuleKey } from '../../module-management/domain/module-key';
+
 import { AuthenticatedUser } from '../domain/authenticated-user';
 
 import { LoginCredentials } from '../domain/login-credentials';
@@ -22,6 +24,7 @@ interface AuthenticatedUserResponse {
   name: string;
   email: string;
   role: AuthenticatedUser['role'];
+  enabled_modules: ModuleKey[];
 }
 
 @Injectable({
@@ -80,6 +83,7 @@ export class AuthenticationService {
         name: response.name,
         email: response.email,
         role: response.role,
+        enabledModules: response.enabled_modules,
       })),
       tap((user) => {
         this.userState.set(user);

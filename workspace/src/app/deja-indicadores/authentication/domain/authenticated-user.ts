@@ -1,3 +1,5 @@
+import { ModuleKey } from '../../module-management/domain/module-key';
+
 export type UserRole =
   | 'platform_admin'
   | 'organization_admin'
@@ -14,4 +16,5 @@ export interface AuthenticatedUser {
   name: string;
   email: string;
   role: UserRole;
+  enabledModules: readonly ModuleKey[];
 }

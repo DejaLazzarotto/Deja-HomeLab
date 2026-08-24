@@ -18,6 +18,9 @@ from deja_indicadores_api.indicators.router import (
 from deja_indicadores_api.measurements.router import (
     router as measurements_router,
 )
+from deja_indicadores_api.module_management.router import (
+    router as module_management_router,
+)
 from deja_indicadores_api.reports.router import (
     router as reports_router,
 )
@@ -35,6 +38,7 @@ api_router.include_router(chamados_clients_router)
 api_router.include_router(companies_router)
 api_router.include_router(indicators_router)
 api_router.include_router(measurements_router)
+api_router.include_router(module_management_router)
 api_router.include_router(dashboards_router)
 api_router.include_router(reports_router)
 api_router.include_router(tenant_management_router)

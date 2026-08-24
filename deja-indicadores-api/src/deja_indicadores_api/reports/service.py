@@ -52,6 +52,10 @@ class ReportService:
             current_user,
             REPORT_READER_ROLES,
         )
+        self._authorization_service.require_module(
+            current_user,
+            "reports",
+        )
 
         overview = self._dashboard_service.get_overview(
             current_user,

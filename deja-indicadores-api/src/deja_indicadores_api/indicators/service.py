@@ -266,11 +266,15 @@ class IndicatorService:
         current_user: AuthenticatedUser,
         allowed_roles: frozenset[UserRole],
     ) -> None:
-        """Exige um papel permitido para a operação."""
+        """Exige papel permitido e módulo de Indicadores liberado."""
 
         self._authorization_service.require_roles(
             current_user,
             allowed_roles,
+        )
+        self._authorization_service.require_module(
+            current_user,
+            "indicators",
         )
 
     def _ensure_name_is_available(

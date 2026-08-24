@@ -1,0 +1,156 @@
+<section class="organizations">
+  <header class="organizations__header">
+    <div>
+      <p class="organizations__eyebrow">Administração da plataforma</p>
+      <h2>Organizações e módulos</h2>
+      <p>Cadastre clientes e controle os módulos contratados.</p>
+    </div>
+
+    <button type="button" (click)="openCreate()">
+      Nova organização
+    </button>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="message message--error">{{ errorMessage() }}</p>
+  }
+
+  @if (operationMessage()) {
+    <p class="message message--success">{{ operationMessage() }}</p>
+  }
+
+  @if (formVisible()) {
+    <form class="organization-form" (ngSubmit)="saveOrganization()">
+      <label>
+        Código
+        <input
+          name="code"
+          maxlength="32"
+          required
+          [(ngModel)]="form.code"
+        />
+      </label>
+
+      <label>
+        Nome
+        <input
+          name="name"
+          maxlength="255"
+          required
+          [(ngModel)]="form.name"
+        />
+      </label>
+
+      <label>
+        Situação
+        <select name="status" [(ngModel)]="form.status">
+          <option value="provisioning">Provisionando</option>
+          <option value="active">Ativa</option>
+          <option value="inactive">Inativa</option>
+        </select>
+      </label>
+
+      <div class="actions">
+        <button type="button" class="secondary" (click)="closeForm()">
+          Cancelar
+        </button>
+        <button type="submit" [disabled]="saving()">
+          {{ saving() ? 'Salvando...' : 'Salvar organização' }}
+        </button>
+      </div>
+    </form>
+  }
+
+  <div class="organizations__grid">
+    <section class="panel">
+      <header class="panel__header">
+        <h3>Organizações</h3>
+        <button type="button" class="secondary" (click)="refresh()">
+          Atualizar
+        </button>
+      </header>
+
+      @if (loading()) {
+        <p class="empty">Carregando organizações...</p>
+      } @else if (!organizations().length) {
+        <p class="empty">Nenhuma organização cadastrada.</p>
+      } @else {
+        <div class="organization-list">
+          @for (organization of organizations(); track organization.id) {
+            <article
+              class="organization-card"
+              [class.organization-card--selected]="
+                selectedOrganization()?.id === organization.id
+              "
+            >
+              <button
+                type="button"
+                class="organization-card__main"
+                (click)="selectOrganization(organization)"
+              >
+                <strong>{{ organization.name }}</strong>
+                <span>{{ organization.code }}</span>
+                <span>{{ statusLabel(organization.status) }}</span>
+              </button>
+
+              <button
+                type="button"
+                class="secondary"
+                (click)="openEdit(organization)"
+              >
+                Editar
+              </button>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="panel">
+      <header class="panel__header">
+        <div>
+          <h3>Módulos liberados</h3>
+          @if (selectedOrganization()) {
+            <p>{{ selectedOrganization()?.name }}</p>
+          }
+        </div>
+      </header>
+
+      @if (!selectedOrganization()) {
+        <p class="empty">
+          Selecione uma organização para administrar seus módulos.
+        </p>
+      } @else if (loadingModules()) {
+        <p class="empty">Carregando módulos...</p>
+      } @else {
+        <div class="module-list">
+          @for (module of modules(); track module.key) {
+            <label class="module-card">
+              <input
+                type="checkbox"
+                [ngModel]="isModuleEnabled(module.key)"
+                [ngModelOptions]="{ standalone: true }"
+                (ngModelChange)="setModuleEnabled(module.key, $event)"
+              />
+
+              <span>
+                <strong>{{ module.name }}</strong>
+                <small>{{ module.description }}</small>
+              </span>
+            </label>
+          }
+        </div>
+
+        <div class="actions">
+          <button
+            type="button"
+            [disabled]="savingModules()"
+            (click)="saveModules()"
+          >
+            {{ savingModules() ? 'Salvando...' : 'Salvar módulos' }}
+          </button>
+        </div>
+      }
+    </section>
+  </div>
+</section>

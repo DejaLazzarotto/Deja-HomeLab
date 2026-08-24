@@ -284,6 +284,53 @@
   min-height: 0;
 }
 
+/* =========================================================
+   EMPTY STATE
+   Dashboard sem Widgets comerciais liberados
+   ========================================================= */
+
+.workspace-dashboard__empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--workspace-spacing-sm);
+
+  min-height: 16rem;
+  padding: var(--workspace-spacing-xl);
+
+  border: 1px solid rgb(91 136 207 / 18%);
+  border-radius: var(--workspace-radius-xl);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgb(24 35 54 / 92%),
+      rgb(14 23 38 / 96%)
+    );
+
+  text-align: center;
+}
+
+.workspace-dashboard__empty-title {
+  margin: 0;
+
+  color: var(--workspace-color-text);
+
+  font-size: var(--workspace-font-size-lg);
+  font-weight: var(--workspace-font-weight-semibold);
+}
+
+.workspace-dashboard__empty-description {
+  max-width: 34rem;
+  margin: 0;
+
+  color: var(--workspace-color-text-muted);
+
+  font-size: var(--workspace-font-size-sm);
+  line-height: var(--workspace-line-height-default);
+}
 
 /* =========================================================
    RESPONSIVE

@@ -21,6 +21,9 @@ from deja_indicadores_api.core.security import (
     AccessTokenService,
     PasswordService,
 )
+from deja_indicadores_api.module_management.repository import (
+    OrganizationModuleRepository,
+)
 from deja_indicadores_api.tenant_management.repository import (
     OrganizationRepository,
 )
@@ -44,6 +47,9 @@ def get_authentication_service(
 
     user_repository = UserRepository(session)
     organization_repository = OrganizationRepository(session)
+    organization_module_repository = OrganizationModuleRepository(
+        session
+    )
     password_service = PasswordService()
     access_token_service = AccessTokenService(
         secret_key=settings.jwt_secret_key,
@@ -54,6 +60,7 @@ def get_authentication_service(
     return AuthenticationService(
         user_repository,
         organization_repository,
+        organization_module_repository,
         password_service,
         access_token_service,
     )

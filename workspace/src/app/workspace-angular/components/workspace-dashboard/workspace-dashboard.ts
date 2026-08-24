@@ -17,6 +17,18 @@ import {
 } from '@angular/core';
 
 import {
+  AuthenticationService,
+} from '../../../deja-indicadores/authentication/application/authentication.service';
+
+import {
+  canAccessModule,
+} from '../../../deja-indicadores/module-management/application/module-access';
+
+import {
+  isModuleKey,
+} from '../../../deja-indicadores/module-management/domain/module-key';
+
+import {
   WorkspaceDashboardState,
   WorkspaceDashboardStateUnsubscribe,
 } from '../../../core/workspace-sdk/runtime/workspace-dashboard-state';
@@ -73,6 +85,8 @@ implements OnInit, OnDestroy {
 
 
   constructor(
+    private readonly authentication:
+      AuthenticationService,
     private readonly changeDetectorRef:
       ChangeDetectorRef,
   ) {}
@@ -149,6 +163,47 @@ implements OnInit, OnDestroy {
 
 
   /**
+   * Retorna os Widgets permitidos para a sessão atual.
+   */
+  protected visibleWidgets():
+    readonly WorkspaceWidgetInstance[] {
+
+    const user = this.authentication.user();
+
+
+    return this.resolvedDashboard.widgets.filter(
+      (widgetInstance) => {
+
+        const widget = this.runtime.requireWidget(
+          widgetInstance.widgetId,
+        );
+
+        const moduleKey =
+          widget.metadata?.['moduleKey'];
+
+
+        return (
+          !isModuleKey(moduleKey)
+          || canAccessModule(user, moduleKey)
+        );
+
+      },
+    );
+
+  }
+
+
+  /**
+   * Indica se existe ao menos um Widget visível.
+   */
+  protected hasVisibleWidgets(): boolean {
+
+    return this.visibleWidgets().length > 0;
+
+  }
+
+
+  /**
    * Verifica se o Dashboard possui Layout e regiões resolvidas.
    *
    * Dashboards sem Layout ou sem regiões permanecem utilizando
@@ -165,13 +220,13 @@ implements OnInit, OnDestroy {
 
 
   /**
-   * Retorna os Widgets pertencentes a uma região.
+   * Retorna os Widgets permitidos pertencentes a uma região.
    */
   protected widgetsForRegion(
     region: WorkspaceLayoutRegion,
   ): readonly WorkspaceWidgetInstance[] {
 
-    return this.resolvedDashboard.widgets.filter(
+    return this.visibleWidgets().filter(
       (widget) =>
         widget.regionId === region.id,
     );
@@ -180,8 +235,8 @@ implements OnInit, OnDestroy {
 
 
   /**
-   * Retorna Widgets que não estão associados a uma região
-   * efetivamente resolvida.
+   * Retorna Widgets permitidos que não estão associados a uma
+   * região efetivamente resolvida.
    *
    * Esse fallback preserva a compatibilidade durante a
    * transição de Dashboards legados para o Layout Engine.
@@ -197,7 +252,7 @@ implements OnInit, OnDestroy {
       );
 
 
-    return this.resolvedDashboard.widgets.filter(
+    return this.visibleWidgets().filter(
       (widget) =>
         !widget.regionId
         || !regionIds.has(widget.regionId),
