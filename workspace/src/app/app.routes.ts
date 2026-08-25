@@ -1,14 +1,14 @@
 import { Routes } from '@angular/router';
 
-import { administrationGuard } from './deja-indicadores/authentication/application/administration.guard';
+import { administrationGuard } from './platform/authentication/application/administration.guard';
 
-import { authenticationGuard } from './deja-indicadores/authentication/application/authentication.guard';
+import { authenticationGuard } from './platform/authentication/application/authentication.guard';
 
-import { platformAdministrationGuard } from './deja-indicadores/authentication/application/platform-administration.guard';
+import { platformAdministrationGuard } from './platform/authentication/application/platform-administration.guard';
 
-import { userAdministrationGuard } from './deja-indicadores/authentication/application/user-administration.guard';
+import { userAdministrationGuard } from './platform/authentication/application/user-administration.guard';
 
-import { moduleGuard } from './deja-indicadores/module-management/application/module.guard';
+import { moduleGuard } from './platform/module-management/application/module.guard';
 
 const workspacePage = () =>
   import('./workspace-angular/components/workspace-page/workspace-page').then(
@@ -18,21 +18,21 @@ const workspacePage = () =>
 export const routes: Routes = [
   {
     path: 'login',
-    title: 'Entrar | Deja Indicadores',
+    title: 'Entrar | Deja Platform',
     loadComponent: () =>
-      import('./deja-indicadores/authentication/presentation/login/login').then(
+      import('./platform/authentication/presentation/login/login').then(
         (module) => module.LoginComponent,
       ),
   },
   {
     path: '',
-    title: 'Deja Indicadores',
+    title: 'Deja Platform',
     canActivate: [authenticationGuard],
     loadComponent: workspacePage,
   },
   {
     path: 'platform/organizations',
-    title: 'Organizações | Plataforma | Deja Indicadores',
+    title: 'Organizações | Deja Platform',
     canActivate: [authenticationGuard, platformAdministrationGuard],
     loadComponent: workspacePage,
   },
@@ -49,7 +49,7 @@ export const routes: Routes = [
   },
   {
     path: 'administration/users',
-    title: 'Usuários | Administração | Deja Indicadores',
+    title: 'Usuários | Administração | Deja Platform',
     canActivate: [userAdministrationGuard],
     loadComponent: workspacePage,
   },
@@ -88,13 +88,13 @@ export const routes: Routes = [
   },
   {
     path: 'activity',
-    title: 'Atividades | Deja Indicadores',
+    title: 'Atividades | Deja Platform',
     canActivate: [authenticationGuard],
     loadComponent: workspacePage,
   },
   {
     path: 'timeline',
-    title: 'Linha do tempo | Deja Indicadores',
+    title: 'Linha do tempo | Deja Platform',
     canActivate: [authenticationGuard],
     loadComponent: workspacePage,
   },

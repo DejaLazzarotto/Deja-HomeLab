@@ -18,15 +18,15 @@ import {
 
 import {
   AuthenticationService,
-} from '../../../deja-indicadores/authentication/application/authentication.service';
+} from '../../../platform/authentication/application/authentication.service';
 
 import {
   canAccessModule,
-} from '../../../deja-indicadores/module-management/application/module-access';
+} from '../../../platform/module-management/application/module-access';
 
 import {
   isModuleKey,
-} from '../../../deja-indicadores/module-management/domain/module-key';
+} from '../../../platform/module-management/domain/module-key';
 
 import {
   WorkspaceDashboardState,

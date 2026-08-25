@@ -12,7 +12,7 @@ import {
 import {
   ModuleManagementComposition,
   OrganizationManagementComponent,
-} from '../../../deja-indicadores/module-management';
+} from '../../../platform/module-management';
 
 import {
   WorkspaceWidgetInstance,

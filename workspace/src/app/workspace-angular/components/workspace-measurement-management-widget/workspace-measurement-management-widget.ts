@@ -25,7 +25,7 @@ import {
 
 import {
   AuthenticationService,
-} from '../../../deja-indicadores/authentication/application/authentication.service';
+} from '../../../platform/authentication/application/authentication.service';
 
 import {
   MeasurementCompanyOption,

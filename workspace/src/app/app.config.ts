@@ -14,7 +14,7 @@ import {
 
 import {
   authenticationInterceptor,
-} from './deja-indicadores/authentication/infrastructure/authentication.interceptor';
+} from './platform/authentication/infrastructure/authentication.interceptor';
 
 import {
   routes,

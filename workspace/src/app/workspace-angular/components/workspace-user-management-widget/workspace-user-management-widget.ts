@@ -25,7 +25,7 @@ import {
 
 import {
   AuthenticationService,
-} from '../../../deja-indicadores/authentication/application/authentication.service';
+} from '../../../platform/authentication/application/authentication.service';
 
 import {
   UserEnvironmentOption,
@@ -33,7 +33,7 @@ import {
   UserOrganizationOption,
   UsersComposition,
   UserTenantOption,
-} from '../../../deja-indicadores/users';
+} from '../../../platform/users';
 
 import {
   WorkspaceWidgetInstance,

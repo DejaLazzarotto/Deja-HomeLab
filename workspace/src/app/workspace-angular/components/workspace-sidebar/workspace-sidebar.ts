@@ -11,23 +11,23 @@ import {
 
 import {
   canAccessAdministration,
-} from '../../../deja-indicadores/authentication/application/administration.guard';
+} from '../../../platform/authentication/application/administration.guard';
 
 import {
   AuthenticationService,
-} from '../../../deja-indicadores/authentication/application/authentication.service';
+} from '../../../platform/authentication/application/authentication.service';
 
 import {
   canAccessUserAdministration,
-} from '../../../deja-indicadores/authentication/application/user-administration.guard';
+} from '../../../platform/authentication/application/user-administration.guard';
 
 import {
   canAccessModule,
-} from '../../../deja-indicadores/module-management/application/module-access';
+} from '../../../platform/module-management/application/module-access';
 
 import {
   isModuleKey,
-} from '../../../deja-indicadores/module-management/domain/module-key';
+} from '../../../platform/module-management/domain/module-key';
 
 import {
   WorkspaceNavigation,

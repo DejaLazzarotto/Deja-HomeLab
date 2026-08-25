@@ -12,7 +12,7 @@ import { ChangeDetectionStrategy, Component, Input, OnInit, inject, signal } fro
 
 import { firstValueFrom } from 'rxjs';
 
-import { AuthenticationService } from '../../../deja-indicadores/authentication/application/authentication.service';
+import { AuthenticationService } from '../../../platform/authentication/application/authentication.service';
 
 import {
   DashboardCompanyOption,

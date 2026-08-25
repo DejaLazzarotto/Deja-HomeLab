@@ -10,11 +10,11 @@ import {
 
 import {
   AuthenticationService,
-} from '../../../deja-indicadores/authentication/application/authentication.service';
+} from '../../../platform/authentication/application/authentication.service';
 
 import {
   UserRole,
-} from '../../../deja-indicadores/authentication/domain/authenticated-user';
+} from '../../../platform/authentication/domain/authenticated-user';
 
 @Component({
   selector: 'deja-workspace-header',
