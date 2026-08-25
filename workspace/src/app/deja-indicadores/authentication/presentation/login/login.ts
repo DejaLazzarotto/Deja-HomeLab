@@ -4,8 +4,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { Router } from '@angular/router';
-
 import { finalize } from 'rxjs';
 
 import { AuthenticationService } from '../../application/authentication.service';
@@ -20,8 +18,6 @@ import { AuthenticationService } from '../../application/authentication.service'
 })
 export class LoginComponent {
   private readonly authentication = inject(AuthenticationService);
-
-  private readonly router = inject(Router);
 
   private readonly formBuilder = inject(NonNullableFormBuilder);
 
@@ -67,7 +63,7 @@ export class LoginComponent {
       )
       .subscribe({
         next: () => {
-          void this.router.navigateByUrl('/');
+          window.location.replace('/');
         },
         error: (error) => {
           this.errorMessage.set(this.resolveErrorMessage(error));
