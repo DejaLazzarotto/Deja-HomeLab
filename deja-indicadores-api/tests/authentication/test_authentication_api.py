@@ -55,6 +55,14 @@ INITIAL_MODULES = (
         ),
         "display_order": 30,
     },
+    {
+        "key": "chamados",
+        "name": "Chamados",
+        "description": (
+            "Gestão de clientes, chamados e atendimento técnico."
+        ),
+        "display_order": 40,
+    },
 )
 
 

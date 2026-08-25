@@ -67,7 +67,7 @@ describe('AuthenticationService', () => {
       name: 'Usuário Teste',
       email: 'usuario@deja.com',
       role: 'organization_admin',
-      enabled_modules: ['indicators', 'measurements'],
+      enabled_modules: ['indicators', 'measurements', 'chamados'],
     });
 
     await expect(resultPromise).resolves.toEqual({
@@ -78,7 +78,7 @@ describe('AuthenticationService', () => {
       name: 'Usuário Teste',
       email: 'usuario@deja.com',
       role: 'organization_admin',
-      enabledModules: ['indicators', 'measurements'],
+      enabledModules: ['indicators', 'measurements', 'chamados'],
     });
 
     expect(localStorage.getItem('deja-indicadores.access-token')).toBe('access-token');

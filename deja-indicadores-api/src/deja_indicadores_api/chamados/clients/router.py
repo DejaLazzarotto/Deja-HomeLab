@@ -23,11 +23,15 @@ from deja_indicadores_api.chamados.clients.schemas import (
     ChamadosClientResponse,
     ChamadosClientUpdate,
 )
+from deja_indicadores_api.module_management.dependencies import (
+    require_module,
+)
 from deja_indicadores_api.user_management.models import UserRole
 
 router = APIRouter(
     prefix="/chamados/clients",
     tags=["Deja Chamados - Clientes"],
+    dependencies=[Depends(require_module("chamados"))],
 )
 
 ChamadosClientId = Annotated[

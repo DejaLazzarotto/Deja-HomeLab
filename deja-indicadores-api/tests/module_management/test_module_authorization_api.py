@@ -35,6 +35,10 @@ PROTECTED_ENDPOINTS = (
         "indicators",
         "/api/dashboards/overview",
     ),
+    (
+        "chamados",
+        "/api/chamados/clients",
+    ),
 )
 
 

@@ -44,6 +44,14 @@ INITIAL_MODULES = (
         ),
         "display_order": 30,
     },
+    {
+        "key": "chamados",
+        "name": "Chamados",
+        "description": (
+            "Gestão de clientes, chamados e atendimento técnico."
+        ),
+        "display_order": 40,
+    },
 )
 
 
@@ -138,11 +146,13 @@ def test_platform_admin_lists_installed_catalog(
         "indicators",
         "measurements",
         "reports",
+        "chamados",
     ]
     assert [module["display_order"] for module in body] == [
         10,
         20,
         30,
+        40,
     ]
     assert all(module["created_at"] for module in body)
     assert all(module["updated_at"] for module in body)
@@ -230,6 +240,7 @@ def test_new_organization_has_all_modules_disabled(
         "indicators",
         "measurements",
         "reports",
+        "chamados",
     ]
     assert enabled_module_keys(body) == set()
 

@@ -2,6 +2,7 @@ export const moduleKeys = [
   'indicators',
   'measurements',
   'reports',
+  'chamados',
 ] as const;
 
 export type ModuleKey = (typeof moduleKeys)[number];

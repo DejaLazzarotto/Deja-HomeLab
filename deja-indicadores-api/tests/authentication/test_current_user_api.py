@@ -112,9 +112,10 @@ def test_me_returns_authenticated_user_and_institutional_scope(
         "email": "identidade@deja.com",
         "role": "analyst",
         "enabled_modules": [
-        "indicators",
-        "measurements",
-        "reports",
+            "chamados",
+            "indicators",
+            "measurements",
+            "reports",
         ],
     }
 
