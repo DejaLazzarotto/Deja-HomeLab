@@ -49,6 +49,7 @@ type NavigationSectionId =
   | 'home'
   | 'administration'
   | 'operation'
+  | 'chamados'
   | 'analysis';
 
 interface NavigationSection {
@@ -90,6 +91,10 @@ export class WorkspaceSidebarComponent {
     {
       id: 'operation',
       title: 'Operação',
+    },
+    {
+      id: 'chamados',
+      title: 'Chamados',
     },
     {
       id: 'analysis',
