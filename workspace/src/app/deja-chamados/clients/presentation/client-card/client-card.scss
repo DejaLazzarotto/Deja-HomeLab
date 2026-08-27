@@ -3,60 +3,84 @@
  *
  * Clients Presentation
  *
- * Estilos do card de cliente.
+ * Estilos institucionais do cartão de cliente.
  */
+
+:host {
+  display: block;
+  min-width: 0;
+}
 
 .client-card {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1rem;
-  background: #1f242d;
+  gap: var(--workspace-spacing-md);
+  min-width: 0;
+  padding: var(--workspace-spacing-md);
+  color: var(--workspace-color-text);
+  background: var(--workspace-color-background);
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
+  transition:
+    background var(--workspace-transition-fast),
+    border-color var(--workspace-transition-fast),
+    transform var(--workspace-transition-fast);
+}
+
+.client-card:hover {
+  background: var(--workspace-color-background-soft);
+  border-color: var(--workspace-color-border-strong);
+  transform: translateY(-1px);
 }
 
 .client-card__main {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--workspace-spacing-md);
 }
 
 .client-card__main h2 {
   margin: 0;
-  color: #ffffff;
-  font-size: 1.125rem;
+  color: var(--workspace-color-text);
+  font-size: 1rem;
+  line-height: 1.3;
   overflow-wrap: anywhere;
 }
 
 .client-card__main p {
-  margin: 0.25rem 0 0;
-  color: #90a4ae;
-  font-size: 0.875rem;
+  margin: var(--workspace-spacing-xs) 0 0;
+  color: var(--workspace-color-text-muted);
+  font-size: 0.78rem;
   overflow-wrap: anywhere;
 }
 
 .client-card__status {
+  display: inline-flex;
   flex: 0 0 auto;
-  padding: 0.25rem 0.625rem;
-  border-radius: 999px;
-  background: rgba(129, 199, 132, 0.14);
-  color: #81c784;
-  font-size: 0.75rem;
+  align-items: center;
+  min-height: 1.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--workspace-color-success);
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--workspace-color-success-soft);
+  border: 1px solid currentColor;
+  border-radius: var(--workspace-radius-pill);
 }
 
 .client-card__status--inactive {
-  background: rgba(239, 154, 154, 0.14);
-  color: #ef9a9a;
+  color: var(--workspace-color-text-muted);
+  background: var(--workspace-color-overlay);
 }
 
 .client-card__info {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 0.5rem;
-  color: #cfd8dc;
-  font-size: 0.875rem;
+  gap: var(--workspace-spacing-sm);
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.5;
 }
 
 .client-card__info span {
@@ -65,20 +89,65 @@
 
 .client-card__notes {
   margin: 0;
-  color: #b0bec5;
-  font-size: 0.875rem;
+  padding: var(--workspace-spacing-sm) var(--workspace-spacing-md);
+  color: var(--workspace-color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  background: var(--workspace-color-surface);
+  border-left: 3px solid var(--workspace-color-primary);
+  border-radius: var(--workspace-radius-sm);
 }
 
 .client-card__actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: var(--workspace-spacing-xs);
+  padding-top: var(--workspace-spacing-sm);
+  border-top: 1px solid var(--workspace-color-border-soft);
 }
 
-@media (min-width: 720px) {
+.client-card__action {
+  padding: 0.4rem 0.65rem;
+  color: var(--workspace-color-text-secondary);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-sm);
+  transition:
+    color var(--workspace-transition-fast),
+    background var(--workspace-transition-fast),
+    border-color var(--workspace-transition-fast);
+}
+
+.client-card__action:hover:not(:disabled) {
+  color: var(--workspace-color-text);
+  background: var(--workspace-color-overlay);
+  border-color: var(--workspace-color-border-strong);
+}
+
+.client-card__action--danger:hover:not(:disabled) {
+  color: var(--workspace-color-danger);
+  background: var(--workspace-color-danger-soft);
+  border-color: var(--workspace-color-danger);
+}
+
+.client-card__action:focus-visible {
+  outline: 2px solid var(--workspace-color-primary);
+  outline-offset: 2px;
+}
+
+.client-card__action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (min-width: 45rem) {
   .client-card__info {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

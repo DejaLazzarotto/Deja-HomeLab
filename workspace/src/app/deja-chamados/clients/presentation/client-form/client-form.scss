@@ -3,47 +3,230 @@
  *
  * Clients Presentation
  *
- * Estilos do formulário de clientes.
+ * Estilos institucionais do formulário de clientes.
  */
 
-.client-form {
-  padding: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1rem;
-  background: #1f242d;
+:host {
+  display: block;
+  min-width: 0;
 }
 
-.client-form h2 {
-  margin: 0 0 1rem;
-  color: #ffffff;
-  font-size: 1.125rem;
+.client-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--workspace-spacing-lg);
+  min-width: 0;
+  padding: var(--workspace-spacing-lg);
+  color: var(--workspace-color-text);
+  background: var(--workspace-color-background);
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
+}
+
+.client-form__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--workspace-spacing-xs);
+}
+
+.client-form__header h3 {
+  margin: 0;
+  color: var(--workspace-color-text);
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.client-form__header p {
+  margin: 0;
+  color: var(--workspace-color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
 }
 
 .client-form form {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 1rem;
+  gap: var(--workspace-spacing-md);
+  min-width: 0;
 }
 
-.client-form mat-form-field {
+.client-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--workspace-spacing-xs);
+  min-width: 0;
+}
+
+.client-form__field > span {
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.client-form__field input,
+.client-form__field select,
+.client-form__field textarea {
   width: 100%;
+  min-height: 2.65rem;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem;
+  color: var(--workspace-color-text);
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  background: var(--workspace-color-surface);
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-sm);
+  outline: none;
+  transition:
+    border-color var(--workspace-transition-fast),
+    box-shadow var(--workspace-transition-fast),
+    background var(--workspace-transition-fast);
+}
+
+.client-form__field textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.client-form__field input:hover,
+.client-form__field select:hover,
+.client-form__field textarea:hover {
+  border-color: var(--workspace-color-border-strong);
+}
+
+.client-form__field input:focus,
+.client-form__field select:focus,
+.client-form__field textarea:focus {
+  background: var(--workspace-color-surface-soft);
+  border-color: var(--workspace-color-primary);
+  box-shadow: 0 0 0 2px var(--workspace-color-primary-soft);
+}
+
+.client-form__field input.ng-invalid.ng-touched,
+.client-form__field select.ng-invalid.ng-touched {
+  border-color: var(--workspace-color-danger);
+}
+
+.client-form__field input.ng-invalid.ng-touched:focus,
+.client-form__field select.ng-invalid.ng-touched:focus {
+  box-shadow: 0 0 0 2px var(--workspace-color-danger-soft);
+}
+
+.client-form__error {
+  color: var(--workspace-color-danger);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.client-form__hint {
+  align-self: flex-end;
+  color: var(--workspace-color-text-muted);
+  font-size: 0.7rem;
+}
+
+.client-form__checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--workspace-spacing-sm);
+  width: fit-content;
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.client-form__checkbox input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--workspace-color-primary);
 }
 
 .client-form__actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.75rem;
+  gap: var(--workspace-spacing-sm);
+  padding-top: var(--workspace-spacing-sm);
+  border-top: 1px solid var(--workspace-color-border-soft);
 }
 
-@media (min-width: 720px) {
+.client-form__action,
+.client-form__save-button {
+  min-height: 2.5rem;
+  padding: 0.65rem 1rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: var(--workspace-radius-md);
+  transition:
+    color var(--workspace-transition-fast),
+    background var(--workspace-transition-fast),
+    border-color var(--workspace-transition-fast),
+    filter var(--workspace-transition-fast),
+    transform var(--workspace-transition-fast);
+}
+
+.client-form__action {
+  color: var(--workspace-color-text-secondary);
+  background: transparent;
+  border: 1px solid var(--workspace-color-border);
+}
+
+.client-form__action:hover:not(:disabled) {
+  color: var(--workspace-color-text);
+  background: var(--workspace-color-overlay);
+  border-color: var(--workspace-color-border-strong);
+}
+
+.client-form__save-button {
+  color: var(--workspace-color-primary-contrast);
+  background: var(--workspace-color-primary);
+  border: 1px solid transparent;
+}
+
+.client-form__save-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.client-form__action:focus-visible,
+.client-form__save-button:focus-visible,
+.client-form__checkbox input:focus-visible {
+  outline: 2px solid var(--workspace-color-primary);
+  outline-offset: 2px;
+}
+
+.client-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+@media (min-width: 45rem) {
   .client-form form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .client-form__full,
-  .client-form mat-checkbox,
-  .client-form__actions {
+  .client-form__full {
     grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 40rem) {
+  .client-form {
+    padding: var(--workspace-spacing-md);
+  }
+
+  .client-form__actions {
+    flex-direction: column-reverse;
+  }
+
+  .client-form__action,
+  .client-form__save-button {
+    width: 100%;
   }
 }

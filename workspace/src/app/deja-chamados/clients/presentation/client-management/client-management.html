@@ -1,51 +1,63 @@
 <section class="clients">
   <header class="clients__header">
-    <div>
-      <h1>Clientes</h1>
+    <div class="clients__heading">
+      <span class="clients__eyebrow">Deja Chamados</span>
 
-      <p>Cadastro e manutenção dos clientes atendidos.</p>
+      <h2 class="clients__title">Clientes</h2>
+
+      <p class="clients__description">
+        Cadastro e manutenção dos clientes atendidos.
+      </p>
     </div>
 
-    @if (canManage()) {
-      <button mat-flat-button type="button" (click)="openCreate()">
-        <mat-icon>add</mat-icon>
+    @if (canManage() && !formVisible()) {
+      <button
+        class="clients__create-button"
+        type="button"
+        (click)="openCreate()"
+      >
         Novo cliente
       </button>
     }
   </header>
 
   <div class="clients__toolbar">
-    <mat-form-field appearance="outline">
-      <mat-label>Buscar cliente</mat-label>
-
-      <mat-icon matPrefix> search </mat-icon>
+    <label class="clients__field">
+      <span>Buscar cliente</span>
 
       <input
-        matInput
+        type="search"
         [ngModel]="searchTerm()"
         (ngModelChange)="onSearchTermChange($event)"
         placeholder="Nome, documento, contato ou cidade"
       />
-    </mat-form-field>
+    </label>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Situação</mat-label>
+    <label class="clients__field">
+      <span>Situação</span>
 
-      <mat-select [ngModel]="activeFilter()" (ngModelChange)="onActiveFilterChange($event)">
-        <mat-option value="all"> Todos </mat-option>
-
-        <mat-option value="active"> Ativos </mat-option>
-
-        <mat-option value="inactive"> Inativos </mat-option>
-      </mat-select>
-    </mat-form-field>
+      <select
+        [ngModel]="activeFilter()"
+        (ngModelChange)="onActiveFilterChange($event)"
+      >
+        <option value="all">Todos</option>
+        <option value="active">Ativos</option>
+        <option value="inactive">Inativos</option>
+      </select>
+    </label>
   </div>
 
   @if (errorMessage()) {
     <div class="clients__message clients__message--error" role="alert">
       <span>{{ errorMessage() }}</span>
 
-      <button mat-button type="button" (click)="refresh()">Tentar novamente</button>
+      <button
+        class="clients__action"
+        type="button"
+        (click)="refresh()"
+      >
+        Tentar novamente
+      </button>
     </div>
   }
 

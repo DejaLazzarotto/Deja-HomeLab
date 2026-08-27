@@ -2,28 +2,31 @@
   <div class="client-card__main">
     <div>
       <h2>{{ client().fantasyName }}</h2>
+
       <p>{{ client().companyName }}</p>
     </div>
 
-    <span class="client-card__status" [class.client-card__status--inactive]="!client().active">
+    <span
+      class="client-card__status"
+      [class.client-card__status--inactive]="!client().active"
+    >
       {{ client().active ? 'Ativo' : 'Inativo' }}
     </span>
   </div>
 
   <div class="client-card__info">
-    <span> Documento: {{ formattedDocument() }} </span>
+    <span>Documento: {{ formattedDocument() }}</span>
 
-    <span> Contato: {{ client().contactName }} </span>
+    <span>Contato: {{ client().contactName }}</span>
 
-    <span> Telefone: {{ formattedPhone() }} </span>
+    <span>Telefone: {{ formattedPhone() }}</span>
 
-    <span> WhatsApp: {{ formattedWhatsapp() }} </span>
+    <span>WhatsApp: {{ formattedWhatsapp() }}</span>
 
-    <span> E-mail: {{ client().email }} </span>
+    <span>E-mail: {{ client().email }}</span>
 
     <span>
-      Localidade:
-      {{ client().city }} / {{ client().state }}
+      Localidade: {{ client().city }} / {{ client().state }}
     </span>
 
     <span>
@@ -40,13 +43,21 @@
 
   @if (canManage()) {
     <div class="client-card__actions">
-      <button mat-button type="button" [disabled]="deleting()" (click)="onEdit()">
-        <mat-icon>edit</mat-icon>
+      <button
+        class="client-card__action"
+        type="button"
+        [disabled]="deleting()"
+        (click)="onEdit()"
+      >
         Editar
       </button>
 
-      <button mat-button type="button" [disabled]="deleting()" (click)="onDelete()">
-        <mat-icon>delete</mat-icon>
+      <button
+        class="client-card__action client-card__action--danger"
+        type="button"
+        [disabled]="deleting()"
+        (click)="onDelete()"
+      >
         {{ deleting() ? 'Excluindo...' : 'Excluir' }}
       </button>
     </div>

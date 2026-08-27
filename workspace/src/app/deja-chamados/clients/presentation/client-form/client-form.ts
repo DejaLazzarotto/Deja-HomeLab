@@ -19,16 +19,6 @@ import {
 
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { MatButtonModule } from '@angular/material/button';
-
-import { MatCheckboxModule } from '@angular/material/checkbox';
-
-import { MatFormFieldModule } from '@angular/material/form-field';
-
-import { MatInputModule } from '@angular/material/input';
-
-import { MatSelectModule } from '@angular/material/select';
-
 import { Client, ClientInput } from '../../domain';
 
 import { ClientEnvironmentOption } from '../client-environment-option';
@@ -42,11 +32,6 @@ import { businessEmailValidator, documentValidator, phoneValidator } from './cli
   standalone: true,
   imports: [
     ReactiveFormsModule,
-    MatButtonModule,
-    MatCheckboxModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
   ],
   templateUrl: './client-form.html',
   styleUrl: './client-form.scss',

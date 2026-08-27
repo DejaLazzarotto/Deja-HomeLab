@@ -1,62 +1,76 @@
 <section class="client-form">
-  <header>
-    <h2>{{ title() }}</h2>
+  <header class="client-form__header">
+    <h3>{{ title() }}</h3>
+
+    <p>Preencha os dados institucionais e de contato do cliente.</p>
   </header>
 
   <form [formGroup]="form" (ngSubmit)="onSubmit()">
-    <mat-form-field appearance="outline">
-      <mat-label>Ambiente</mat-label>
+    <label class="client-form__field">
+      <span>Ambiente</span>
 
-      <mat-select formControlName="environmentId" (blur)="onFieldBlur('environmentId')">
+      <select
+        formControlName="environmentId"
+        (blur)="onFieldBlur('environmentId')"
+      >
+        <option value="" disabled>Selecione o ambiente</option>
+
         @for (environment of environmentOptions(); track environment.id) {
-          <mat-option [value]="environment.id">
+          <option [value]="environment.id">
             {{ environment.name }}
-          </mat-option>
+          </option>
         }
-      </mat-select>
+      </select>
 
       @if (
-        form.controls.environmentId.hasError('required') && form.controls.environmentId.touched
+        form.controls.environmentId.hasError('required') &&
+        form.controls.environmentId.touched
       ) {
-        <mat-error> Selecione o ambiente. </mat-error>
+        <small class="client-form__error">Selecione o ambiente.</small>
       }
-    </mat-form-field>
+    </label>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Razão social</mat-label>
+    <label class="client-form__field">
+      <span>Razão social</span>
 
       <input
-        matInput
+        type="text"
         formControlName="companyName"
         maxlength="255"
         (blur)="onFieldBlur('companyName')"
       />
 
-      @if (form.controls.companyName.hasError('required') && form.controls.companyName.touched) {
-        <mat-error> Informe a razão social. </mat-error>
+      @if (
+        form.controls.companyName.hasError('required') &&
+        form.controls.companyName.touched
+      ) {
+        <small class="client-form__error">Informe a razão social.</small>
       }
-    </mat-form-field>
+    </label>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Nome fantasia</mat-label>
+    <label class="client-form__field">
+      <span>Nome fantasia</span>
 
       <input
-        matInput
+        type="text"
         formControlName="fantasyName"
         maxlength="255"
         (blur)="onFieldBlur('fantasyName')"
       />
 
-      @if (form.controls.fantasyName.hasError('required') && form.controls.fantasyName.touched) {
-        <mat-error> Informe o nome fantasia. </mat-error>
+      @if (
+        form.controls.fantasyName.hasError('required') &&
+        form.controls.fantasyName.touched
+      ) {
+        <small class="client-form__error">Informe o nome fantasia.</small>
       }
-    </mat-form-field>
+    </label>
 
-    <mat-form-field appearance="outline">
-      <mat-label>CPF/CNPJ</mat-label>
+    <label class="client-form__field">
+      <span>CPF/CNPJ</span>
 
       <input
-        matInput
+        type="text"
         formControlName="document"
         maxlength="18"
         inputmode="numeric"
@@ -64,35 +78,44 @@
         (blur)="onFieldBlur('document')"
       />
 
-      @if (form.controls.document.hasError('required') && form.controls.document.touched) {
-        <mat-error> Informe o CPF ou CNPJ. </mat-error>
+      @if (
+        form.controls.document.hasError('required') &&
+        form.controls.document.touched
+      ) {
+        <small class="client-form__error">Informe o CPF ou CNPJ.</small>
       }
 
-      @if (form.controls.document.hasError('invalidDocument') && form.controls.document.touched) {
-        <mat-error> CPF ou CNPJ inválido. </mat-error>
+      @if (
+        form.controls.document.hasError('invalidDocument') &&
+        form.controls.document.touched
+      ) {
+        <small class="client-form__error">CPF ou CNPJ inválido.</small>
       }
-    </mat-form-field>
+    </label>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Contato principal</mat-label>
+    <label class="client-form__field">
+      <span>Contato principal</span>
 
       <input
-        matInput
+        type="text"
         formControlName="contactName"
         maxlength="255"
         (blur)="onFieldBlur('contactName')"
       />
 
-      @if (form.controls.contactName.hasError('required') && form.controls.contactName.touched) {
-        <mat-error> Informe o contato principal. </mat-error>
+      @if (
+        form.controls.contactName.hasError('required') &&
+        form.controls.contactName.touched
+      ) {
+        <small class="client-form__error">Informe o contato principal.</small>
       }
-    </mat-form-field>
+    </label>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Telefone</mat-label>
+    <label class="client-form__field">
+      <span>Telefone</span>
 
       <input
-        matInput
+        type="tel"
         formControlName="phone"
         maxlength="15"
         inputmode="tel"
@@ -100,20 +123,26 @@
         (blur)="onFieldBlur('phone')"
       />
 
-      @if (form.controls.phone.hasError('required') && form.controls.phone.touched) {
-        <mat-error> Informe o telefone. </mat-error>
+      @if (
+        form.controls.phone.hasError('required') &&
+        form.controls.phone.touched
+      ) {
+        <small class="client-form__error">Informe o telefone.</small>
       }
 
-      @if (form.controls.phone.hasError('invalidPhone') && form.controls.phone.touched) {
-        <mat-error> Telefone inválido. </mat-error>
+      @if (
+        form.controls.phone.hasError('invalidPhone') &&
+        form.controls.phone.touched
+      ) {
+        <small class="client-form__error">Telefone inválido.</small>
       }
-    </mat-form-field>
+    </label>
 
-    <mat-form-field appearance="outline">
-      <mat-label>WhatsApp</mat-label>
+    <label class="client-form__field">
+      <span>WhatsApp</span>
 
       <input
-        matInput
+        type="tel"
         formControlName="whatsapp"
         maxlength="15"
         inputmode="tel"
@@ -121,80 +150,126 @@
         (blur)="onFieldBlur('whatsapp')"
       />
 
-      @if (form.controls.whatsapp.hasError('required') && form.controls.whatsapp.touched) {
-        <mat-error> Informe o WhatsApp. </mat-error>
+      @if (
+        form.controls.whatsapp.hasError('required') &&
+        form.controls.whatsapp.touched
+      ) {
+        <small class="client-form__error">Informe o WhatsApp.</small>
       }
 
-      @if (form.controls.whatsapp.hasError('invalidPhone') && form.controls.whatsapp.touched) {
-        <mat-error> WhatsApp inválido. </mat-error>
+      @if (
+        form.controls.whatsapp.hasError('invalidPhone') &&
+        form.controls.whatsapp.touched
+      ) {
+        <small class="client-form__error">WhatsApp inválido.</small>
       }
-    </mat-form-field>
+    </label>
 
-    <mat-form-field appearance="outline">
-      <mat-label>E-mail</mat-label>
+    <label class="client-form__field">
+      <span>E-mail</span>
 
       <input
-        matInput
-        formControlName="email"
         type="email"
+        formControlName="email"
         maxlength="255"
         (blur)="onFieldBlur('email')"
       />
 
-      @if (form.controls.email.hasError('required') && form.controls.email.touched) {
-        <mat-error> Informe o e-mail. </mat-error>
+      @if (
+        form.controls.email.hasError('required') &&
+        form.controls.email.touched
+      ) {
+        <small class="client-form__error">Informe o e-mail.</small>
       }
 
-      @if (form.controls.email.hasError('invalidEmail') && form.controls.email.touched) {
-        <mat-error> E-mail inválido. </mat-error>
+      @if (
+        form.controls.email.hasError('invalidEmail') &&
+        form.controls.email.touched
+      ) {
+        <small class="client-form__error">E-mail inválido.</small>
       }
-    </mat-form-field>
+    </label>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Cidade</mat-label>
-
-      <input matInput formControlName="city" maxlength="100" (blur)="onFieldBlur('city')" />
-
-      @if (form.controls.city.hasError('required') && form.controls.city.touched) {
-        <mat-error> Informe a cidade. </mat-error>
-      }
-    </mat-form-field>
-
-    <mat-form-field appearance="outline">
-      <mat-label>Estado</mat-label>
+    <label class="client-form__field">
+      <span>Cidade</span>
 
       <input
-        matInput
+        type="text"
+        formControlName="city"
+        maxlength="100"
+        (blur)="onFieldBlur('city')"
+      />
+
+      @if (
+        form.controls.city.hasError('required') &&
+        form.controls.city.touched
+      ) {
+        <small class="client-form__error">Informe a cidade.</small>
+      }
+    </label>
+
+    <label class="client-form__field">
+      <span>Estado</span>
+
+      <input
+        type="text"
         formControlName="state"
         maxlength="2"
         (input)="onStateInput()"
         (blur)="onFieldBlur('state')"
       />
 
-      @if (form.controls.state.hasError('required') && form.controls.state.touched) {
-        <mat-error> Informe o estado. </mat-error>
+      @if (
+        form.controls.state.hasError('required') &&
+        form.controls.state.touched
+      ) {
+        <small class="client-form__error">Informe o estado.</small>
       }
 
-      @if (form.controls.state.hasError('minlength') && form.controls.state.touched) {
-        <mat-error> Use a sigla com duas letras. </mat-error>
+      @if (
+        form.controls.state.hasError('minlength') &&
+        form.controls.state.touched
+      ) {
+        <small class="client-form__error">Use a sigla com duas letras.</small>
       }
-    </mat-form-field>
+    </label>
 
-    <mat-form-field appearance="outline" class="client-form__full">
-      <mat-label>Observações</mat-label>
+    <label class="client-form__field client-form__full">
+      <span>Observações</span>
 
-      <textarea matInput rows="3" maxlength="1000" formControlName="notes"></textarea>
+      <textarea
+        rows="3"
+        maxlength="1000"
+        formControlName="notes"
+      ></textarea>
 
-      <mat-hint align="end"> {{ form.controls.notes.value.length }}/1000 </mat-hint>
-    </mat-form-field>
+      <small class="client-form__hint">
+        {{ form.controls.notes.value.length }}/1000
+      </small>
+    </label>
 
-    <mat-checkbox formControlName="active"> Cliente ativo </mat-checkbox>
+    <label class="client-form__checkbox client-form__full">
+      <input type="checkbox" formControlName="active" />
 
-    <div class="client-form__actions">
-      <button mat-button type="button" [disabled]="saving()" (click)="onCancel()">Cancelar</button>
+      <span>Cliente ativo</span>
+    </label>
 
-      <button mat-flat-button type="submit" [disabled]="saving()">
-        {{ saving() ? 'Salvando...' : 'Salvar' }}
+    <div class="client-form__actions client-form__full">
+      <button
+        class="client-form__action"
+        type="button"
+        [disabled]="saving()"
+        (click)="onCancel()"
+      >
+        Cancelar
+      </button>
+
+      <button
+        class="client-form__save-button"
+        type="submit"
+        [disabled]="saving()"
+      >
+        {{ saving() ? 'Salvando...' : 'Salvar cliente' }}
       </button>
     </div>
   </form>

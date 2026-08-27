@@ -3,19 +3,28 @@
  *
  * Clients Presentation
  *
- * Estilos da listagem de clientes.
+ * Estilos institucionais da listagem de clientes.
  */
+
+:host {
+  display: block;
+  min-width: 0;
+}
 
 .client-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--workspace-spacing-md);
+  min-width: 0;
 }
 
 .client-list__state {
-  padding: 1.5rem;
-  border: 1px dashed rgba(255, 255, 255, 0.12);
-  border-radius: 1rem;
-  color: #90a4ae;
+  padding: clamp(2rem, 8vw, 4rem) var(--workspace-spacing-lg);
+  color: var(--workspace-color-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
   text-align: center;
+  background: var(--workspace-color-background);
+  border: 1px dashed var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
 }

@@ -8,10 +8,6 @@
 
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
-import { MatButtonModule } from '@angular/material/button';
-
-import { MatIconModule } from '@angular/material/icon';
-
 import { Client } from '../../domain';
 
 import { formatDocument, formatPhone } from '../client-form/client-mask.utils';
@@ -19,7 +15,6 @@ import { formatDocument, formatPhone } from '../client-form/client-mask.utils';
 @Component({
   selector: 'deja-client-card',
   standalone: true,
-  imports: [MatButtonModule, MatIconModule],
   templateUrl: './client-card.html',
   styleUrl: './client-card.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
