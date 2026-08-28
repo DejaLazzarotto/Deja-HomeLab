@@ -1,0 +1,1 @@
+"""Consulta de responsáveis elegíveis para chamados."""

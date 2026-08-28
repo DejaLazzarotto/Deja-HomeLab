@@ -1,0 +1,387 @@
+<section class="tickets">
+  <header class="tickets__header">
+    <div class="tickets__heading">
+      <span class="tickets__eyebrow">Deja Chamados</span>
+
+      <h2 class="tickets__title">Chamados</h2>
+
+      <p class="tickets__description">
+        Abertura, acompanhamento e controle dos atendimentos.
+      </p>
+    </div>
+
+    @if (canManage() && !formVisible()) {
+      <button
+        class="tickets__create-button"
+        type="button"
+        (click)="openCreate()"
+      >
+        Novo chamado
+      </button>
+    }
+  </header>
+
+  <div class="tickets__toolbar">
+    <label class="tickets__field tickets__field--search">
+      <span>Buscar chamado</span>
+
+      <input
+        type="search"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="onSearchTermChange($event)"
+        placeholder="Título ou descrição"
+      />
+    </label>
+
+    <label class="tickets__field">
+      <span>Cliente</span>
+
+      <select
+        [ngModel]="clientFilter()"
+        (ngModelChange)="onClientFilterChange($event)"
+      >
+        <option value="all">Todos os clientes</option>
+
+        @for (client of clients(); track client.id) {
+          <option [value]="client.id">
+            {{ client.fantasyName || client.companyName }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="tickets__field">
+      <span>Status</span>
+
+      <select
+        [ngModel]="statusFilter()"
+        (ngModelChange)="onStatusFilterChange($event)"
+      >
+        <option value="all">Todos</option>
+        <option value="open">Aberto</option>
+        <option value="in_progress">Em andamento</option>
+        <option value="pending">Pendente</option>
+        <option value="closed">Encerrado</option>
+      </select>
+    </label>
+
+    <label class="tickets__field">
+      <span>Prioridade</span>
+
+      <select
+        [ngModel]="priorityFilter()"
+        (ngModelChange)="onPriorityFilterChange($event)"
+      >
+        <option value="all">Todas</option>
+        <option value="low">Baixa</option>
+        <option value="medium">Média</option>
+        <option value="high">Alta</option>
+        <option value="critical">Crítica</option>
+      </select>
+    </label>
+  </div>
+
+  @if (errorMessage()) {
+    <div
+      class="tickets__message tickets__message--error"
+      role="alert"
+    >
+      <span>{{ errorMessage() }}</span>
+
+      <button
+        class="tickets__message-action"
+        type="button"
+        (click)="refresh()"
+      >
+        Tentar novamente
+      </button>
+    </div>
+  }
+
+  @if (operationMessage()) {
+    <div
+      class="tickets__message tickets__message--success"
+      role="status"
+    >
+      {{ operationMessage() }}
+    </div>
+  }
+
+  @if (operationError()) {
+    <div
+      class="tickets__message tickets__message--error"
+      role="alert"
+    >
+      {{ operationError() }}
+    </div>
+  }
+
+  @if (formVisible() && canManage()) {
+    <section class="tickets__form" aria-labelledby="ticket-form-title">
+      <header class="tickets__form-header">
+        <div>
+          <span class="tickets__form-eyebrow">
+            {{ selectedTicket() ? 'Edição operacional' : 'Novo atendimento' }}
+          </span>
+
+          <h3 id="ticket-form-title">
+            {{ selectedTicket() ? 'Editar chamado' : 'Abrir chamado' }}
+          </h3>
+        </div>
+
+        <button
+          class="tickets__close-button"
+          type="button"
+          [disabled]="saving()"
+          (click)="closeForm()"
+          aria-label="Fechar formulário"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="tickets__form-grid">
+        <label class="tickets__field tickets__field--wide">
+          <span>Cliente</span>
+
+          <select
+            [ngModel]="draft().clientId"
+            [disabled]="selectedTicket() !== null || saving()"
+            (ngModelChange)="onDraftClientChange($event)"
+          >
+            @for (client of activeClients(); track client.id) {
+              <option [value]="client.id">
+                {{ client.fantasyName || client.companyName }}
+              </option>
+            }
+          </select>
+
+          @if (selectedTicket()) {
+            <small>
+              O Cliente não pode ser alterado após a abertura.
+            </small>
+          }
+        </label>
+
+        <label class="tickets__field tickets__field--wide">
+          <span>Título</span>
+
+          <input
+            type="text"
+            maxlength="150"
+            [ngModel]="draft().title"
+            [disabled]="saving()"
+            (ngModelChange)="onDraftTitleChange($event)"
+            placeholder="Resumo objetivo do atendimento"
+          />
+
+          <small>
+            {{ draft().title.length }}/150 caracteres
+          </small>
+        </label>
+
+        <label class="tickets__field tickets__field--wide">
+          <span>Descrição</span>
+
+          <textarea
+            rows="6"
+            maxlength="5000"
+            [ngModel]="draft().description"
+            [disabled]="saving()"
+            (ngModelChange)="onDraftDescriptionChange($event)"
+            placeholder="Descreva o problema, impacto e informações relevantes"
+          ></textarea>
+
+          <small>
+            {{ draft().description.length }}/5000 caracteres
+          </small>
+        </label>
+
+        <label class="tickets__field">
+          <span>Prioridade</span>
+
+          <select
+            [ngModel]="draft().priority"
+            [disabled]="saving()"
+            (ngModelChange)="onDraftPriorityChange($event)"
+          >
+            <option value="low">Baixa</option>
+            <option value="medium">Média</option>
+            <option value="high">Alta</option>
+            <option value="critical">Crítica</option>
+          </select>
+        </label>
+
+        <label class="tickets__field">
+          <span>Responsável</span>
+
+          <select
+            [ngModel]="draft().assignedToUserId || ''"
+            [disabled]="saving() || loadingAssignees()"
+            (ngModelChange)="onDraftAssigneeChange($event)"
+          >
+            <option value="">
+              {{ loadingAssignees() ? 'Carregando...' : 'Não atribuído' }}
+            </option>
+
+            @for (assignee of assignees(); track assignee.id) {
+              <option [value]="assignee.id">
+                {{ assignee.name }} — {{ assignee.email }}
+              </option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <footer class="tickets__form-actions">
+        <button
+          class="tickets__secondary-button"
+          type="button"
+          [disabled]="saving()"
+          (click)="closeForm()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          class="tickets__primary-button"
+          type="button"
+          [disabled]="saving() || loadingAssignees()"
+          (click)="saveTicket()"
+        >
+          @if (saving()) {
+            Salvando...
+          } @else if (selectedTicket()) {
+            Salvar alterações
+          } @else {
+            Abrir chamado
+          }
+        </button>
+      </footer>
+    </section>
+  }
+
+  <section class="tickets__results" aria-live="polite">
+    <header class="tickets__results-header">
+      <h3>Atendimentos</h3>
+
+      @if (!loading()) {
+        <span>
+          {{ tickets().length }}
+          {{ tickets().length === 1 ? 'chamado' : 'chamados' }}
+        </span>
+      }
+    </header>
+
+    @if (loading()) {
+      <div class="tickets__state">
+        Carregando chamados...
+      </div>
+    } @else if (tickets().length === 0 && !errorMessage()) {
+      <div class="tickets__state tickets__state--empty">
+        <strong>Nenhum chamado encontrado.</strong>
+
+        <span>
+          Ajuste os filtros ou abra um novo atendimento.
+        </span>
+      </div>
+    } @else {
+      <div class="tickets__list">
+        @for (ticket of tickets(); track ticket.id) {
+          <article
+            class="ticket-card"
+            [class.ticket-card--closed]="ticket.status === 'closed'"
+          >
+            <header class="ticket-card__header">
+              <div class="ticket-card__identity">
+                <div class="ticket-card__badges">
+                  <span
+                    [class]="'ticket-card__priority ticket-card__priority--' + ticket.priority"
+                  >
+                    {{ priorityLabel(ticket.priority) }}
+                  </span>
+
+                  <span
+                    [class]="'ticket-card__status ticket-card__status--' + ticket.status"
+                  >
+                    {{ statusLabel(ticket.status) }}
+                  </span>
+                </div>
+
+                <h4>{{ ticket.title }}</h4>
+
+                <span class="ticket-card__client">
+                  {{ clientName(ticket.clientId) }}
+                </span>
+              </div>
+
+              @if (canManage()) {
+                <button
+                  class="ticket-card__edit-button"
+                  type="button"
+                  (click)="openEdit(ticket)"
+                >
+                  Editar
+                </button>
+              }
+            </header>
+
+            <p class="ticket-card__description">
+              {{ ticket.description }}
+            </p>
+
+            <dl class="ticket-card__metadata">
+              <div>
+                <dt>Responsável</dt>
+                <dd>{{ assigneeName(ticket.assignedToUserId) }}</dd>
+              </div>
+
+              <div>
+                <dt>Aberto em</dt>
+                <dd>{{ formatDate(ticket.createdAt) }}</dd>
+              </div>
+
+              <div>
+                <dt>Atualizado em</dt>
+                <dd>{{ formatDate(ticket.updatedAt) }}</dd>
+              </div>
+
+              @if (ticket.closedAt) {
+                <div>
+                  <dt>Encerrado em</dt>
+                  <dd>{{ formatDate(ticket.closedAt) }}</dd>
+                </div>
+              }
+            </dl>
+
+            @if (canManage()) {
+              <footer class="ticket-card__footer">
+                <label class="ticket-card__status-control">
+                  <span>Alterar status</span>
+
+                  <select
+                    [ngModel]="ticket.status"
+                    [disabled]="changingStatusTicketId() !== null"
+                    (ngModelChange)="changeStatus(ticket, $event)"
+                  >
+                    @for (status of statusOptions(ticket); track status) {
+                      <option [value]="status">
+                        {{ statusLabel(status) }}
+                      </option>
+                    }
+                  </select>
+                </label>
+
+                @if (changingStatusTicketId() === ticket.id) {
+                  <span class="ticket-card__updating">
+                    Atualizando...
+                  </span>
+                }
+              </footer>
+            }
+          </article>
+        }
+      </div>
+    }
+  </section>
+</section>

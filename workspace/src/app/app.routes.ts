@@ -76,6 +76,12 @@ export const routes: Routes = [
     loadComponent: workspacePage,
   },
   {
+    path: 'chamados/tickets',
+    title: 'Chamados | Deja Chamados',
+    canActivate: [authenticationGuard, moduleGuard('chamados')],
+    loadComponent: workspacePage,
+  },
+  {
     path: 'chamados/clients',
     title: 'Clientes | Deja Chamados',
     canActivate: [authenticationGuard, moduleGuard('chamados')],

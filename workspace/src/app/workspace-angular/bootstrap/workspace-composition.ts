@@ -51,6 +51,8 @@ import { WorkspaceWelcomeWidgetComponent } from '../components/workspace-welcome
 
 import { WorkspaceClientManagementWidgetComponent } from '../components/workspace-client-management-widget/workspace-client-management-widget';
 
+import { WorkspaceTicketManagementWidgetComponent } from '../components/workspace-ticket-management-widget/workspace-ticket-management-widget';
+
 import { WorkspaceCompanyManagementWidgetComponent } from '../components/workspace-company-management-widget/workspace-company-management-widget';
 
 import { WorkspaceIndicatorManagementWidgetComponent } from '../components/workspace-indicator-management-widget/workspace-indicator-management-widget';
@@ -87,6 +89,8 @@ export class WorkspaceComposition {
   private static readonly MEASUREMENTS_DASHBOARD_ID =
     'deja.workspace.dashboard.operation.measurements';
 
+  private static readonly TICKETS_DASHBOARD_ID = 'deja.workspace.dashboard.chamados.tickets';
+
   private static readonly CLIENTS_DASHBOARD_ID = 'deja.workspace.dashboard.chamados.clients';
 
   private static readonly ACTIVITY_DASHBOARD_ID = 'deja.workspace.dashboard.activity';
@@ -109,6 +113,8 @@ export class WorkspaceComposition {
 
   private static readonly MEASUREMENTS_NAVIGATION_ID =
     'deja.workspace.navigation.operation.measurements';
+
+  private static readonly TICKETS_NAVIGATION_ID = 'deja.workspace.navigation.chamados.tickets';
 
   private static readonly CLIENTS_NAVIGATION_ID = 'deja.workspace.navigation.chamados.clients';
 
@@ -136,6 +142,8 @@ export class WorkspaceComposition {
 
   private static readonly MEASUREMENT_MANAGEMENT_WIDGET_ID =
     'deja.workspace.widget.measurement-management';
+
+  private static readonly TICKET_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.ticket-management';
 
   private static readonly CLIENT_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.client-management';
 
@@ -380,13 +388,28 @@ export class WorkspaceComposition {
       },
 
       {
+        id: this.TICKETS_NAVIGATION_ID,
+        ownerId: this.CORE_OWNER,
+        dashboardId: this.TICKETS_DASHBOARD_ID,
+        title: 'Chamados',
+        description: 'Acesso à gestão de chamados e atendimentos.',
+        icon: 'reports',
+        order: 10,
+        enabled: true,
+        metadata: {
+          section: 'chamados',
+          moduleKey: 'chamados',
+        },
+      },
+
+      {
         id: this.CLIENTS_NAVIGATION_ID,
         ownerId: this.CORE_OWNER,
         dashboardId: this.CLIENTS_DASHBOARD_ID,
         title: 'Clientes',
         description: 'Acesso à gestão de clientes do Deja Chamados.',
         icon: 'users',
-        order: 10,
+        order: 20,
         enabled: true,
         metadata: {
           section: 'chamados',
@@ -665,6 +688,34 @@ export class WorkspaceComposition {
       },
     };
 
+    const ticketManagementWidget: WorkspaceWidget = {
+      id: this.TICKET_MANAGEMENT_WIDGET_ID,
+      owner: this.CORE_OWNER,
+      title: 'Gestão de Chamados',
+      description: 'Abertura e acompanhamento dos chamados do Deja Chamados.',
+      category: 'management',
+      widgetType: 'ticket-management',
+      supportedSurfaces: ['dashboard'],
+      capabilities: ['resizable'],
+      size: {
+        default: {
+          columns: 12,
+          rows: 12,
+        },
+        minimum: {
+          columns: 6,
+          rows: 8,
+        },
+      },
+      component: WorkspaceTicketManagementWidgetComponent,
+      priority: 40,
+      enabled: true,
+      tags: ['deja-chamados', 'tickets', 'management'],
+      metadata: {
+        moduleKey: 'chamados',
+      },
+    };
+
     const managementReportWidget: WorkspaceWidget = {
       id: this.MANAGEMENT_REPORT_WIDGET_ID,
       owner: this.CORE_OWNER,
@@ -710,6 +761,8 @@ export class WorkspaceComposition {
     registries.widgets.register(indicatorManagementWidget);
 
     registries.widgets.register(measurementManagementWidget);
+
+    registries.widgets.register(ticketManagementWidget);
 
     registries.widgets.register(clientManagementWidget);
 
@@ -931,13 +984,44 @@ export class WorkspaceComposition {
       },
 
       {
+        id: this.TICKETS_DASHBOARD_ID,
+        owner: this.CORE_OWNER,
+        title: 'Chamados',
+        description: 'Gestão dos atendimentos do Deja Chamados.',
+        route: '/chamados/tickets',
+        layoutId: initialLayout.id,
+        priority: 40,
+        enabled: true,
+        tags: ['deja-chamados', 'tickets', 'management'],
+        metadata: {
+          type: 'management',
+          section: 'tickets',
+          moduleKey: 'chamados',
+        },
+        widgets: [
+          {
+            id: 'deja.workspace.widget-instance.ticket-management',
+            widgetId: ticketManagementWidget.id,
+            regionId: mainRegion.id,
+            position: {
+              column: 1,
+              row: 1,
+              columnSpan: 12,
+              rowSpan: 12,
+            },
+            enabled: true,
+          },
+        ],
+      },
+
+      {
         id: this.CLIENTS_DASHBOARD_ID,
         owner: this.CORE_OWNER,
         title: 'Clientes',
         description: 'Gestão de clientes atendidos pelo Deja Chamados.',
         route: '/chamados/clients',
         layoutId: initialLayout.id,
-        priority: 40,
+        priority: 50,
         enabled: true,
         tags: ['deja-chamados', 'clients', 'management'],
         metadata: {
