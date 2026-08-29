@@ -6,7 +6,11 @@
       <h2 class="clients__title">Clientes</h2>
 
       <p class="clients__description">
-        Cadastro e manutenção dos clientes atendidos.
+        @if (canManage()) {
+          Cadastro e manutenção dos clientes atendidos.
+        } @else {
+          Consulta dos clientes atendidos.
+        }
       </p>
     </div>
 
