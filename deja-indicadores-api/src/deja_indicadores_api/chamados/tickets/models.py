@@ -1,13 +1,14 @@
 from datetime import datetime
 
 from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from deja_indicadores_api.chamados.tickets.enums import (
     ChamadosTicketPriority,
     ChamadosTicketStatus,
 )
 from deja_indicadores_api.core.database import Base
+from deja_indicadores_api.user_management.models import UserModel
 
 
 class ChamadosTicketModel(Base):
@@ -113,6 +114,10 @@ class ChamadosTicketModel(Base):
         nullable=True,
         index=True,
     )
+    assigned_to_user: Mapped[UserModel | None] = relationship(
+        foreign_keys=[assigned_to_user_id],
+        lazy="joined",
+    )
     closed_by_user_id: Mapped[str | None] = mapped_column(
         String(36),
         ForeignKey(
@@ -139,3 +144,12 @@ class ChamadosTicketModel(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+    @property
+    def assigned_to_user_name(self) -> str | None:
+        """Expõe o nome do responsável já atribuído ao chamado."""
+
+        if self.assigned_to_user is None:
+            return None
+
+        return self.assigned_to_user.name

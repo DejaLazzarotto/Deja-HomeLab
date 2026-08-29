@@ -47,6 +47,8 @@ describe('HttpTicketRepository', () => {
   const assignedToUserId =
     '77777777-7777-4777-8777-777777777777';
 
+  const assignedToUserName = 'Analista de Chamados';
+
   const closedByUserId =
     '88888888-8888-4888-8888-888888888888';
 
@@ -62,6 +64,7 @@ describe('HttpTicketRepository', () => {
     priority: 'high' as const,
     opened_by_user_id: openedByUserId,
     assigned_to_user_id: assignedToUserId,
+    assigned_to_user_name: assignedToUserName,
     closed_by_user_id: null,
     closed_at: null,
     created_at: '2026-08-28T10:00:00',
@@ -123,6 +126,7 @@ describe('HttpTicketRepository', () => {
         priority: 'high',
         openedByUserId,
         assignedToUserId,
+        assignedToUserName,
         closedByUserId: null,
         closedAt: null,
         createdAt: '2026-08-28T10:00:00',
@@ -282,6 +286,7 @@ describe('HttpTicketRepository', () => {
     request.flush({
       ...ticketResponse,
       assigned_to_user_id: null,
+      assigned_to_user_name: null,
     });
 
     await expect(promise).resolves.toBeDefined();
@@ -316,6 +321,7 @@ describe('HttpTicketRepository', () => {
       description: 'Serviço indisponível.',
       priority: 'critical',
       assigned_to_user_id: null,
+      assigned_to_user_name: null,
     });
 
     await expect(promise).resolves.toBeDefined();

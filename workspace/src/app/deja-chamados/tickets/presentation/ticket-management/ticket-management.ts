@@ -181,12 +181,16 @@ implements OnInit, OnDestroy {
         this.createFilters(),
       );
 
-      if (requestSequence === this.requestSequence) {
-        this.tickets.set(tickets);
+      if (
+        requestSequence === this.requestSequence
+        && this.canManage()
+      ) {
+        await this.hydrateAssigneeNames(tickets);
+      }
 
-        if (this.canManage()) {
-          void this.hydrateAssigneeNames(tickets);
-        }
+      if (requestSequence === this.requestSequence) {
+        this.cacheAssignedUserNames(tickets);
+        this.tickets.set(tickets);
       }
     } catch {
       if (requestSequence === this.requestSequence) {
@@ -610,6 +614,22 @@ implements OnInit, OnDestroy {
     await Promise.allSettled(
       clientIds.map(clientId => this.getAssignees(clientId)),
     );
+  }
+
+  private cacheAssignedUserNames(
+    tickets: readonly Ticket[],
+  ): void {
+    for (const ticket of tickets) {
+      if (
+        ticket.assignedToUserId
+        && ticket.assignedToUserName
+      ) {
+        this.assigneeNames.set(
+          ticket.assignedToUserId,
+          ticket.assignedToUserName,
+        );
+      }
+    }
   }
 
   private async getAssignees(

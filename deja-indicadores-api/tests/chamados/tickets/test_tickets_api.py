@@ -150,6 +150,7 @@ def test_create_ticket_normalizes_and_derives_scope(
     assert body["priority"] == "high"
     assert body["opened_by_user_id"] == administrator["id"]
     assert body["assigned_to_user_id"] == analyst["id"]
+    assert body["assigned_to_user_name"] == analyst["name"]
     assert body["closed_by_user_id"] is None
     assert body["closed_at"] is None
 
@@ -161,6 +162,7 @@ def test_list_tickets_applies_operational_filters(
     """A listagem filtra por busca, estado, prioridade e Cliente."""
 
     first_ticket = create_ticket(client, ticket_context)
+    assert first_ticket["assigned_to_user_name"] is None
     second_ticket = create_ticket(
         client,
         ticket_context,
@@ -238,6 +240,7 @@ def test_update_ticket_operational_data(
     assert body["description"] == "A equipe segue monitorando o serviço."
     assert body["priority"] == "critical"
     assert body["assigned_to_user_id"] == analyst["id"]
+    assert body["assigned_to_user_name"] == analyst["name"]
     assert body["client_id"] == ticket["client_id"]
     assert body["status"] == "open"
 

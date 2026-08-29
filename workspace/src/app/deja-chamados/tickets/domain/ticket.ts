@@ -34,6 +34,7 @@ export interface Ticket {
 
   openedByUserId: string;
   assignedToUserId: string | null;
+  assignedToUserName: string | null;
   closedByUserId: string | null;
   closedAt: string | null;
 

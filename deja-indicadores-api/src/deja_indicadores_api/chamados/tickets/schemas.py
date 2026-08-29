@@ -104,6 +104,7 @@ class ChamadosTicketResponse(BaseModel):
 
     opened_by_user_id: str
     assigned_to_user_id: str | None
+    assigned_to_user_name: str | None
     closed_by_user_id: str | None
     closed_at: datetime | None
 

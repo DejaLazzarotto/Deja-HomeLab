@@ -44,6 +44,7 @@ interface TicketResponse {
 
   opened_by_user_id: string;
   assigned_to_user_id: string | null;
+  assigned_to_user_name: string | null;
   closed_by_user_id: string | null;
   closed_at: string | null;
 
@@ -274,6 +275,7 @@ export class HttpTicketRepository implements TicketRepository {
       priority: response.priority,
       openedByUserId: response.opened_by_user_id,
       assignedToUserId: response.assigned_to_user_id,
+      assignedToUserName: response.assigned_to_user_name,
       closedByUserId: response.closed_by_user_id,
       closedAt: response.closed_at,
       createdAt: response.created_at,
