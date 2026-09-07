@@ -12,6 +12,12 @@ from deja_indicadores_api.chamados.clients.repository import (
 from deja_indicadores_api.chamados.tickets.repository import (
     ChamadosTicketRepository,
 )
+from deja_indicadores_api.chamados.tickets.timeline.repository import (
+    ChamadosTicketTimelineRepository,
+)
+from deja_indicadores_api.chamados.tickets.timeline.service import (
+    ChamadosTicketTimelineService,
+)
 from deja_indicadores_api.chamados.tickets.service import (
     ChamadosTicketService,
 )
@@ -31,11 +37,20 @@ def get_chamados_ticket_service(
 ) -> ChamadosTicketService:
     """Cria o serviço de chamados para a sessão da requisição."""
 
+    ticket_repository = ChamadosTicketRepository(session)
+    timeline_repository = ChamadosTicketTimelineRepository(session)
+    timeline_service = ChamadosTicketTimelineService(
+        timeline_repository,
+        ticket_repository,
+        AuthorizationService(),
+    )
+
     return ChamadosTicketService(
-        ChamadosTicketRepository(session),
+        ticket_repository,
         ChamadosClientRepository(session),
         UserRepository(session),
         AuthorizationService(),
+        timeline_service,
     )
 
 

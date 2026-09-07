@@ -20,6 +20,9 @@ from deja_indicadores_api.chamados.tickets.exceptions import (
 )
 from deja_indicadores_api.chamados.tickets.models import ChamadosTicketModel
 from deja_indicadores_api.chamados.tickets.repository import ChamadosTicketRepository
+from deja_indicadores_api.chamados.tickets.timeline.service import (
+    ChamadosTicketTimelineService,
+)
 from deja_indicadores_api.chamados.tickets.schemas import (
     ChamadosTicketCreate,
     ChamadosTicketStatusUpdate,
@@ -101,11 +104,13 @@ class ChamadosTicketService:
         client_repository: ChamadosClientRepository,
         user_repository: UserRepository,
         authorization_service: AuthorizationService,
+        timeline_service: ChamadosTicketTimelineService,
     ) -> None:
         self._repository = repository
         self._client_repository = client_repository
         self._user_repository = user_repository
         self._authorization_service = authorization_service
+        self._timeline_service = timeline_service
 
     def list(
         self,
@@ -203,7 +208,16 @@ class ChamadosTicketService:
             closed_at=None,
         )
 
-        return self._repository.add(ticket)
+        self._repository.add(ticket)
+        self._timeline_service.register(
+            ticket_id=ticket.id,
+            event_type="created",
+            description="Chamado criado.",
+            created_by_user_id=current_user.id,
+            new_value="created",
+        )
+
+        return self._repository.commit(ticket)
 
     def update(
         self,
@@ -223,14 +237,53 @@ class ChamadosTicketService:
             client,
         )
 
-        ticket.title = input_data.title
-        ticket.description = input_data.description
-        ticket.priority = input_data.priority
-        ticket.assigned_to_user_id = (
+        previous_title = ticket.title
+        previous_description = ticket.description
+        previous_priority = ticket.priority
+        previous_assigned_to_user_id = ticket.assigned_to_user_id
+        new_assigned_to_user_id = (
             assigned_user.id if assigned_user is not None else None
         )
 
-        return self._repository.update(ticket)
+        ticket.title = input_data.title
+        ticket.description = input_data.description
+        ticket.priority = input_data.priority
+        ticket.assigned_to_user_id = new_assigned_to_user_id
+
+        self._repository.update(ticket)
+
+        if previous_priority != input_data.priority:
+            self._timeline_service.register(
+                ticket_id=ticket.id,
+                event_type="priority_changed",
+                description="Prioridade do chamado alterada.",
+                created_by_user_id=current_user.id,
+                previous_value=previous_priority.value,
+                new_value=input_data.priority.value,
+            )
+
+        if previous_assigned_to_user_id != new_assigned_to_user_id:
+            self._timeline_service.register(
+                ticket_id=ticket.id,
+                event_type="assigned_changed",
+                description="Responsável alterado.",
+                created_by_user_id=current_user.id,
+                previous_value=previous_assigned_to_user_id,
+                new_value=new_assigned_to_user_id,
+            )
+
+        if (
+            previous_title != input_data.title
+            or previous_description != input_data.description
+        ):
+            self._timeline_service.register(
+                ticket_id=ticket.id,
+                event_type="updated",
+                description="Chamado atualizado.",
+                created_by_user_id=current_user.id,
+            )
+
+        return self._repository.commit(ticket)
 
     def update_status(
         self,
@@ -265,7 +318,17 @@ class ChamadosTicketService:
             ticket.closed_by_user_id = None
             ticket.closed_at = None
 
-        return self._repository.update(ticket)
+        self._repository.update(ticket)
+        self._timeline_service.register(
+            ticket_id=ticket.id,
+            event_type="status_changed",
+            description="Status do chamado alterado.",
+            created_by_user_id=current_user.id,
+            previous_value=current_status.value,
+            new_value=target_status.value,
+        )
+
+        return self._repository.commit(ticket)
 
     def _find_by_id(self, ticket_id: str) -> ChamadosTicketModel:
         """Retorna um chamado existente sem aplicar autorização."""

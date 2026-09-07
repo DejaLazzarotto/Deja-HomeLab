@@ -102,10 +102,10 @@ class ChamadosTicketRepository:
         self,
         ticket: ChamadosTicketModel,
     ) -> ChamadosTicketModel:
-        """Adiciona e persiste um chamado."""
+        """Adiciona um chamado sem finalizar a transação."""
 
         self._session.add(ticket)
-        self._session.commit()
+        self._session.flush()
         self._session.refresh(ticket)
         return ticket
 
@@ -113,7 +113,16 @@ class ChamadosTicketRepository:
         self,
         ticket: ChamadosTicketModel,
     ) -> ChamadosTicketModel:
-        """Persiste as alterações de um chamado."""
+        """Sincroniza alterações sem finalizar a transação."""
+
+        self._session.flush()
+        return ticket
+
+    def commit(
+        self,
+        ticket: ChamadosTicketModel,
+    ) -> ChamadosTicketModel:
+        """Confirma a transação e atualiza o estado persistido."""
 
         self._session.commit()
         self._session.refresh(ticket)

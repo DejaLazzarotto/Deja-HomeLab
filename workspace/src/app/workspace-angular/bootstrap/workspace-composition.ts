@@ -69,6 +69,8 @@ import { WorkspaceDashboardOverviewWidgetComponent } from '../components/workspa
 
 import { WorkspaceManagementReportWidgetComponent } from '../components/workspace-management-report-widget/workspace-management-report-widget';
 
+import { WorkspaceDashboardChamadosWidgetComponent } from '../components/workspace-dashboard-chamados-widget/workspace-dashboard-chamados-widget';
+
 /**
  * Composition Root oficial do Workspace.
  */
@@ -90,6 +92,8 @@ export class WorkspaceComposition {
 
   private static readonly MEASUREMENTS_DASHBOARD_ID =
     'deja.workspace.dashboard.operation.measurements';
+
+  private static readonly CHAMADOS_DASHBOARD_ID = 'deja.workspace.dashboard.chamados.dashboard';
 
   private static readonly TICKETS_DASHBOARD_ID = 'deja.workspace.dashboard.chamados.tickets';
 
@@ -117,6 +121,8 @@ export class WorkspaceComposition {
 
   private static readonly MEASUREMENTS_NAVIGATION_ID =
     'deja.workspace.navigation.operation.measurements';
+
+  private static readonly CHAMADOS_NAVIGATION_ID = 'deja.workspace.navigation.chamados.dashboard';
 
   private static readonly TICKETS_NAVIGATION_ID = 'deja.workspace.navigation.chamados.tickets';
 
@@ -148,6 +154,8 @@ export class WorkspaceComposition {
 
   private static readonly MEASUREMENT_MANAGEMENT_WIDGET_ID =
     'deja.workspace.widget.measurement-management';
+
+  private static readonly CHAMADOS_DASHBOARD_WIDGET_ID = 'deja.workspace.widget.chamados-dashboard';
 
   private static readonly TICKET_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.ticket-management';
 
@@ -396,6 +404,21 @@ export class WorkspaceComposition {
       },
 
       {
+        id: this.CHAMADOS_NAVIGATION_ID,
+        ownerId: this.CORE_OWNER,
+        dashboardId: this.CHAMADOS_DASHBOARD_ID,
+        title: 'Dashboard',
+        description: 'Visão operacional e gerencial do Deja Chamados.',
+        icon: 'dashboard',
+        order: 5,
+        enabled: true,
+        metadata: {
+          section: 'chamados',
+          moduleKey: 'chamados',
+        },
+      },
+
+      {
         id: this.TICKETS_NAVIGATION_ID,
         ownerId: this.CORE_OWNER,
         dashboardId: this.TICKETS_DASHBOARD_ID,
@@ -602,7 +625,7 @@ export class WorkspaceComposition {
       tags: ['deja-indicadores', 'users', 'management'],
     };
 
-      const organizationManagementWidget: WorkspaceWidget = {
+    const organizationManagementWidget: WorkspaceWidget = {
       id: this.ORGANIZATION_MANAGEMENT_WIDGET_ID,
       owner: this.CORE_OWNER,
       title: 'Gestão de Organizações',
@@ -680,6 +703,34 @@ export class WorkspaceComposition {
       tags: ['deja-indicadores', 'measurements', 'operation'],
       metadata: {
         moduleKey: 'measurements',
+      },
+    };
+
+    const chamadosDashboardWidget: WorkspaceWidget = {
+      id: this.CHAMADOS_DASHBOARD_WIDGET_ID,
+      owner: this.CORE_OWNER,
+      title: 'Dashboard de Chamados',
+      description: 'Visão operacional, SLA e métricas gerenciais do Deja Chamados.',
+      category: 'analysis',
+      widgetType: 'chamados-dashboard',
+      supportedSurfaces: ['dashboard'],
+      capabilities: ['resizable'],
+      size: {
+        default: {
+          columns: 12,
+          rows: 16,
+        },
+        minimum: {
+          columns: 8,
+          rows: 10,
+        },
+      },
+      component: WorkspaceDashboardChamadosWidgetComponent,
+      priority: 35,
+      enabled: true,
+      tags: ['deja-chamados', 'dashboard', 'analysis'],
+      metadata: {
+        moduleKey: 'chamados',
       },
     };
 
@@ -798,6 +849,8 @@ export class WorkspaceComposition {
     registries.layoutRegions.register(mainRegion);
 
     registries.layouts.register(initialLayout);
+
+    registries.widgets.register(chamadosDashboardWidget);
 
     registries.widgets.register(welcomeWidget);
 
@@ -1030,6 +1083,37 @@ export class WorkspaceComposition {
               row: 1,
               columnSpan: 12,
               rowSpan: 8,
+            },
+            enabled: true,
+          },
+        ],
+      },
+
+      {
+        id: this.CHAMADOS_DASHBOARD_ID,
+        owner: this.CORE_OWNER,
+        title: 'Dashboard',
+        description: 'Visão operacional e gerencial do Deja Chamados.',
+        route: '/chamados/dashboard',
+        layoutId: initialLayout.id,
+        priority: 35,
+        enabled: true,
+        tags: ['deja-chamados', 'dashboard', 'analysis'],
+        metadata: {
+          type: 'analysis',
+          section: 'dashboard',
+          moduleKey: 'chamados',
+        },
+        widgets: [
+          {
+            id: 'deja.workspace.widget-instance.chamados-dashboard',
+            widgetId: chamadosDashboardWidget.id,
+            regionId: mainRegion.id,
+            position: {
+              column: 1,
+              row: 1,
+              columnSpan: 12,
+              rowSpan: 16,
             },
             enabled: true,
           },

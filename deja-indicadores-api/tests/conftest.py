@@ -9,6 +9,9 @@ from sqlalchemy.orm import Session, sessionmaker
 from deja_indicadores_api.chamados.clients.models import (
     ChamadosClientModel,
 )
+from deja_indicadores_api.chamados.tickets.timeline.models import (
+    ChamadosTicketTimelineModel,
+)
 from deja_indicadores_api.chamados.tickets.models import (
     ChamadosTicketModel,
 )
@@ -103,6 +106,7 @@ def clear_database(
         session.execute(delete(MeasurementModel))
         session.execute(delete(IndicatorModel))
         session.execute(delete(CompanyModel))
+        session.execute(delete(ChamadosTicketTimelineModel))
         session.execute(delete(ChamadosTicketModel))
         session.execute(delete(ChamadosClientModel))
         session.execute(delete(UserModel))

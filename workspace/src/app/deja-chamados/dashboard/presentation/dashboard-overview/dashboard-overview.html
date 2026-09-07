@@ -1,0 +1,246 @@
+<section class="dashboard">
+  <header class="dashboard__header">
+    <div>
+      <h1>Dashboard</h1>
+      <p>
+        Resumo operacional e gerencial do sistema de chamados.
+      </p>
+    </div>
+  </header>
+
+  <section class="dashboard__summary">
+    @for (
+      item of dashboardData().summary;
+      track item.title
+    ) {
+      <article class="dashboard-card">
+        <div class="dashboard-card__content">
+          <span class="dashboard-card__title">
+            {{ item.title }}
+          </span>
+
+          <strong class="dashboard-card__value">
+            {{ item.value }}{{ item.suffix ?? '' }}
+          </strong>
+
+          <span class="dashboard-card__description">
+            {{ item.description }}
+          </span>
+        </div>
+      </article>
+    }
+  </section>
+
+  <section class="dashboard__section">
+    <header class="dashboard__section-header">
+      <div>
+        <h2>Dashboard de Prazos</h2>
+        <p>
+          Indicadores de SLA por prioridade e responsável.
+        </p>
+      </div>
+    </header>
+
+    <div class="dashboard__grid dashboard__grid--two">
+      <article class="dashboard-panel">
+        <h3>Por prioridade</h3>
+
+        <div class="dashboard-table">
+          <div class="dashboard-table__row dashboard-table__row--header">
+            <span>Prioridade</span>
+            <span>Total</span>
+            <span>No prazo</span>
+            <span>Vencidos</span>
+          </div>
+
+          @for (
+            item of slaData().byPriority;
+            track item.label
+          ) {
+            <div class="dashboard-table__row">
+              <span>{{ item.label }}</span>
+              <span>{{ item.total }}</span>
+              <span>{{ item.withinSla }}</span>
+              <span>{{ item.expiredSla }}</span>
+            </div>
+          }
+        </div>
+      </article>
+
+      <article class="dashboard-panel">
+        <h3>Por responsável</h3>
+
+        <div class="dashboard-table">
+          <div class="dashboard-table__row dashboard-table__row--header">
+            <span>Responsável</span>
+            <span>Total</span>
+            <span>No prazo</span>
+            <span>Vencidos</span>
+          </div>
+
+          @for (
+            item of slaData().byResponsible;
+            track item.label
+          ) {
+            <div class="dashboard-table__row">
+              <span>{{ item.label }}</span>
+              <span>{{ item.total }}</span>
+              <span>{{ item.withinSla }}</span>
+              <span>{{ item.expiredSla }}</span>
+            </div>
+          }
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="dashboard__section">
+    <header class="dashboard__section-header">
+      <div>
+        <h2>Métricas Gerenciais</h2>
+        <p>
+          Indicadores estratégicos para acompanhamento dos atendimentos.
+        </p>
+      </div>
+    </header>
+
+    <div class="dashboard__manager-grid">
+      @for (
+        metric of managerData().metrics;
+        track metric.title
+      ) {
+        <article class="manager-card">
+          <span class="manager-card__title">
+            {{ metric.title }}
+          </span>
+
+          <strong class="manager-card__value">
+            {{ metric.value }}
+          </strong>
+
+          <span class="manager-card__description">
+            {{ metric.description }}
+          </span>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section class="dashboard__section">
+    <header class="dashboard__section-header">
+      <div>
+        <h2>Ranking de Responsáveis</h2>
+        <p>
+          Visão consolidada de backlog, MTTR e reabertura.
+        </p>
+      </div>
+    </header>
+
+    <article class="dashboard-panel">
+      <div class="dashboard-table">
+        <div class="dashboard-table__row dashboard-table__row--ranking dashboard-table__row--header">
+          <span>Responsável</span>
+          <span>Backlog</span>
+          <span>MTTR</span>
+          <span>Reabertura</span>
+        </div>
+
+        @for (
+          item of managerData().responsibleRanking;
+          track item.assignedTo
+        ) {
+          <div class="dashboard-table__row dashboard-table__row--ranking">
+            <span>{{ item.assignedTo }}</span>
+            <span>{{ item.backlog }}</span>
+            <span>{{ item.mttr }}</span>
+            <span>{{ item.reopenRate }}%</span>
+          </div>
+        }
+      </div>
+    </article>
+  </section>
+
+  <div class="dashboard__grid dashboard__grid--two">
+    <section class="dashboard__section">
+      <header class="dashboard__section-header">
+        <div>
+          <h2>Clientes com Mais Chamados</h2>
+        </div>
+      </header>
+
+      <article class="dashboard-panel">
+        @for (
+          item of managerData().topClients;
+          track item.clientId
+        ) {
+          <div class="dashboard-list-item">
+            <span>{{ item.clientName }}</span>
+            <strong>{{ item.totalTickets }}</strong>
+          </div>
+        }
+      </article>
+    </section>
+
+    <section class="dashboard__section">
+      <header class="dashboard__section-header">
+        <div>
+          <h2>Chamados Mais Antigos</h2>
+        </div>
+      </header>
+
+      <article class="dashboard-panel">
+        @for (
+          item of managerData().oldestOpenTickets;
+          track item.ticketId
+        ) {
+          <div class="dashboard-list-item">
+            <div>
+              <strong>{{ item.title }}</strong>
+              <span>{{ item.clientName }}</span>
+            </div>
+
+            <span>
+              {{ item.daysOpen }} dia(s)
+            </span>
+          </div>
+        }
+      </article>
+    </section>
+  </div>
+
+  <section class="dashboard__section">
+    <header class="dashboard__section-header">
+      <div>
+        <h2>Chamados Recentes</h2>
+        <p>
+          Últimos chamados atualizados.
+        </p>
+      </div>
+    </header>
+
+    <article class="dashboard-panel">
+      <div class="dashboard-table">
+        <div class="dashboard-table__row dashboard-table__row--latest dashboard-table__row--header">
+          <span>Chamado</span>
+          <span>Cliente</span>
+          <span>Status</span>
+          <span>Prioridade</span>
+          <span>Atualização</span>
+        </div>
+
+        @for (
+          ticket of dashboardData().latestTickets;
+          track ticket.id
+        ) {
+          <div class="dashboard-table__row dashboard-table__row--latest">
+            <span>{{ ticket.title }}</span>
+            <span>{{ ticket.clientName }}</span>
+            <span>{{ ticket.status }}</span>
+            <span>{{ ticket.priority }}</span>
+            <span>{{ ticket.updatedAt }}</span>
+          </div>
+        }
+      </div>
+    </article>
+  </section>
+</section>

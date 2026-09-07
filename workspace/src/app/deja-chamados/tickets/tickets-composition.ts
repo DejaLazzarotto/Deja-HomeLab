@@ -12,17 +12,22 @@ import {
 
 import {
   TicketAssigneeService,
+  TicketTimelineService,
   TicketService,
 } from './application';
 
 import {
   HttpTicketAssigneeRepository,
+  HttpTicketTimelineRepository,
   HttpTicketRepository,
 } from './infrastructure';
 
 export class TicketsComposition {
 
   private readonly repository: HttpTicketRepository;
+
+  private readonly timelineRepository:
+    HttpTicketTimelineRepository;
 
   private readonly assigneeRepository:
     HttpTicketAssigneeRepository;
@@ -31,12 +36,19 @@ export class TicketsComposition {
 
   readonly assigneeService: TicketAssigneeService;
 
+  readonly timelineService: TicketTimelineService;
+
   constructor(
     http: HttpClient,
   ) {
     this.repository = new HttpTicketRepository(
       http,
     );
+
+    this.timelineRepository =
+      new HttpTicketTimelineRepository(
+        http,
+      );
 
     this.assigneeRepository =
       new HttpTicketAssigneeRepository(
@@ -46,6 +58,11 @@ export class TicketsComposition {
     this.service = new TicketService(
       this.repository,
     );
+
+    this.timelineService =
+      new TicketTimelineService(
+        this.timelineRepository,
+      );
 
     this.assigneeService =
       new TicketAssigneeService(

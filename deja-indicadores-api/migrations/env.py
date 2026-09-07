@@ -3,6 +3,12 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from deja_indicadores_api.chamados.tickets.models import (
+    ChamadosTicketModel,
+)
+from deja_indicadores_api.chamados.tickets.timeline.models import (
+    ChamadosTicketTimelineModel,
+)
 from deja_indicadores_api.chamados.clients.models import (
     ChamadosClientModel,
 )
@@ -33,6 +39,8 @@ target_metadata = Base.metadata
 
 _registered_models = (
     ChamadosClientModel,
+    ChamadosTicketModel,
+    ChamadosTicketTimelineModel,
     CompanyModel,
     IndicatorModel,
     MeasurementModel,
