@@ -1,0 +1,19 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.queue-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(17rem, 1fr));
+  gap: 1rem;
+  min-width: 72rem;
+  align-items: stretch;
+}
+
+@media (max-width: 80rem) {
+  :host {
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+}

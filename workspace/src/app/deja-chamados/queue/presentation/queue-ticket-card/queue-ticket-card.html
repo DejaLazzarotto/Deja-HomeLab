@@ -1,0 +1,47 @@
+<article
+  class="queue-ticket"
+  [attr.data-priority]="ticket().priority"
+>
+  <header class="queue-ticket__header">
+    <span
+      class="queue-ticket__priority"
+      [attr.data-priority]="ticket().priority"
+    >
+      {{ priorityLabel(ticket().priority) }}
+    </span>
+
+    <span class="queue-ticket__status">
+      {{ statusLabel(ticket().status) }}
+    </span>
+  </header>
+
+  <h3 class="queue-ticket__title">
+    {{ ticket().title }}
+  </h3>
+
+  <p class="queue-ticket__client">
+    {{ clientName() }}
+  </p>
+
+  @if (ticket().description) {
+    <p class="queue-ticket__description">
+      {{ ticket().description }}
+    </p>
+  }
+
+  <dl class="queue-ticket__details">
+    <div>
+      <dt>Responsável</dt>
+      <dd>
+        {{ ticket().assignedToUserName || 'Não atribuído' }}
+      </dd>
+    </div>
+
+    <div>
+      <dt>Atualizado</dt>
+      <dd>
+        {{ formatDate(ticket().updatedAt) }}
+      </dd>
+    </div>
+  </dl>
+</article>

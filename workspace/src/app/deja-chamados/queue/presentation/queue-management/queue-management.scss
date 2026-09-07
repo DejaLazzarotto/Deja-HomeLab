@@ -1,0 +1,108 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.queue {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.queue__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.queue__header h1 {
+  margin: 0;
+  color: var(--workspace-color-text-primary);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.queue__header p {
+  margin: 0.35rem 0 0;
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.queue__refresh {
+  flex: 0 0 auto;
+  min-height: 2.5rem;
+  padding: 0.65rem 1rem;
+  color: var(--workspace-color-primary-contrast);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--workspace-color-primary);
+  border: 0;
+  border-radius: var(--workspace-radius-md);
+}
+
+.queue__refresh:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.queue__message {
+  padding: 0.8rem 1rem;
+  font-size: 0.82rem;
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
+}
+
+.queue__message--success {
+  color: var(--workspace-color-text-primary);
+  background: var(--workspace-color-surface);
+}
+
+.queue__message--error {
+  color: var(--workspace-color-danger);
+  background: var(--workspace-color-surface);
+}
+
+.queue__state {
+  padding: var(--workspace-spacing-lg);
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.85rem;
+  text-align: center;
+  background: var(--workspace-color-surface);
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-lg);
+}
+
+.queue__state--error {
+  color: var(--workspace-color-danger);
+}
+
+.queue__state p {
+  margin: 0 0 var(--workspace-spacing-md);
+}
+
+.queue__state button {
+  min-height: 2.5rem;
+  padding: 0.65rem 1rem;
+  color: var(--workspace-color-primary-contrast);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--workspace-color-primary);
+  border: 0;
+  border-radius: var(--workspace-radius-md);
+}
+
+@media (max-width: 48rem) {
+  .queue__header {
+    flex-direction: column;
+  }
+
+  .queue__refresh {
+    width: 100%;
+  }
+}

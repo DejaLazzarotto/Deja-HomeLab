@@ -1,0 +1,67 @@
+<section class="queue">
+  <header class="queue__header">
+    <div>
+      <h1>Fila de Chamados</h1>
+
+      <p>
+        @if (canManage()) {
+          Organize os chamados conforme o andamento do atendimento.
+        } @else {
+          Consulte a distribuição atual dos chamados.
+        }
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="queue__refresh"
+      [disabled]="loading() || updatingTicketId()"
+      (click)="refresh()"
+    >
+      Atualizar
+    </button>
+  </header>
+
+  @if (operationMessage()) {
+    <div
+      class="queue__message queue__message--success"
+      role="status"
+    >
+      {{ operationMessage() }}
+    </div>
+  }
+
+  @if (operationError()) {
+    <div
+      class="queue__message queue__message--error"
+      role="alert"
+    >
+      {{ operationError() }}
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="queue__state">
+      Carregando fila de chamados...
+    </div>
+  } @else if (errorMessage()) {
+    <div class="queue__state queue__state--error">
+      <p>{{ errorMessage() }}</p>
+
+      <button
+        type="button"
+        (click)="refresh()"
+      >
+        Tentar novamente
+      </button>
+    </div>
+  } @else {
+    <deja-queue-board
+      [tickets]="tickets()"
+      [clientNames]="clientNames()"
+      [canManage]="canManage()"
+      [updatingTicketId]="updatingTicketId()"
+      (ticketMoved)="onTicketMoved($event)"
+    />
+  }
+</section>

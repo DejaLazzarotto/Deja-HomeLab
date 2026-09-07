@@ -1,0 +1,40 @@
+<section class="queue-column">
+  <header class="queue-column__header">
+    <div>
+      <h2>{{ title() }}</h2>
+      <span>
+        {{ tickets().length }}
+        {{ tickets().length === 1 ? 'chamado' : 'chamados' }}
+      </span>
+    </div>
+  </header>
+
+  <div
+    class="queue-column__list"
+    cdkDropList
+    [cdkDropListData]="tickets()"
+    [id]="'queue-column-' + status()"
+    (cdkDropListDropped)="onDrop($event)"
+  >
+    @for (ticket of tickets(); track ticket.id) {
+      <div
+        class="queue-column__item"
+        cdkDrag
+        [cdkDragData]="ticket"
+        [cdkDragDisabled]="
+          !canManage()
+          || updatingTicketId() === ticket.id
+        "
+      >
+        <deja-queue-ticket-card
+          [ticket]="ticket"
+          [clientName]="clientName(ticket.clientId)"
+        />
+      </div>
+    } @empty {
+      <div class="queue-column__empty">
+        Nenhum chamado nesta etapa.
+      </div>
+    }
+  </div>
+</section>

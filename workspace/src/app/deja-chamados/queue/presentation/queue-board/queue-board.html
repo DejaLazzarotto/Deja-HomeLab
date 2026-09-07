@@ -1,0 +1,16 @@
+<div
+  class="queue-board"
+  cdkDropListGroup
+>
+  @for (column of columns; track column.status) {
+    <deja-queue-column
+      [status]="column.status"
+      [title]="column.title"
+      [tickets]="ticketsFor(column.status)"
+      [clientNames]="clientNames()"
+      [canManage]="canManage()"
+      [updatingTicketId]="updatingTicketId()"
+      (ticketMoved)="onTicketMoved($event)"
+    />
+  }
+</div>
