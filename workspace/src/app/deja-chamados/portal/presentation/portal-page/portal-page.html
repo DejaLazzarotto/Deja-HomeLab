@@ -1,0 +1,211 @@
+<section class="portal-page">
+  <header class="portal-header">
+    <div>
+      <p class="portal-eyebrow">
+        Deja Chamados
+      </p>
+
+      <h1>
+        Portal do Cliente
+      </h1>
+
+      @if (user(); as currentUser) {
+        <p class="portal-welcome">
+          Olá, {{ currentUser.name }}.
+        </p>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="portal-logout"
+      (click)="logout()"
+    >
+      Sair
+    </button>
+  </header>
+
+  <main class="portal-content">
+    <section class="portal-section-header">
+      <div>
+        <h2>
+          Seus chamados
+        </h2>
+
+        <p>
+          Acompanhe o andamento das solicitações
+          abertas pela sua empresa.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="portal-primary-button"
+        (click)="openForm()"
+      >
+        Novo chamado
+      </button>
+    </section>
+
+    @if (formVisible()) {
+      <section class="portal-card portal-form-card">
+        <div class="portal-form-header">
+          <div>
+            <h3>
+              Abrir novo chamado
+            </h3>
+
+            <p>
+              Descreva o problema ou solicitação
+              com o máximo de detalhes possível.
+            </p>
+          </div>
+        </div>
+
+        @if (createErrorMessage()) {
+          <p class="portal-create-error">
+            {{ createErrorMessage() }}
+          </p>
+        }
+
+        @if (creating()) {
+          <p class="portal-creating-message">
+            Abrindo chamado...
+          </p>
+        }
+
+        <deja-portal-ticket-form
+          (submitted)="createTicket($event)"
+          (cancelled)="closeForm()"
+        />
+      </section>
+    }
+
+    @if (loading()) {
+      <section class="portal-card">
+        <p>
+          Carregando chamados...
+        </p>
+      </section>
+    } @else if (errorMessage()) {
+      <section class="portal-card portal-card-error">
+        <p>
+          {{ errorMessage() }}
+        </p>
+
+        <button
+          type="button"
+          class="portal-secondary-button"
+          (click)="loadTickets()"
+        >
+          Tentar novamente
+        </button>
+      </section>
+    } @else if (tickets().length === 0) {
+      <section class="portal-card portal-empty-state">
+        <h3>
+          Nenhum chamado aberto ainda
+        </h3>
+
+        <p>
+          Quando você abrir uma solicitação,
+          ela aparecerá aqui para acompanhamento.
+        </p>
+      </section>
+    } @else {
+      <section class="portal-ticket-list">
+        @for (ticket of tickets(); track ticket.id) {
+          <article class="portal-ticket-card">
+            <header class="portal-ticket-header">
+              <div>
+                <p class="portal-ticket-id">
+                  Chamado
+                  {{ ticket.id.slice(0, 8) }}
+                </p>
+
+                <h3>
+                  {{ ticket.title }}
+                </h3>
+              </div>
+
+              <span
+                class="portal-ticket-status"
+                [attr.data-status]="ticket.status"
+              >
+                @switch (ticket.status) {
+                  @case ('open') {
+                    Aberto
+                  }
+
+                  @case ('in_progress') {
+                    Em andamento
+                  }
+
+                  @case ('pending') {
+                    Pendente
+                  }
+
+                  @case ('closed') {
+                    Fechado
+                  }
+                }
+              </span>
+            </header>
+
+            <p class="portal-ticket-description">
+              {{ ticket.description }}
+            </p>
+
+            <dl class="portal-ticket-meta">
+              <div>
+                <dt>
+                  Prioridade
+                </dt>
+
+                <dd>
+                  @switch (ticket.priority) {
+                    @case ('low') {
+                      Baixa
+                    }
+
+                    @case ('medium') {
+                      Média
+                    }
+
+                    @case ('high') {
+                      Alta
+                    }
+
+                    @case ('critical') {
+                      Crítica
+                    }
+                  }
+                </dd>
+              </div>
+
+              <div>
+                <dt>
+                  Responsável
+                </dt>
+
+                <dd>
+                  {{ ticket.assignedToUserName ?? 'Aguardando atribuição' }}
+                </dd>
+              </div>
+
+              <div>
+                <dt>
+                  Aberto em
+                </dt>
+
+                <dd>
+                  {{ ticket.createdAt }}
+                </dd>
+              </div>
+            </dl>
+          </article>
+        }
+      </section>
+    }
+  </main>
+</section>

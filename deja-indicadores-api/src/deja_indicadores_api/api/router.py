@@ -3,8 +3,14 @@ from fastapi import APIRouter
 from deja_indicadores_api.authentication.router import (
     router as authentication_router,
 )
+from deja_indicadores_api.chamados.client_users.router import (
+    router as chamados_client_users_router,
+)
 from deja_indicadores_api.chamados.clients.router import (
     router as chamados_clients_router,
+)
+from deja_indicadores_api.chamados.portal.router import (
+    router as chamados_portal_router,
 )
 from deja_indicadores_api.chamados.tickets.assignees.router import (
     router as chamados_ticket_assignees_router,
@@ -42,16 +48,20 @@ from deja_indicadores_api.user_management.router import (
 
 api_router = APIRouter()
 
-api_router.include_router(chamados_ticket_timeline_router)
 api_router.include_router(authentication_router)
+
+api_router.include_router(chamados_client_users_router)
 api_router.include_router(chamados_clients_router)
+api_router.include_router(chamados_portal_router)
 api_router.include_router(chamados_ticket_assignees_router)
 api_router.include_router(chamados_tickets_router)
+api_router.include_router(chamados_ticket_timeline_router)
+
 api_router.include_router(companies_router)
+api_router.include_router(dashboards_router)
 api_router.include_router(indicators_router)
 api_router.include_router(measurements_router)
 api_router.include_router(module_management_router)
-api_router.include_router(dashboards_router)
 api_router.include_router(reports_router)
 api_router.include_router(tenant_management_router)
 api_router.include_router(user_management_router)

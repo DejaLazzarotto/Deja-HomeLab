@@ -1,0 +1,99 @@
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Path, status
+
+from deja_indicadores_api.authentication.dependencies import (
+    require_roles,
+)
+from deja_indicadores_api.authentication.schemas import (
+    AuthenticatedUser,
+)
+from deja_indicadores_api.chamados.portal.dependencies import (
+    ChamadosPortalServiceDependency,
+)
+from deja_indicadores_api.chamados.portal.schemas import (
+    ChamadosPortalTicketCreate,
+    ChamadosPortalTicketResponse,
+)
+from deja_indicadores_api.module_management.dependencies import (
+    require_module,
+)
+from deja_indicadores_api.user_management.models import (
+    UserRole,
+)
+
+router = APIRouter(
+    prefix="/chamados/portal",
+    tags=["Deja Chamados - Portal"],
+    dependencies=[Depends(require_module("chamados"))],
+)
+
+
+TicketId = Annotated[
+    str,
+    Path(
+        min_length=36,
+        max_length=36,
+        description="Identificador UUID do chamado.",
+    ),
+]
+
+
+ChamadosPortalUser = Annotated[
+    AuthenticatedUser,
+    Depends(
+        require_roles(
+            UserRole.CLIENT,
+        )
+    ),
+]
+
+
+@router.get(
+    "/tickets",
+    response_model=list[ChamadosPortalTicketResponse],
+)
+def list_portal_tickets(
+    service: ChamadosPortalServiceDependency,
+    current_user: ChamadosPortalUser,
+) -> list[ChamadosPortalTicketResponse]:
+    """Lista somente os chamados do Cliente autenticado."""
+
+    return service.list_tickets(
+        current_user,
+    )
+
+
+@router.get(
+    "/tickets/{ticket_id}",
+    response_model=ChamadosPortalTicketResponse,
+)
+def get_portal_ticket(
+    ticket_id: TicketId,
+    service: ChamadosPortalServiceDependency,
+    current_user: ChamadosPortalUser,
+) -> ChamadosPortalTicketResponse:
+    """Consulta um chamado pertencente ao Cliente autenticado."""
+
+    return service.find_ticket_by_id(
+        ticket_id,
+        current_user,
+    )
+
+
+@router.post(
+    "/tickets",
+    response_model=ChamadosPortalTicketResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_portal_ticket(
+    input_data: ChamadosPortalTicketCreate,
+    service: ChamadosPortalServiceDependency,
+    current_user: ChamadosPortalUser,
+) -> ChamadosPortalTicketResponse:
+    """Abre um novo chamado para o Cliente autenticado."""
+
+    return service.create_ticket(
+        input_data,
+        current_user,
+    )

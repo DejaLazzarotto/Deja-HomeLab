@@ -1,0 +1,111 @@
+:host {
+  display: block;
+}
+
+.portal-ticket-form {
+  display: grid;
+  gap: 20px;
+}
+
+.portal-ticket-form-field {
+  display: grid;
+  gap: 8px;
+}
+
+.portal-ticket-form-field label {
+  font-size: 0.9rem;
+  font-weight: 600;
+
+  color: #344054;
+}
+
+.portal-ticket-form-field input,
+.portal-ticket-form-field textarea {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 11px 12px;
+
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #101828;
+
+  font: inherit;
+}
+
+.portal-ticket-form-field input:focus,
+.portal-ticket-form-field textarea:focus {
+  outline: none;
+
+  border-color: #84adff;
+
+  box-shadow: 0 0 0 3px rgb(47 128 237 / 12%);
+}
+
+.portal-ticket-form-field textarea {
+  resize: vertical;
+
+  min-height: 140px;
+}
+
+.portal-ticket-form-error {
+  margin: 0;
+
+  font-size: 0.82rem;
+
+  color: #b42318;
+}
+
+.portal-ticket-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.portal-ticket-form-primary,
+.portal-ticket-form-secondary {
+  padding: 10px 16px;
+
+  border-radius: 8px;
+
+  font: inherit;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.portal-ticket-form-primary {
+  border: 1px solid #175cd3;
+
+  background: #175cd3;
+  color: #ffffff;
+}
+
+.portal-ticket-form-primary:hover {
+  background: #1849a9;
+}
+
+.portal-ticket-form-secondary {
+  border: 1px solid #d0d5dd;
+
+  background: #ffffff;
+  color: #344054;
+}
+
+.portal-ticket-form-secondary:hover {
+  background: #f9fafb;
+}
+
+@media (max-width: 640px) {
+  .portal-ticket-form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .portal-ticket-form-primary,
+  .portal-ticket-form-secondary {
+    width: 100%;
+  }
+}

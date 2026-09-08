@@ -6,7 +6,8 @@ export type UserRole =
   | 'tenant_admin'
   | 'manager'
   | 'analyst'
-  | 'viewer';
+  | 'viewer'
+  | 'client';
 
 export interface AuthenticatedUser {
   id: string;

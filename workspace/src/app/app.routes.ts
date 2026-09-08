@@ -1,18 +1,16 @@
 import { Routes } from '@angular/router';
 
 import { administrationGuard } from './platform/authentication/application/administration.guard';
-
 import { authenticationGuard } from './platform/authentication/application/authentication.guard';
-
 import { platformAdministrationGuard } from './platform/authentication/application/platform-administration.guard';
-
+import { portalAccessGuard } from './platform/authentication/application/portal-access.guard';
 import { userAdministrationGuard } from './platform/authentication/application/user-administration.guard';
-
+import { workspaceAccessGuard } from './platform/authentication/application/workspace-access.guard';
 import { moduleGuard } from './platform/module-management/application/module.guard';
 
 const workspacePage = () =>
   import('./workspace-angular/components/workspace-page/workspace-page').then(
-    (module) => module.WorkspacePageComponent,
+    module => module.WorkspacePageComponent,
   );
 
 export const routes: Routes = [
@@ -21,19 +19,40 @@ export const routes: Routes = [
     title: 'Entrar | Deja Platform',
     loadComponent: () =>
       import('./platform/authentication/presentation/login/login').then(
-        (module) => module.LoginComponent,
+        module => module.LoginComponent,
+      ),
+  },
+  {
+    path: 'portal',
+    title: 'Portal do Cliente | Deja Chamados',
+    canActivate: [
+      authenticationGuard,
+      portalAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './deja-chamados/portal/presentation/portal-page/portal-page'
+      ).then(
+        module => module.PortalPageComponent,
       ),
   },
   {
     path: '',
     title: 'Deja Platform',
-    canActivate: [authenticationGuard],
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+    ],
     loadComponent: workspacePage,
   },
   {
     path: 'platform/organizations',
     title: 'Organizações | Deja Platform',
-    canActivate: [authenticationGuard, platformAdministrationGuard],
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+      platformAdministrationGuard,
+    ],
     loadComponent: workspacePage,
   },
   {
@@ -44,13 +63,21 @@ export const routes: Routes = [
   {
     path: 'administration/companies',
     title: 'Empresas | Administração | Deja Indicadores',
-    canActivate: [administrationGuard],
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+      administrationGuard,
+    ],
     loadComponent: workspacePage,
   },
   {
     path: 'administration/users',
     title: 'Usuários | Administração | Deja Platform',
-    canActivate: [userAdministrationGuard],
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+      userAdministrationGuard,
+    ],
     loadComponent: workspacePage,
   },
   {
@@ -66,31 +93,51 @@ export const routes: Routes = [
   {
     path: 'operation/indicators',
     title: 'Indicadores | Operação | Deja Indicadores',
-    canActivate: [authenticationGuard, moduleGuard('indicators')],
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+      moduleGuard('indicators'),
+    ],
     loadComponent: workspacePage,
   },
   {
     path: 'operation/measurements',
     title: 'Coleta Manual | Operação | Deja Indicadores',
-    canActivate: [authenticationGuard, moduleGuard('measurements')],
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+      moduleGuard('measurements'),
+    ],
     loadComponent: workspacePage,
   },
   {
     path: 'chamados/tickets',
     title: 'Chamados | Deja Chamados',
-    canActivate: [authenticationGuard, moduleGuard('chamados')],
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+      moduleGuard('chamados'),
+    ],
     loadComponent: workspacePage,
   },
   {
     path: 'chamados/queue',
     title: 'Fila | Deja Chamados',
-    canActivate: [authenticationGuard, moduleGuard('chamados')],
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+      moduleGuard('chamados'),
+    ],
     loadComponent: workspacePage,
   },
   {
     path: 'chamados/clients',
     title: 'Clientes | Deja Chamados',
-    canActivate: [authenticationGuard, moduleGuard('chamados')],
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+      moduleGuard('chamados'),
+    ],
     loadComponent: workspacePage,
   },
   {
@@ -101,19 +148,29 @@ export const routes: Routes = [
   {
     path: 'reports',
     title: 'Relatórios | Deja Indicadores',
-    canActivate: [authenticationGuard, moduleGuard('reports')],
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+      moduleGuard('reports'),
+    ],
     loadComponent: workspacePage,
   },
   {
     path: 'activity',
     title: 'Atividades | Deja Platform',
-    canActivate: [authenticationGuard],
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+    ],
     loadComponent: workspacePage,
   },
   {
     path: 'timeline',
     title: 'Linha do tempo | Deja Platform',
-    canActivate: [authenticationGuard],
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+    ],
     loadComponent: workspacePage,
   },
   {

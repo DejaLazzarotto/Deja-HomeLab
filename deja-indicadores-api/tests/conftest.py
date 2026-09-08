@@ -6,14 +6,17 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine, delete
 from sqlalchemy.orm import Session, sessionmaker
 
+from deja_indicadores_api.chamados.client_users.models import (
+    ChamadosClientUserModel,
+)
 from deja_indicadores_api.chamados.clients.models import (
     ChamadosClientModel,
 )
-from deja_indicadores_api.chamados.tickets.timeline.models import (
-    ChamadosTicketTimelineModel,
-)
 from deja_indicadores_api.chamados.tickets.models import (
     ChamadosTicketModel,
+)
+from deja_indicadores_api.chamados.tickets.timeline.models import (
+    ChamadosTicketTimelineModel,
 )
 from deja_indicadores_api.companies.models import CompanyModel
 from deja_indicadores_api.core.config import (
@@ -108,6 +111,7 @@ def clear_database(
         session.execute(delete(CompanyModel))
         session.execute(delete(ChamadosTicketTimelineModel))
         session.execute(delete(ChamadosTicketModel))
+        session.execute(delete(ChamadosClientUserModel))
         session.execute(delete(ChamadosClientModel))
         session.execute(delete(UserModel))
         session.execute(delete(EnvironmentModel))

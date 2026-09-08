@@ -1,11 +1,3 @@
-/*
- * Deja Workspace Angular Integration
- *
- * User Management Widget
- *
- * Integra a Gestão de Usuários ao Workspace institucional.
- */
-
 import {
   HttpClient,
 } from '@angular/common/http';
@@ -24,10 +16,20 @@ import {
 } from 'rxjs';
 
 import {
+  Client,
+  ClientsComposition,
+} from '../../../deja-chamados/clients';
+
+import {
+  ClientUsersComposition,
+} from '../../../deja-chamados/client-users';
+
+import {
   AuthenticationService,
 } from '../../../platform/authentication/application/authentication.service';
 
 import {
+  UserClientOption,
   UserEnvironmentOption,
   UserListComponent,
   UserOrganizationOption,
@@ -69,7 +71,7 @@ interface EnvironmentResponse {
   template: `
     @if (loadingScope()) {
       <div class="scope-state">
-        Carregando organizações, tenants e ambientes...
+        Carregando organizações, tenants, ambientes e clientes...
       </div>
     } @else if (scopeError()) {
       <div class="scope-state scope-state--error">
@@ -85,10 +87,12 @@ interface EnvironmentResponse {
     } @else if (currentUser) {
       <deja-user-list
         [service]="composition.service"
+        [clientUserLinkService]="clientUsersComposition.service"
         [currentUserRole]="currentUser.role"
         [organizations]="organizations()"
         [tenants]="tenants()"
         [environments]="environments()"
+        [clients]="clients()"
         [defaultOrganizationId]="currentUser.organizationId"
         [defaultTenantId]="currentUser.tenantId"
         [defaultEnvironmentId]="currentUser.environmentId"
@@ -150,6 +154,16 @@ implements OnInit {
       this.http,
     );
 
+  protected readonly clientsComposition =
+    new ClientsComposition(
+      this.http,
+    );
+
+  protected readonly clientUsersComposition =
+    new ClientUsersComposition(
+      this.http,
+    );
+
   protected readonly organizations =
     signal<readonly UserOrganizationOption[]>([]);
 
@@ -159,9 +173,14 @@ implements OnInit {
   protected readonly environments =
     signal<readonly UserEnvironmentOption[]>([]);
 
-  protected readonly loadingScope = signal(false);
+  protected readonly clients =
+    signal<readonly UserClientOption[]>([]);
 
-  protected readonly scopeError = signal<string | null>(null);
+  protected readonly loadingScope =
+    signal(false);
+
+  protected readonly scopeError =
+    signal<string | null>(null);
 
   @Input({
     required: true,
@@ -182,10 +201,13 @@ implements OnInit {
     this.scopeError.set(null);
 
     try {
+      const currentUser = this.currentUser;
+
       const [
         organizations,
         tenants,
         environments,
+        clients,
       ] = await Promise.all([
         firstValueFrom(
           this.http.get<readonly OrganizationResponse[]>(
@@ -202,6 +224,18 @@ implements OnInit {
             '/api/v1/environments',
           ),
         ),
+        this.clientsComposition.service.list({
+          organizationId:
+            currentUser?.organizationId
+            ?? undefined,
+          tenantId:
+            currentUser?.tenantId
+            ?? undefined,
+          environmentId:
+            currentUser?.environmentId
+            ?? undefined,
+          active: true,
+        }),
       ]);
 
       this.organizations.set(
@@ -226,9 +260,24 @@ implements OnInit {
           name: environment.name,
         })),
       );
+
+      this.clients.set(
+        clients.map(
+          (client: Client): UserClientOption => ({
+            id: client.id,
+            organizationId: client.organizationId,
+            tenantId: client.tenantId,
+            environmentId: client.environmentId,
+            name:
+              client.fantasyName
+              || client.companyName,
+            active: client.active,
+          }),
+        ),
+      );
     } catch {
       this.scopeError.set(
-        'Não foi possível carregar os dados de organização, tenant e ambiente.',
+        'Não foi possível carregar os dados de organização, tenant, ambiente e clientes.',
       );
     } finally {
       this.loadingScope.set(false);

@@ -23,6 +23,7 @@ class UserRole(StrEnum):
     MANAGER = "manager"
     ANALYST = "analyst"
     VIEWER = "viewer"
+    CLIENT = "client"
 
 
 class UserStatus(StrEnum):

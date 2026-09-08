@@ -47,6 +47,7 @@ export class WorkspaceHeaderComponent {
       manager: 'Gestor',
       analyst: 'Analista',
       viewer: 'Visualizador',
+      client: 'Cliente',
     };
 
     return labels[role];

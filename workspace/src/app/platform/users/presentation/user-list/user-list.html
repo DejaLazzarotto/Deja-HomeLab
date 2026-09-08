@@ -7,9 +7,7 @@
 -->
 
 <section class="user-list">
-
   <header class="user-list__header">
-
     <div class="user-list__heading">
       <span class="user-list__eyebrow">
         Deja Indicadores
@@ -33,7 +31,6 @@
         Novo usuário
       </button>
     }
-
   </header>
 
   @if (operationMessage()) {
@@ -49,13 +46,11 @@
   }
 
   @if (formVisible()) {
-
     <form
       class="user-list__form"
       #userForm="ngForm"
       (ngSubmit)="save()"
     >
-
       <div class="user-list__form-header">
         <div>
           <h3>
@@ -69,7 +64,6 @@
       </div>
 
       <div class="user-list__form-grid">
-
         <label class="user-list__field">
           <span>Nome</span>
 
@@ -79,7 +73,7 @@
             maxlength="255"
             required
             [(ngModel)]="form.name"
-          >
+          />
         </label>
 
         <label class="user-list__field">
@@ -91,7 +85,7 @@
             maxlength="255"
             required
             [(ngModel)]="form.email"
-          >
+          />
         </label>
 
         <label class="user-list__field">
@@ -119,8 +113,13 @@
             required
             [(ngModel)]="form.status"
           >
-            <option value="active">Ativo</option>
-            <option value="inactive">Inativo</option>
+            <option value="active">
+              Ativo
+            </option>
+
+            <option value="inactive">
+              Inativo
+            </option>
           </select>
         </label>
 
@@ -134,7 +133,10 @@
               [(ngModel)]="form.organizationId"
               (ngModelChange)="onOrganizationChange()"
             >
-              <option [ngValue]="null" disabled>
+              <option
+                [ngValue]="null"
+                disabled
+              >
                 Selecione a organização
               </option>
 
@@ -163,11 +165,17 @@
               [(ngModel)]="form.tenantId"
               (ngModelChange)="onTenantChange()"
             >
-              <option [ngValue]="null" disabled>
+              <option
+                [ngValue]="null"
+                disabled
+              >
                 Selecione o tenant
               </option>
 
-              @for (tenant of formTenants; track tenant.id) {
+              @for (
+                tenant of formTenants;
+                track tenant.id
+              ) {
                 <option [value]="tenant.id">
                   {{ tenant.name }}
                 </option>
@@ -180,6 +188,7 @@
           form.role === 'manager'
           || form.role === 'analyst'
           || form.role === 'viewer'
+          || form.role === 'client'
         ) {
           <label class="user-list__field">
             <span>Ambiente</span>
@@ -188,8 +197,12 @@
               name="environmentId"
               required
               [(ngModel)]="form.environmentId"
+              (ngModelChange)="onEnvironmentChange()"
             >
-              <option [ngValue]="null" disabled>
+              <option
+                [ngValue]="null"
+                disabled
+              >
                 Selecione o ambiente
               </option>
 
@@ -205,6 +218,53 @@
           </label>
         }
 
+        @if (form.role === 'client') {
+          <label class="user-list__field">
+            <span>Cliente do Chamados</span>
+
+            @if (loadingClientLink()) {
+              <select disabled>
+                <option>
+                  Carregando vínculo...
+                </option>
+              </select>
+            } @else {
+              <select
+                name="clientId"
+                required
+                [(ngModel)]="selectedClientId"
+              >
+                <option
+                  [ngValue]="null"
+                  disabled
+                >
+                  Selecione o cliente
+                </option>
+
+                @for (
+                  client of formClients;
+                  track client.id
+                ) {
+                  <option [value]="client.id">
+                    {{ client.name }}
+                  </option>
+                }
+              </select>
+            }
+
+            @if (
+              !loadingClientLink()
+              && form.environmentId
+              && formClients.length === 0
+            ) {
+              <small>
+                Nenhum Cliente ativo do Chamados está disponível
+                neste ambiente.
+              </small>
+            }
+          </label>
+        }
+
         @if (!editingUserId()) {
           <label class="user-list__field">
             <span>Senha inicial</span>
@@ -217,7 +277,7 @@
               autocomplete="new-password"
               required
               [(ngModel)]="password"
-            >
+            />
           </label>
 
           <label class="user-list__field">
@@ -231,14 +291,12 @@
               autocomplete="new-password"
               required
               [(ngModel)]="passwordConfirmation"
-            >
+            />
           </label>
         }
-
       </div>
 
       <div class="user-list__form-actions">
-
         <button
           class="user-list__action"
           type="button"
@@ -251,37 +309,45 @@
         <button
           class="user-list__primary-button"
           type="submit"
-          [disabled]="userForm.invalid || saving()"
+          [disabled]="
+            userForm.invalid
+            || saving()
+            || loadingClientLink()
+            || (
+              form.role === 'client'
+              && !selectedClientId
+            )
+          "
         >
           {{ saving() ? 'Salvando...' : 'Salvar usuário' }}
         </button>
-
       </div>
-
     </form>
-
   }
 
-  @if (passwordFormVisible() && passwordUser()) {
-
+  @if (
+    passwordFormVisible()
+    && passwordUser()
+  ) {
     <form
       class="user-list__form"
       #passwordForm="ngForm"
       (ngSubmit)="savePassword()"
     >
-
       <div class="user-list__form-header">
         <div>
-          <h3>Redefinir senha</h3>
+          <h3>
+            Redefinir senha
+          </h3>
 
           <p>
-            Defina uma nova senha para {{ passwordUser()?.name }}.
+            Defina uma nova senha para
+            {{ passwordUser()?.name }}.
           </p>
         </div>
       </div>
 
       <div class="user-list__form-grid">
-
         <label class="user-list__field">
           <span>Nova senha</span>
 
@@ -293,7 +359,7 @@
             autocomplete="new-password"
             required
             [(ngModel)]="password"
-          >
+          />
         </label>
 
         <label class="user-list__field">
@@ -307,13 +373,11 @@
             autocomplete="new-password"
             required
             [(ngModel)]="passwordConfirmation"
-          >
+          />
         </label>
-
       </div>
 
       <div class="user-list__form-actions">
-
         <button
           class="user-list__action"
           type="button"
@@ -326,7 +390,10 @@
         <button
           class="user-list__primary-button"
           type="submit"
-          [disabled]="passwordForm.invalid || savingPassword()"
+          [disabled]="
+            passwordForm.invalid
+            || savingPassword()
+          "
         >
           {{
             savingPassword()
@@ -334,18 +401,14 @@
               : 'Redefinir senha'
           }}
         </button>
-
       </div>
-
     </form>
-
   }
 
   <form
     class="user-list__filters"
     (ngSubmit)="applyFilters()"
   >
-
     <label class="user-list__field">
       <span>Organização</span>
 
@@ -354,7 +417,9 @@
         [(ngModel)]="filterOrganizationId"
         (ngModelChange)="onFilterOrganizationChange()"
       >
-        <option [ngValue]="null">Todas</option>
+        <option [ngValue]="null">
+          Todas
+        </option>
 
         @for (
           organization of organizations;
@@ -375,9 +440,14 @@
         [(ngModel)]="filterTenantId"
         (ngModelChange)="onFilterTenantChange()"
       >
-        <option [ngValue]="null">Todos</option>
+        <option [ngValue]="null">
+          Todos
+        </option>
 
-        @for (tenant of filterTenants; track tenant.id) {
+        @for (
+          tenant of filterTenants;
+          track tenant.id
+        ) {
           <option [value]="tenant.id">
             {{ tenant.name }}
           </option>
@@ -392,7 +462,9 @@
         name="filterEnvironmentId"
         [(ngModel)]="filterEnvironmentId"
       >
-        <option [ngValue]="null">Todos</option>
+        <option [ngValue]="null">
+          Todos
+        </option>
 
         @for (
           environment of filterEnvironments;
@@ -412,9 +484,17 @@
         name="filterStatus"
         [(ngModel)]="filterStatus"
       >
-        <option [ngValue]="null">Todos</option>
-        <option value="active">Ativos</option>
-        <option value="inactive">Inativos</option>
+        <option [ngValue]="null">
+          Todos
+        </option>
+
+        <option value="active">
+          Ativos
+        </option>
+
+        <option value="inactive">
+          Inativos
+        </option>
       </select>
     </label>
 
@@ -434,23 +514,23 @@
         Filtrar
       </button>
     </div>
-
   </form>
 
   @if (loading()) {
-
     <div class="user-list__empty">
-      <h3>Carregando usuários...</h3>
+      <h3>
+        Carregando usuários...
+      </h3>
 
       <p>
         Aguarde enquanto consultamos os dados da API.
       </p>
     </div>
-
   } @else if (errorMessage()) {
-
     <div class="user-list__empty">
-      <h3>Falha ao carregar</h3>
+      <h3>
+        Falha ao carregar
+      </h3>
 
       <p>
         {{ errorMessage() }}
@@ -464,19 +544,27 @@
         Tentar novamente
       </button>
     </div>
-
   } @else if (users().length > 0) {
-
     <div class="user-list__table-container">
-
       <table class="user-list__table">
-
         <thead>
           <tr>
-            <th scope="col">Usuário</th>
-            <th scope="col">Papel</th>
-            <th scope="col">Escopo</th>
-            <th scope="col">Status</th>
+            <th scope="col">
+              Usuário
+            </th>
+
+            <th scope="col">
+              Papel
+            </th>
+
+            <th scope="col">
+              Escopo
+            </th>
+
+            <th scope="col">
+              Status
+            </th>
+
             <th
               class="user-list__actions-heading"
               scope="col"
@@ -487,15 +575,20 @@
         </thead>
 
         <tbody>
-
-          @for (user of users(); track user.id) {
-
+          @for (
+            user of users();
+            track user.id
+          ) {
             <tr>
-
               <td>
                 <div class="user-list__identity">
-                  <strong>{{ user.name }}</strong>
-                  <span>{{ user.email }}</span>
+                  <strong>
+                    {{ user.name }}
+                  </strong>
+
+                  <span>
+                    {{ user.email }}
+                  </span>
                 </div>
               </td>
 
@@ -526,16 +619,23 @@
               <td>
                 <span
                   class="user-list__status"
-                  [class.user-list__status--active]="user.status === 'active'"
-                  [class.user-list__status--inactive]="user.status === 'inactive'"
+                  [class.user-list__status--active]="
+                    user.status === 'active'
+                  "
+                  [class.user-list__status--inactive]="
+                    user.status === 'inactive'
+                  "
                 >
-                  {{ user.status === 'active' ? 'Ativo' : 'Inativo' }}
+                  {{
+                    user.status === 'active'
+                      ? 'Ativo'
+                      : 'Inativo'
+                  }}
                 </span>
               </td>
 
               <td>
                 <div class="user-list__actions">
-
                   <button
                     class="user-list__action"
                     type="button"
@@ -551,28 +651,22 @@
                   >
                     Redefinir senha
                   </button>
-
                 </div>
               </td>
-
             </tr>
-
           }
-
         </tbody>
-
       </table>
-
     </div>
-
   } @else {
-
     <div class="user-list__empty">
-
-      <h3>Nenhum usuário encontrado</h3>
+      <h3>
+        Nenhum usuário encontrado
+      </h3>
 
       <p>
-        Nenhum usuário foi encontrado no escopo e nos filtros informados.
+        Nenhum usuário foi encontrado no escopo
+        e nos filtros informados.
       </p>
 
       <button
@@ -582,9 +676,6 @@
       >
         Cadastrar primeiro usuário
       </button>
-
     </div>
-
   }
-
 </section>

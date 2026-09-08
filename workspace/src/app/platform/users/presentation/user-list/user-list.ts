@@ -23,6 +23,10 @@ import {
 } from '@angular/forms';
 
 import {
+  ClientUserLinkService,
+} from '../../../../deja-chamados/client-users';
+
+import {
   UserRole,
 } from '../../../authentication/domain/authenticated-user';
 
@@ -50,6 +54,15 @@ export interface UserEnvironmentOption {
   readonly name: string;
 }
 
+export interface UserClientOption {
+  readonly id: string;
+  readonly organizationId: string;
+  readonly tenantId: string;
+  readonly environmentId: string;
+  readonly name: string;
+  readonly active: boolean;
+}
+
 interface UserRoleOption {
   readonly value: UserRole;
   readonly label: string;
@@ -75,6 +88,11 @@ export class UserListComponent implements OnInit {
   @Input({
     required: true,
   })
+  clientUserLinkService!: ClientUserLinkService;
+
+  @Input({
+    required: true,
+  })
   currentUserRole!: UserRole;
 
   @Input()
@@ -85,6 +103,9 @@ export class UserListComponent implements OnInit {
 
   @Input()
   environments: readonly UserEnvironmentOption[] = [];
+
+  @Input()
+  clients: readonly UserClientOption[] = [];
 
   @Input()
   defaultOrganizationId: string | null = null;
@@ -102,6 +123,8 @@ export class UserListComponent implements OnInit {
   readonly saving = signal(false);
 
   readonly savingPassword = signal(false);
+
+  readonly loadingClientLink = signal(false);
 
   readonly formVisible = signal(false);
 
@@ -126,6 +149,8 @@ export class UserListComponent implements OnInit {
   filterStatus: UserStatus | null = null;
 
   form: UserInput = this.createEmptyInput();
+
+  selectedClientId: string | null = null;
 
   password = '';
 
@@ -157,6 +182,10 @@ export class UserListComponent implements OnInit {
       value: 'viewer',
       label: 'Visualizador',
     },
+    {
+      value: 'client',
+      label: 'Cliente',
+    },
   ];
 
   ngOnInit(): void {
@@ -180,6 +209,7 @@ export class UserListComponent implements OnInit {
         'manager',
         'analyst',
         'viewer',
+        'client',
       ].includes(option.value),
     );
   }
@@ -203,6 +233,24 @@ export class UserListComponent implements OnInit {
     return this.environments.filter(
       environment =>
         environment.tenantId === this.form.tenantId,
+    );
+  }
+
+  get formClients(): readonly UserClientOption[] {
+    if (
+      !this.form.organizationId
+      || !this.form.tenantId
+      || !this.form.environmentId
+    ) {
+      return [];
+    }
+
+    return this.clients.filter(
+      client =>
+        client.active
+        && client.organizationId === this.form.organizationId
+        && client.tenantId === this.form.tenantId
+        && client.environmentId === this.form.environmentId,
     );
   }
 
@@ -300,19 +348,22 @@ export class UserListComponent implements OnInit {
     this.operationMessage.set(null);
 
     this.form = this.createEmptyInput();
+    this.selectedClientId = null;
 
     this.password = '';
     this.passwordConfirmation = '';
+
     this.formVisible.set(true);
     this.passwordFormVisible.set(false);
   }
 
-  openEdit(
+  async openEdit(
     user: User,
-  ): void {
+  ): Promise<void> {
     this.editingUserId.set(user.id);
     this.operationError.set(null);
     this.operationMessage.set(null);
+    this.selectedClientId = null;
 
     this.form = {
       organizationId: user.organizationId,
@@ -326,17 +377,47 @@ export class UserListComponent implements OnInit {
 
     this.password = '';
     this.passwordConfirmation = '';
-    this.formVisible.set(true);
     this.passwordFormVisible.set(false);
+
+    if (user.role === 'client') {
+      this.loadingClientLink.set(true);
+
+      try {
+        const link =
+          await this.clientUserLinkService.findByUserId(
+            user.id,
+          );
+
+        this.selectedClientId =
+          link?.clientId
+          ?? null;
+      } catch (error: unknown) {
+        this.operationError.set(
+          this.resolveErrorMessage(error),
+        );
+
+        this.editingUserId.set(null);
+        return;
+      } finally {
+        this.loadingClientLink.set(false);
+      }
+    }
+
+    this.formVisible.set(true);
   }
 
   cancelForm(): void {
     this.formVisible.set(false);
     this.editingUserId.set(null);
+    this.selectedClientId = null;
     this.operationError.set(null);
   }
 
   onRoleChange(): void {
+    if (this.form.role !== 'client') {
+      this.selectedClientId = null;
+    }
+
     if (this.form.role === 'platform_admin') {
       this.form.organizationId = null;
       this.form.tenantId = null;
@@ -372,6 +453,8 @@ export class UserListComponent implements OnInit {
       ?? this.defaultEnvironmentId
       ?? this.formEnvironments[0]?.id
       ?? null;
+
+    this.ensureSelectedClientIsValid();
   }
 
   onOrganizationChange(): void {
@@ -385,6 +468,8 @@ export class UserListComponent implements OnInit {
     }
 
     this.form.environmentId = null;
+    this.selectedClientId = null;
+
     this.onRoleChange();
   }
 
@@ -410,6 +495,12 @@ export class UserListComponent implements OnInit {
         ?? this.formEnvironments[0]?.id
         ?? null;
     }
+
+    this.ensureSelectedClientIsValid();
+  }
+
+  onEnvironmentChange(): void {
+    this.ensureSelectedClientIsValid();
   }
 
   async save(): Promise<void> {
@@ -418,6 +509,16 @@ export class UserListComponent implements OnInit {
     }
 
     const editingUserId = this.editingUserId();
+
+    if (
+      this.form.role === 'client'
+      && !this.selectedClientId
+    ) {
+      this.operationError.set(
+        'Selecione o Cliente do Chamados vinculado a este usuário.',
+      );
+      return;
+    }
 
     if (
       !editingUserId
@@ -437,13 +538,18 @@ export class UserListComponent implements OnInit {
           this.form,
         );
 
+        await this.synchronizeClientLink(
+          editingUserId,
+        );
+
         this.operationMessage.set(
           'Usuário atualizado com sucesso.',
         );
       } else {
-        const createdUser = await this.service.create(
-          this.form,
-        );
+        const createdUser =
+          await this.service.create(
+            this.form,
+          );
 
         try {
           await this.service.setPassword(
@@ -460,6 +566,27 @@ export class UserListComponent implements OnInit {
           return;
         }
 
+        if (
+          this.form.role === 'client'
+          && this.selectedClientId
+        ) {
+          try {
+            await this.clientUserLinkService.create({
+              userId: createdUser.id,
+              clientId: this.selectedClientId,
+            });
+          } catch (error: unknown) {
+            this.formVisible.set(false);
+
+            this.operationError.set(
+              'Usuário cadastrado, mas não foi possível vinculá-lo ao Cliente do Chamados. Edite o usuário e tente novamente.',
+            );
+
+            await this.refresh();
+            return;
+          }
+        }
+
         this.operationMessage.set(
           'Usuário cadastrado com sucesso.',
         );
@@ -467,6 +594,7 @@ export class UserListComponent implements OnInit {
 
       this.formVisible.set(false);
       this.editingUserId.set(null);
+      this.selectedClientId = null;
 
       await this.refresh();
     } catch (error: unknown) {
@@ -519,6 +647,7 @@ export class UserListComponent implements OnInit {
 
       this.passwordFormVisible.set(false);
       this.passwordUser.set(null);
+
       this.operationMessage.set(
         'Senha redefinida com sucesso.',
       );
@@ -564,7 +693,8 @@ export class UserListComponent implements OnInit {
     }
 
     return this.environments.find(
-      environment => environment.id === environmentId,
+      environment =>
+        environment.id === environmentId,
     )?.name ?? environmentId;
   }
 
@@ -574,6 +704,64 @@ export class UserListComponent implements OnInit {
     return this.allRoleOptions.find(
       option => option.value === role,
     )?.label ?? role;
+  }
+
+  private async synchronizeClientLink(
+    userId: string,
+  ): Promise<void> {
+    const existingLink =
+      await this.clientUserLinkService.findByUserId(
+        userId,
+      );
+
+    if (this.form.role !== 'client') {
+      if (existingLink) {
+        await this.clientUserLinkService.delete(
+          userId,
+        );
+      }
+
+      return;
+    }
+
+    if (!this.selectedClientId) {
+      throw new Error(
+        'Selecione o Cliente do Chamados vinculado a este usuário.',
+      );
+    }
+
+    if (!existingLink) {
+      await this.clientUserLinkService.create({
+        userId,
+        clientId: this.selectedClientId,
+      });
+
+      return;
+    }
+
+    if (
+      existingLink.clientId
+      !== this.selectedClientId
+    ) {
+      await this.clientUserLinkService.update(
+        userId,
+        {
+          clientId: this.selectedClientId,
+        },
+      );
+    }
+  }
+
+  private ensureSelectedClientIsValid(): void {
+    if (
+      this.selectedClientId
+      && !this.formClients.some(
+        client =>
+          client.id === this.selectedClientId,
+      )
+    ) {
+      this.selectedClientId = null;
+    }
   }
 
   private createEmptyInput(): UserInput {
@@ -615,7 +803,10 @@ export class UserListComponent implements OnInit {
       return false;
     }
 
-    if (this.password !== this.passwordConfirmation) {
+    if (
+      this.password
+      !== this.passwordConfirmation
+    ) {
       this.operationError.set(
         'A confirmação da senha não corresponde.',
       );
@@ -643,11 +834,15 @@ export class UserListComponent implements OnInit {
     }
 
     if (error.status === 404) {
-      return 'O usuário ou recurso de escopo não foi encontrado.';
+      return 'O usuário, Cliente ou recurso de escopo não foi encontrado.';
     }
 
     if (error.status === 409) {
-      return 'Já existe um usuário com este e-mail na organização.';
+      return (
+        this.form.role === 'client'
+          ? 'Este usuário já possui vínculo com um Cliente do Chamados.'
+          : 'Já existe um usuário com este e-mail na organização.'
+      );
     }
 
     if (error.status === 422) {

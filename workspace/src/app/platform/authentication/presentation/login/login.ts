@@ -1,8 +1,15 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-
 import { HttpErrorResponse } from '@angular/common/http';
-
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal,
+} from '@angular/core';
+import {
+  NonNullableFormBuilder,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 
 import { finalize } from 'rxjs';
 
@@ -34,8 +41,21 @@ export class LoginComponent {
         Validators.pattern(/^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/),
       ],
     ],
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(128)]],
+    email: [
+      '',
+      [
+        Validators.required,
+        Validators.email,
+      ],
+    ],
+    password: [
+      '',
+      [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.maxLength(128),
+      ],
+    ],
   });
 
   submit(): void {
@@ -48,12 +68,18 @@ export class LoginComponent {
     this.errorMessage.set('');
 
     const credentials = this.form.getRawValue();
-    const organizationCode = credentials.organizationCode.trim().toUpperCase();
+
+    const organizationCode =
+      credentials.organizationCode
+        .trim()
+        .toUpperCase();
 
     this.authentication
       .login({
         organizationCode: organizationCode || null,
-        email: credentials.email.trim().toLowerCase(),
+        email: credentials.email
+          .trim()
+          .toLowerCase(),
         password: credentials.password,
       })
       .pipe(
@@ -62,16 +88,25 @@ export class LoginComponent {
         }),
       )
       .subscribe({
-        next: () => {
+        next: user => {
+          if (user.role === 'client') {
+            window.location.replace('/portal');
+            return;
+          }
+
           window.location.replace('/');
         },
-        error: (error) => {
-          this.errorMessage.set(this.resolveErrorMessage(error));
+        error: error => {
+          this.errorMessage.set(
+            this.resolveErrorMessage(error),
+          );
         },
       });
   }
 
-  private resolveErrorMessage(error: unknown): string {
+  private resolveErrorMessage(
+    error: unknown,
+  ): string {
     if (!(error instanceof HttpErrorResponse)) {
       return 'Não foi possível entrar no sistema.';
     }
@@ -81,7 +116,9 @@ export class LoginComponent {
     }
 
     if (error.status === 401) {
-      return 'Código da organização, e-mail ou senha inválidos.';
+      return (
+        'Código da organização, e-mail ou senha inválidos.'
+      );
     }
 
     if (error.status === 422) {
