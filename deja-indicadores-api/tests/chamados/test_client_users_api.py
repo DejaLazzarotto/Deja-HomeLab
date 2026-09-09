@@ -97,16 +97,10 @@ def create_chamados_client(
 
     payload = {
         **FIRST_CLIENT,
-        "document": (
-            f"{uuid4().int % 10**14:014d}"
-        ),
+        "document": (f"{uuid4().int % 10**14:014d}"),
         "email": f"cliente-{uuid4()}@deja.com",
-        "company_name": (
-            f"{FIRST_CLIENT['company_name']} {suffix}".strip()
-        ),
-        "fantasy_name": (
-            f"{FIRST_CLIENT['fantasy_name']} {suffix}".strip()
-        ),
+        "company_name": (f"{FIRST_CLIENT['company_name']} {suffix}".strip()),
+        "fantasy_name": (f"{FIRST_CLIENT['fantasy_name']} {suffix}".strip()),
     }
 
     return create_client(
@@ -362,3 +356,77 @@ def test_client_user_cannot_have_multiple_links(
     )
 
     assert second_response.status_code == 409
+
+
+def test_delete_client_user_link_after_role_change(
+    client: TestClient,
+    test_settings: Settings,
+) -> None:
+    """Remove vínculo mesmo após o usuário deixar de ser client."""
+
+    context = create_context(
+        client,
+        test_settings,
+    )
+
+    portal_user = create_portal_user(
+        client,
+        context,
+    )
+
+    chamados_client = create_chamados_client(
+        client,
+        context,
+    )
+
+    organization = context["organization"]
+    tenant = context["tenant"]
+    environment = context["environment"]
+    headers = context["headers"]
+
+    assert isinstance(organization, dict)
+    assert isinstance(tenant, dict)
+    assert isinstance(environment, dict)
+    assert isinstance(headers, dict)
+
+    create_response = client.post(
+        CLIENT_USERS_URL,
+        headers=headers,
+        json={
+            "user_id": str(portal_user["id"]),
+            "client_id": str(chamados_client["id"]),
+        },
+    )
+
+    assert create_response.status_code == 201
+
+    update_response = client.put(
+        f"/api/v1/users/{portal_user['id']}",
+        headers=headers,
+        json={
+            "organization_id": organization["id"],
+            "tenant_id": tenant["id"],
+            "environment_id": environment["id"],
+            "name": portal_user["name"],
+            "email": portal_user["email"],
+            "role": "viewer",
+            "status": portal_user["status"],
+        },
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["role"] == "viewer"
+
+    delete_response = client.delete(
+        f"{CLIENT_USERS_URL}/{portal_user['id']}",
+        headers=headers,
+    )
+
+    assert delete_response.status_code == 204
+
+    get_response = client.get(
+        f"{CLIENT_USERS_URL}/{portal_user['id']}",
+        headers=headers,
+    )
+
+    assert get_response.status_code == 404

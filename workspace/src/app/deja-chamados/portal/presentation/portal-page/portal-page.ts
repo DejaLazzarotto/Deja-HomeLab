@@ -1,14 +1,18 @@
 import {
+  HttpClient,
+} from '@angular/common/http';
+
+import {
+  DatePipe,
+} from '@angular/common';
+
+import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
   inject,
   signal,
 } from '@angular/core';
-
-import {
-  HttpClient,
-} from '@angular/common/http';
 
 import {
   AuthenticationService,
@@ -31,6 +35,7 @@ import {
   selector: 'deja-portal-page',
   standalone: true,
   imports: [
+    DatePipe,
     PortalTicketFormComponent,
   ],
   templateUrl: './portal-page.html',
