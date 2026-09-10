@@ -22,8 +22,19 @@ from deja_indicadores_api.chamados.clients.repository import (
     ChamadosClientRepository,
 )
 from deja_indicadores_api.chamados.portal.schemas import (
+    ChamadosPortalCommentCreate,
+    ChamadosPortalCommentResponse,
     ChamadosPortalTicketCreate,
     ChamadosPortalTimelineResponse,
+)
+from deja_indicadores_api.chamados.tickets.comments.enums import (
+    ChamadosTicketCommentVisibility,
+)
+from deja_indicadores_api.chamados.tickets.comments.models import (
+    ChamadosTicketCommentModel,
+)
+from deja_indicadores_api.chamados.tickets.comments.repository import (
+    ChamadosTicketCommentRepository,
 )
 from deja_indicadores_api.chamados.tickets.enums import (
     ChamadosTicketPriority,
@@ -63,12 +74,14 @@ class ChamadosPortalService:
         client_user_repository: ChamadosClientUserRepository,
         timeline_service: ChamadosTicketTimelineService,
         user_repository: UserRepository,
+        comment_repository: ChamadosTicketCommentRepository,
     ) -> None:
         self._ticket_repository = ticket_repository
         self._client_repository = client_repository
         self._client_user_repository = client_user_repository
         self._timeline_service = timeline_service
         self._user_repository = user_repository
+        self._comment_repository = comment_repository
 
     def list_tickets(
         self,
@@ -132,6 +145,54 @@ class ChamadosPortalService:
             self._map_timeline_event(event)
             for event in timeline
         ]
+
+    def list_ticket_comments(
+        self,
+        ticket_id: str,
+        current_user: AuthenticatedUser,
+    ) -> list[ChamadosPortalCommentResponse]:
+        """Lista somente comentários públicos de um chamado do Cliente."""
+
+        self.find_ticket_by_id(
+            ticket_id,
+            current_user,
+        )
+
+        comments = self._comment_repository.list_by_ticket_id(
+            ticket_id,
+            visibility=ChamadosTicketCommentVisibility.PUBLIC,
+        )
+
+        return [
+            self._map_comment(comment)
+            for comment in comments
+        ]
+
+    def create_ticket_comment(
+        self,
+        ticket_id: str,
+        input_data: ChamadosPortalCommentCreate,
+        current_user: AuthenticatedUser,
+    ) -> ChamadosPortalCommentResponse:
+        """Adiciona um comentário público a um chamado do Cliente."""
+
+        ticket = self.find_ticket_by_id(
+            ticket_id,
+            current_user,
+        )
+
+        comment = ChamadosTicketCommentModel(
+            id=str(uuid4()),
+            ticket_id=ticket.id,
+            content=input_data.content,
+            visibility=ChamadosTicketCommentVisibility.PUBLIC,
+            created_by_user_id=current_user.id,
+        )
+
+        self._comment_repository.add(comment)
+        self._comment_repository.commit(comment)
+
+        return self._map_comment(comment)
 
     def create_ticket(
         self,
@@ -201,6 +262,21 @@ class ChamadosPortalService:
             previous_value=previous_value,
             new_value=new_value,
             created_at=event.created_at,
+        )
+
+    def _map_comment(
+        self,
+        comment: ChamadosTicketCommentModel,
+    ) -> ChamadosPortalCommentResponse:
+        """Converte comentário interno para representação segura do Portal."""
+
+        return ChamadosPortalCommentResponse(
+            id=comment.id,
+            content=comment.content,
+            created_by=self._resolve_user_name(
+                comment.created_by_user_id,
+            ),
+            created_at=comment.created_at,
         )
 
     def _resolve_user_name(

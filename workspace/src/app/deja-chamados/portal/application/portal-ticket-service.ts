@@ -1,5 +1,7 @@
 import {
   PortalTicket,
+  PortalTicketComment,
+  PortalTicketCommentCreate,
   PortalTicketCreate,
   PortalTimelineEvent,
 } from '../domain/portal-ticket';
@@ -48,6 +50,22 @@ export class PortalTicketService {
     ticketId: string,
   ): Promise<readonly PortalTimelineEvent[]> {
     return this.repository.listTimeline(ticketId);
+  }
+
+  listComments(
+    ticketId: string,
+  ): Promise<readonly PortalTicketComment[]> {
+    return this.repository.listComments(ticketId);
+  }
+
+  createComment(
+    ticketId: string,
+    input: PortalTicketCommentCreate,
+  ): Promise<PortalTicketComment> {
+    return this.repository.createComment(
+      ticketId,
+      input,
+    );
   }
 
   create(

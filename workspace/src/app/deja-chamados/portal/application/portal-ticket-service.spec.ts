@@ -1,5 +1,7 @@
 import {
   PortalTicket,
+  PortalTicketComment,
+  PortalTicketCommentCreate,
   PortalTicketCreate,
   PortalTimelineEvent,
 } from '../domain/portal-ticket';
@@ -46,11 +48,28 @@ describe('PortalTicketService', () => {
     },
   ];
 
+  const comments: readonly PortalTicketComment[] = [
+    {
+      id: 'comment-1',
+      content: 'Comentário do cliente.',
+      createdBy: 'Cliente Portal',
+      createdAt: '2026-09-08T12:00:00',
+    },
+    {
+      id: 'comment-2',
+      content: 'Resposta pública da equipe.',
+      createdBy: 'Analista',
+      createdAt: '2026-09-08T13:00:00',
+    },
+  ];
+
   function createRepositoryMock(): HttpPortalTicketRepository {
     return {
       list: vi.fn(),
       findById: vi.fn(),
       listTimeline: vi.fn(),
+      listComments: vi.fn(),
+      createComment: vi.fn(),
       create: vi.fn(),
     } as unknown as HttpPortalTicketRepository;
   }
@@ -156,6 +175,69 @@ describe('PortalTicketService', () => {
       expect(repository.listTimeline)
         .toHaveBeenCalledWith(
           'ticket-1',
+        );
+    },
+  );
+
+  it(
+    'deve listar os comentários pelo repositório',
+    async () => {
+      const repository =
+        createRepositoryMock();
+
+      vi.mocked(repository.listComments)
+        .mockResolvedValue(comments);
+
+      const service =
+        new PortalTicketService(
+          repository,
+        );
+
+      await expect(
+        service.listComments(
+          'ticket-1',
+        ),
+      ).resolves.toEqual(comments);
+
+      expect(repository.listComments)
+        .toHaveBeenCalledWith(
+          'ticket-1',
+        );
+    },
+  );
+
+  it(
+    'deve criar comentário pelo repositório',
+    async () => {
+      const repository =
+        createRepositoryMock();
+
+      const createdComment =
+        comments[0];
+
+      vi.mocked(repository.createComment)
+        .mockResolvedValue(createdComment);
+
+      const service =
+        new PortalTicketService(
+          repository,
+        );
+
+      const input: PortalTicketCommentCreate = {
+        content: 'Comentário do cliente.',
+      };
+
+      await expect(
+        service.createComment(
+          'ticket-1',
+          input,
+        ),
+      ).resolves.toEqual(createdComment);
+
+      expect(repository.createComment)
+        .toHaveBeenCalledWith(
+          'ticket-1',
+          input,
         );
     },
   );

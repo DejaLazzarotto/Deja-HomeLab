@@ -12,6 +12,8 @@ from deja_indicadores_api.chamados.portal.dependencies import (
     ChamadosPortalServiceDependency,
 )
 from deja_indicadores_api.chamados.portal.schemas import (
+    ChamadosPortalCommentCreate,
+    ChamadosPortalCommentResponse,
     ChamadosPortalTicketCreate,
     ChamadosPortalTicketResponse,
     ChamadosPortalTimelineResponse,
@@ -95,6 +97,43 @@ def list_portal_ticket_timeline(
 
     return service.list_ticket_timeline(
         ticket_id,
+        current_user,
+    )
+
+
+@router.get(
+    "/tickets/{ticket_id}/comments",
+    response_model=list[ChamadosPortalCommentResponse],
+)
+def list_portal_ticket_comments(
+    ticket_id: TicketId,
+    service: ChamadosPortalServiceDependency,
+    current_user: ChamadosPortalUser,
+) -> list[ChamadosPortalCommentResponse]:
+    """Lista os comentários públicos de um chamado do Cliente."""
+
+    return service.list_ticket_comments(
+        ticket_id,
+        current_user,
+    )
+
+
+@router.post(
+    "/tickets/{ticket_id}/comments",
+    response_model=ChamadosPortalCommentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_portal_ticket_comment(
+    ticket_id: TicketId,
+    input_data: ChamadosPortalCommentCreate,
+    service: ChamadosPortalServiceDependency,
+    current_user: ChamadosPortalUser,
+) -> ChamadosPortalCommentResponse:
+    """Adiciona um comentário público a um chamado do Cliente."""
+
+    return service.create_ticket_comment(
+        ticket_id,
+        input_data,
         current_user,
     )
 

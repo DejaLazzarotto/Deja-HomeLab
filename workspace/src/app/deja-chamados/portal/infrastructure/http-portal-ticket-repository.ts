@@ -9,6 +9,8 @@ import {
 
 import {
   PortalTicket,
+  PortalTicketComment,
+  PortalTicketCommentCreate,
   PortalTicketCreate,
   PortalTicketPriority,
   PortalTicketStatus,
@@ -46,6 +48,17 @@ interface PortalTimelineEventResponse {
   new_value: string | null;
 
   created_at: string;
+}
+
+interface PortalTicketCommentResponse {
+  id: string;
+  content: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+interface PortalTicketCommentCreateRequest {
+  content: string;
 }
 
 export class HttpPortalTicketRepository {
@@ -103,6 +116,34 @@ export class HttpPortalTicketRepository {
     );
   }
 
+  async listComments(
+    ticketId: string,
+  ): Promise<readonly PortalTicketComment[]> {
+    const response = await firstValueFrom(
+      this.http.get<readonly PortalTicketCommentResponse[]>(
+        `/api/chamados/portal/tickets/${ticketId}/comments`,
+      ),
+    );
+
+    return response.map(
+      comment => this.mapComment(comment),
+    );
+  }
+
+  async createComment(
+    ticketId: string,
+    input: PortalTicketCommentCreate,
+  ): Promise<PortalTicketComment> {
+    const response = await firstValueFrom(
+      this.http.post<PortalTicketCommentResponse>(
+        `/api/chamados/portal/tickets/${ticketId}/comments`,
+        this.mapCommentCreateRequest(input),
+      ),
+    );
+
+    return this.mapComment(response);
+  }
+
   async create(
     input: PortalTicketCreate,
   ): Promise<PortalTicket> {
@@ -122,6 +163,14 @@ export class HttpPortalTicketRepository {
     return {
       title: input.title,
       description: input.description,
+    };
+  }
+
+  private mapCommentCreateRequest(
+    input: PortalTicketCommentCreate,
+  ): PortalTicketCommentCreateRequest {
+    return {
+      content: input.content,
     };
   }
 
@@ -158,6 +207,17 @@ export class HttpPortalTicketRepository {
       previousValue: response.previous_value,
       newValue: response.new_value,
 
+      createdAt: response.created_at,
+    };
+  }
+
+  private mapComment(
+    response: PortalTicketCommentResponse,
+  ): PortalTicketComment {
+    return {
+      id: response.id,
+      content: response.content,
+      createdBy: response.created_by,
       createdAt: response.created_at,
     };
   }

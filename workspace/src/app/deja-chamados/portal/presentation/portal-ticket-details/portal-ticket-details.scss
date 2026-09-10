@@ -205,6 +205,161 @@
   font-weight: 500;
 }
 
+.portal-comments-header {
+  margin-bottom: 20px;
+}
+
+.portal-comments-header h2 {
+  margin: 0 0 6px;
+
+  color: var(--workspace-color-text-primary);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.portal-comments-header p {
+  margin: 0;
+
+  line-height: 1.5;
+
+  color: var(--workspace-color-text-secondary);
+}
+
+.portal-comment-form {
+  display: grid;
+  gap: 10px;
+
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+
+  border-bottom: 1px solid var(--workspace-color-border);
+}
+
+.portal-comment-form label {
+  font-size: 0.85rem;
+  font-weight: 700;
+
+  color: var(--workspace-color-text-primary);
+}
+
+.portal-comment-form textarea {
+  width: 100%;
+  min-height: 108px;
+  padding: 12px 14px;
+
+  box-sizing: border-box;
+
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
+
+  background: var(--workspace-color-background);
+  color: var(--workspace-color-text-primary);
+
+  font: inherit;
+  line-height: 1.5;
+
+  resize: vertical;
+}
+
+.portal-comment-form textarea::placeholder {
+  color: var(--workspace-color-text-secondary);
+}
+
+.portal-comment-form textarea:focus {
+  outline: 2px solid var(--workspace-color-primary);
+  outline-offset: 1px;
+}
+
+.portal-comment-form textarea:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.portal-comment-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--workspace-spacing-md);
+}
+
+.portal-primary-button {
+  padding: 10px 16px;
+
+  border: 0;
+  border-radius: var(--workspace-radius-md);
+
+  background: var(--workspace-color-primary);
+  color: #ffffff;
+
+  font: inherit;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.portal-primary-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.portal-primary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.portal-comment-error {
+  margin: 0;
+
+  font-size: 0.85rem;
+
+  color: #f97066;
+}
+
+.portal-comments-list {
+  display: grid;
+  gap: var(--workspace-spacing-md);
+}
+
+.portal-comment-item {
+  padding: 14px 16px;
+
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
+
+  background: var(--workspace-color-background);
+}
+
+.portal-comment-item header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--workspace-spacing-md);
+
+  margin-bottom: 8px;
+}
+
+.portal-comment-item strong {
+  color: var(--workspace-color-text-primary);
+  font-size: 0.9rem;
+}
+
+.portal-comment-item time {
+  flex-shrink: 0;
+
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.78rem;
+}
+
+.portal-comment-item p {
+  margin: 0;
+
+  line-height: 1.6;
+
+  color: var(--workspace-color-text-secondary);
+
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .portal-history-header {
   margin-bottom: 22px;
 }
@@ -320,6 +475,16 @@
 
   .portal-ticket-meta {
     grid-template-columns: 1fr;
+  }
+
+  .portal-comment-actions,
+  .portal-comment-item header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .portal-primary-button {
+    width: 100%;
   }
 
   .portal-details-error {

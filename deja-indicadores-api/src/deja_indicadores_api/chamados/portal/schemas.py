@@ -67,3 +67,36 @@ class ChamadosPortalTimelineResponse(BaseModel):
     new_value: str | None
 
     created_at: datetime
+
+
+class ChamadosPortalCommentCreate(BaseModel):
+    """Dados aceitos para comentário público criado pelo Portal."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    content: str = Field(
+        min_length=1,
+        max_length=5000,
+    )
+
+    @field_validator(
+        "content",
+        mode="before",
+    )
+    @classmethod
+    def normalize_content(
+        cls,
+        value: str,
+    ) -> str:
+        """Remove espaços excedentes do comentário."""
+
+        return value.strip()
+
+
+class ChamadosPortalCommentResponse(BaseModel):
+    """Representação segura de comentário público no Portal."""
+
+    id: str
+    content: str
+    created_by: str | None
+    created_at: datetime

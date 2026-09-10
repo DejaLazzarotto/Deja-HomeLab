@@ -540,3 +540,259 @@ def test_portal_timeline_resolves_assigned_user_name(
     assert assigned_event["new_value"] == analyst["name"]
     assert assigned_event["new_value"] != analyst["id"]
     assert "created_by_user_id" not in assigned_event
+
+
+def test_portal_creates_and_reads_own_ticket_comments(
+    client: TestClient,
+    test_settings: Settings,
+) -> None:
+    """Portal cria e consulta comentários públicos do próprio chamado."""
+
+    context = create_portal_context(
+        client,
+        test_settings,
+    )
+
+    portal_headers = context["portal_headers"]
+    portal_user = context["portal_user"]
+
+    assert isinstance(portal_headers, dict)
+    assert isinstance(portal_user, dict)
+
+    ticket_response = client.post(
+        PORTAL_TICKETS_URL,
+        headers=portal_headers,
+        json={
+            "title": "Chamado com comentários",
+            "description": "Validar comentários públicos do Portal.",
+        },
+    )
+
+    assert ticket_response.status_code == 201
+
+    ticket = ticket_response.json()
+
+    create_response = client.post(
+        f"{PORTAL_TICKETS_URL}/{ticket['id']}/comments",
+        headers=portal_headers,
+        json={
+            "content": "  Comentário criado pelo cliente.  ",
+        },
+    )
+
+    assert create_response.status_code == 201
+
+    created_comment = create_response.json()
+
+    assert created_comment["content"] == "Comentário criado pelo cliente."
+    assert created_comment["created_by"] == portal_user["name"]
+    assert created_comment["created_at"] is not None
+
+    assert "ticket_id" not in created_comment
+    assert "visibility" not in created_comment
+    assert "created_by_user_id" not in created_comment
+
+    list_response = client.get(
+        f"{PORTAL_TICKETS_URL}/{ticket['id']}/comments",
+        headers=portal_headers,
+    )
+
+    assert list_response.status_code == 200
+
+    comments = list_response.json()
+
+    assert len(comments) == 1
+
+    comment = comments[0]
+
+    assert comment["id"] == created_comment["id"]
+    assert comment["content"] == "Comentário criado pelo cliente."
+    assert comment["created_by"] == portal_user["name"]
+    assert comment["created_at"] is not None
+
+    assert "ticket_id" not in comment
+    assert "visibility" not in comment
+    assert "created_by_user_id" not in comment
+
+
+def test_portal_cannot_read_other_client_ticket_comments(
+    client: TestClient,
+    test_settings: Settings,
+) -> None:
+    """Impede leitura dos comentários de chamado de outro Cliente."""
+
+    context = create_portal_context(
+        client,
+        test_settings,
+    )
+
+    portal_headers = context["portal_headers"]
+    administrator_headers = context["administrator_headers"]
+    environment = context["environment"]
+
+    assert isinstance(portal_headers, dict)
+    assert isinstance(administrator_headers, dict)
+    assert isinstance(environment, dict)
+
+    other_client = create_client(
+        client,
+        {
+            **FIRST_CLIENT,
+            "document": f"{uuid4().int % 10**14:014d}",
+            "email": f"comentarios-outro-cliente-{uuid4()}@deja.com",
+            "company_name": "Empresa Comentários Ltda",
+            "fantasy_name": "Empresa Comentários",
+        },
+        str(environment["id"]),
+        administrator_headers,
+    )
+
+    other_ticket_response = client.post(
+        TICKETS_URL,
+        headers=administrator_headers,
+        json={
+            "environment_id": str(environment["id"]),
+            "client_id": str(other_client["id"]),
+            "title": "Chamado com comentários privados",
+            "description": "Não pode ser consultado pelo Portal.",
+            "priority": "medium",
+            "assigned_to_user_id": None,
+        },
+    )
+
+    assert other_ticket_response.status_code == 201
+
+    other_ticket = other_ticket_response.json()
+
+    response = client.get(
+        f"{PORTAL_TICKETS_URL}/{other_ticket['id']}/comments",
+        headers=portal_headers,
+    )
+
+    assert response.status_code == 403
+
+
+def test_portal_cannot_comment_other_client_ticket(
+    client: TestClient,
+    test_settings: Settings,
+) -> None:
+    """Impede criação de comentário em chamado de outro Cliente."""
+
+    context = create_portal_context(
+        client,
+        test_settings,
+    )
+
+    portal_headers = context["portal_headers"]
+    administrator_headers = context["administrator_headers"]
+    environment = context["environment"]
+
+    assert isinstance(portal_headers, dict)
+    assert isinstance(administrator_headers, dict)
+    assert isinstance(environment, dict)
+
+    other_client = create_client(
+        client,
+        {
+            **FIRST_CLIENT,
+            "document": f"{uuid4().int % 10**14:014d}",
+            "email": f"comentario-bloqueado-{uuid4()}@deja.com",
+            "company_name": "Empresa Bloqueada Ltda",
+            "fantasy_name": "Empresa Bloqueada",
+        },
+        str(environment["id"]),
+        administrator_headers,
+    )
+
+    other_ticket_response = client.post(
+        TICKETS_URL,
+        headers=administrator_headers,
+        json={
+            "environment_id": str(environment["id"]),
+            "client_id": str(other_client["id"]),
+            "title": "Chamado externo",
+            "description": "Portal não pode comentar neste chamado.",
+            "priority": "medium",
+            "assigned_to_user_id": None,
+        },
+    )
+
+    assert other_ticket_response.status_code == 201
+
+    other_ticket = other_ticket_response.json()
+
+    response = client.post(
+        f"{PORTAL_TICKETS_URL}/{other_ticket['id']}/comments",
+        headers=portal_headers,
+        json={
+            "content": "Comentário não autorizado.",
+        },
+    )
+
+    assert response.status_code == 403
+
+
+def test_portal_does_not_read_internal_ticket_comments(
+    client: TestClient,
+    test_settings: Settings,
+) -> None:
+    """Portal recebe somente comentários públicos do próprio chamado."""
+
+    context = create_portal_context(
+        client,
+        test_settings,
+    )
+
+    portal_headers = context["portal_headers"]
+    administrator_headers = context["administrator_headers"]
+
+    assert isinstance(portal_headers, dict)
+    assert isinstance(administrator_headers, dict)
+
+    ticket_response = client.post(
+        PORTAL_TICKETS_URL,
+        headers=portal_headers,
+        json={
+            "title": "Chamado com comentário interno",
+            "description": "Validar isolamento de comentários internos.",
+        },
+    )
+
+    assert ticket_response.status_code == 201
+
+    ticket = ticket_response.json()
+
+    public_response = client.post(
+        f"{TICKETS_URL}/{ticket['id']}/comments",
+        headers=administrator_headers,
+        json={
+            "content": "Resposta pública da equipe.",
+            "visibility": "public",
+        },
+    )
+
+    assert public_response.status_code == 201
+
+    internal_response = client.post(
+        f"{TICKETS_URL}/{ticket['id']}/comments",
+        headers=administrator_headers,
+        json={
+            "content": "Observação interna da equipe.",
+            "visibility": "internal",
+        },
+    )
+
+    assert internal_response.status_code == 201
+
+    response = client.get(
+        f"{PORTAL_TICKETS_URL}/{ticket['id']}/comments",
+        headers=portal_headers,
+    )
+
+    assert response.status_code == 200
+
+    comments = response.json()
+
+    assert len(comments) == 1
+    assert comments[0]["content"] == "Resposta pública da equipe."
+    assert "Observação interna da equipe." not in {comment["content"] for comment in comments}

@@ -66,12 +66,37 @@
 .workspace-sidebar__navigation {
   position: relative;
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 1rem;
+  min-height: 0;
   padding:
     1.25rem
     0.75rem;
+  overflow-y: auto;
+  overflow-x: hidden;
   z-index: 1;
+
+  scrollbar-color:
+    var(--workspace-color-border-strong)
+    transparent;
+  scrollbar-width: thin;
+}
+
+.workspace-sidebar__navigation::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+.workspace-sidebar__navigation::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.workspace-sidebar__navigation::-webkit-scrollbar-thumb {
+  border: 0.125rem solid transparent;
+  border-radius: var(--workspace-radius-pill);
+  background:
+    var(--workspace-color-border-strong)
+    padding-box;
 }
 
 .workspace-sidebar__section {

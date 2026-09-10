@@ -15,6 +15,9 @@ from deja_indicadores_api.chamados.portal.router import (
 from deja_indicadores_api.chamados.tickets.assignees.router import (
     router as chamados_ticket_assignees_router,
 )
+from deja_indicadores_api.chamados.tickets.comments.router import (
+    router as chamados_ticket_comments_router,
+)
 from deja_indicadores_api.chamados.tickets.router import (
     router as chamados_tickets_router,
 )
@@ -54,6 +57,7 @@ api_router.include_router(chamados_client_users_router)
 api_router.include_router(chamados_clients_router)
 api_router.include_router(chamados_portal_router)
 api_router.include_router(chamados_ticket_assignees_router)
+api_router.include_router(chamados_ticket_comments_router)
 api_router.include_router(chamados_tickets_router)
 api_router.include_router(chamados_ticket_timeline_router)
 

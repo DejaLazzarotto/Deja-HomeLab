@@ -222,6 +222,98 @@ describe('HttpPortalTicketRepository', () => {
   );
 
   it(
+    'deve listar os comentários de um chamado do Portal',
+    async () => {
+      const promise =
+        repository.listComments(
+          'ticket-1',
+        );
+
+      const request =
+        httpTesting.expectOne(
+          '/api/chamados/portal/tickets/ticket-1/comments',
+        );
+
+      expect(request.request.method)
+        .toBe('GET');
+
+      request.flush([
+        {
+          id: 'comment-1',
+          content: 'Comentário do cliente.',
+          created_by: 'Cliente Portal',
+          created_at: '2026-09-10T11:30:00',
+        },
+        {
+          id: 'comment-2',
+          content: 'Resposta pública da equipe.',
+          created_by: 'Analista',
+          created_at: '2026-09-10T12:00:00',
+        },
+      ]);
+
+      await expect(promise)
+        .resolves
+        .toEqual([
+          {
+            id: 'comment-1',
+            content: 'Comentário do cliente.',
+            createdBy: 'Cliente Portal',
+            createdAt: '2026-09-10T11:30:00',
+          },
+          {
+            id: 'comment-2',
+            content: 'Resposta pública da equipe.',
+            createdBy: 'Analista',
+            createdAt: '2026-09-10T12:00:00',
+          },
+        ]);
+    },
+  );
+
+  it(
+    'deve criar comentário público no chamado do Portal',
+    async () => {
+      const promise =
+        repository.createComment(
+          'ticket-1',
+          {
+            content: 'Novo comentário.',
+          },
+        );
+
+      const request =
+        httpTesting.expectOne(
+          '/api/chamados/portal/tickets/ticket-1/comments',
+        );
+
+      expect(request.request.method)
+        .toBe('POST');
+
+      expect(request.request.body)
+        .toEqual({
+          content: 'Novo comentário.',
+        });
+
+      request.flush({
+        id: 'comment-3',
+        content: 'Novo comentário.',
+        created_by: 'Cliente Portal',
+        created_at: '2026-09-10T12:30:00',
+      });
+
+      await expect(promise)
+        .resolves
+        .toEqual({
+          id: 'comment-3',
+          content: 'Novo comentário.',
+          createdBy: 'Cliente Portal',
+          createdAt: '2026-09-10T12:30:00',
+        });
+    },
+  );
+
+  it(
     'deve abrir um chamado enviando apenas título e descrição',
     async () => {
       const promise =

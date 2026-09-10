@@ -122,6 +122,90 @@
       </section>
 
       <section class="portal-details-card">
+        <div class="portal-comments-header">
+          <div>
+            <h2>
+              Comentários
+            </h2>
+
+            <p>
+              Use este espaço para complementar informações e acompanhar as respostas da equipe.
+            </p>
+          </div>
+        </div>
+
+        <div class="portal-comment-form">
+          <label for="portal-comment-message">
+            Novo comentário
+          </label>
+
+          <textarea
+            id="portal-comment-message"
+            rows="4"
+            maxlength="5000"
+            placeholder="Digite seu comentário..."
+            [ngModel]="commentMessage()"
+            (ngModelChange)="commentMessage.set($event)"
+            [disabled]="submittingComment()"
+          ></textarea>
+
+          @if (commentErrorMessage()) {
+            <p class="portal-comment-error">
+              {{ commentErrorMessage() }}
+            </p>
+          }
+
+          <div class="portal-comment-actions">
+            <span class="portal-comment-counter">
+              {{ commentMessage().length }} / 5000
+            </span>
+
+            <button
+              type="button"
+              class="portal-primary-button"
+              [disabled]="
+                submittingComment()
+                || !commentMessage().trim()
+              "
+              (click)="addComment()"
+            >
+              @if (submittingComment()) {
+                Enviando...
+              } @else {
+                Adicionar comentário
+              }
+            </button>
+          </div>
+        </div>
+
+        @if (comments().length === 0) {
+          <p class="portal-comments-empty">
+            Nenhum comentário registrado até o momento.
+          </p>
+        } @else {
+          <div class="portal-comments-list">
+            @for (comment of comments(); track comment.id) {
+              <article class="portal-comment-item">
+                <header>
+                  <strong>
+                    {{ comment.createdBy ?? 'Sistema' }}
+                  </strong>
+
+                  <time>
+                    {{ comment.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                  </time>
+                </header>
+
+                <p>
+                  {{ comment.content }}
+                </p>
+              </article>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="portal-details-card">
         <div class="portal-history-header">
           <div>
             <h2>

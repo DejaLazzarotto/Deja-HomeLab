@@ -11,6 +11,10 @@ import {
 } from '@angular/core';
 
 import {
+  FormsModule,
+} from '@angular/forms';
+
+import {
   ActivatedRoute,
   Router,
 } from '@angular/router';
@@ -21,6 +25,7 @@ import {
 
 import {
   PortalTicket,
+  PortalTicketComment,
   PortalTimelineEvent,
 } from '../../domain/portal-ticket';
 
@@ -33,6 +38,7 @@ import {
   standalone: true,
   imports: [
     DatePipe,
+    FormsModule,
   ],
   templateUrl: './portal-ticket-details.html',
   styleUrl: './portal-ticket-details.scss',
@@ -59,10 +65,22 @@ export class PortalTicketDetailsComponent implements OnInit {
   readonly timeline =
     signal<readonly PortalTimelineEvent[]>([]);
 
+  readonly comments =
+    signal<readonly PortalTicketComment[]>([]);
+
+  readonly commentMessage =
+    signal('');
+
   readonly loading =
     signal(false);
 
+  readonly submittingComment =
+    signal(false);
+
   readonly errorMessage =
+    signal('');
+
+  readonly commentErrorMessage =
     signal('');
 
   ngOnInit(): void {
@@ -92,6 +110,7 @@ export class PortalTicketDetailsComponent implements OnInit {
       const [
         ticket,
         timeline,
+        comments,
       ] = await Promise.all([
         this.composition.service.findById(
           ticketId,
@@ -99,16 +118,59 @@ export class PortalTicketDetailsComponent implements OnInit {
         this.composition.service.listTimeline(
           ticketId,
         ),
+        this.composition.service.listComments(
+          ticketId,
+        ),
       ]);
 
       this.ticket.set(ticket);
       this.timeline.set(timeline);
+      this.comments.set(comments);
     } catch {
       this.errorMessage.set(
         'Não foi possível carregar os detalhes do chamado.',
       );
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  async addComment(): Promise<void> {
+    if (this.submittingComment()) {
+      return;
+    }
+
+    const ticket = this.ticket();
+    const content = this.commentMessage().trim();
+
+    if (!ticket || !content) {
+      return;
+    }
+
+    this.submittingComment.set(true);
+    this.commentErrorMessage.set('');
+
+    try {
+      await this.composition.service.createComment(
+        ticket.id,
+        {
+          content,
+        },
+      );
+
+      const comments =
+        await this.composition.service.listComments(
+          ticket.id,
+        );
+
+      this.comments.set(comments);
+      this.commentMessage.set('');
+    } catch {
+      this.commentErrorMessage.set(
+        'Não foi possível adicionar o comentário.',
+      );
+    } finally {
+      this.submittingComment.set(false);
     }
   }
 

@@ -22,7 +22,6 @@ export interface PortalTicket {
 
   readonly title: string;
   readonly description: string;
-
   readonly status: PortalTicketStatus;
   readonly priority: PortalTicketPriority;
 
@@ -42,9 +41,18 @@ export interface PortalTimelineEvent {
   readonly id: string;
   readonly eventType: PortalTimelineEventType;
   readonly description: string;
-
   readonly previousValue: string | null;
   readonly newValue: string | null;
-
   readonly createdAt: string;
+}
+
+export interface PortalTicketComment {
+  readonly id: string;
+  readonly content: string;
+  readonly createdBy: string | null;
+  readonly createdAt: string;
+}
+
+export interface PortalTicketCommentCreate {
+  readonly content: string;
 }
