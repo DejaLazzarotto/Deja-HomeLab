@@ -25,6 +25,9 @@ from deja_indicadores_api.chamados.tickets.timeline.service import (
     ChamadosTicketTimelineService,
 )
 from deja_indicadores_api.core.database import get_db_session
+from deja_indicadores_api.user_management.repository import (
+    UserRepository,
+)
 
 DatabaseSession = Annotated[
     Session,
@@ -50,6 +53,7 @@ def get_chamados_portal_service(
         client_repository=ChamadosClientRepository(session),
         client_user_repository=ChamadosClientUserRepository(session),
         timeline_service=timeline_service,
+        user_repository=UserRepository(session),
     )
 
 

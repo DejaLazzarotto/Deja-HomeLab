@@ -1,6 +1,7 @@
 import {
   PortalTicket,
   PortalTicketCreate,
+  PortalTimelineEvent,
 } from '../domain/portal-ticket';
 
 import {
@@ -26,10 +27,30 @@ describe('PortalTicketService', () => {
     updatedAt: '2026-09-08T10:00:00',
   };
 
+  const timeline: readonly PortalTimelineEvent[] = [
+    {
+      id: 'event-1',
+      eventType: 'created',
+      description: 'Chamado criado pelo Portal.',
+      previousValue: null,
+      newValue: 'created',
+      createdAt: '2026-09-08T10:00:00',
+    },
+    {
+      id: 'event-2',
+      eventType: 'status_changed',
+      description: 'Status do chamado alterado.',
+      previousValue: 'open',
+      newValue: 'in_progress',
+      createdAt: '2026-09-08T11:00:00',
+    },
+  ];
+
   function createRepositoryMock(): HttpPortalTicketRepository {
     return {
       list: vi.fn(),
       findById: vi.fn(),
+      listTimeline: vi.fn(),
       create: vi.fn(),
     } as unknown as HttpPortalTicketRepository;
   }
@@ -109,6 +130,33 @@ describe('PortalTicketService', () => {
       ).rejects.toBeInstanceOf(
         PortalTicketNotFoundError,
       );
+    },
+  );
+
+  it(
+    'deve listar a timeline pelo repositório',
+    async () => {
+      const repository =
+        createRepositoryMock();
+
+      vi.mocked(repository.listTimeline)
+        .mockResolvedValue(timeline);
+
+      const service =
+        new PortalTicketService(
+          repository,
+        );
+
+      await expect(
+        service.listTimeline(
+          'ticket-1',
+        ),
+      ).resolves.toEqual(timeline);
+
+      expect(repository.listTimeline)
+        .toHaveBeenCalledWith(
+          'ticket-1',
+        );
     },
   );
 

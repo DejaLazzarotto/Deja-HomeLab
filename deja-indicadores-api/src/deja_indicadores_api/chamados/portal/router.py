@@ -14,6 +14,7 @@ from deja_indicadores_api.chamados.portal.dependencies import (
 from deja_indicadores_api.chamados.portal.schemas import (
     ChamadosPortalTicketCreate,
     ChamadosPortalTicketResponse,
+    ChamadosPortalTimelineResponse,
 )
 from deja_indicadores_api.module_management.dependencies import (
     require_module,
@@ -76,6 +77,23 @@ def get_portal_ticket(
     """Consulta um chamado pertencente ao Cliente autenticado."""
 
     return service.find_ticket_by_id(
+        ticket_id,
+        current_user,
+    )
+
+
+@router.get(
+    "/tickets/{ticket_id}/timeline",
+    response_model=list[ChamadosPortalTimelineResponse],
+)
+def list_portal_ticket_timeline(
+    ticket_id: TicketId,
+    service: ChamadosPortalServiceDependency,
+    current_user: ChamadosPortalUser,
+) -> list[ChamadosPortalTimelineResponse]:
+    """Lista o histórico seguro de um chamado do Cliente autenticado."""
+
+    return service.list_ticket_timeline(
         ticket_id,
         current_user,
     )

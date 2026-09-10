@@ -23,6 +23,7 @@ from deja_indicadores_api.chamados.clients.repository import (
 )
 from deja_indicadores_api.chamados.portal.schemas import (
     ChamadosPortalTicketCreate,
+    ChamadosPortalTimelineResponse,
 )
 from deja_indicadores_api.chamados.tickets.enums import (
     ChamadosTicketPriority,
@@ -38,11 +39,17 @@ from deja_indicadores_api.chamados.tickets.models import (
 from deja_indicadores_api.chamados.tickets.repository import (
     ChamadosTicketRepository,
 )
+from deja_indicadores_api.chamados.tickets.timeline.models import (
+    ChamadosTicketTimelineModel,
+)
 from deja_indicadores_api.chamados.tickets.timeline.service import (
     ChamadosTicketTimelineService,
 )
 from deja_indicadores_api.user_management.models import (
     UserRole,
+)
+from deja_indicadores_api.user_management.repository import (
+    UserRepository,
 )
 
 
@@ -55,11 +62,13 @@ class ChamadosPortalService:
         client_repository: ChamadosClientRepository,
         client_user_repository: ChamadosClientUserRepository,
         timeline_service: ChamadosTicketTimelineService,
+        user_repository: UserRepository,
     ) -> None:
         self._ticket_repository = ticket_repository
         self._client_repository = client_repository
         self._client_user_repository = client_user_repository
         self._timeline_service = timeline_service
+        self._user_repository = user_repository
 
     def list_tickets(
         self,
@@ -101,6 +110,28 @@ class ChamadosPortalService:
             raise AuthorizationError
 
         return ticket
+
+    def list_ticket_timeline(
+        self,
+        ticket_id: str,
+        current_user: AuthenticatedUser,
+    ) -> list[ChamadosPortalTimelineResponse]:
+        """Lista o histórico seguro de um chamado pertencente ao Cliente."""
+
+        self.find_ticket_by_id(
+            ticket_id,
+            current_user,
+        )
+
+        timeline = self._timeline_service.list_by_ticket_id(
+            ticket_id,
+            current_user,
+        )
+
+        return [
+            self._map_timeline_event(event)
+            for event in timeline
+        ]
 
     def create_ticket(
         self,
@@ -145,6 +176,50 @@ class ChamadosPortalService:
         return self._ticket_repository.commit(
             ticket,
         )
+
+    def _map_timeline_event(
+        self,
+        event: ChamadosTicketTimelineModel,
+    ) -> ChamadosPortalTimelineResponse:
+        """Converte um evento interno para a representação segura do Portal."""
+
+        previous_value = event.previous_value
+        new_value = event.new_value
+
+        if event.event_type == "assigned_changed":
+            previous_value = self._resolve_user_name(
+                event.previous_value,
+            )
+            new_value = self._resolve_user_name(
+                event.new_value,
+            )
+
+        return ChamadosPortalTimelineResponse(
+            id=event.id,
+            event_type=event.event_type,
+            description=event.description,
+            previous_value=previous_value,
+            new_value=new_value,
+            created_at=event.created_at,
+        )
+
+    def _resolve_user_name(
+        self,
+        user_id: str | None,
+    ) -> str | None:
+        """Converte um identificador interno de usuário em nome público."""
+
+        if user_id is None:
+            return None
+
+        user = self._user_repository.find_by_id(
+            user_id,
+        )
+
+        if user is None:
+            return None
+
+        return user.name
 
     def _require_portal_client(
         self,

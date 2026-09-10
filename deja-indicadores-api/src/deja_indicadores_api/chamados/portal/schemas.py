@@ -54,3 +54,16 @@ class ChamadosPortalTicketResponse(BaseModel):
 
     created_at: datetime
     updated_at: datetime
+
+
+class ChamadosPortalTimelineResponse(BaseModel):
+    """Representação segura de um evento do histórico no Portal."""
+
+    id: str
+    event_type: str
+    description: str
+
+    previous_value: str | None
+    new_value: str | None
+
+    created_at: datetime

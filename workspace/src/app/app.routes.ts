@@ -24,17 +24,32 @@ export const routes: Routes = [
   },
   {
     path: 'portal',
-    title: 'Portal do Cliente | Deja Chamados',
     canActivate: [
       authenticationGuard,
       portalAccessGuard,
     ],
-    loadComponent: () =>
-      import(
-        './deja-chamados/portal/presentation/portal-page/portal-page'
-      ).then(
-        module => module.PortalPageComponent,
-      ),
+    children: [
+      {
+        path: '',
+        title: 'Portal do Cliente | Deja Chamados',
+        loadComponent: () =>
+          import(
+            './deja-chamados/portal/presentation/portal-page/portal-page'
+          ).then(
+            module => module.PortalPageComponent,
+          ),
+      },
+      {
+        path: 'tickets/:id',
+        title: 'Detalhes do chamado | Deja Chamados',
+        loadComponent: () =>
+          import(
+            './deja-chamados/portal/presentation/portal-ticket-details/portal-ticket-details'
+          ).then(
+            module => module.PortalTicketDetailsComponent,
+          ),
+      },
+    ],
   },
   {
     path: '',

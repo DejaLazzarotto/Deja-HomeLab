@@ -12,6 +12,8 @@ import {
   PortalTicketCreate,
   PortalTicketPriority,
   PortalTicketStatus,
+  PortalTimelineEvent,
+  PortalTimelineEventType,
 } from '../domain/portal-ticket';
 
 interface PortalTicketResponse {
@@ -33,6 +35,17 @@ interface PortalTicketResponse {
 interface PortalTicketCreateRequest {
   title: string;
   description: string;
+}
+
+interface PortalTimelineEventResponse {
+  id: string;
+  event_type: PortalTimelineEventType;
+  description: string;
+
+  previous_value: string | null;
+  new_value: string | null;
+
+  created_at: string;
 }
 
 export class HttpPortalTicketRepository {
@@ -76,6 +89,20 @@ export class HttpPortalTicketRepository {
     }
   }
 
+  async listTimeline(
+    ticketId: string,
+  ): Promise<readonly PortalTimelineEvent[]> {
+    const response = await firstValueFrom(
+      this.http.get<readonly PortalTimelineEventResponse[]>(
+        `/api/chamados/portal/tickets/${ticketId}/timeline`,
+      ),
+    );
+
+    return response.map(
+      event => this.mapTimelineEvent(event),
+    );
+  }
+
   async create(
     input: PortalTicketCreate,
   ): Promise<PortalTicket> {
@@ -117,6 +144,21 @@ export class HttpPortalTicketRepository {
 
       createdAt: response.created_at,
       updatedAt: response.updated_at,
+    };
+  }
+
+  private mapTimelineEvent(
+    response: PortalTimelineEventResponse,
+  ): PortalTimelineEvent {
+    return {
+      id: response.id,
+      eventType: response.event_type,
+      description: response.description,
+
+      previousValue: response.previous_value,
+      newValue: response.new_value,
+
+      createdAt: response.created_at,
     };
   }
 }

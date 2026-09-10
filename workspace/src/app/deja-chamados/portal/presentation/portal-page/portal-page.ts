@@ -15,6 +15,10 @@ import {
 } from '@angular/core';
 
 import {
+  Router,
+} from '@angular/router';
+
+import {
   AuthenticationService,
 } from '../../../../platform/authentication/application/authentication.service';
 
@@ -45,6 +49,9 @@ import {
 export class PortalPageComponent implements OnInit {
   private readonly authentication =
     inject(AuthenticationService);
+
+  private readonly router =
+    inject(Router);
 
   private readonly http =
     inject(HttpClient);
@@ -148,6 +155,16 @@ export class PortalPageComponent implements OnInit {
     } finally {
       this.creating.set(false);
     }
+  }
+
+  openDetails(
+    ticket: PortalTicket,
+  ): void {
+    void this.router.navigate([
+      '/portal',
+      'tickets',
+      ticket.id,
+    ]);
   }
 
   logout(): void {

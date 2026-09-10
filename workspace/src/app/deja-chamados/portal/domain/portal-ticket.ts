@@ -10,6 +10,13 @@ export type PortalTicketPriority =
   | 'high'
   | 'critical';
 
+export type PortalTimelineEventType =
+  | 'created'
+  | 'priority_changed'
+  | 'assigned_changed'
+  | 'updated'
+  | 'status_changed';
+
 export interface PortalTicket {
   readonly id: string;
 
@@ -29,4 +36,15 @@ export interface PortalTicket {
 export interface PortalTicketCreate {
   readonly title: string;
   readonly description: string;
+}
+
+export interface PortalTimelineEvent {
+  readonly id: string;
+  readonly eventType: PortalTimelineEventType;
+  readonly description: string;
+
+  readonly previousValue: string | null;
+  readonly newValue: string | null;
+
+  readonly createdAt: string;
 }

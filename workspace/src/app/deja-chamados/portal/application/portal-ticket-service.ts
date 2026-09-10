@@ -1,6 +1,7 @@
 import {
   PortalTicket,
   PortalTicketCreate,
+  PortalTimelineEvent,
 } from '../domain/portal-ticket';
 
 import {
@@ -41,6 +42,12 @@ export class PortalTicketService {
     }
 
     return ticket;
+  }
+
+  listTimeline(
+    ticketId: string,
+  ): Promise<readonly PortalTimelineEvent[]> {
+    return this.repository.listTimeline(ticketId);
   }
 
   create(

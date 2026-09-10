@@ -1,0 +1,163 @@
+<section class="portal-details-page">
+  <header class="portal-details-header">
+    <button
+      type="button"
+      class="portal-back-button"
+      (click)="back()"
+    >
+      Voltar
+    </button>
+
+    <div>
+      <p class="portal-details-eyebrow">
+        Deja Chamados
+      </p>
+
+      <h1>
+        Detalhes do chamado
+      </h1>
+    </div>
+  </header>
+
+  <main class="portal-details-content">
+    @if (loading()) {
+      <section class="portal-details-card">
+        <p>
+          Carregando detalhes do chamado...
+        </p>
+      </section>
+    } @else if (errorMessage()) {
+      <section class="portal-details-card portal-details-error">
+        <p>
+          {{ errorMessage() }}
+        </p>
+
+        <button
+          type="button"
+          class="portal-secondary-button"
+          (click)="loadDetails()"
+        >
+          Tentar novamente
+        </button>
+      </section>
+    } @else if (ticket(); as currentTicket) {
+      <section class="portal-details-card">
+        <header class="portal-ticket-header">
+          <div>
+            <p class="portal-ticket-id">
+              Chamado
+              {{ currentTicket.id.slice(0, 8) }}
+            </p>
+
+            <h2>
+              {{ currentTicket.title }}
+            </h2>
+          </div>
+
+          <span
+            class="portal-ticket-status"
+            [attr.data-status]="currentTicket.status"
+          >
+            {{ statusLabel(currentTicket.status) }}
+          </span>
+        </header>
+
+        <p class="portal-ticket-description">
+          {{ currentTicket.description }}
+        </p>
+
+        <dl class="portal-ticket-meta">
+          <div>
+            <dt>
+              Prioridade
+            </dt>
+
+            <dd>
+              {{ priorityLabel(currentTicket.priority) }}
+            </dd>
+          </div>
+
+          <div>
+            <dt>
+              Responsável
+            </dt>
+
+            <dd>
+              {{ currentTicket.assignedToUserName ?? 'Aguardando atribuição' }}
+            </dd>
+          </div>
+
+          <div>
+            <dt>
+              Aberto em
+            </dt>
+
+            <dd>
+              {{ currentTicket.createdAt | date:'dd/MM/yyyy HH:mm' }}
+            </dd>
+          </div>
+
+          <div>
+            <dt>
+              Última atualização
+            </dt>
+
+            <dd>
+              {{ currentTicket.updatedAt | date:'dd/MM/yyyy HH:mm' }}
+            </dd>
+          </div>
+
+          @if (currentTicket.closedAt) {
+            <div>
+              <dt>
+                Fechado em
+              </dt>
+
+              <dd>
+                {{ currentTicket.closedAt | date:'dd/MM/yyyy HH:mm' }}
+              </dd>
+            </div>
+          }
+        </dl>
+      </section>
+
+      <section class="portal-details-card">
+        <div class="portal-history-header">
+          <div>
+            <h2>
+              Histórico
+            </h2>
+
+            <p>
+              Acompanhe as alterações realizadas neste chamado.
+            </p>
+          </div>
+        </div>
+
+        @if (timeline().length === 0) {
+          <p class="portal-history-empty">
+            Nenhum evento registrado até o momento.
+          </p>
+        } @else {
+          <ol class="portal-history-list">
+            @for (event of timeline(); track event.id) {
+              <li class="portal-history-item">
+                <div class="portal-history-marker"></div>
+
+                <div class="portal-history-content">
+                  <p class="portal-history-description">
+                    {{ timelineDescription(event) }}
+                  </p>
+
+                  <time>
+                    {{ event.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                  </time>
+                </div>
+              </li>
+            }
+          </ol>
+        }
+      </section>
+    }
+  </main>
+</section>
