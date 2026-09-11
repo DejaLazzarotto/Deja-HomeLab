@@ -78,6 +78,46 @@
               }
             </select>
           </label>
+
+          <label class="ticket-details__field ticket-details__status-control">
+            <span>Prioridade</span>
+
+            <select
+              [ngModel]="currentTicket.priority"
+              (ngModelChange)="changePriority($event)"
+            >
+              @for (
+                priority of priorityOptions();
+                track priority
+              ) {
+                <option [value]="priority">
+                  {{ priorityLabel(priority) }}
+                </option>
+              }
+            </select>
+          </label>
+
+          <label class="ticket-details__field ticket-details__status-control">
+            <span>Responsável</span>
+
+            <select
+              [ngModel]="currentTicket.assignedToUserId || ''"
+              (ngModelChange)="changeAssignee($event)"
+            >
+              <option value="">
+                Não atribuído
+              </option>
+
+              @for (
+                assignee of assignees();
+                track assignee.id
+              ) {
+                <option [value]="assignee.id">
+                  {{ assignee.name }}
+                </option>
+              }
+            </select>
+          </label>
         }
       </header>
 

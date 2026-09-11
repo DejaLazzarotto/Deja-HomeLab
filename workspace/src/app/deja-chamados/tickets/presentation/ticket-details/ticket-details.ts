@@ -24,6 +24,7 @@ import {
 } from '@angular/forms';
 
 import {
+  TicketAssigneeService,
   TicketCommentService,
   TicketTimelineService,
   TicketService,
@@ -31,8 +32,10 @@ import {
 
 import {
   Ticket,
+  TicketAssignee,
   TicketComment,
   TicketCommentVisibility,
+  TicketPriority,
   TicketTimelineEvent,
   TICKET_STATUS_TRANSITIONS,
   TicketStatus,
@@ -55,6 +58,9 @@ export class TicketDetailsComponent implements OnInit {
 
   readonly service = input.required<TicketService>();
 
+  readonly assigneeService =
+    input.required<TicketAssigneeService>();
+
   readonly timelineService =
     input.required<TicketTimelineService>();
 
@@ -73,6 +79,9 @@ export class TicketDetailsComponent implements OnInit {
 
   readonly comments =
     signal<readonly TicketComment[]>([]);
+
+  readonly assignees =
+    signal<readonly TicketAssignee[]>([]);
 
   readonly commentMessage =
     signal('');
@@ -123,9 +132,14 @@ export class TicketDetailsComponent implements OnInit {
         ),
       ]);
 
+      const assignees = this.canManage()
+        ? await this.assigneeService().list(ticket.clientId)
+        : [];
+
       this.ticket.set(ticket);
       this.timeline.set(timeline);
       this.comments.set(comments);
+      this.assignees.set(assignees);
     } catch {
       this.errorMessage.set(
         'Não foi possível carregar os detalhes do chamado.',
@@ -242,6 +256,15 @@ export class TicketDetailsComponent implements OnInit {
       : 'Interno';
   }
 
+  priorityOptions(): readonly TicketPriority[] {
+    return [
+      'low',
+      'medium',
+      'high',
+      'critical',
+    ];
+  }
+
   statusOptions(
     ticket: Ticket,
   ): readonly TicketStatus[] {
@@ -280,6 +303,86 @@ export class TicketDetailsComponent implements OnInit {
     } catch {
       this.errorMessage.set(
         'Não foi possível atualizar o status do chamado.',
+      );
+    }
+  }
+
+  async changePriority(
+    priority: TicketPriority,
+  ): Promise<void> {
+    if (!this.canManage()) {
+      return;
+    }
+
+    const ticket = this.ticket();
+
+    if (
+      !ticket
+      || priority === ticket.priority
+    ) {
+      return;
+    }
+
+    this.errorMessage.set(null);
+
+    try {
+      await this.service().update(
+        ticket.id,
+        {
+          title: ticket.title,
+          description: ticket.description,
+          priority,
+          assignedToUserId: ticket.assignedToUserId,
+        },
+      );
+
+      await this.loadDetails();
+    } catch {
+      this.errorMessage.set(
+        'Não foi possível atualizar a prioridade do chamado.',
+      );
+    }
+  }
+
+  async changeAssignee(
+    assignedToUserId: string,
+  ): Promise<void> {
+    if (!this.canManage()) {
+      return;
+    }
+
+    const ticket = this.ticket();
+
+    if (!ticket) {
+      return;
+    }
+
+    const nextAssignedToUserId =
+      assignedToUserId || null;
+
+    if (
+      nextAssignedToUserId === ticket.assignedToUserId
+    ) {
+      return;
+    }
+
+    this.errorMessage.set(null);
+
+    try {
+      await this.service().update(
+        ticket.id,
+        {
+          title: ticket.title,
+          description: ticket.description,
+          priority: ticket.priority,
+          assignedToUserId: nextAssignedToUserId,
+        },
+      );
+
+      await this.loadDetails();
+    } catch {
+      this.errorMessage.set(
+        'Não foi possível atualizar o responsável pelo chamado.',
       );
     }
   }
