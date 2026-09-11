@@ -13,3 +13,4 @@ export * from './ticket-sla.utils';
 export * from './ticket-timeline';
 export * from './ticket-timeline-repository';
 export * from './ticket-validator';
+export * from './ticket-status-transitions';

@@ -59,6 +59,26 @@
 
           <h3>{{ currentTicket.title }}</h3>
         </div>
+
+        @if (canManage()) {
+          <label class="ticket-details__field ticket-details__status-control">
+            <span>Status do chamado</span>
+
+            <select
+              [ngModel]="currentTicket.status"
+              (ngModelChange)="changeStatus($event)"
+            >
+              @for (
+                status of statusOptions(currentTicket);
+                track status
+              ) {
+                <option [value]="status">
+                  {{ statusLabel(status) }}
+                </option>
+              }
+            </select>
+          </label>
+        }
       </header>
 
       <p class="ticket-details__description">

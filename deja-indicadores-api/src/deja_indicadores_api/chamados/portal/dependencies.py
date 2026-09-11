@@ -44,11 +44,13 @@ def get_chamados_portal_service(
     """Cria o serviço do Portal externo do Deja Chamados."""
 
     ticket_repository = ChamadosTicketRepository(session)
+    user_repository = UserRepository(session)
 
     timeline_service = ChamadosTicketTimelineService(
         repository=ChamadosTicketTimelineRepository(session),
         ticket_repository=ticket_repository,
         authorization_service=AuthorizationService(),
+        user_repository=user_repository,
     )
 
     return ChamadosPortalService(
@@ -56,7 +58,7 @@ def get_chamados_portal_service(
         client_repository=ChamadosClientRepository(session),
         client_user_repository=ChamadosClientUserRepository(session),
         timeline_service=timeline_service,
-        user_repository=UserRepository(session),
+        user_repository=user_repository,
         comment_repository=ChamadosTicketCommentRepository(session),
     )
 

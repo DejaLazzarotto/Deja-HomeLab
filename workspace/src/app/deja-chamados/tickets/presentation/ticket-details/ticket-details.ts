@@ -34,6 +34,8 @@ import {
   TicketComment,
   TicketCommentVisibility,
   TicketTimelineEvent,
+  TICKET_STATUS_TRANSITIONS,
+  TicketStatus,
 } from '../../domain';
 
 @Component({
@@ -240,6 +242,48 @@ export class TicketDetailsComponent implements OnInit {
       : 'Interno';
   }
 
+  statusOptions(
+    ticket: Ticket,
+  ): readonly TicketStatus[] {
+    return [
+      ticket.status,
+      ...TICKET_STATUS_TRANSITIONS[ticket.status],
+    ];
+  }
+
+  async changeStatus(
+    status: TicketStatus,
+  ): Promise<void> {
+    if (!this.canManage()) {
+      return;
+    }
+
+    const ticket = this.ticket();
+
+    if (
+      !ticket
+      || status === ticket.status
+      || !TICKET_STATUS_TRANSITIONS[ticket.status].includes(status)
+    ) {
+      return;
+    }
+
+    this.errorMessage.set(null);
+
+    try {
+      await this.service().updateStatus(
+        ticket.id,
+        { status },
+      );
+
+      await this.loadDetails();
+    } catch {
+      this.errorMessage.set(
+        'Não foi possível atualizar o status do chamado.',
+      );
+    }
+  }
+
   timelineDescription(
     event: TicketTimelineEvent,
   ): string {
@@ -269,10 +313,14 @@ export class TicketDetailsComponent implements OnInit {
 
     if (event.eventType === 'assigned_changed') {
       const previous =
-        event.previousValue ?? 'sem responsável';
+        event.previousDisplayValue
+        ?? event.previousValue
+        ?? 'sem responsável';
 
       const next =
-        event.newValue ?? 'sem responsável';
+        event.newDisplayValue
+        ?? event.newValue
+        ?? 'sem responsável';
 
       return `Responsável alterado de ${previous} para ${next}.`;
     }

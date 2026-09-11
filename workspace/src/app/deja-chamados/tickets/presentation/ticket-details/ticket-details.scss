@@ -132,6 +132,10 @@
   gap: 0.5rem;
 }
 
+.ticket-details__status-control {
+  min-width: 12rem;
+}
+
 .ticket-details__priority,
 .ticket-details__status,
 .ticket-comment__visibility {

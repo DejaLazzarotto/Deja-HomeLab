@@ -42,6 +42,7 @@ import {
   TicketPriority,
   TicketStatus,
   TicketUpdateInput,
+  TICKET_STATUS_TRANSITIONS,
 } from '../../domain';
 
 import {
@@ -72,28 +73,6 @@ const EMPTY_DRAFT: TicketDraft = {
   assignedToUserId: null,
 };
 
-const STATUS_TRANSITIONS: Readonly<
-  Record<TicketStatus, readonly TicketStatus[]>
-> = {
-  open: [
-    'in_progress',
-    'pending',
-    'closed',
-  ],
-  in_progress: [
-    'open',
-    'pending',
-    'closed',
-  ],
-  pending: [
-    'open',
-    'in_progress',
-    'closed',
-  ],
-  closed: [
-    'open',
-  ],
-};
 
 @Component({
   selector: 'deja-ticket-management',
@@ -440,7 +419,7 @@ implements OnInit, OnDestroy {
       return;
     }
 
-    if (!STATUS_TRANSITIONS[ticket.status].includes(status)) {
+    if (!TICKET_STATUS_TRANSITIONS[ticket.status].includes(status)) {
       this.operationError.set(
         'A transição de status selecionada não é permitida.',
       );
@@ -531,7 +510,7 @@ implements OnInit, OnDestroy {
   ): readonly TicketStatus[] {
     return [
       ticket.status,
-      ...STATUS_TRANSITIONS[ticket.status],
+      ...TICKET_STATUS_TRANSITIONS[ticket.status],
     ];
   }
 

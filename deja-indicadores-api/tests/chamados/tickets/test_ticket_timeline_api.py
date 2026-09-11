@@ -5,7 +5,10 @@ from tests.authentication.test_user_authorization_api import authorization_heade
 from tests.chamados.tickets.test_tickets_api import (
     TICKETS_URL,
     create_ticket,
-    ticket_context,
+)
+
+pytest_plugins = (
+    "tests.chamados.tickets.test_tickets_api",
 )
 
 TIMELINE_SUFFIX = "/timeline"
@@ -35,6 +38,8 @@ def test_ticket_creation_registers_timeline_event(
     assert event["description"] == "Chamado criado."
     assert event["previous_value"] is None
     assert event["new_value"] == "created"
+    assert event["previous_display_value"] is None
+    assert event["new_display_value"] is None
     assert event["created_by_user_id"] == ticket_context["administrator"]["id"]
     assert event["created_at"] is not None
 
@@ -80,10 +85,14 @@ def test_ticket_update_registers_changed_fields(
     priority_event = body[1]
     assert priority_event["previous_value"] == "high"
     assert priority_event["new_value"] == "critical"
+    assert priority_event["previous_display_value"] is None
+    assert priority_event["new_display_value"] is None
 
     assigned_event = body[2]
     assert assigned_event["previous_value"] is None
     assert assigned_event["new_value"] == analyst["id"]
+    assert assigned_event["previous_display_value"] is None
+    assert assigned_event["new_display_value"] == analyst["name"]
 
 
 def test_status_change_and_reopen_register_timeline(
@@ -125,8 +134,12 @@ def test_status_change_and_reopen_register_timeline(
     assert len(status_events) == 2
     assert status_events[0]["previous_value"] == "open"
     assert status_events[0]["new_value"] == "closed"
+    assert status_events[0]["previous_display_value"] is None
+    assert status_events[0]["new_display_value"] is None
     assert status_events[1]["previous_value"] == "closed"
     assert status_events[1]["new_value"] == "open"
+    assert status_events[1]["previous_display_value"] is None
+    assert status_events[1]["new_display_value"] is None
 
 
 def test_viewer_can_read_timeline(
@@ -162,4 +175,8 @@ def test_viewer_can_read_timeline(
     )
 
     assert response.status_code == 200
-    assert response.json()[0]["event_type"] == "created"
+
+    event = response.json()[0]
+    assert event["event_type"] == "created"
+    assert event["previous_display_value"] is None
+    assert event["new_display_value"] is None

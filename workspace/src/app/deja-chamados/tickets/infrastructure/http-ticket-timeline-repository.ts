@@ -29,6 +29,9 @@ interface TicketTimelineResponse {
   readonly previous_value: string | null;
   readonly new_value: string | null;
 
+  readonly previous_display_value: string | null;
+  readonly new_display_value: string | null;
+
   readonly created_by_user_id: string | null;
   readonly created_at: string;
 }
@@ -56,6 +59,8 @@ implements TicketTimelineRepository {
       description: event.description,
       previousValue: event.previous_value,
       newValue: event.new_value,
+      previousDisplayValue: event.previous_display_value,
+      newDisplayValue: event.new_display_value,
       createdByUserId: event.created_by_user_id,
       createdAt: event.created_at,
     }));

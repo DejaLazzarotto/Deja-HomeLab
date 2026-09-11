@@ -16,6 +16,9 @@ export interface TicketTimelineEvent {
   previousValue: string | null;
   newValue: string | null;
 
+  previousDisplayValue?: string | null;
+  newDisplayValue?: string | null;
+
   createdByUserId: string | null;
   createdAt: string;
 }

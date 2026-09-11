@@ -14,5 +14,7 @@ class ChamadosTicketTimelineResponse(BaseModel):
     description: str
     previous_value: str | None
     new_value: str | None
+    previous_display_value: str | None = None
+    new_display_value: str | None = None
     created_by_user_id: str | None
     created_at: datetime
