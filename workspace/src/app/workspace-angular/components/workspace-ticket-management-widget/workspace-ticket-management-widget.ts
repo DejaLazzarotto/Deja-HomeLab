@@ -6,67 +6,39 @@
  * Integra a Gestão de Chamados ao Workspace institucional.
  */
 
-import {
-  HttpClient,
-} from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 
-import {
-  ChangeDetectionStrategy,
-  Component,
-  Input,
-  OnInit,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit, inject, signal } from '@angular/core';
 
-import {
-  Client,
-  ClientsComposition,
-} from '../../../deja-chamados/clients';
+import { Client, ClientsComposition } from '../../../deja-chamados/clients';
 
-import {
-  TicketManagementComponent,
-  TicketsComposition,
-} from '../../../deja-chamados/tickets';
+import { TicketManagementComponent, TicketsComposition } from '../../../deja-chamados/tickets';
 
-import {
-  AuthenticationService,
-} from '../../../platform/authentication/application/authentication.service';
+import { AuthenticationService } from '../../../platform/authentication/application/authentication.service';
 
-import {
-  WorkspaceWidgetInstance,
-} from '../../../core/workspace-sdk/runtime/workspace-widget';
+import { WorkspaceWidgetInstance } from '../../../core/workspace-sdk/runtime/workspace-widget';
 
-import {
-  WorkspaceWidgetContext,
-} from '../../../core/workspace-sdk/runtime/workspace-widget-context';
+import { WorkspaceWidgetContext } from '../../../core/workspace-sdk/runtime/workspace-widget-context';
 
 @Component({
   selector: 'deja-workspace-ticket-management-widget',
   standalone: true,
-  imports: [
-    TicketManagementComponent,
-  ],
+  imports: [TicketManagementComponent],
   template: `
     @if (loadingClients()) {
-      <div class="scope-state">
-        Carregando clientes...
-      </div>
+      <div class="scope-state">Carregando clientes...</div>
     } @else if (clientError()) {
       <div class="scope-state scope-state--error">
         <p>{{ clientError() }}</p>
 
-        <button
-          type="button"
-          (click)="loadClients()"
-        >
-          Tentar novamente
-        </button>
+        <button type="button" (click)="loadClients()">Tentar novamente</button>
       </div>
     } @else {
       <deja-ticket-management
         [service]="ticketsComposition.service"
         [assigneeService]="ticketsComposition.assigneeService"
+        [timelineService]="ticketsComposition.timelineService"
+        [commentService]="ticketsComposition.commentService"
         [clients]="clients()"
         [canManage]="canManage"
       />
@@ -111,30 +83,22 @@ import {
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class WorkspaceTicketManagementWidgetComponent
-implements OnInit {
-
+export class WorkspaceTicketManagementWidgetComponent implements OnInit {
   private readonly http = inject(HttpClient);
 
-  private readonly authentication =
-    inject(AuthenticationService);
+  private readonly authentication = inject(AuthenticationService);
 
-  private readonly clientsComposition =
-    new ClientsComposition(this.http);
+  private readonly clientsComposition = new ClientsComposition(this.http);
 
-  protected readonly ticketsComposition =
-    new TicketsComposition(this.http);
+  protected readonly ticketsComposition = new TicketsComposition(this.http);
 
-  protected readonly clients =
-    signal<readonly Client[]>([]);
+  protected readonly clients = signal<readonly Client[]>([]);
 
   protected readonly loadingClients = signal(false);
 
-  protected readonly clientError =
-    signal<string | null>(null);
+  protected readonly clientError = signal<string | null>(null);
 
-  protected readonly currentUser =
-    this.authentication.user();
+  protected readonly currentUser = this.authentication.user();
 
   protected readonly canManage = [
     'platform_admin',
@@ -163,16 +127,11 @@ implements OnInit {
     this.clientError.set(null);
 
     try {
-      this.clients.set(
-        await this.clientsComposition.service.list(),
-      );
+      this.clients.set(await this.clientsComposition.service.list());
     } catch {
-      this.clientError.set(
-        'Não foi possível carregar os clientes.',
-      );
+      this.clientError.set('Não foi possível carregar os clientes.');
     } finally {
       this.loadingClients.set(false);
     }
   }
-
 }

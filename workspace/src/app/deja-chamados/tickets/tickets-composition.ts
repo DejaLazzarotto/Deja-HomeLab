@@ -12,12 +12,14 @@ import {
 
 import {
   TicketAssigneeService,
+  TicketCommentService,
   TicketTimelineService,
   TicketService,
 } from './application';
 
 import {
   HttpTicketAssigneeRepository,
+  HttpTicketCommentRepository,
   HttpTicketTimelineRepository,
   HttpTicketRepository,
 } from './infrastructure';
@@ -32,11 +34,16 @@ export class TicketsComposition {
   private readonly assigneeRepository:
     HttpTicketAssigneeRepository;
 
+  private readonly commentRepository:
+    HttpTicketCommentRepository;
+
   readonly service: TicketService;
 
   readonly assigneeService: TicketAssigneeService;
 
   readonly timelineService: TicketTimelineService;
+
+  readonly commentService: TicketCommentService;
 
   constructor(
     http: HttpClient,
@@ -55,6 +62,11 @@ export class TicketsComposition {
         http,
       );
 
+    this.commentRepository =
+      new HttpTicketCommentRepository(
+        http,
+      );
+
     this.service = new TicketService(
       this.repository,
     );
@@ -67,6 +79,11 @@ export class TicketsComposition {
     this.assigneeService =
       new TicketAssigneeService(
         this.assigneeRepository,
+      );
+
+    this.commentService =
+      new TicketCommentService(
+        this.commentRepository,
       );
   }
 

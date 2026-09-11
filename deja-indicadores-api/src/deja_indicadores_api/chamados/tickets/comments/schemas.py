@@ -41,4 +41,5 @@ class ChamadosTicketCommentResponse(BaseModel):
     content: str
     visibility: ChamadosTicketCommentVisibility
     created_by_user_id: str | None
+    created_by: str | None
     created_at: datetime

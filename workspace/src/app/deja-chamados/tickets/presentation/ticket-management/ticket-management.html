@@ -1,3 +1,13 @@
+@if (detailsTicketId(); as ticketId) {
+  <deja-ticket-details
+    [ticketId]="ticketId"
+    [service]="service()"
+    [timelineService]="timelineService()"
+    [commentService]="commentService()"
+    [canManage]="canManage()"
+    (closed)="closeDetails()"
+  />
+} @else {
 <section class="tickets">
   <header class="tickets__header">
     <div class="tickets__heading">
@@ -315,15 +325,25 @@
                 </span>
               </div>
 
-              @if (canManage()) {
+              <div class="ticket-card__actions">
                 <button
                   class="ticket-card__edit-button"
                   type="button"
-                  (click)="openEdit(ticket)"
+                  (click)="openDetails(ticket)"
                 >
-                  Editar
+                  Ver detalhes
                 </button>
-              }
+
+                @if (canManage()) {
+                  <button
+                    class="ticket-card__edit-button"
+                    type="button"
+                    (click)="openEdit(ticket)"
+                  >
+                    Editar
+                  </button>
+                }
+              </div>
             </header>
 
             <p class="ticket-card__description">
@@ -385,3 +405,4 @@
     }
   </section>
 </section>
+}

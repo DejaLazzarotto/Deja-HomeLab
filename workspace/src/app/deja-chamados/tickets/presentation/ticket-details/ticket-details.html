@@ -1,0 +1,252 @@
+<section class="ticket-details">
+  <header class="ticket-details__header">
+    <button
+      class="ticket-details__back-button"
+      type="button"
+      (click)="back()"
+    >
+      ← Voltar para chamados
+    </button>
+
+    <div class="ticket-details__heading">
+      <span class="ticket-details__eyebrow">
+        Deja Chamados
+      </span>
+
+      <h2>Detalhes do chamado</h2>
+
+      <p>
+        Acompanhamento completo do atendimento, histórico e comentários.
+      </p>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="ticket-details__state">
+      Carregando detalhes do chamado...
+    </div>
+  } @else if (errorMessage()) {
+    <div
+      class="ticket-details__message ticket-details__message--error"
+      role="alert"
+    >
+      <span>{{ errorMessage() }}</span>
+
+      <button
+        type="button"
+        (click)="loadDetails()"
+      >
+        Tentar novamente
+      </button>
+    </div>
+  } @else if (ticket(); as currentTicket) {
+    <section class="ticket-details__summary">
+      <header class="ticket-details__summary-header">
+        <div>
+          <div class="ticket-details__badges">
+            <span
+              [class]="'ticket-details__priority ticket-details__priority--' + currentTicket.priority"
+            >
+              {{ priorityLabel(currentTicket.priority) }}
+            </span>
+
+            <span
+              [class]="'ticket-details__status ticket-details__status--' + currentTicket.status"
+            >
+              {{ statusLabel(currentTicket.status) }}
+            </span>
+          </div>
+
+          <h3>{{ currentTicket.title }}</h3>
+        </div>
+      </header>
+
+      <p class="ticket-details__description">
+        {{ currentTicket.description }}
+      </p>
+
+      <dl class="ticket-details__metadata">
+        <div>
+          <dt>Responsável</dt>
+          <dd>
+            {{ currentTicket.assignedToUserName || 'Não atribuído' }}
+          </dd>
+        </div>
+
+        <div>
+          <dt>Aberto em</dt>
+          <dd>
+            {{ currentTicket.createdAt | date:'dd/MM/yyyy HH:mm' }}
+          </dd>
+        </div>
+
+        <div>
+          <dt>Atualizado em</dt>
+          <dd>
+            {{ currentTicket.updatedAt | date:'dd/MM/yyyy HH:mm' }}
+          </dd>
+        </div>
+
+        @if (currentTicket.closedAt) {
+          <div>
+            <dt>Encerrado em</dt>
+            <dd>
+              {{ currentTicket.closedAt | date:'dd/MM/yyyy HH:mm' }}
+            </dd>
+          </div>
+        }
+      </dl>
+    </section>
+
+    <section class="ticket-details__comments">
+      <header class="ticket-details__section-header">
+        <div>
+          <span class="ticket-details__section-eyebrow">
+            Comunicação
+          </span>
+
+          <h3>Comentários</h3>
+
+          <p>
+            Comentários públicos podem ser vistos pelo cliente.
+            Comentários internos ficam restritos à equipe.
+          </p>
+        </div>
+      </header>
+
+      @if (canManage()) {
+        <div class="ticket-details__comment-form">
+          <label class="ticket-details__field">
+            <span>Visibilidade</span>
+
+            <select
+              [ngModel]="commentVisibility()"
+              [disabled]="submittingComment()"
+              (ngModelChange)="onCommentVisibilityChange($event)"
+            >
+              <option value="public">
+                Público — visível para o cliente
+              </option>
+
+              <option value="internal">
+                Interno — somente equipe
+              </option>
+            </select>
+          </label>
+
+          <label class="ticket-details__field">
+            <span>Comentário</span>
+
+            <textarea
+              rows="5"
+              maxlength="5000"
+              [ngModel]="commentMessage()"
+              [disabled]="submittingComment()"
+              (ngModelChange)="onCommentMessageChange($event)"
+              placeholder="Escreva uma atualização, orientação ou observação sobre o chamado"
+            ></textarea>
+
+            <small>
+              {{ commentMessage().length }}/5000 caracteres
+            </small>
+          </label>
+
+          @if (commentErrorMessage()) {
+            <div
+              class="ticket-details__message ticket-details__message--error"
+              role="alert"
+            >
+              {{ commentErrorMessage() }}
+            </div>
+          }
+
+          <div class="ticket-details__comment-actions">
+            <button
+              class="ticket-details__primary-button"
+              type="button"
+              [disabled]="
+                submittingComment()
+                || !commentMessage().trim()
+              "
+              (click)="addComment()"
+            >
+              {{ submittingComment() ? 'Enviando...' : 'Adicionar comentário' }}
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (comments().length === 0) {
+        <div class="ticket-details__empty-state">
+          Nenhum comentário registrado.
+        </div>
+      } @else {
+        <div class="ticket-details__comment-list">
+          @for (comment of comments(); track comment.id) {
+            <article class="ticket-comment">
+              <header class="ticket-comment__header">
+                <div>
+                  <strong>
+                    {{ comment.createdBy || 'Usuário não identificado' }}
+                  </strong>
+
+                  <span>
+                    {{ comment.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                  </span>
+                </div>
+
+                <span
+                  [class]="'ticket-comment__visibility ticket-comment__visibility--' + comment.visibility"
+                >
+                  {{ visibilityLabel(comment.visibility) }}
+                </span>
+              </header>
+
+              <p>{{ comment.content }}</p>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="ticket-details__timeline">
+      <header class="ticket-details__section-header">
+        <div>
+          <span class="ticket-details__section-eyebrow">
+            Histórico
+          </span>
+
+          <h3>Linha do tempo</h3>
+
+          <p>
+            Alterações operacionais registradas ao longo do atendimento.
+          </p>
+        </div>
+      </header>
+
+      @if (timeline().length === 0) {
+        <div class="ticket-details__empty-state">
+          Nenhum evento registrado.
+        </div>
+      } @else {
+        <div class="ticket-details__timeline-list">
+          @for (event of timeline(); track event.id) {
+            <article class="timeline-event">
+              <div class="timeline-event__marker"></div>
+
+              <div class="timeline-event__content">
+                <p>
+                  {{ timelineDescription(event) }}
+                </p>
+
+                <span>
+                  {{ event.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                </span>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  }
+</section>

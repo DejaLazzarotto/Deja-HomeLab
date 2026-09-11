@@ -29,7 +29,9 @@ import {
 
 import {
   TicketAssigneeService,
+  TicketCommentService,
   TicketService,
+  TicketTimelineService,
 } from '../../application';
 
 import {
@@ -41,6 +43,10 @@ import {
   TicketStatus,
   TicketUpdateInput,
 } from '../../domain';
+
+import {
+  TicketDetailsComponent,
+} from '../ticket-details/ticket-details';
 
 type TicketStatusFilter =
   | 'all'
@@ -94,6 +100,7 @@ const STATUS_TRANSITIONS: Readonly<
   standalone: true,
   imports: [
     FormsModule,
+    TicketDetailsComponent,
   ],
   templateUrl: './ticket-management.html',
   styleUrl: './ticket-management.scss',
@@ -106,6 +113,12 @@ implements OnInit, OnDestroy {
 
   readonly assigneeService =
     input.required<TicketAssigneeService>();
+
+  readonly timelineService =
+    input.required<TicketTimelineService>();
+
+  readonly commentService =
+    input.required<TicketCommentService>();
 
   readonly clients = input<readonly Client[]>([]);
 
@@ -146,6 +159,9 @@ implements OnInit, OnDestroy {
   readonly operationMessage = signal<string | null>(null);
 
   readonly operationError = signal<string | null>(null);
+
+  readonly detailsTicketId =
+    signal<string | null>(null);
 
   private readonly assigneesByClient =
     new Map<string, readonly TicketAssignee[]>();
@@ -533,6 +549,18 @@ implements OnInit, OnDestroy {
         timeStyle: 'short',
       },
     ).format(new Date(value));
+  }
+
+  openDetails(
+    ticket: Ticket,
+  ): void {
+    this.detailsTicketId.set(
+      ticket.id,
+    );
+  }
+
+  closeDetails(): void {
+    this.detailsTicketId.set(null);
   }
 
   private createFilters(): TicketFilters {

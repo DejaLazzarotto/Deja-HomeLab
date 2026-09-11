@@ -84,6 +84,7 @@ def test_operator_creates_public_ticket_comment(
     assert comment["content"] == "Comentário público da equipe."
     assert comment["visibility"] == "public"
     assert comment["created_by_user_id"] == administrator["id"]
+    assert comment["created_by"] == administrator["name"]
     assert comment["created_at"] is not None
 
 
@@ -99,8 +100,10 @@ def test_operator_creates_internal_ticket_comment(
     )
 
     administrator_headers = context["administrator_headers"]
+    administrator = context["administrator"]
 
     assert isinstance(administrator_headers, dict)
+    assert isinstance(administrator, dict)
 
     ticket = create_ticket_for_comments(
         client,
@@ -123,6 +126,8 @@ def test_operator_creates_internal_ticket_comment(
     assert comment["ticket_id"] == ticket["id"]
     assert comment["content"] == "Observação exclusiva da equipe."
     assert comment["visibility"] == "internal"
+    assert comment["created_by_user_id"] == administrator["id"]
+    assert comment["created_by"] == administrator["name"]
     assert comment["created_at"] is not None
 
 
@@ -138,12 +143,14 @@ def test_reader_lists_public_and_internal_ticket_comments(
     )
 
     administrator_headers = context["administrator_headers"]
+    administrator = context["administrator"]
     organization = context["organization"]
     tenant = context["tenant"]
     environment = context["environment"]
 
     for value in (
         administrator_headers,
+        administrator,
         organization,
         tenant,
         environment,
@@ -195,10 +202,21 @@ def test_reader_lists_public_and_internal_ticket_comments(
 
     assert len(comments) == 2
 
-    comments_by_visibility = {comment["visibility"]: comment for comment in comments}
+    comments_by_visibility = {
+        comment["visibility"]: comment
+        for comment in comments
+    }
 
-    assert comments_by_visibility["public"]["content"] == "Comentário público."
-    assert comments_by_visibility["internal"]["content"] == "Comentário interno."
+    public_comment = comments_by_visibility["public"]
+    internal_comment = comments_by_visibility["internal"]
+
+    assert public_comment["content"] == "Comentário público."
+    assert public_comment["created_by_user_id"] == administrator["id"]
+    assert public_comment["created_by"] == administrator["name"]
+
+    assert internal_comment["content"] == "Comentário interno."
+    assert internal_comment["created_by_user_id"] == administrator["id"]
+    assert internal_comment["created_by"] == administrator["name"]
 
 
 def test_viewer_cannot_create_ticket_comment(
