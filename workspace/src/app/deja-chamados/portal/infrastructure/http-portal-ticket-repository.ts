@@ -9,6 +9,7 @@ import {
 
 import {
   PortalTicket,
+  PortalTicketAttachment,
   PortalTicketComment,
   PortalTicketCommentCreate,
   PortalTicketCreate,
@@ -59,6 +60,15 @@ interface PortalTicketCommentResponse {
 
 interface PortalTicketCommentCreateRequest {
   content: string;
+}
+
+interface PortalTicketAttachmentResponse {
+  id: string;
+  original_name: string;
+  content_type: string;
+  file_size: number;
+  created_by: string | null;
+  created_at: string;
 }
 
 export class HttpPortalTicketRepository {
@@ -144,6 +154,33 @@ export class HttpPortalTicketRepository {
     return this.mapComment(response);
   }
 
+  async listAttachments(
+    ticketId: string,
+  ): Promise<readonly PortalTicketAttachment[]> {
+    const response = await firstValueFrom(
+      this.http.get<readonly PortalTicketAttachmentResponse[]>(
+        `/api/chamados/portal/tickets/${ticketId}/attachments`,
+      ),
+    );
+
+    return response.map(
+      attachment => this.mapAttachment(attachment),
+    );
+  }
+
+  async downloadAttachment(
+    attachmentId: string,
+  ): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(
+        `/api/chamados/portal/attachments/${attachmentId}/download`,
+        {
+          responseType: 'blob',
+        },
+      ),
+    );
+  }
+
   async create(
     input: PortalTicketCreate,
   ): Promise<PortalTicket> {
@@ -207,6 +244,19 @@ export class HttpPortalTicketRepository {
       previousValue: response.previous_value,
       newValue: response.new_value,
 
+      createdAt: response.created_at,
+    };
+  }
+
+  private mapAttachment(
+    response: PortalTicketAttachmentResponse,
+  ): PortalTicketAttachment {
+    return {
+      id: response.id,
+      originalName: response.original_name,
+      contentType: response.content_type,
+      fileSize: response.file_size,
+      createdBy: response.created_by,
       createdAt: response.created_at,
     };
   }

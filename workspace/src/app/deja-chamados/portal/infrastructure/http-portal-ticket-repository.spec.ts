@@ -364,4 +364,81 @@ describe('HttpPortalTicketRepository', () => {
     },
   );
 
+
+  it(
+    'deve listar os anexos de um chamado do Portal',
+    async () => {
+      const promise =
+        repository.listAttachments(
+          'ticket-1',
+        );
+
+      const request =
+        httpTesting.expectOne(
+          '/api/chamados/portal/tickets/ticket-1/attachments',
+        );
+
+      expect(request.request.method)
+        .toBe('GET');
+
+      request.flush([
+        {
+          id: 'attachment-1',
+          original_name: 'evidencia.png',
+          content_type: 'image/png',
+          file_size: 2048,
+          created_by: 'Analista Deja',
+          created_at: '2026-09-12T15:00:00',
+        },
+      ]);
+
+      await expect(promise)
+        .resolves
+        .toEqual([
+          {
+            id: 'attachment-1',
+            originalName: 'evidencia.png',
+            contentType: 'image/png',
+            fileSize: 2048,
+            createdBy: 'Analista Deja',
+            createdAt: '2026-09-12T15:00:00',
+          },
+        ]);
+    },
+  );
+
+  it(
+    'deve baixar um anexo do Portal como Blob',
+    async () => {
+      const promise =
+        repository.downloadAttachment(
+          'attachment-1',
+        );
+
+      const request =
+        httpTesting.expectOne(
+          '/api/chamados/portal/attachments/attachment-1/download',
+        );
+
+      expect(request.request.method)
+        .toBe('GET');
+
+      expect(request.request.responseType)
+        .toBe('blob');
+
+      const blob = new Blob(
+        ['conteudo'],
+        {
+          type: 'application/pdf',
+        },
+      );
+
+      request.flush(blob);
+
+      await expect(promise)
+        .resolves
+        .toBeInstanceOf(Blob);
+    },
+  );
+
 });

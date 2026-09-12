@@ -1,5 +1,6 @@
 import {
   PortalTicket,
+  PortalTicketAttachment,
   PortalTicketComment,
   PortalTicketCommentCreate,
   PortalTicketCreate,
@@ -48,6 +49,17 @@ describe('PortalTicketService', () => {
     },
   ];
 
+  const attachments: readonly PortalTicketAttachment[] = [
+    {
+      id: 'attachment-1',
+      originalName: 'evidencia.png',
+      contentType: 'image/png',
+      fileSize: 2048,
+      createdBy: 'Analista Deja',
+      createdAt: '2026-09-12T15:00:00',
+    },
+  ];
+
   const comments: readonly PortalTicketComment[] = [
     {
       id: 'comment-1',
@@ -70,6 +82,8 @@ describe('PortalTicketService', () => {
       listTimeline: vi.fn(),
       listComments: vi.fn(),
       createComment: vi.fn(),
+      listAttachments: vi.fn(),
+      downloadAttachment: vi.fn(),
       create: vi.fn(),
     } as unknown as HttpPortalTicketRepository;
   }
@@ -267,6 +281,68 @@ describe('PortalTicketService', () => {
 
       expect(repository.create)
         .toHaveBeenCalledWith(input);
+    },
+  );
+
+
+  it(
+    'deve listar os anexos pelo repositório',
+    async () => {
+      const repository =
+        createRepositoryMock();
+
+      vi.mocked(repository.listAttachments)
+        .mockResolvedValue(attachments);
+
+      const service =
+        new PortalTicketService(
+          repository,
+        );
+
+      await expect(
+        service.listAttachments(
+          'ticket-1',
+        ),
+      ).resolves.toEqual(attachments);
+
+      expect(repository.listAttachments)
+        .toHaveBeenCalledWith(
+          'ticket-1',
+        );
+    },
+  );
+
+  it(
+    'deve baixar um anexo pelo repositório',
+    async () => {
+      const repository =
+        createRepositoryMock();
+
+      const blob = new Blob(
+        ['conteudo'],
+        {
+          type: 'application/pdf',
+        },
+      );
+
+      vi.mocked(repository.downloadAttachment)
+        .mockResolvedValue(blob);
+
+      const service =
+        new PortalTicketService(
+          repository,
+        );
+
+      await expect(
+        service.downloadAttachment(
+          'attachment-1',
+        ),
+      ).resolves.toBe(blob);
+
+      expect(repository.downloadAttachment)
+        .toHaveBeenCalledWith(
+          'attachment-1',
+        );
     },
   );
 

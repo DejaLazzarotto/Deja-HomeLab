@@ -45,7 +45,9 @@ from deja_indicadores_api.user_management.models import UserModel
 
 
 @pytest.fixture(scope="session")
-def test_settings() -> Settings:
+def test_settings(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Settings:
     """Carrega e valida exclusivamente as configurações de testes."""
 
     settings = Settings(_env_file=".env.test")
@@ -61,6 +63,10 @@ def test_settings() -> Settings:
             "O banco usado pelos testes deve possuir o sufixo '_test'.",
             returncode=1,
         )
+
+    settings.uploads_dir = tmp_path_factory.mktemp(
+        "deja-indicadores-uploads",
+    )
 
     return settings
 

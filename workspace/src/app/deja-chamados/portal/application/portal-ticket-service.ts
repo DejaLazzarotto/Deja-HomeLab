@@ -1,5 +1,6 @@
 import {
   PortalTicket,
+  PortalTicketAttachment,
   PortalTicketComment,
   PortalTicketCommentCreate,
   PortalTicketCreate,
@@ -65,6 +66,22 @@ export class PortalTicketService {
     return this.repository.createComment(
       ticketId,
       input,
+    );
+  }
+
+  listAttachments(
+    ticketId: string,
+  ): Promise<readonly PortalTicketAttachment[]> {
+    return this.repository.listAttachments(
+      ticketId,
+    );
+  }
+
+  downloadAttachment(
+    attachmentId: string,
+  ): Promise<Blob> {
+    return this.repository.downloadAttachment(
+      attachmentId,
     );
   }
 

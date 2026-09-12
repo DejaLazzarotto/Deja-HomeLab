@@ -56,3 +56,12 @@ export interface PortalTicketComment {
 export interface PortalTicketCommentCreate {
   readonly content: string;
 }
+
+export interface PortalTicketAttachment {
+  readonly id: string;
+  readonly originalName: string;
+  readonly contentType: string;
+  readonly fileSize: number;
+  readonly createdBy: string | null;
+  readonly createdAt: string;
+}

@@ -100,3 +100,14 @@ class ChamadosPortalCommentResponse(BaseModel):
     content: str
     created_by: str | None
     created_at: datetime
+
+
+class ChamadosPortalAttachmentResponse(BaseModel):
+    """Representação segura de anexo disponível no Portal."""
+
+    id: str
+    original_name: str
+    content_type: str
+    file_size: int
+    created_by: str | None
+    created_at: datetime

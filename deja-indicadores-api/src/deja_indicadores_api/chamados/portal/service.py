@@ -1,3 +1,4 @@
+from pathlib import Path
 from uuid import uuid4
 
 from deja_indicadores_api.authentication.exceptions import (
@@ -22,10 +23,21 @@ from deja_indicadores_api.chamados.clients.repository import (
     ChamadosClientRepository,
 )
 from deja_indicadores_api.chamados.portal.schemas import (
+    ChamadosPortalAttachmentResponse,
     ChamadosPortalCommentCreate,
     ChamadosPortalCommentResponse,
     ChamadosPortalTicketCreate,
     ChamadosPortalTimelineResponse,
+)
+from deja_indicadores_api.chamados.tickets.attachments.exceptions import (
+    ChamadosTicketAttachmentFileNotFoundError,
+    ChamadosTicketAttachmentNotFoundError,
+)
+from deja_indicadores_api.chamados.tickets.attachments.models import (
+    ChamadosTicketAttachmentModel,
+)
+from deja_indicadores_api.chamados.tickets.attachments.repository import (
+    ChamadosTicketAttachmentRepository,
 )
 from deja_indicadores_api.chamados.tickets.comments.enums import (
     ChamadosTicketCommentVisibility,
@@ -75,6 +87,7 @@ class ChamadosPortalService:
         timeline_service: ChamadosTicketTimelineService,
         user_repository: UserRepository,
         comment_repository: ChamadosTicketCommentRepository,
+        attachment_repository: ChamadosTicketAttachmentRepository,
     ) -> None:
         self._ticket_repository = ticket_repository
         self._client_repository = client_repository
@@ -82,6 +95,7 @@ class ChamadosPortalService:
         self._timeline_service = timeline_service
         self._user_repository = user_repository
         self._comment_repository = comment_repository
+        self._attachment_repository = attachment_repository
 
     def list_tickets(
         self,
@@ -194,6 +208,59 @@ class ChamadosPortalService:
 
         return self._map_comment(comment)
 
+    def list_ticket_attachments(
+        self,
+        ticket_id: str,
+        current_user: AuthenticatedUser,
+    ) -> list[ChamadosPortalAttachmentResponse]:
+        """Lista anexos de um chamado pertencente ao Cliente autenticado."""
+
+        self.find_ticket_by_id(
+            ticket_id,
+            current_user,
+        )
+
+        attachments = self._attachment_repository.list_by_ticket_id(
+            ticket_id,
+        )
+
+        return [
+            self._map_attachment(attachment)
+            for attachment in attachments
+        ]
+
+    def get_ticket_attachment_download(
+        self,
+        attachment_id: str,
+        current_user: AuthenticatedUser,
+    ) -> tuple[Path, ChamadosTicketAttachmentModel]:
+        """Retorna arquivo de anexo pertencente a chamado do Cliente."""
+
+        attachment = self._attachment_repository.find_by_id(
+            attachment_id,
+        )
+
+        if attachment is None:
+            raise ChamadosTicketAttachmentNotFoundError(
+                attachment_id,
+            )
+
+        self.find_ticket_by_id(
+            attachment.ticket_id,
+            current_user,
+        )
+
+        file_path = Path(
+            attachment.file_path,
+        )
+
+        if not file_path.exists() or not file_path.is_file():
+            raise ChamadosTicketAttachmentFileNotFoundError(
+                attachment.id,
+            )
+
+        return file_path, attachment
+
     def create_ticket(
         self,
         input_data: ChamadosPortalTicketCreate,
@@ -277,6 +344,23 @@ class ChamadosPortalService:
                 comment.created_by_user_id,
             ),
             created_at=comment.created_at,
+        )
+
+    def _map_attachment(
+        self,
+        attachment: ChamadosTicketAttachmentModel,
+    ) -> ChamadosPortalAttachmentResponse:
+        """Converte anexo interno para representação segura do Portal."""
+
+        return ChamadosPortalAttachmentResponse(
+            id=attachment.id,
+            original_name=attachment.original_name,
+            content_type=attachment.content_type,
+            file_size=attachment.file_size,
+            created_by=self._resolve_user_name(
+                attachment.created_by_user_id,
+            ),
+            created_at=attachment.created_at,
         )
 
     def _resolve_user_name(

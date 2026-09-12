@@ -39,6 +39,7 @@ import { WorkspaceWidgetContext } from '../../../core/workspace-sdk/runtime/work
         [assigneeService]="ticketsComposition.assigneeService"
         [timelineService]="ticketsComposition.timelineService"
         [commentService]="ticketsComposition.commentService"
+        [attachmentService]="ticketsComposition.attachmentService"
         [clients]="clients()"
         [canManage]="canManage"
       />

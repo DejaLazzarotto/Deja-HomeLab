@@ -25,6 +25,7 @@ import {
 
 import {
   PortalTicket,
+  PortalTicketAttachment,
   PortalTicketComment,
   PortalTimelineEvent,
 } from '../../domain/portal-ticket';
@@ -67,6 +68,9 @@ export class PortalTicketDetailsComponent implements OnInit {
 
   readonly comments =
     signal<readonly PortalTicketComment[]>([]);
+
+  readonly attachments =
+    signal<readonly PortalTicketAttachment[]>([]);
 
   readonly commentMessage =
     signal('');
@@ -111,6 +115,7 @@ export class PortalTicketDetailsComponent implements OnInit {
         ticket,
         timeline,
         comments,
+        attachments,
       ] = await Promise.all([
         this.composition.service.findById(
           ticketId,
@@ -121,11 +126,15 @@ export class PortalTicketDetailsComponent implements OnInit {
         this.composition.service.listComments(
           ticketId,
         ),
+        this.composition.service.listAttachments(
+          ticketId,
+        ),
       ]);
 
       this.ticket.set(ticket);
       this.timeline.set(timeline);
       this.comments.set(comments);
+      this.attachments.set(attachments);
     } catch {
       this.errorMessage.set(
         'Não foi possível carregar os detalhes do chamado.',
@@ -172,6 +181,50 @@ export class PortalTicketDetailsComponent implements OnInit {
     } finally {
       this.submittingComment.set(false);
     }
+  }
+
+  async openAttachment(
+    attachment: PortalTicketAttachment,
+  ): Promise<void> {
+    try {
+      const blob =
+        await this.composition.service.downloadAttachment(
+          attachment.id,
+        );
+
+      const url = URL.createObjectURL(blob);
+
+      window.open(
+        url,
+        '_blank',
+        'noopener,noreferrer',
+      );
+
+      window.setTimeout(
+        () => URL.revokeObjectURL(url),
+        60_000,
+      );
+    } catch {
+      this.errorMessage.set(
+        'Não foi possível abrir o anexo.',
+      );
+    }
+  }
+
+  formatAttachmentSize(
+    size: number,
+  ): string {
+    if (size < 1024) {
+      return `${size} B`;
+    }
+
+    if (size < 1024 * 1024) {
+      return `${(size / 1024).toFixed(1)} KB`;
+    }
+
+    return `${(
+      size / (1024 * 1024)
+    ).toFixed(1)} MB`;
   }
 
   back(): void {

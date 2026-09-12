@@ -340,6 +340,109 @@
       }
     </section>
 
+    <section class="ticket-details__attachments">
+      <header class="ticket-details__section-header">
+        <div>
+          <span class="ticket-details__section-eyebrow">
+            Arquivos
+          </span>
+
+          <h3>Anexos</h3>
+
+          <p>
+            Imagens e documentos PDF vinculados ao chamado.
+          </p>
+        </div>
+
+        @if (canManage()) {
+          <label class="ticket-details__attachment-upload">
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,application/pdf"
+              [disabled]="submittingAttachment()"
+              (change)="onAttachmentSelected($event)"
+            />
+
+            <span>
+              {{
+                submittingAttachment()
+                  ? 'Enviando...'
+                  : 'Adicionar anexo'
+              }}
+            </span>
+          </label>
+        }
+      </header>
+
+      @if (attachmentErrorMessage()) {
+        <div
+          class="ticket-details__message ticket-details__message--error"
+          role="alert"
+        >
+          {{ attachmentErrorMessage() }}
+        </div>
+      }
+
+      @if (attachments().length === 0) {
+        <div class="ticket-details__empty-state">
+          Nenhum anexo registrado.
+        </div>
+      } @else {
+        <div class="ticket-details__attachment-list">
+          @for (attachment of attachments(); track attachment.id) {
+            <article class="ticket-attachment">
+              <div class="ticket-attachment__type">
+                @if (isAttachmentImage(attachment.contentType)) {
+                  <span>Imagem</span>
+                } @else {
+                  <span>PDF</span>
+                }
+              </div>
+
+              <div class="ticket-attachment__info">
+                <strong>
+                  {{ attachment.originalName }}
+                </strong>
+
+                <span>
+                  {{ formatAttachmentSize(attachment.fileSize) }}
+                  ·
+                  {{ attachment.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                </span>
+
+                @if (attachment.createdBy) {
+                  <small>
+                    Adicionado por {{ attachment.createdBy }}
+                  </small>
+                }
+              </div>
+
+              <div class="ticket-attachment__actions">
+                <button
+                  type="button"
+                  class="ticket-details__secondary-button"
+                  (click)="openAttachment(attachment.id)"
+                >
+                  Visualizar
+                </button>
+
+                @if (canManage()) {
+                  <button
+                    type="button"
+                    class="ticket-details__danger-button"
+                    [disabled]="submittingAttachment()"
+                    (click)="deleteAttachment(attachment.id)"
+                  >
+                    Excluir
+                  </button>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
     <section class="ticket-details__timeline">
       <header class="ticket-details__section-header">
         <div>

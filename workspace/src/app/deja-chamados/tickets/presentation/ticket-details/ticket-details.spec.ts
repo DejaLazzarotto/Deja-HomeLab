@@ -5,6 +5,7 @@ import {
 
 import {
   TicketAssigneeService,
+  TicketAttachmentService,
   TicketCommentService,
   TicketService,
   TicketTimelineService,
@@ -90,6 +91,11 @@ describe('TicketDetailsComponent', () => {
   let listCommentsMock: ReturnType<typeof vi.fn>;
   let createCommentMock: ReturnType<typeof vi.fn>;
 
+  let listAttachmentsMock: ReturnType<typeof vi.fn>;
+  let uploadAttachmentMock: ReturnType<typeof vi.fn>;
+  let deleteAttachmentMock: ReturnType<typeof vi.fn>;
+  let downloadAttachmentMock: ReturnType<typeof vi.fn>;
+
   beforeEach(async () => {
     findByIdMock = vi.fn();
     updateMock = vi.fn();
@@ -101,6 +107,11 @@ describe('TicketDetailsComponent', () => {
 
     listCommentsMock = vi.fn();
     createCommentMock = vi.fn();
+
+    listAttachmentsMock = vi.fn();
+    uploadAttachmentMock = vi.fn();
+    deleteAttachmentMock = vi.fn();
+    downloadAttachmentMock = vi.fn();
 
     const service = {
       findById: findByIdMock,
@@ -120,6 +131,13 @@ describe('TicketDetailsComponent', () => {
       listByTicketId: listCommentsMock,
       create: createCommentMock,
     } as unknown as TicketCommentService;
+
+    const attachmentService = {
+      listByTicketId: listAttachmentsMock,
+      upload: uploadAttachmentMock,
+      delete: deleteAttachmentMock,
+      download: downloadAttachmentMock,
+    } as unknown as TicketAttachmentService;
 
     await TestBed.configureTestingModule({
       imports: [
@@ -158,6 +176,11 @@ describe('TicketDetailsComponent', () => {
       commentService,
     );
 
+    fixture.componentRef.setInput(
+      'attachmentService',
+      attachmentService,
+    );
+
     findByIdMock.mockResolvedValue(
       createTicket(),
     );
@@ -169,6 +192,8 @@ describe('TicketDetailsComponent', () => {
     listTimelineMock.mockResolvedValue([]);
 
     listCommentsMock.mockResolvedValue([]);
+
+    listAttachmentsMock.mockResolvedValue([]);
   });
 
   it('carrega chamado, timeline, comentários e responsáveis', async () => {
@@ -188,6 +213,10 @@ describe('TicketDetailsComponent', () => {
     );
 
     expect(listCommentsMock).toHaveBeenCalledWith(
+      'ticket-1',
+    );
+
+    expect(listAttachmentsMock).toHaveBeenCalledWith(
       'ticket-1',
     );
 

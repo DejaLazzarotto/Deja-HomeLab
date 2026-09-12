@@ -360,6 +360,67 @@
   overflow-wrap: anywhere;
 }
 
+.portal-attachments-header {
+  margin-bottom: 22px;
+}
+
+.portal-attachments-header h2 {
+  margin: 0 0 6px;
+
+  color: var(--workspace-color-text-primary);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.portal-attachments-header p,
+.portal-attachments-empty {
+  margin: 0;
+
+  line-height: 1.5;
+
+  color: var(--workspace-color-text-secondary);
+}
+
+.portal-attachments-list {
+  display: grid;
+  gap: var(--workspace-spacing-md);
+}
+
+.portal-attachment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--workspace-spacing-md);
+
+  padding: 14px 16px;
+
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
+
+  background: var(--workspace-color-background);
+}
+
+.portal-attachment-info {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.portal-attachment-info strong {
+  overflow: hidden;
+
+  color: var(--workspace-color-text-primary);
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portal-attachment-info span,
+.portal-attachment-info small {
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.78rem;
+}
+
 .portal-history-header {
   margin-bottom: 22px;
 }

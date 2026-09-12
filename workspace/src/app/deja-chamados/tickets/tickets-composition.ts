@@ -12,6 +12,7 @@ import {
 
 import {
   TicketAssigneeService,
+  TicketAttachmentService,
   TicketCommentService,
   TicketTimelineService,
   TicketService,
@@ -19,6 +20,7 @@ import {
 
 import {
   HttpTicketAssigneeRepository,
+  HttpTicketAttachmentRepository,
   HttpTicketCommentRepository,
   HttpTicketTimelineRepository,
   HttpTicketRepository,
@@ -37,6 +39,9 @@ export class TicketsComposition {
   private readonly commentRepository:
     HttpTicketCommentRepository;
 
+  private readonly attachmentRepository:
+    HttpTicketAttachmentRepository;
+
   readonly service: TicketService;
 
   readonly assigneeService: TicketAssigneeService;
@@ -44,6 +49,8 @@ export class TicketsComposition {
   readonly timelineService: TicketTimelineService;
 
   readonly commentService: TicketCommentService;
+
+  readonly attachmentService: TicketAttachmentService;
 
   constructor(
     http: HttpClient,
@@ -67,6 +74,11 @@ export class TicketsComposition {
         http,
       );
 
+    this.attachmentRepository =
+      new HttpTicketAttachmentRepository(
+        http,
+      );
+
     this.service = new TicketService(
       this.repository,
     );
@@ -84,6 +96,11 @@ export class TicketsComposition {
     this.commentService =
       new TicketCommentService(
         this.commentRepository,
+      );
+
+    this.attachmentService =
+      new TicketAttachmentService(
+        this.attachmentRepository,
       );
   }
 

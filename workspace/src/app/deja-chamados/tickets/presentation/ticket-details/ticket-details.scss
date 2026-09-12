@@ -137,6 +137,7 @@
 
 .ticket-details__summary,
 .ticket-details__comments,
+.ticket-details__attachments,
 .ticket-details__timeline {
   display: grid;
   gap: var(--workspace-spacing-lg);
@@ -397,6 +398,107 @@
 
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.ticket-details__attachment-upload {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  width: fit-content;
+
+  min-height: 2.5rem;
+  padding: 0.65rem 1rem;
+
+  color: var(--workspace-color-primary-contrast);
+  font-size: 0.82rem;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  background: var(--workspace-color-primary);
+  border-radius: var(--workspace-radius-md);
+}
+
+.ticket-details__attachment-upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ticket-details__attachment-list {
+  display: grid;
+  gap: var(--workspace-spacing-md);
+}
+
+.ticket-attachment {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--workspace-spacing-md);
+
+  padding: var(--workspace-spacing-md);
+
+  background: var(--workspace-color-background);
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
+}
+
+.ticket-attachment__type {
+  min-width: 4.5rem;
+
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.ticket-attachment__info {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.ticket-attachment__info strong {
+  overflow: hidden;
+
+  color: var(--workspace-color-text-primary);
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ticket-attachment__info span,
+.ticket-attachment__info small {
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.75rem;
+}
+
+.ticket-attachment__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ticket-details__danger-button {
+  min-height: 2.5rem;
+  padding: 0.65rem 1rem;
+
+  color: var(--workspace-color-danger);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  background: transparent;
+  border: 1px solid var(--workspace-color-danger);
+  border-radius: var(--workspace-radius-md);
+}
+
+.ticket-details__danger-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .ticket-details__timeline-list {

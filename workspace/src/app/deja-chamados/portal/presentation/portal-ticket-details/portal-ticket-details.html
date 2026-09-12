@@ -206,6 +206,58 @@
       </section>
 
       <section class="portal-details-card">
+        <div class="portal-attachments-header">
+          <div>
+            <h2>
+              Anexos
+            </h2>
+
+            <p>
+              Arquivos vinculados a este chamado.
+            </p>
+          </div>
+        </div>
+
+        @if (attachments().length === 0) {
+          <p class="portal-attachments-empty">
+            Nenhum anexo registrado até o momento.
+          </p>
+        } @else {
+          <div class="portal-attachments-list">
+            @for (attachment of attachments(); track attachment.id) {
+              <article class="portal-attachment-item">
+                <div class="portal-attachment-info">
+                  <strong>
+                    {{ attachment.originalName }}
+                  </strong>
+
+                  <span>
+                    {{ formatAttachmentSize(attachment.fileSize) }}
+                    ·
+                    {{ attachment.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                  </span>
+
+                  @if (attachment.createdBy) {
+                    <small>
+                      Adicionado por {{ attachment.createdBy }}
+                    </small>
+                  }
+                </div>
+
+                <button
+                  type="button"
+                  class="portal-secondary-button"
+                  (click)="openAttachment(attachment)"
+                >
+                  Visualizar
+                </button>
+              </article>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="portal-details-card">
         <div class="portal-history-header">
           <div>
             <h2>

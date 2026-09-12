@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, status
+from fastapi.responses import FileResponse
 
 from deja_indicadores_api.authentication.dependencies import (
     require_roles,
@@ -12,6 +13,7 @@ from deja_indicadores_api.chamados.portal.dependencies import (
     ChamadosPortalServiceDependency,
 )
 from deja_indicadores_api.chamados.portal.schemas import (
+    ChamadosPortalAttachmentResponse,
     ChamadosPortalCommentCreate,
     ChamadosPortalCommentResponse,
     ChamadosPortalTicketCreate,
@@ -38,6 +40,16 @@ TicketId = Annotated[
         min_length=36,
         max_length=36,
         description="Identificador UUID do chamado.",
+    ),
+]
+
+
+AttachmentId = Annotated[
+    str,
+    Path(
+        min_length=36,
+        max_length=36,
+        description="Identificador UUID do anexo.",
     ),
 ]
 
@@ -135,6 +147,45 @@ def create_portal_ticket_comment(
         ticket_id,
         input_data,
         current_user,
+    )
+
+
+@router.get(
+    "/tickets/{ticket_id}/attachments",
+    response_model=list[ChamadosPortalAttachmentResponse],
+)
+def list_portal_ticket_attachments(
+    ticket_id: TicketId,
+    service: ChamadosPortalServiceDependency,
+    current_user: ChamadosPortalUser,
+) -> list[ChamadosPortalAttachmentResponse]:
+    """Lista anexos de um chamado pertencente ao Cliente autenticado."""
+
+    return service.list_ticket_attachments(
+        ticket_id,
+        current_user,
+    )
+
+
+@router.get(
+    "/attachments/{attachment_id}/download",
+)
+def download_portal_ticket_attachment(
+    attachment_id: AttachmentId,
+    service: ChamadosPortalServiceDependency,
+    current_user: ChamadosPortalUser,
+) -> FileResponse:
+    """Baixa um anexo pertencente a chamado do Cliente autenticado."""
+
+    file_path, attachment = service.get_ticket_attachment_download(
+        attachment_id,
+        current_user,
+    )
+
+    return FileResponse(
+        path=file_path,
+        filename=attachment.original_name,
+        media_type=attachment.content_type,
     )
 
 

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 from urllib.parse import quote_plus
 
@@ -41,6 +42,16 @@ class Settings(BaseSettings):
         default=480,
         gt=0,
         alias="ACCESS_TOKEN_EXPIRE_MINUTES",
+    )
+
+    uploads_dir: Path = Field(
+        default=Path("uploads"),
+        alias="UPLOADS_DIR",
+    )
+    ticket_attachment_max_size_mb: int = Field(
+        default=10,
+        gt=0,
+        alias="TICKET_ATTACHMENT_MAX_SIZE_MB",
     )
 
     @property

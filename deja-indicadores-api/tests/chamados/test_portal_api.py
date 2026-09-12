@@ -796,3 +796,240 @@ def test_portal_does_not_read_internal_ticket_comments(
     assert len(comments) == 1
     assert comments[0]["content"] == "Resposta pública da equipe."
     assert "Observação interna da equipe." not in {comment["content"] for comment in comments}
+
+def test_portal_reads_and_downloads_own_ticket_attachments(
+    client: TestClient,
+    test_settings: Settings,
+) -> None:
+    """Portal lista e baixa anexos do próprio chamado."""
+
+    context = create_portal_context(
+        client,
+        test_settings,
+    )
+
+    portal_headers = context["portal_headers"]
+    administrator_headers = context["administrator_headers"]
+    administrator = context["administrator"]
+
+    assert isinstance(portal_headers, dict)
+    assert isinstance(administrator_headers, dict)
+    assert isinstance(administrator, dict)
+
+    ticket_response = client.post(
+        PORTAL_TICKETS_URL,
+        headers=portal_headers,
+        json={
+            "title": "Chamado com anexo",
+            "description": "Validar anexos disponíveis no Portal.",
+        },
+    )
+
+    assert ticket_response.status_code == 201
+
+    ticket = ticket_response.json()
+    file_content = b"%PDF-1.4 anexo visivel no portal"
+
+    upload_response = client.post(
+        f"{TICKETS_URL}/{ticket['id']}/attachments",
+        headers=administrator_headers,
+        files={
+            "file": (
+                "manual-cliente.pdf",
+                file_content,
+                "application/pdf",
+            )
+        },
+    )
+
+    assert upload_response.status_code == 201
+
+    administrative_attachment = upload_response.json()
+
+    list_response = client.get(
+        f"{PORTAL_TICKETS_URL}/{ticket['id']}/attachments",
+        headers=portal_headers,
+    )
+
+    assert list_response.status_code == 200
+
+    attachments = list_response.json()
+
+    assert len(attachments) == 1
+
+    attachment = attachments[0]
+
+    assert attachment["id"] == administrative_attachment["id"]
+    assert attachment["original_name"] == "manual-cliente.pdf"
+    assert attachment["content_type"] == "application/pdf"
+    assert attachment["file_size"] == len(file_content)
+    assert attachment["created_by"] == administrator["name"]
+    assert attachment["created_at"] is not None
+
+    assert "ticket_id" not in attachment
+    assert "file_name" not in attachment
+    assert "file_path" not in attachment
+    assert "created_by_user_id" not in attachment
+
+    download_response = client.get(
+        (
+            "/api/chamados/portal/attachments/"
+            f"{attachment['id']}/download"
+        ),
+        headers=portal_headers,
+    )
+
+    assert download_response.status_code == 200
+    assert download_response.content == file_content
+    assert download_response.headers["content-type"] == "application/pdf"
+    assert (
+        "manual-cliente.pdf"
+        in download_response.headers["content-disposition"]
+    )
+
+
+def test_portal_cannot_read_other_client_ticket_attachments(
+    client: TestClient,
+    test_settings: Settings,
+) -> None:
+    """Impede listagem dos anexos de chamado de outro Cliente."""
+
+    context = create_portal_context(
+        client,
+        test_settings,
+    )
+
+    portal_headers = context["portal_headers"]
+    administrator_headers = context["administrator_headers"]
+    environment = context["environment"]
+
+    assert isinstance(portal_headers, dict)
+    assert isinstance(administrator_headers, dict)
+    assert isinstance(environment, dict)
+
+    other_client = create_client(
+        client,
+        {
+            **FIRST_CLIENT,
+            "document": f"{uuid4().int % 10**14:014d}",
+            "email": f"anexos-outro-cliente-{uuid4()}@deja.com",
+            "company_name": "Empresa Anexos Ltda",
+            "fantasy_name": "Empresa Anexos",
+        },
+        str(environment["id"]),
+        administrator_headers,
+    )
+
+    other_ticket_response = client.post(
+        TICKETS_URL,
+        headers=administrator_headers,
+        json={
+            "environment_id": str(environment["id"]),
+            "client_id": str(other_client["id"]),
+            "title": "Chamado com anexo privado",
+            "description": "Portal de outro cliente não pode acessar.",
+            "priority": "medium",
+            "assigned_to_user_id": None,
+        },
+    )
+
+    assert other_ticket_response.status_code == 201
+
+    other_ticket = other_ticket_response.json()
+
+    upload_response = client.post(
+        f"{TICKETS_URL}/{other_ticket['id']}/attachments",
+        headers=administrator_headers,
+        files={
+            "file": (
+                "privado.pdf",
+                b"%PDF-1.4 privado",
+                "application/pdf",
+            )
+        },
+    )
+
+    assert upload_response.status_code == 201
+
+    response = client.get(
+        f"{PORTAL_TICKETS_URL}/{other_ticket['id']}/attachments",
+        headers=portal_headers,
+    )
+
+    assert response.status_code == 403
+
+
+def test_portal_cannot_download_other_client_ticket_attachment(
+    client: TestClient,
+    test_settings: Settings,
+) -> None:
+    """Impede download de anexo pertencente a outro Cliente."""
+
+    context = create_portal_context(
+        client,
+        test_settings,
+    )
+
+    portal_headers = context["portal_headers"]
+    administrator_headers = context["administrator_headers"]
+    environment = context["environment"]
+
+    assert isinstance(portal_headers, dict)
+    assert isinstance(administrator_headers, dict)
+    assert isinstance(environment, dict)
+
+    other_client = create_client(
+        client,
+        {
+            **FIRST_CLIENT,
+            "document": f"{uuid4().int % 10**14:014d}",
+            "email": f"download-anexo-bloqueado-{uuid4()}@deja.com",
+            "company_name": "Empresa Download Ltda",
+            "fantasy_name": "Empresa Download",
+        },
+        str(environment["id"]),
+        administrator_headers,
+    )
+
+    other_ticket_response = client.post(
+        TICKETS_URL,
+        headers=administrator_headers,
+        json={
+            "environment_id": str(environment["id"]),
+            "client_id": str(other_client["id"]),
+            "title": "Chamado com download privado",
+            "description": "Anexo não pode cruzar Clientes.",
+            "priority": "medium",
+            "assigned_to_user_id": None,
+        },
+    )
+
+    assert other_ticket_response.status_code == 201
+
+    other_ticket = other_ticket_response.json()
+
+    upload_response = client.post(
+        f"{TICKETS_URL}/{other_ticket['id']}/attachments",
+        headers=administrator_headers,
+        files={
+            "file": (
+                "restrito.pdf",
+                b"%PDF-1.4 restrito",
+                "application/pdf",
+            )
+        },
+    )
+
+    assert upload_response.status_code == 201
+
+    attachment = upload_response.json()
+
+    response = client.get(
+        (
+            "/api/chamados/portal/attachments/"
+            f"{attachment['id']}/download"
+        ),
+        headers=portal_headers,
+    )
+
+    assert response.status_code == 403

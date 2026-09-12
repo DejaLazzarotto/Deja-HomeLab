@@ -15,6 +15,9 @@ from deja_indicadores_api.chamados.clients.repository import (
 from deja_indicadores_api.chamados.portal.service import (
     ChamadosPortalService,
 )
+from deja_indicadores_api.chamados.tickets.attachments.repository import (
+    ChamadosTicketAttachmentRepository,
+)
 from deja_indicadores_api.chamados.tickets.comments.repository import (
     ChamadosTicketCommentRepository,
 )
@@ -60,6 +63,7 @@ def get_chamados_portal_service(
         timeline_service=timeline_service,
         user_repository=user_repository,
         comment_repository=ChamadosTicketCommentRepository(session),
+        attachment_repository=ChamadosTicketAttachmentRepository(session),
     )
 
 

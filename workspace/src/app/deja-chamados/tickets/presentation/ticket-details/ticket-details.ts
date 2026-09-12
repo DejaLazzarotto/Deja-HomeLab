@@ -25,6 +25,7 @@ import {
 
 import {
   TicketAssigneeService,
+  TicketAttachmentService,
   TicketCommentService,
   TicketTimelineService,
   TicketService,
@@ -33,6 +34,7 @@ import {
 import {
   Ticket,
   TicketAssignee,
+  TicketAttachment,
   TicketComment,
   TicketCommentVisibility,
   TicketPriority,
@@ -67,6 +69,9 @@ export class TicketDetailsComponent implements OnInit {
   readonly commentService =
     input.required<TicketCommentService>();
 
+  readonly attachmentService =
+    input.required<TicketAttachmentService>();
+
   readonly canManage = input(false);
 
   readonly closed = output<void>();
@@ -79,6 +84,9 @@ export class TicketDetailsComponent implements OnInit {
 
   readonly comments =
     signal<readonly TicketComment[]>([]);
+
+  readonly attachments =
+    signal<readonly TicketAttachment[]>([]);
 
   readonly assignees =
     signal<readonly TicketAssignee[]>([]);
@@ -107,10 +115,16 @@ export class TicketDetailsComponent implements OnInit {
   readonly submittingComment =
     signal(false);
 
+  readonly submittingAttachment =
+    signal(false);
+
   readonly errorMessage =
     signal<string | null>(null);
 
   readonly commentErrorMessage =
+    signal<string | null>(null);
+
+  readonly attachmentErrorMessage =
     signal<string | null>(null);
 
   readonly detailsErrorMessage =
@@ -135,6 +149,7 @@ export class TicketDetailsComponent implements OnInit {
         ticket,
         timeline,
         comments,
+        attachments,
       ] = await Promise.all([
         this.service().findById(
           ticketId,
@@ -143,6 +158,9 @@ export class TicketDetailsComponent implements OnInit {
           ticketId,
         ),
         this.commentService().listByTicketId(
+          ticketId,
+        ),
+        this.attachmentService().listByTicketId(
           ticketId,
         ),
       ]);
@@ -154,6 +172,7 @@ export class TicketDetailsComponent implements OnInit {
       this.ticket.set(ticket);
       this.timeline.set(timeline);
       this.comments.set(comments);
+      this.attachments.set(attachments);
       this.assignees.set(assignees);
     } catch {
       this.errorMessage.set(
@@ -221,6 +240,173 @@ export class TicketDetailsComponent implements OnInit {
     } finally {
       this.submittingComment.set(false);
     }
+  }
+
+  onAttachmentSelected(
+    event: Event,
+  ): void {
+    const inputElement =
+      event.target as HTMLInputElement;
+
+    const file =
+      inputElement.files?.[0];
+
+    inputElement.value = '';
+
+    if (
+      !file
+      || !this.canManage()
+      || this.submittingAttachment()
+    ) {
+      return;
+    }
+
+    void this.addAttachment(
+      file,
+    );
+  }
+
+  async addAttachment(
+    file: File,
+  ): Promise<void> {
+    if (
+      !this.canManage()
+      || this.submittingAttachment()
+    ) {
+      return;
+    }
+
+    const ticket = this.ticket();
+
+    if (!ticket) {
+      return;
+    }
+
+    this.submittingAttachment.set(true);
+    this.attachmentErrorMessage.set(null);
+
+    try {
+      await this.attachmentService().upload(
+        ticket.id,
+        file,
+      );
+
+      const [
+        attachments,
+        timeline,
+      ] = await Promise.all([
+        this.attachmentService().listByTicketId(
+          ticket.id,
+        ),
+        this.timelineService().listByTicketId(
+          ticket.id,
+        ),
+      ]);
+
+      this.attachments.set(attachments);
+      this.timeline.set(timeline);
+    } catch {
+      this.attachmentErrorMessage.set(
+        'Não foi possível adicionar o anexo.',
+      );
+    } finally {
+      this.submittingAttachment.set(false);
+    }
+  }
+
+  async deleteAttachment(
+    attachmentId: string,
+  ): Promise<void> {
+    if (
+      !this.canManage()
+      || this.submittingAttachment()
+    ) {
+      return;
+    }
+
+    const ticket = this.ticket();
+
+    if (!ticket) {
+      return;
+    }
+
+    this.submittingAttachment.set(true);
+    this.attachmentErrorMessage.set(null);
+
+    try {
+      await this.attachmentService().delete(
+        attachmentId,
+      );
+
+      const [
+        attachments,
+        timeline,
+      ] = await Promise.all([
+        this.attachmentService().listByTicketId(
+          ticket.id,
+        ),
+        this.timelineService().listByTicketId(
+          ticket.id,
+        ),
+      ]);
+
+      this.attachments.set(attachments);
+      this.timeline.set(timeline);
+    } catch {
+      this.attachmentErrorMessage.set(
+        'Não foi possível excluir o anexo.',
+      );
+    } finally {
+      this.submittingAttachment.set(false);
+    }
+  }
+
+  async openAttachment(
+    attachmentId: string,
+  ): Promise<void> {
+    try {
+      const blob =
+        await this.attachmentService().download(
+          attachmentId,
+        );
+
+      const url = URL.createObjectURL(blob);
+
+      window.open(
+        url,
+        '_blank',
+        'noopener,noreferrer',
+      );
+
+      window.setTimeout(
+        () => URL.revokeObjectURL(url),
+        60_000,
+      );
+    } catch {
+      this.attachmentErrorMessage.set(
+        'Não foi possível abrir o anexo.',
+      );
+    }
+  }
+
+  isAttachmentImage(
+    contentType: string,
+  ): boolean {
+    return contentType.startsWith('image/');
+  }
+
+  formatAttachmentSize(
+    size: number,
+  ): string {
+    if (size < 1024) {
+      return `${size} B`;
+    }
+
+    if (size < 1024 * 1024) {
+      return `${(size / 1024).toFixed(1)} KB`;
+    }
+
+    return `${(size / 1024 / 1024).toFixed(1)} MB`;
   }
 
   back(): void {

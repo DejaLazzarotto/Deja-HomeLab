@@ -39,6 +39,7 @@ import {
 
 import {
   TicketAssigneeService,
+  TicketAttachmentService,
   TicketCommentService,
   TicketService,
   TicketTimelineService,
@@ -114,6 +115,9 @@ implements OnInit, OnDestroy {
 
   readonly commentService =
     input.required<TicketCommentService>();
+
+  readonly attachmentService =
+  input.required<TicketAttachmentService>();
 
   readonly clients = input<readonly Client[]>([]);
 
