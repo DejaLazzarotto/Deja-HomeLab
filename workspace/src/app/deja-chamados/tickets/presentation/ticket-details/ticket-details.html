@@ -57,7 +57,76 @@
             </span>
           </div>
 
-          <h3>{{ currentTicket.title }}</h3>
+          @if (editingDetails()) {
+            <div class="ticket-details__edit-form">
+              <label class="ticket-details__field">
+                <span>Título</span>
+
+                <input
+                  type="text"
+                  maxlength="255"
+                  [ngModel]="editingTitle()"
+                  [disabled]="savingDetails()"
+                  (ngModelChange)="onEditingTitleChange($event)"
+                >
+              </label>
+
+              <label class="ticket-details__field">
+                <span>Descrição</span>
+
+                <textarea
+                  rows="6"
+                  maxlength="5000"
+                  [ngModel]="editingDescription()"
+                  [disabled]="savingDetails()"
+                  (ngModelChange)="onEditingDescriptionChange($event)"
+                ></textarea>
+              </label>
+
+              @if (detailsErrorMessage()) {
+                <div
+                  class="ticket-details__message ticket-details__message--error"
+                  role="alert"
+                >
+                  {{ detailsErrorMessage() }}
+                </div>
+              }
+
+              <div class="ticket-details__edit-actions">
+                <button
+                  class="ticket-details__secondary-button"
+                  type="button"
+                  [disabled]="savingDetails()"
+                  (click)="cancelEditingDetails()"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  class="ticket-details__primary-button"
+                  type="button"
+                  [disabled]="savingDetails() || !editingTitle().trim()"
+                  (click)="saveDetails()"
+                >
+                  {{ savingDetails() ? 'Salvando...' : 'Salvar alterações' }}
+                </button>
+              </div>
+            </div>
+          } @else {
+            <div class="ticket-details__title-row">
+              <h3>{{ currentTicket.title }}</h3>
+
+              @if (canManage()) {
+                <button
+                  class="ticket-details__secondary-button"
+                  type="button"
+                  (click)="startEditingDetails()"
+                >
+                  Editar título e descrição
+                </button>
+              }
+            </div>
+          }
         </div>
 
         @if (canManage()) {
@@ -121,9 +190,11 @@
         }
       </header>
 
-      <p class="ticket-details__description">
-        {{ currentTicket.description }}
-      </p>
+      @if (!editingDetails()) {
+        <p class="ticket-details__description">
+          {{ currentTicket.description }}
+        </p>
+      }
 
       <dl class="ticket-details__metadata">
         <div>

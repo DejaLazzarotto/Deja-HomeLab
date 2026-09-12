@@ -437,6 +437,146 @@ describe('TicketDetailsComponent', () => {
     ).toHaveBeenCalledOnce();
   });
 
+  it('inicia edição carregando título e descrição atuais', () => {
+    const ticket = createTicket({
+      title: 'Título atual',
+      description: 'Descrição atual',
+    });
+
+    component.ticket.set(ticket);
+
+    fixture.componentRef.setInput(
+      'canManage',
+      true,
+    );
+
+    component.startEditingDetails();
+
+    expect(
+      component.editingDetails(),
+    ).toBe(true);
+
+    expect(
+      component.editingTitle(),
+    ).toBe('Título atual');
+
+    expect(
+      component.editingDescription(),
+    ).toBe('Descrição atual');
+  });
+
+  it('não inicia edição sem permissão de gerenciamento', () => {
+    component.ticket.set(
+      createTicket(),
+    );
+
+    fixture.componentRef.setInput(
+      'canManage',
+      false,
+    );
+
+    component.startEditingDetails();
+
+    expect(
+      component.editingDetails(),
+    ).toBe(false);
+  });
+
+  it('cancela edição restaurando título e descrição atuais', () => {
+    const ticket = createTicket({
+      title: 'Título original',
+      description: 'Descrição original',
+    });
+
+    component.ticket.set(ticket);
+
+    fixture.componentRef.setInput(
+      'canManage',
+      true,
+    );
+
+    component.startEditingDetails();
+
+    component.onEditingTitleChange(
+      'Título alterado',
+    );
+
+    component.onEditingDescriptionChange(
+      'Descrição alterada',
+    );
+
+    component.cancelEditingDetails();
+
+    expect(
+      component.editingDetails(),
+    ).toBe(false);
+
+    expect(
+      component.editingTitle(),
+    ).toBe('Título original');
+
+    expect(
+      component.editingDescription(),
+    ).toBe('Descrição original');
+  });
+
+  it('salva título e descrição preservando prioridade e responsável', async () => {
+    const ticket = createTicket({
+      title: 'Título original',
+      description: 'Descrição original',
+      priority: 'high',
+      assignedToUserId: 'assignee-1',
+    });
+
+    component.ticket.set(ticket);
+
+    fixture.componentRef.setInput(
+      'canManage',
+      true,
+    );
+
+    component.startEditingDetails();
+
+    component.onEditingTitleChange(
+      '  Novo título  ',
+    );
+
+    component.onEditingDescriptionChange(
+      'Nova descrição',
+    );
+
+    updateMock.mockResolvedValue(
+      createTicket({
+        title: 'Novo título',
+        description: 'Nova descrição',
+      }),
+    );
+
+    const loadDetailsSpy = vi
+      .spyOn(component, 'loadDetails')
+      .mockResolvedValue();
+
+    await component.saveDetails();
+
+    expect(updateMock).toHaveBeenCalledWith(
+      ticket.id,
+      {
+        title: 'Novo título',
+        description: 'Nova descrição',
+        priority: 'high',
+        assignedToUserId: 'assignee-1',
+      },
+    );
+
+    expect(
+      component.editingDetails(),
+    ).toBe(false);
+
+    expect(
+      loadDetailsSpy,
+    ).toHaveBeenCalledOnce();
+  });
+
   it('usa nomes de apresentação na timeline de troca de responsável', () => {
     const event = createTimelineEvent();
 

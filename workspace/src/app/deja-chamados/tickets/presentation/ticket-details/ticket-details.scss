@@ -114,6 +114,27 @@
   border-radius: var(--workspace-radius-md);
 }
 
+.ticket-details__secondary-button {
+  min-height: 2.5rem;
+  padding: 0.65rem 1rem;
+
+  color: var(--workspace-color-text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  background: var(--workspace-color-background);
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
+}
+
+.ticket-details__secondary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .ticket-details__summary,
 .ticket-details__comments,
 .ticket-details__timeline {
@@ -124,6 +145,21 @@
 .ticket-details__summary h3 {
   margin-top: 0.75rem;
   font-size: 1.3rem;
+}
+
+.ticket-details__title-row,
+.ticket-details__edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--workspace-spacing-md);
+}
+
+.ticket-details__edit-form {
+  display: grid;
+  gap: var(--workspace-spacing-md);
+
+  margin-top: 0.75rem;
 }
 
 .ticket-details__badges {
@@ -247,6 +283,7 @@
   font-weight: 700;
 }
 
+.ticket-details__field input,
 .ticket-details__field select,
 .ticket-details__field textarea {
   width: 100%;
@@ -265,6 +302,11 @@
   padding: 0.65rem 0.75rem;
 }
 
+.ticket-details__field input {
+  min-height: 2.75rem;
+  padding: 0.65rem 0.75rem;
+}
+
 .ticket-details__field textarea {
   min-height: 7rem;
   padding: 0.75rem;
@@ -274,6 +316,7 @@
   resize: vertical;
 }
 
+.ticket-details__field input:disabled,
 .ticket-details__field select:disabled,
 .ticket-details__field textarea:disabled,
 .ticket-details__primary-button:disabled {

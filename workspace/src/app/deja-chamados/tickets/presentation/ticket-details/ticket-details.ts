@@ -89,6 +89,18 @@ export class TicketDetailsComponent implements OnInit {
   readonly commentVisibility =
     signal<TicketCommentVisibility>('public');
 
+  readonly editingDetails =
+    signal(false);
+
+  readonly editingTitle =
+    signal('');
+
+  readonly editingDescription =
+    signal('');
+
+  readonly savingDetails =
+    signal(false);
+
   readonly loading =
     signal(false);
 
@@ -99,6 +111,9 @@ export class TicketDetailsComponent implements OnInit {
     signal<string | null>(null);
 
   readonly commentErrorMessage =
+    signal<string | null>(null);
+
+  readonly detailsErrorMessage =
     signal<string | null>(null);
 
   ngOnInit(): void {
@@ -272,6 +287,92 @@ export class TicketDetailsComponent implements OnInit {
       ticket.status,
       ...TICKET_STATUS_TRANSITIONS[ticket.status],
     ];
+  }
+
+  startEditingDetails(): void {
+    if (!this.canManage()) {
+      return;
+    }
+
+    const ticket = this.ticket();
+
+    if (!ticket) {
+      return;
+    }
+
+    this.editingTitle.set(ticket.title);
+    this.editingDescription.set(ticket.description);
+    this.detailsErrorMessage.set(null);
+    this.editingDetails.set(true);
+  }
+
+  cancelEditingDetails(): void {
+    const ticket = this.ticket();
+
+    if (ticket) {
+      this.editingTitle.set(ticket.title);
+      this.editingDescription.set(ticket.description);
+    }
+
+    this.detailsErrorMessage.set(null);
+    this.editingDetails.set(false);
+  }
+
+  onEditingTitleChange(
+    value: string,
+  ): void {
+    this.editingTitle.set(value);
+  }
+
+  onEditingDescriptionChange(
+    value: string,
+  ): void {
+    this.editingDescription.set(value);
+  }
+
+  async saveDetails(): Promise<void> {
+    if (
+      !this.canManage()
+      || this.savingDetails()
+    ) {
+      return;
+    }
+
+    const ticket = this.ticket();
+    const title = this.editingTitle().trim();
+    const description = this.editingDescription();
+
+    if (
+      !ticket
+      || !title
+    ) {
+      return;
+    }
+
+    this.savingDetails.set(true);
+    this.detailsErrorMessage.set(null);
+
+    try {
+      await this.service().update(
+        ticket.id,
+        {
+          title,
+          description,
+          priority: ticket.priority,
+          assignedToUserId: ticket.assignedToUserId,
+        },
+      );
+
+      this.editingDetails.set(false);
+
+      await this.loadDetails();
+    } catch {
+      this.detailsErrorMessage.set(
+        'Não foi possível atualizar o título e a descrição do chamado.',
+      );
+    } finally {
+      this.savingDetails.set(false);
+    }
   }
 
   async changeStatus(
