@@ -30,6 +30,10 @@ import {
 } from '@angular/router';
 
 import {
+  Subscription,
+} from 'rxjs';
+
+import {
   Client,
 } from '../../../clients';
 
@@ -152,9 +156,7 @@ implements OnInit, OnDestroy {
   readonly operationError = signal<string | null>(null);
 
   readonly detailsTicketId =
-    signal<string | null>(
-      this.route.snapshot.paramMap.get('id'),
-    );
+    signal<string | null>(null);
 
   private readonly assigneesByClient =
     new Map<string, readonly TicketAssignee[]>();
@@ -164,15 +166,28 @@ implements OnInit, OnDestroy {
 
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
+  private routeSubscription?: Subscription;
+
   private requestSequence = 0;
 
   private assigneeRequestSequence = 0;
 
   ngOnInit(): void {
+    this.routeSubscription =
+      this.route.paramMap.subscribe(
+        paramMap => {
+          this.detailsTicketId.set(
+            paramMap.get('id'),
+          );
+        },
+      );
+
     void this.refresh();
   }
 
   ngOnDestroy(): void {
+    this.routeSubscription?.unsubscribe();
+
     if (this.searchTimer) {
       clearTimeout(this.searchTimer);
     }

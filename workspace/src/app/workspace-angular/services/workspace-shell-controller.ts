@@ -13,6 +13,8 @@
 
 import { Injectable } from '@angular/core';
 
+import { Router } from '@angular/router';
+
 import {
   WorkspaceDashboardId,
   WorkspaceNavigationId,
@@ -76,7 +78,10 @@ export class WorkspaceShellController {
    */
   private active = false;
 
-  constructor(private readonly bootstrap: WorkspaceBootstrapService) {}
+  constructor(
+    private readonly bootstrap: WorkspaceBootstrapService,
+    private readonly router: Router,
+  ) {}
 
   /**
    * Retorna o Runtime oficial associado à Shell.
@@ -149,14 +154,15 @@ export class WorkspaceShellController {
 
     this.currentDashboard = result.dashboard;
 
+    const route =
+      result.dashboard.dashboard.route;
+
     if (
-      window.location.pathname
-      !== result.dashboard.dashboard.route
+      route
+      && window.location.pathname !== route
     ) {
-      window.history.pushState(
-        {},
-        '',
-        result.dashboard.dashboard.route,
+      await this.router.navigateByUrl(
+        route,
       );
     }
 
