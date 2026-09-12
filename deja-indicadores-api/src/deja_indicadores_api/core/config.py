@@ -38,7 +38,7 @@ class Settings(BaseSettings):
         alias="JWT_ALGORITHM",
     )
     access_token_expire_minutes: int = Field(
-        default=30,
+        default=480,
         gt=0,
         alias="ACCESS_TOKEN_EXPIRE_MINUTES",
     )

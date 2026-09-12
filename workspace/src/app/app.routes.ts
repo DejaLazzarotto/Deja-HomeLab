@@ -136,6 +136,16 @@ export const routes: Routes = [
     loadComponent: workspacePage,
   },
   {
+    path: 'chamados/tickets/:id',
+    title: 'Detalhes do chamado | Deja Chamados',
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+      moduleGuard('chamados'),
+    ],
+    loadComponent: workspacePage,
+  },
+  {
     path: 'chamados/queue',
     title: 'Fila | Deja Chamados',
     canActivate: [

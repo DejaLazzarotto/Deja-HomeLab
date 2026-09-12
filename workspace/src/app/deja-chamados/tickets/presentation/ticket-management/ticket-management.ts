@@ -15,6 +15,7 @@ import {
   Component,
   OnDestroy,
   OnInit,
+  inject,
   input,
   signal,
 } from '@angular/core';
@@ -22,6 +23,11 @@ import {
 import {
   FormsModule,
 } from '@angular/forms';
+
+import {
+  ActivatedRoute,
+  Router,
+} from '@angular/router';
 
 import {
   Client,
@@ -88,6 +94,12 @@ const EMPTY_DRAFT: TicketDraft = {
 export class TicketManagementComponent
 implements OnInit, OnDestroy {
 
+  private readonly route =
+    inject(ActivatedRoute);
+
+  private readonly router =
+    inject(Router);
+
   readonly service = input.required<TicketService>();
 
   readonly assigneeService =
@@ -140,7 +152,9 @@ implements OnInit, OnDestroy {
   readonly operationError = signal<string | null>(null);
 
   readonly detailsTicketId =
-    signal<string | null>(null);
+    signal<string | null>(
+      this.route.snapshot.paramMap.get('id'),
+    );
 
   private readonly assigneesByClient =
     new Map<string, readonly TicketAssignee[]>();
@@ -536,10 +550,19 @@ implements OnInit, OnDestroy {
     this.detailsTicketId.set(
       ticket.id,
     );
+
+    void this.router.navigate([
+      '/chamados/tickets',
+      ticket.id,
+    ]);
   }
 
   closeDetails(): void {
     this.detailsTicketId.set(null);
+
+    void this.router.navigate([
+      '/chamados/tickets',
+    ]);
   }
 
   private createFilters(): TicketFilters {

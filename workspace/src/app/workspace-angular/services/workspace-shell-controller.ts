@@ -204,15 +204,38 @@ export class WorkspaceShellController {
         enabled: true,
       });
 
-    const routeDashboard = dashboards.find(
-      dashboard => (
-        dashboard.route
-        === window.location.pathname
-      ),
-    );
+    const currentPath =
+      window.location.pathname;
+
+    const exactRouteDashboard =
+      dashboards.find(
+        dashboard => (
+          dashboard.route
+          === currentPath
+        ),
+      );
+
+    const parentRouteDashboard =
+      dashboards
+        .filter(
+          dashboard => (
+            dashboard.route !== undefined
+            && dashboard.route !== '/'
+            && currentPath.startsWith(
+              dashboard.route + '/',
+            )
+          ),
+        )
+        .sort(
+          (left, right) => (
+            (right.route?.length ?? 0)
+            - (left.route?.length ?? 0)
+          ),
+        )[0];
 
     const dashboard =
-      routeDashboard
+      exactRouteDashboard
+      ?? parentRouteDashboard
       ?? dashboards[0];
 
     if (!dashboard) {

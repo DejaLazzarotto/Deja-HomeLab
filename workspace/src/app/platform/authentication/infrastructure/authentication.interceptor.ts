@@ -3,8 +3,18 @@ import {
 } from '@angular/core';
 
 import {
+  HttpErrorResponse,
   HttpInterceptorFn,
 } from '@angular/common/http';
+
+import {
+  Router,
+} from '@angular/router';
+
+import {
+  catchError,
+  throwError,
+} from 'rxjs';
 
 import {
   AuthenticationService,
@@ -15,6 +25,7 @@ export const authenticationInterceptor: HttpInterceptorFn = (
   next,
 ) => {
   const authentication = inject(AuthenticationService);
+  const router = inject(Router);
   const accessToken = authentication.getAccessToken();
 
   if (
@@ -29,6 +40,16 @@ export const authenticationInterceptor: HttpInterceptorFn = (
       setHeaders: {
         Authorization: `Bearer ${accessToken}`,
       },
+    }),
+  ).pipe(
+    catchError((error: HttpErrorResponse) => {
+      if (error.status === 401) {
+        authentication.logout();
+
+        void router.navigateByUrl('/login');
+      }
+
+      return throwError(() => error);
     }),
   );
 };
