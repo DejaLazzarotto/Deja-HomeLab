@@ -336,6 +336,14 @@
                   Ver detalhes
                 </button>
 
+                <button
+                  class="ticket-card__edit-button"
+                  type="button"
+                  (click)="openClientDetails(ticket.clientId)"
+                >
+                  Cliente
+                </button>
+
                 @if (canManage()) {
                   <button
                     class="ticket-card__edit-button"
@@ -406,5 +414,96 @@
       </div>
     }
   </section>
+
+  @if (selectedClient(); as client) {
+    <div
+      class="tickets__client-dialog-backdrop"
+      role="presentation"
+      (click)="closeClientDetails()"
+    >
+      <section
+        class="tickets__client-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="client-dialog-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="tickets__client-dialog-header">
+          <div>
+            <span class="tickets__client-dialog-eyebrow">
+              Dados do cliente
+            </span>
+
+            <h3 id="client-dialog-title">
+              {{ client.fantasyName || client.companyName }}
+            </h3>
+          </div>
+
+          <button
+            class="tickets__client-dialog-close"
+            type="button"
+            (click)="closeClientDetails()"
+            aria-label="Fechar dados do cliente"
+          >
+            ×
+          </button>
+        </header>
+
+        <dl class="tickets__client-dialog-grid">
+          <div>
+            <dt>Razão social</dt>
+            <dd>{{ client.companyName || 'Não informado' }}</dd>
+          </div>
+
+          <div>
+            <dt>Nome fantasia</dt>
+            <dd>{{ client.fantasyName || 'Não informado' }}</dd>
+          </div>
+
+          <div>
+            <dt>CPF/CNPJ</dt>
+            <dd>{{ client.document || 'Não informado' }}</dd>
+          </div>
+
+          <div>
+            <dt>Contato</dt>
+            <dd>{{ client.contactName || 'Não informado' }}</dd>
+          </div>
+
+          <div>
+            <dt>Telefone</dt>
+            <dd>{{ client.phone || 'Não informado' }}</dd>
+          </div>
+
+          <div>
+            <dt>WhatsApp</dt>
+            <dd>{{ client.whatsapp || 'Não informado' }}</dd>
+          </div>
+
+          <div>
+            <dt>E-mail</dt>
+            <dd>{{ client.email || 'Não informado' }}</dd>
+          </div>
+
+          <div>
+            <dt>Cidade</dt>
+            <dd>
+              {{ client.city || 'Não informado' }}
+              @if (client.state) {
+                / {{ client.state }}
+              }
+            </dd>
+          </div>
+
+          <div class="tickets__client-dialog-notes">
+            <dt>Observações</dt>
+            <dd>
+              {{ client.notes || 'Nenhuma observação cadastrada.' }}
+            </dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+  }
 </section>
 }

@@ -146,6 +146,8 @@ implements OnInit, OnDestroy {
 
   readonly selectedTicket = signal<Ticket | null>(null);
 
+  readonly selectedClient = signal<Client | null>(null);
+
   readonly draft = signal<TicketDraft>(EMPTY_DRAFT);
 
   readonly assignees =
@@ -489,6 +491,18 @@ implements OnInit, OnDestroy {
 
   activeClients(): readonly Client[] {
     return this.clients().filter(client => client.active);
+  }
+
+  openClientDetails(
+    clientId: string,
+  ): void {
+    this.selectedClient.set(
+      this.findClient(clientId) ?? null,
+    );
+  }
+
+  closeClientDetails(): void {
+    this.selectedClient.set(null);
   }
 
   clientName(
