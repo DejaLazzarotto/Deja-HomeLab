@@ -26,6 +26,9 @@ from deja_indicadores_api.chamados.tickets.service import (
     CHAMADOS_TICKET_OPERATOR_ROLES,
     CHAMADOS_TICKET_READER_ROLES,
 )
+from deja_indicadores_api.chamados.tickets.timeline.service import (
+    ChamadosTicketTimelineService,
+)
 from deja_indicadores_api.user_management.repository import (
     UserRepository,
 )
@@ -38,11 +41,13 @@ class ChamadosTicketCommentService:
         self,
         repository: ChamadosTicketCommentRepository,
         ticket_repository: ChamadosTicketRepository,
+        timeline_service: ChamadosTicketTimelineService,
         authorization_service: AuthorizationService,
         user_repository: UserRepository,
     ) -> None:
         self._repository = repository
         self._ticket_repository = ticket_repository
+        self._timeline_service = timeline_service
         self._authorization_service = authorization_service
         self._user_repository = user_repository
 
@@ -107,6 +112,14 @@ class ChamadosTicketCommentService:
         )
 
         self._repository.add(comment)
+
+        self._timeline_service.register(
+            ticket_id=ticket.id,
+            event_type="comment_added",
+            description="Comentário adicionado.",
+            created_by_user_id=current_user.id,
+            new_value=comment.id,
+        )
 
         comment = self._repository.commit(
             comment,

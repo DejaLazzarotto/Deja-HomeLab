@@ -15,7 +15,10 @@ export type PortalTimelineEventType =
   | 'priority_changed'
   | 'assigned_changed'
   | 'updated'
-  | 'status_changed';
+  | 'status_changed'
+  | 'comment_added'
+  | 'attachment_added'
+  | 'attachment_removed';
 
 export interface PortalTicket {
   readonly id: string;

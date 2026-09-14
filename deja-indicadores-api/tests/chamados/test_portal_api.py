@@ -615,6 +615,59 @@ def test_portal_creates_and_reads_own_ticket_comments(
     assert "created_by_user_id" not in comment
 
 
+def test_portal_comment_registers_timeline_event(
+    client: TestClient,
+    test_settings: Settings,
+) -> None:
+    """Comentário do Portal registra evento seguro na timeline."""
+
+    context = create_portal_context(
+        client,
+        test_settings,
+    )
+
+    portal_headers = context["portal_headers"]
+
+    assert isinstance(portal_headers, dict)
+
+    ticket_response = client.post(
+        PORTAL_TICKETS_URL,
+        headers=portal_headers,
+        json={
+            "title": "Chamado com comentário na timeline",
+            "description": "Validar histórico após comentário do cliente.",
+        },
+    )
+
+    assert ticket_response.status_code == 201
+
+    ticket = ticket_response.json()
+
+    comment_response = client.post(
+        f"{PORTAL_TICKETS_URL}/{ticket['id']}/comments",
+        headers=portal_headers,
+        json={
+            "content": "Atualização enviada pelo cliente.",
+        },
+    )
+
+    assert comment_response.status_code == 201
+
+    timeline_response = client.get(
+        f"{PORTAL_TICKETS_URL}/{ticket['id']}/timeline",
+        headers=portal_headers,
+    )
+
+    assert timeline_response.status_code == 200
+
+    timeline = timeline_response.json()
+
+    assert any(
+        event["event_type"] == "comment_added"
+        and event["description"] == "Comentário adicionado."
+        for event in timeline
+    )
+
 def test_portal_cannot_read_other_client_ticket_comments(
     client: TestClient,
     test_settings: Settings,
@@ -796,6 +849,22 @@ def test_portal_does_not_read_internal_ticket_comments(
     assert len(comments) == 1
     assert comments[0]["content"] == "Resposta pública da equipe."
     assert "Observação interna da equipe." not in {comment["content"] for comment in comments}
+
+    timeline_response = client.get(
+        f"{PORTAL_TICKETS_URL}/{ticket['id']}/timeline",
+        headers=portal_headers,
+    )
+
+    assert timeline_response.status_code == 200
+
+    comment_events = [
+        event
+        for event in timeline_response.json()
+        if event["event_type"] == "comment_added"
+    ]
+
+    assert len(comment_events) == 1
+    assert comment_events[0]["description"] == "Comentário adicionado."
 
 def test_portal_reads_and_downloads_own_ticket_attachments(
     client: TestClient,

@@ -41,6 +41,8 @@ import {
   TicketTimelineEvent,
   TICKET_STATUS_TRANSITIONS,
   TicketStatus,
+  calculateTicketSla,
+  wasTicketClosedWithinSla,
 } from '../../domain';
 
 @Component({
@@ -413,6 +415,49 @@ export class TicketDetailsComponent implements OnInit {
     this.closed.emit();
   }
 
+  slaLabel(
+    ticket: Ticket,
+  ): string {
+    if (
+      ticket.status === 'closed'
+      && ticket.closedAt
+    ) {
+      return wasTicketClosedWithinSla(ticket)
+        ? 'Dentro do prazo'
+        : 'Prazo excedido';
+    }
+
+    const sla = calculateTicketSla(ticket);
+
+    if (sla.isExpired) {
+      return 'Prazo vencido';
+    }
+
+    return `Prazo: ${sla.remainingHours}h`;
+  }
+
+  slaDueAt(
+    ticket: Ticket,
+  ): string {
+    return calculateTicketSla(ticket).dueAt;
+  }
+
+  slaRemainingLabel(
+    ticket: Ticket,
+  ): string | null {
+    if (
+      ticket.status === 'closed'
+      && ticket.closedAt
+    ) {
+      return null;
+    }
+
+    const sla = calculateTicketSla(ticket);
+
+    return sla.isExpired
+      ? 'Expirado'
+      : `${sla.remainingHours}h`;
+  }
   statusLabel(
     status: Ticket['status'],
   ): string {

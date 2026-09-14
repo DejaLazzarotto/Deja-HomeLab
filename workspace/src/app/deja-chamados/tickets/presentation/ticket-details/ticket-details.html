@@ -64,7 +64,7 @@
 
                 <input
                   type="text"
-                  maxlength="255"
+                  maxlength="150"
                   [ngModel]="editingTitle()"
                   [disabled]="savingDetails()"
                   (ngModelChange)="onEditingTitleChange($event)"
@@ -218,6 +218,26 @@
           </dd>
         </div>
 
+        <div>
+          <dt>Vencimento do prazo</dt>
+          <dd>
+            {{ slaDueAt(currentTicket) | date:'dd/MM/yyyy HH:mm' }}
+          </dd>
+        </div>
+
+        <div>
+          <dt>Situação do prazo</dt>
+          <dd>
+            {{ slaLabel(currentTicket) }}
+          </dd>
+        </div>
+
+        @if (slaRemainingLabel(currentTicket); as remaining) {
+          <div>
+            <dt>Tempo restante</dt>
+            <dd>{{ remaining }}</dd>
+          </div>
+        }
         @if (currentTicket.closedAt) {
           <div>
             <dt>Encerrado em</dt>

@@ -88,6 +88,52 @@ def test_operator_creates_public_ticket_comment(
     assert comment["created_at"] is not None
 
 
+def test_operator_comment_registers_timeline_event(
+    client: TestClient,
+    test_settings: Settings,
+) -> None:
+    """Comentário administrativo registra evento na timeline."""
+
+    context = create_portal_context(
+        client,
+        test_settings,
+    )
+
+    administrator_headers = context["administrator_headers"]
+
+    assert isinstance(administrator_headers, dict)
+
+    ticket = create_ticket_for_comments(
+        client,
+        context,
+    )
+
+    create_response = client.post(
+        f"{TICKETS_URL}/{ticket['id']}/comments",
+        headers=administrator_headers,
+        json={
+            "content": "Comentário registrado na timeline.",
+            "visibility": "public",
+        },
+    )
+
+    assert create_response.status_code == 201
+
+    timeline_response = client.get(
+        f"{TICKETS_URL}/{ticket['id']}/timeline",
+        headers=administrator_headers,
+    )
+
+    assert timeline_response.status_code == 200
+
+    timeline = timeline_response.json()
+
+    assert any(
+        event["event_type"] == "comment_added"
+        and event["description"] == "Comentário adicionado."
+        for event in timeline
+    )
+
 def test_operator_creates_internal_ticket_comment(
     client: TestClient,
     test_settings: Settings,

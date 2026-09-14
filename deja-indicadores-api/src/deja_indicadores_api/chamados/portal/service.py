@@ -155,9 +155,23 @@ class ChamadosPortalService:
             current_user,
         )
 
+        public_comments = self._comment_repository.list_by_ticket_id(
+            ticket_id,
+            visibility=ChamadosTicketCommentVisibility.PUBLIC,
+        )
+
+        public_comment_ids = {
+            comment.id
+            for comment in public_comments
+        }
+
         return [
             self._map_timeline_event(event)
             for event in timeline
+            if (
+                event.event_type != "comment_added"
+                or event.new_value in public_comment_ids
+            )
         ]
 
     def list_ticket_comments(
@@ -204,6 +218,15 @@ class ChamadosPortalService:
         )
 
         self._comment_repository.add(comment)
+
+        self._timeline_service.register(
+            ticket_id=ticket.id,
+            event_type="comment_added",
+            description="Comentário adicionado.",
+            created_by_user_id=current_user.id,
+            new_value=comment.id,
+        )
+
         self._comment_repository.commit(comment)
 
         return self._map_comment(comment)
