@@ -3,6 +3,7 @@ export const moduleKeys = [
   'measurements',
   'reports',
   'chamados',
+  'fotos',
 ] as const;
 
 export type ModuleKey = (typeof moduleKeys)[number];

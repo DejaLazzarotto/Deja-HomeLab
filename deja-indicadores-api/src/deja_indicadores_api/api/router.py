@@ -33,6 +33,9 @@ from deja_indicadores_api.companies.router import (
 from deja_indicadores_api.dashboards.router import (
     router as dashboards_router,
 )
+from deja_indicadores_api.fotos.albums.router import (
+    router as fotos_albums_router,
+)
 from deja_indicadores_api.indicators.router import (
     router as indicators_router,
 )
@@ -55,6 +58,7 @@ from deja_indicadores_api.user_management.router import (
 api_router = APIRouter()
 
 api_router.include_router(authentication_router)
+
 api_router.include_router(chamados_client_users_router)
 api_router.include_router(chamados_clients_router)
 api_router.include_router(chamados_portal_router)
@@ -63,8 +67,12 @@ api_router.include_router(chamados_ticket_attachments_router)
 api_router.include_router(chamados_ticket_comments_router)
 api_router.include_router(chamados_tickets_router)
 api_router.include_router(chamados_ticket_timeline_router)
+
 api_router.include_router(companies_router)
 api_router.include_router(dashboards_router)
+
+api_router.include_router(fotos_albums_router)
+
 api_router.include_router(indicators_router)
 api_router.include_router(measurements_router)
 api_router.include_router(module_management_router)

@@ -27,6 +27,9 @@ from deja_indicadores_api.core.database import (
     Base,
     get_db_session,
 )
+from deja_indicadores_api.fotos.albums.models import (
+    FotosAlbumModel,
+)
 from deja_indicadores_api.indicators.models import IndicatorModel
 from deja_indicadores_api.main import create_app
 from deja_indicadores_api.measurements.models import (
@@ -119,6 +122,7 @@ def clear_database(
         session.execute(delete(ChamadosTicketModel))
         session.execute(delete(ChamadosClientUserModel))
         session.execute(delete(ChamadosClientModel))
+        session.execute(delete(FotosAlbumModel))
         session.execute(delete(UserModel))
         session.execute(delete(EnvironmentModel))
         session.execute(delete(TenantModel))
