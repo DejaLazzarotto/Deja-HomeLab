@@ -318,6 +318,12 @@
                   >
                     {{ statusLabel(ticket.status) }}
                   </span>
+
+                  <span
+                    [class]="'ticket-card__sla ticket-card__sla--' + slaState(ticket)"
+                  >
+                    {{ slaLabel(ticket) }}
+                  </span>
                 </div>
 
                 <h4>{{ ticket.title }}</h4>

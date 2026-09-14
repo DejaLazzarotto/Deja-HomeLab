@@ -45,3 +45,18 @@ export function calculateTicketSla(
     remainingHours,
   };
 }
+
+export function wasTicketClosedWithinSla(
+  ticket: Ticket,
+): boolean {
+  if (!ticket.closedAt) {
+    return false;
+  }
+
+  const sla = calculateTicketSla(ticket);
+
+  return (
+    new Date(ticket.closedAt).getTime() <=
+    new Date(sla.dueAt).getTime()
+  );
+}

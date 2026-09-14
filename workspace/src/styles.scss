@@ -168,3 +168,37 @@ body {
     grid-column: auto;
   }
 }
+
+/* Deja Chamados - SLA dos cards de chamados */
+.ticket-card__sla {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ticket-card__sla--ok {
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.ticket-card__sla--warning {
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.34);
+}
+
+.ticket-card__sla--expired,
+.ticket-card__sla--violated {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.32);
+}
+
+.ticket-card__sla--complied {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.32);
+}

@@ -54,6 +54,8 @@ import {
   TicketStatus,
   TicketUpdateInput,
   TICKET_STATUS_TRANSITIONS,
+  calculateTicketSla,
+  wasTicketClosedWithinSla,
 } from '../../domain';
 
 import {
@@ -550,6 +552,55 @@ implements OnInit, OnDestroy {
     };
 
     return labels[priority];
+  }
+
+  slaLabel(
+    ticket: Ticket,
+  ): string {
+    if (
+      ticket.status === 'closed'
+      && ticket.closedAt
+    ) {
+      return wasTicketClosedWithinSla(ticket)
+        ? 'Dentro do prazo'
+        : 'Prazo excedido';
+    }
+
+    const sla = calculateTicketSla(ticket);
+
+    if (sla.isExpired) {
+      return 'Prazo vencido';
+    }
+
+    return `Prazo: ${sla.remainingHours}h`;
+  }
+
+  slaState(
+    ticket: Ticket,
+  ): 'ok' | 'warning' | 'expired' | 'complied' | 'violated' {
+    if (
+      ticket.status === 'closed'
+      && ticket.closedAt
+    ) {
+      return wasTicketClosedWithinSla(ticket)
+        ? 'complied'
+        : 'violated';
+    }
+
+    const sla = calculateTicketSla(ticket);
+
+    if (sla.isExpired) {
+      return 'expired';
+    }
+
+    if (
+      sla.remainingHours > 0
+      && sla.remainingHours <= 8
+    ) {
+      return 'warning';
+    }
+
+    return 'ok';
   }
 
   statusOptions(
