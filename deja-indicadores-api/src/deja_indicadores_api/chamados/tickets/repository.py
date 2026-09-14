@@ -1,10 +1,12 @@
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from deja_indicadores_api.chamados.clients.models import ChamadosClientModel
 from deja_indicadores_api.chamados.tickets.enums import (
     ChamadosTicketPriority,
     ChamadosTicketStatus,
 )
+from deja_indicadores_api.user_management.models import UserModel
 from deja_indicadores_api.chamados.tickets.models import (
     ChamadosTicketModel,
 )
@@ -73,12 +75,26 @@ class ChamadosTicketRepository:
 
         if search is not None:
             search_pattern = f"%{search}%"
-            statement = statement.where(
-                or_(
-                    ChamadosTicketModel.title.ilike(search_pattern),
-                    ChamadosTicketModel.description.ilike(search_pattern),
+            statement = (
+                statement
+                .join(
+                    ChamadosClientModel,
+                    ChamadosClientModel.id == ChamadosTicketModel.client_id,
                 )
-            )
+                .outerjoin(
+                    UserModel,
+                    UserModel.id == ChamadosTicketModel.assigned_to_user_id,
+                )
+                .where(
+                    or_(
+                        ChamadosTicketModel.title.ilike(search_pattern),
+                        ChamadosTicketModel.description.ilike(search_pattern),
+                        UserModel.name.ilike(search_pattern),
+                        ChamadosClientModel.company_name.ilike(search_pattern),
+                        ChamadosClientModel.fantasy_name.ilike(search_pattern),
+                    )
+                )
+             )
 
         statement = statement.order_by(
             ChamadosTicketModel.created_at.desc(),

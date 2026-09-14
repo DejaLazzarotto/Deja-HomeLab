@@ -196,6 +196,42 @@ def test_list_tickets_applies_operational_filters(
     assert [ticket["id"] for ticket in response.json()] == [first_ticket["id"]]
 
 
+@pytest.mark.parametrize(
+    "search",
+    [
+        "Usuário Principal",
+        "Deja Tecnologia Ltda",
+        "Deja Tecnologia",
+    ],
+)
+def test_list_tickets_searches_assignee_and_client(
+    client: TestClient,
+    ticket_context: dict[str, object],
+    search: str,
+) -> None:
+    # A busca localiza chamados pelo responsável e pelos nomes do Cliente.
+
+    analyst = ticket_context["analyst"]
+    assert isinstance(analyst, dict)
+
+    ticket = create_ticket(
+        client,
+        ticket_context,
+        title="Falha operacional",
+        description="Atendimento necessário.",
+        assigned_to_user_id=str(analyst["id"]),
+    )
+
+    response = client.get(
+        TICKETS_URL,
+        params={"search": search},
+        headers=ticket_context["headers"],
+    )
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()] == [ticket["id"]]
+
+
 def test_get_ticket_by_id(
     client: TestClient,
     ticket_context: dict[str, object],
