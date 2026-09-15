@@ -58,6 +58,23 @@ class FotosMediaResponse(BaseModel):
     deleted_at: datetime | None
 
 
+class FotosMediaDerivativeResponse(BaseModel):
+    """Representação pública de um derivado de mídia."""
+
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+
+    id: str
+    derivative_type: str
+    content_type: str
+    file_extension: str | None
+    file_size: int
+    width: int | None
+    height: int | None
+    created_at: datetime
+
+
 class FotosMediaListFilters(BaseModel):
     """Filtros aceitos na listagem de mídias."""
 

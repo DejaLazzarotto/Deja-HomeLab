@@ -109,10 +109,7 @@ def create_test_mp4(
     """Cria um vídeo MP4 real para os testes usando FFmpeg."""
 
     with tempfile.TemporaryDirectory() as temporary_directory:
-        output_path = (
-            Path(temporary_directory)
-            / "video.mp4"
-        )
+        output_path = Path(temporary_directory) / "video.mp4"
 
         command = [
             "ffmpeg",
@@ -121,11 +118,7 @@ def create_test_mp4(
             "-f",
             "lavfi",
             "-i",
-            (
-                "color=c=black:"
-                f"s={width}x{height}:"
-                f"d={duration_seconds}"
-            ),
+            (f"color=c=black:s={width}x{height}:d={duration_seconds}"),
             "-c:v",
             "libx264",
             "-pix_fmt",
@@ -417,34 +410,13 @@ def test_process_image_creates_thumbnail_and_preview(
     assert body["processing_status"] == "ready"
     assert body["processing_error"] is None
 
-    base_path = (
-        test_settings.uploads_dir
-        / "fotos"
-        / organization_id
-        / tenant_id
-        / environment_id
-    )
+    base_path = test_settings.uploads_dir / "fotos" / organization_id / tenant_id / environment_id
 
-    original_path = (
-        base_path
-        / "originals"
-        / created["id"]
-        / "original.jpg"
-    )
+    original_path = base_path / "originals" / created["id"] / "original.jpg"
 
-    thumbnail_path = (
-        base_path
-        / "derivatives"
-        / created["id"]
-        / "thumbnail.webp"
-    )
+    thumbnail_path = base_path / "derivatives" / created["id"] / "thumbnail.webp"
 
-    preview_path = (
-        base_path
-        / "derivatives"
-        / created["id"]
-        / "preview.webp"
-    )
+    preview_path = base_path / "derivatives" / created["id"] / "preview.webp"
 
     assert original_path.is_file()
     assert original_path.read_bytes() == content
@@ -512,27 +484,11 @@ def test_process_video_creates_poster(
     assert body["processing_status"] == "ready"
     assert body["processing_error"] is None
 
-    base_path = (
-        test_settings.uploads_dir
-        / "fotos"
-        / organization_id
-        / tenant_id
-        / environment_id
-    )
+    base_path = test_settings.uploads_dir / "fotos" / organization_id / tenant_id / environment_id
 
-    original_path = (
-        base_path
-        / "originals"
-        / created["id"]
-        / "original.mp4"
-    )
+    original_path = base_path / "originals" / created["id"] / "original.mp4"
 
-    poster_path = (
-        base_path
-        / "derivatives"
-        / created["id"]
-        / "poster.webp"
-    )
+    poster_path = base_path / "derivatives" / created["id"] / "poster.webp"
 
     assert original_path.is_file()
     assert original_path.read_bytes() == content
@@ -588,14 +544,9 @@ def test_get_thumbnail_and_preview(
     )
 
     assert thumbnail_response.status_code == 200
-    assert (
-        thumbnail_response.headers["content-type"]
-        == "image/webp"
-    )
+    assert thumbnail_response.headers["content-type"] == "image/webp"
 
-    with Image.open(
-        BytesIO(thumbnail_response.content)
-    ) as thumbnail:
+    with Image.open(BytesIO(thumbnail_response.content)) as thumbnail:
         assert thumbnail.format == "WEBP"
         assert thumbnail.size == (320, 160)
 
@@ -605,14 +556,9 @@ def test_get_thumbnail_and_preview(
     )
 
     assert preview_response.status_code == 200
-    assert (
-        preview_response.headers["content-type"]
-        == "image/webp"
-    )
+    assert preview_response.headers["content-type"] == "image/webp"
 
-    with Image.open(
-        BytesIO(preview_response.content)
-    ) as preview:
+    with Image.open(BytesIO(preview_response.content)) as preview:
         assert preview.format == "WEBP"
         assert preview.size == (1600, 800)
 
@@ -662,14 +608,9 @@ def test_get_video_poster(
     )
 
     assert poster_response.status_code == 200
-    assert (
-        poster_response.headers["content-type"]
-        == "image/webp"
-    )
+    assert poster_response.headers["content-type"] == "image/webp"
 
-    with Image.open(
-        BytesIO(poster_response.content)
-    ) as poster:
+    with Image.open(BytesIO(poster_response.content)) as poster:
         assert poster.format == "WEBP"
         assert poster.size == (640, 360)
 
@@ -744,10 +685,7 @@ def test_list_media_filters_by_album(
     )
 
     assert response.status_code == 200
-    assert [
-        media["id"]
-        for media in response.json()
-    ] == [
+    assert [media["id"] for media in response.json()] == [
         linked["id"],
     ]
 
@@ -882,10 +820,7 @@ def test_delete_media_is_logical(
     )
 
     assert get_response.status_code == 404
-    assert (
-        get_response.json()["error"]
-        == "fotos_media_not_found"
-    )
+    assert get_response.json()["error"] == "fotos_media_not_found"
 
 
 @pytest.mark.parametrize(
@@ -946,10 +881,7 @@ def test_upload_media_rejects_invalid_image_content(
     )
 
     assert response.status_code == 422
-    assert (
-        response.json()["error"]
-        == "fotos_media_invalid_content"
-    )
+    assert response.json()["error"] == "fotos_media_invalid_content"
 
 
 def test_upload_media_rejects_invalid_video_content(
@@ -975,10 +907,7 @@ def test_upload_media_rejects_invalid_video_content(
     )
 
     assert response.status_code == 422
-    assert (
-        response.json()["error"]
-        == "fotos_media_invalid_content"
-    )
+    assert response.json()["error"] == "fotos_media_invalid_content"
 
 
 def test_upload_media_rejects_empty_file(
@@ -1004,10 +933,7 @@ def test_upload_media_rejects_empty_file(
     )
 
     assert response.status_code == 422
-    assert (
-        response.json()["error"]
-        == "fotos_media_empty_file"
-    )
+    assert response.json()["error"] == "fotos_media_empty_file"
 
 
 def test_unknown_media_returns_not_found(
@@ -1030,10 +956,7 @@ def test_unknown_media_returns_not_found(
     )
 
     assert response.status_code == 404
-    assert (
-        response.json()["error"]
-        == "fotos_media_not_found"
-    )
+    assert response.json()["error"] == "fotos_media_not_found"
 
 
 def test_media_id_requires_36_characters(
@@ -1056,6 +979,7 @@ def test_media_id_requires_36_characters(
     )
 
     assert response.status_code == 422
+
 
 def test_process_video_creates_and_returns_preview(
     client: TestClient,
@@ -1102,10 +1026,7 @@ def test_process_video_creates_and_returns_preview(
     )
 
     assert process_response.status_code == 200
-    assert (
-        process_response.json()["processing_status"]
-        == "ready"
-    )
+    assert process_response.json()["processing_status"] == "ready"
 
     preview_path = (
         test_settings.uploads_dir
@@ -1148,8 +1069,68 @@ def test_process_video_creates_and_returns_preview(
     )
 
     assert preview_response.status_code == 200
-    assert (
-        preview_response.headers["content-type"]
-        == "video/mp4"
-    )
+    assert preview_response.headers["content-type"] == "video/mp4"
     assert preview_response.content == preview_path.read_bytes()
+
+
+def test_list_media_derivatives(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Lista os metadados públicos dos derivados sem expor storage_key."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    content = create_test_jpeg(
+        width=2000,
+        height=1000,
+    )
+
+    upload_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=content,
+    )
+
+    assert upload_response.status_code == 201
+
+    created = upload_response.json()
+
+    process_response = client.post(
+        f"{MEDIA_URL}/{created['id']}/process",
+        headers=headers,
+    )
+
+    assert process_response.status_code == 200
+
+    response = client.get(
+        f"{MEDIA_URL}/{created['id']}/derivatives",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+
+    derivatives = response.json()
+
+    assert [derivative["derivative_type"] for derivative in derivatives] == [
+        "preview",
+        "thumbnail",
+    ]
+
+    for derivative in derivatives:
+        assert "id" in derivative
+        assert "content_type" in derivative
+        assert "file_extension" in derivative
+        assert "file_size" in derivative
+        assert "width" in derivative
+        assert "height" in derivative
+        assert "created_at" in derivative
+        assert "storage_key" not in derivative

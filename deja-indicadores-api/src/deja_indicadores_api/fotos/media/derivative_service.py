@@ -43,28 +43,18 @@ class FotosMediaDerivativeService:
         """Gera thumbnail e preview de uma imagem."""
 
         if media.media_type != "image":
-            raise ValueError(
-                "A mídia informada não é uma imagem."
-            )
+            raise ValueError("A mídia informada não é uma imagem.")
 
-        original_path = self._resolve_original_path(
-            media
-        )
+        original_path = self._resolve_original_path(media)
 
         media.processing_status = "processing"
         media.processing_error = None
 
-        self._media_repository.update(
-            media
-        )
+        self._media_repository.update(media)
 
-        derivatives: list[
-            FotosMediaDerivativeModel
-        ] = []
+        derivatives: list[FotosMediaDerivativeModel] = []
 
-        newly_created: list[
-            FotosMediaDerivativeModel
-        ] = []
+        newly_created: list[FotosMediaDerivativeModel] = []
 
         try:
             for derivative_type in (
@@ -80,35 +70,25 @@ class FotosMediaDerivativeService:
                     derivative_type=derivative_type,
                 )
 
-                derivatives.append(
-                    derivative
-                )
+                derivatives.append(derivative)
 
                 if was_created:
-                    newly_created.append(
-                        derivative
-                    )
+                    newly_created.append(derivative)
 
         except Exception as exc:
-            self._cleanup_new_derivatives(
-                newly_created
-            )
+            self._cleanup_new_derivatives(newly_created)
 
             media.processing_status = "failed"
             media.processing_error = str(exc)
 
-            self._media_repository.update(
-                media
-            )
+            self._media_repository.update(media)
 
             raise
 
         media.processing_status = "ready"
         media.processing_error = None
 
-        self._media_repository.update(
-            media
-        )
+        self._media_repository.update(media)
 
         return derivatives
 
@@ -119,50 +99,28 @@ class FotosMediaDerivativeService:
         """Gera poster e preview de um vídeo."""
 
         if media.media_type != "video":
-            raise ValueError(
-                "A mídia informada não é um vídeo."
-            )
+            raise ValueError("A mídia informada não é um vídeo.")
 
-        original_path = self._resolve_original_path(
-            media
-        )
+        original_path = self._resolve_original_path(media)
 
         duration_seconds = media.duration_seconds
         width = media.width
         height = media.height
 
-        if (
-            duration_seconds is None
-            or duration_seconds <= 0
-        ):
-            raise ValueError(
-                "A mídia não possui duração de vídeo válida."
-            )
+        if duration_seconds is None or duration_seconds <= 0:
+            raise ValueError("A mídia não possui duração de vídeo válida.")
 
-        if (
-            width is None
-            or height is None
-            or width <= 0
-            or height <= 0
-        ):
-            raise ValueError(
-                "A mídia não possui dimensões de vídeo válidas."
-            )
+        if width is None or height is None or width <= 0 or height <= 0:
+            raise ValueError("A mídia não possui dimensões de vídeo válidas.")
 
         media.processing_status = "processing"
         media.processing_error = None
 
-        self._media_repository.update(
-            media
-        )
+        self._media_repository.update(media)
 
-        derivatives: list[
-            FotosMediaDerivativeModel
-        ] = []
+        derivatives: list[FotosMediaDerivativeModel] = []
 
-        newly_created: list[
-            FotosMediaDerivativeModel
-        ] = []
+        newly_created: list[FotosMediaDerivativeModel] = []
 
         try:
             (
@@ -174,14 +132,10 @@ class FotosMediaDerivativeService:
                 duration_seconds=duration_seconds,
             )
 
-            derivatives.append(
-                poster
-            )
+            derivatives.append(poster)
 
             if poster_created:
-                newly_created.append(
-                    poster
-                )
+                newly_created.append(poster)
 
             (
                 preview,
@@ -193,37 +147,35 @@ class FotosMediaDerivativeService:
                 height=height,
             )
 
-            derivatives.append(
-                preview
-            )
+            derivatives.append(preview)
 
             if preview_created:
-                newly_created.append(
-                    preview
-                )
+                newly_created.append(preview)
 
         except Exception as exc:
-            self._cleanup_new_derivatives(
-                newly_created
-            )
+            self._cleanup_new_derivatives(newly_created)
 
             media.processing_status = "failed"
             media.processing_error = str(exc)
 
-            self._media_repository.update(
-                media
-            )
+            self._media_repository.update(media)
 
             raise
 
         media.processing_status = "ready"
         media.processing_error = None
 
-        self._media_repository.update(
-            media
-        )
+        self._media_repository.update(media)
 
         return derivatives
+
+    def list_derivatives(
+        self,
+        media_id: str,
+    ) -> list[FotosMediaDerivativeModel]:
+        """Lista os derivados persistidos de uma mídia."""
+
+        return self._derivative_repository.list_by_media_id(media_id)
 
     def get_derivative_file(
         self,
@@ -235,30 +187,18 @@ class FotosMediaDerivativeService:
     ]:
         """Retorna o arquivo físico de um derivado existente."""
 
-        derivative = (
-            self._derivative_repository.find_by_media_and_type(
-                media_id,
-                derivative_type,
-            )
+        derivative = self._derivative_repository.find_by_media_and_type(
+            media_id,
+            derivative_type,
         )
 
         if derivative is None:
-            raise FileNotFoundError(
-                "O derivado solicitado não foi encontrado."
-            )
+            raise FileNotFoundError("O derivado solicitado não foi encontrado.")
 
-        file_path = (
-            self._settings.uploads_dir
-            / Path(derivative.storage_key)
-        )
+        file_path = self._settings.uploads_dir / Path(derivative.storage_key)
 
-        if (
-            not file_path.exists()
-            or not file_path.is_file()
-        ):
-            raise FileNotFoundError(
-                "O arquivo físico do derivado não foi encontrado."
-            )
+        if not file_path.exists() or not file_path.is_file():
+            raise FileNotFoundError("O arquivo físico do derivado não foi encontrado.")
 
         return file_path, derivative
 
@@ -268,18 +208,10 @@ class FotosMediaDerivativeService:
     ) -> Path:
         """Resolve e valida o caminho físico do original."""
 
-        original_path = (
-            self._settings.uploads_dir
-            / Path(media.original_storage_key)
-        )
+        original_path = self._settings.uploads_dir / Path(media.original_storage_key)
 
-        if (
-            not original_path.exists()
-            or not original_path.is_file()
-        ):
-            raise FileNotFoundError(
-                "O arquivo original da mídia não foi encontrado."
-            )
+        if not original_path.exists() or not original_path.is_file():
+            raise FileNotFoundError("O arquivo original da mídia não foi encontrado.")
 
         return original_path
 
@@ -295,11 +227,9 @@ class FotosMediaDerivativeService:
     ]:
         """Gera e persiste um derivado individual de imagem."""
 
-        existing = (
-            self._derivative_repository.find_by_media_and_type(
-                media.id,
-                derivative_type,
-            )
+        existing = self._derivative_repository.find_by_media_and_type(
+            media.id,
+            derivative_type,
         )
 
         if existing is not None:
@@ -311,10 +241,7 @@ class FotosMediaDerivativeService:
             ".webp",
         )
 
-        destination_path = (
-            self._settings.uploads_dir
-            / storage_key
-        )
+        destination_path = self._settings.uploads_dir / storage_key
 
         generated = generate_image_derivative(
             original_path,
@@ -323,9 +250,7 @@ class FotosMediaDerivativeService:
         )
 
         derivative = FotosMediaDerivativeModel(
-            id=str(
-                uuid4()
-            ),
+            id=str(uuid4()),
             media_id=media.id,
             derivative_type=derivative_type,
             storage_key=storage_key.as_posix(),
@@ -355,11 +280,9 @@ class FotosMediaDerivativeService:
 
         derivative_type = "poster"
 
-        existing = (
-            self._derivative_repository.find_by_media_and_type(
-                media.id,
-                derivative_type,
-            )
+        existing = self._derivative_repository.find_by_media_and_type(
+            media.id,
+            derivative_type,
         )
 
         if existing is not None:
@@ -371,10 +294,7 @@ class FotosMediaDerivativeService:
             ".webp",
         )
 
-        destination_path = (
-            self._settings.uploads_dir
-            / storage_key
-        )
+        destination_path = self._settings.uploads_dir / storage_key
 
         generated = generate_video_poster(
             original_path,
@@ -384,9 +304,7 @@ class FotosMediaDerivativeService:
         )
 
         derivative = FotosMediaDerivativeModel(
-            id=str(
-                uuid4()
-            ),
+            id=str(uuid4()),
             media_id=media.id,
             derivative_type=derivative_type,
             storage_key=storage_key.as_posix(),
@@ -417,11 +335,9 @@ class FotosMediaDerivativeService:
 
         derivative_type = "preview"
 
-        existing = (
-            self._derivative_repository.find_by_media_and_type(
-                media.id,
-                derivative_type,
-            )
+        existing = self._derivative_repository.find_by_media_and_type(
+            media.id,
+            derivative_type,
         )
 
         if existing is not None:
@@ -433,10 +349,7 @@ class FotosMediaDerivativeService:
             ".mp4",
         )
 
-        destination_path = (
-            self._settings.uploads_dir
-            / storage_key
-        )
+        destination_path = self._settings.uploads_dir / storage_key
 
         generated = generate_video_preview(
             original_path,
@@ -447,9 +360,7 @@ class FotosMediaDerivativeService:
         )
 
         derivative = FotosMediaDerivativeModel(
-            id=str(
-                uuid4()
-            ),
+            id=str(uuid4()),
             media_id=media.id,
             derivative_type=derivative_type,
             storage_key=storage_key.as_posix(),
@@ -495,9 +406,7 @@ class FotosMediaDerivativeService:
         """Persiste o derivado e remove o arquivo se houver falha."""
 
         try:
-            persisted = self._derivative_repository.add(
-                derivative
-            )
+            persisted = self._derivative_repository.add(derivative)
         except Exception:
             if destination_path.exists():
                 destination_path.unlink()
@@ -512,18 +421,11 @@ class FotosMediaDerivativeService:
     ) -> None:
         """Remove apenas derivados criados na tentativa atual."""
 
-        for derivative in reversed(
-            derivatives
-        ):
-            file_path = (
-                self._settings.uploads_dir
-                / Path(derivative.storage_key)
-            )
+        for derivative in reversed(derivatives):
+            file_path = self._settings.uploads_dir / Path(derivative.storage_key)
 
             try:
-                self._derivative_repository.delete(
-                    derivative
-                )
+                self._derivative_repository.delete(derivative)
             finally:
                 if file_path.exists():
                     file_path.unlink()

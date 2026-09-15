@@ -23,6 +23,7 @@ from deja_indicadores_api.fotos.media.dependencies import (
     FotosMediaServiceDependency,
 )
 from deja_indicadores_api.fotos.media.schemas import (
+    FotosMediaDerivativeResponse,
     FotosMediaProcessingStatus,
     FotosMediaResponse,
     FotosMediaType,
@@ -37,11 +38,7 @@ from deja_indicadores_api.user_management.models import (
 router = APIRouter(
     prefix="/fotos/media",
     tags=["Deja Fotos - Mídias"],
-    dependencies=[
-        Depends(
-            require_module("fotos")
-        )
-    ],
+    dependencies=[Depends(require_module("fotos"))],
 )
 
 
@@ -231,19 +228,33 @@ def process_media(
     )
 
     if media.media_type == "image":
-        derivative_service.process_image(
-            media
-        )
+        derivative_service.process_image(media)
     elif media.media_type == "video":
-        derivative_service.process_video(
-            media
-        )
+        derivative_service.process_video(media)
     else:
-        raise ValueError(
-            "Tipo de mídia não suportado para processamento."
-        )
+        raise ValueError("Tipo de mídia não suportado para processamento.")
 
     return media
+
+
+@router.get(
+    "/{media_id}/derivatives",
+    response_model=list[FotosMediaDerivativeResponse],
+)
+def list_media_derivatives(
+    media_id: MediaId,
+    service: FotosMediaServiceDependency,
+    derivative_service: FotosMediaDerivativeServiceDependency,
+    current_user: FotosMediaReader,
+) -> list[FotosMediaDerivativeResponse]:
+    """Lista os derivados disponíveis de uma mídia autorizada."""
+
+    service.find_by_id(
+        media_id,
+        current_user,
+    )
+
+    return derivative_service.list_derivatives(media_id)
 
 
 @router.get(
@@ -262,11 +273,9 @@ def get_media_thumbnail(
         current_user,
     )
 
-    file_path, derivative = (
-        derivative_service.get_derivative_file(
-            media_id,
-            "thumbnail",
-        )
+    file_path, derivative = derivative_service.get_derivative_file(
+        media_id,
+        "thumbnail",
     )
 
     return FileResponse(
@@ -291,11 +300,9 @@ def get_media_preview(
         current_user,
     )
 
-    file_path, derivative = (
-        derivative_service.get_derivative_file(
-            media_id,
-            "preview",
-        )
+    file_path, derivative = derivative_service.get_derivative_file(
+        media_id,
+        "preview",
     )
 
     return FileResponse(
@@ -320,11 +327,9 @@ def get_media_poster(
         current_user,
     )
 
-    file_path, derivative = (
-        derivative_service.get_derivative_file(
-            media_id,
-            "poster",
-        )
+    file_path, derivative = derivative_service.get_derivative_file(
+        media_id,
+        "poster",
     )
 
     return FileResponse(
