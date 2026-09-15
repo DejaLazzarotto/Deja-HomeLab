@@ -23,15 +23,24 @@ from deja_indicadores_api.fotos.media.exceptions import (
     FotosMediaAlbumScopeMismatchError,
     FotosMediaEmptyFileError,
     FotosMediaFileNotFoundError,
+    FotosMediaInvalidContentError,
     FotosMediaInvalidTypeError,
     FotosMediaNotFoundError,
     FotosMediaTooLargeError,
+)
+from deja_indicadores_api.fotos.media.inspection import (
+    FotosImageInspectionError,
+    inspect_image,
 )
 from deja_indicadores_api.fotos.media.models import (
     FotosMediaModel,
 )
 from deja_indicadores_api.fotos.media.repository import (
     FotosMediaRepository,
+)
+from deja_indicadores_api.fotos.media.video_inspection import (
+    FotosVideoInspectionError,
+    inspect_video,
 )
 from deja_indicadores_api.tenant_management.exceptions import (
     EnvironmentNotFoundError,
@@ -192,7 +201,7 @@ class FotosMediaService:
         file: UploadFile,
         current_user: AuthenticatedUser,
     ) -> FotosMediaModel:
-        """Armazena o original e registra uma nova mídia."""
+        """Armazena o original, valida o conteúdo e registra a mídia."""
 
         self._require_roles(
             current_user,
@@ -280,6 +289,11 @@ class FotosMediaService:
         digest = sha256()
         total_size = 0
 
+        width: int | None = None
+        height: int | None = None
+        duration_seconds: float | None = None
+        original_date: datetime | None = None
+
         try:
             with file_path.open("wb") as destination:
                 while True:
@@ -307,6 +321,37 @@ class FotosMediaService:
             if total_size == 0:
                 raise FotosMediaEmptyFileError()
 
+            if media_type == "image":
+                try:
+                    inspection = inspect_image(
+                        file_path,
+                    )
+                except FotosImageInspectionError as exc:
+                    raise FotosMediaInvalidContentError(
+                        str(exc),
+                    ) from exc
+
+                width = inspection.width
+                height = inspection.height
+                original_date = inspection.original_date
+
+            elif media_type == "video":
+                try:
+                    inspection = inspect_video(
+                        file_path,
+                        ffprobe_executable=(
+                            self._settings.ffprobe_executable
+                        ),
+                    )
+                except FotosVideoInspectionError as exc:
+                    raise FotosMediaInvalidContentError(
+                        str(exc),
+                    ) from exc
+
+                width = inspection.width
+                height = inspection.height
+                duration_seconds = inspection.duration_seconds
+
         except Exception:
             if file_path.exists():
                 file_path.unlink()
@@ -328,10 +373,10 @@ class FotosMediaService:
             original_storage_key=storage_key.as_posix(),
             processing_status="received",
             processing_error=None,
-            original_date=None,
-            width=None,
-            height=None,
-            duration_seconds=None,
+            original_date=original_date,
+            width=width,
+            height=height,
+            duration_seconds=duration_seconds,
             view_count=0,
             created_by_user_id=current_user.id,
         )

@@ -1,8 +1,10 @@
 from collections.abc import Mapping
+from io import BytesIO
 from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from deja_indicadores_api.core.config import Settings
 from tests.authentication.test_authentication_api import (
@@ -567,6 +569,16 @@ def test_delete_album_with_media_returns_conflict(
         headers,
     )
 
+    buffer = BytesIO()
+
+    Image.new(
+        "RGB",
+        (16, 12),
+    ).save(
+        buffer,
+        format="JPEG",
+    )
+
     upload_response = client.post(
         "/api/fotos/media",
         data={
@@ -576,7 +588,7 @@ def test_delete_album_with_media_returns_conflict(
         files={
             "file": (
                 "foto.jpg",
-                b"conteudo-da-foto",
+                buffer.getvalue(),
                 "image/jpeg",
             ),
         },

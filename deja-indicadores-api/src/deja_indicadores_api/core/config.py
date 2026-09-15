@@ -17,23 +17,57 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = Field(default="Deja Indicadores API", alias="APP_NAME")
-    app_env: Literal["development", "testing", "production"] = Field(
+    app_name: str = Field(
+        default="Deja Indicadores API",
+        alias="APP_NAME",
+    )
+    app_env: Literal[
+        "development",
+        "testing",
+        "production",
+    ] = Field(
         default="development",
         alias="APP_ENV",
     )
-    app_debug: bool = Field(default=False, alias="APP_DEBUG")
-    app_host: str = Field(default="127.0.0.1", alias="APP_HOST")
-    app_port: int = Field(default=8000, alias="APP_PORT")
+    app_debug: bool = Field(
+        default=False,
+        alias="APP_DEBUG",
+    )
+    app_host: str = Field(
+        default="127.0.0.1",
+        alias="APP_HOST",
+    )
+    app_port: int = Field(
+        default=8000,
+        alias="APP_PORT",
+    )
 
-    db_host: str = Field(default="127.0.0.1", alias="DB_HOST")
-    db_port: int = Field(default=3306, alias="DB_PORT")
-    db_name: str = Field(default="deja_indicadores", alias="DB_NAME")
-    db_user: str = Field(alias="DB_USER")
-    db_password: str = Field(alias="DB_PASSWORD")
-    db_charset: str = Field(default="utf8mb4", alias="DB_CHARSET")
+    db_host: str = Field(
+        default="127.0.0.1",
+        alias="DB_HOST",
+    )
+    db_port: int = Field(
+        default=3306,
+        alias="DB_PORT",
+    )
+    db_name: str = Field(
+        default="deja_indicadores",
+        alias="DB_NAME",
+    )
+    db_user: str = Field(
+        alias="DB_USER",
+    )
+    db_password: str = Field(
+        alias="DB_PASSWORD",
+    )
+    db_charset: str = Field(
+        default="utf8mb4",
+        alias="DB_CHARSET",
+    )
 
-    jwt_secret_key: str = Field(alias="JWT_SECRET_KEY")
+    jwt_secret_key: str = Field(
+        alias="JWT_SECRET_KEY",
+    )
     jwt_algorithm: Literal["HS256"] = Field(
         default="HS256",
         alias="JWT_ALGORITHM",
@@ -48,21 +82,32 @@ class Settings(BaseSettings):
         default=Path("uploads"),
         alias="UPLOADS_DIR",
     )
+
     ticket_attachment_max_size_mb: int = Field(
         default=10,
         gt=0,
         alias="TICKET_ATTACHMENT_MAX_SIZE_MB",
     )
+
     fotos_media_max_size_mb: int = Field(
         default=500,
         gt=0,
         alias="FOTOS_MEDIA_MAX_SIZE_MB",
     )
 
+    ffprobe_executable: str = Field(
+        default="ffprobe",
+        alias="FFPROBE_EXECUTABLE",
+    )
+
     @property
     def database_url(self) -> str:
-        user = quote_plus(self.db_user)
-        password = quote_plus(self.db_password)
+        user = quote_plus(
+            self.db_user,
+        )
+        password = quote_plus(
+            self.db_password,
+        )
 
         return (
             f"mysql+pymysql://{user}:{password}"

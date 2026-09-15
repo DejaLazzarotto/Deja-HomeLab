@@ -14,9 +14,7 @@ class FotosMediaNotFoundError(ResourceNotFoundError):
         self,
         media_id: str,
     ) -> None:
-        super().__init__(
-            f"Mídia com ID '{media_id}' não encontrada."
-        )
+        super().__init__(f"Mídia com ID '{media_id}' não encontrada.")
 
 
 class FotosMediaAlbumNotFoundError(ResourceNotFoundError):
@@ -28,9 +26,7 @@ class FotosMediaAlbumNotFoundError(ResourceNotFoundError):
         self,
         album_id: str,
     ) -> None:
-        super().__init__(
-            f"Álbum com ID '{album_id}' não encontrado."
-        )
+        super().__init__(f"Álbum com ID '{album_id}' não encontrado.")
 
 
 class FotosMediaAlbumScopeMismatchError(ResourceConflictError):
@@ -43,8 +39,7 @@ class FotosMediaAlbumScopeMismatchError(ResourceConflictError):
         album_id: str,
     ) -> None:
         super().__init__(
-            "O álbum informado não pertence ao mesmo "
-            f"escopo institucional da mídia: {album_id}."
+            f"O álbum informado não pertence ao mesmo escopo institucional da mídia: {album_id}."
         )
 
 
@@ -58,8 +53,21 @@ class FotosMediaInvalidTypeError(ApplicationError):
         self,
         content_type: str,
     ) -> None:
+        super().__init__(f"Tipo de mídia não permitido: {content_type}.")
+
+
+class FotosMediaInvalidContentError(ApplicationError):
+    """Conteúdo físico do arquivo não corresponde a uma mídia válida."""
+
+    error_code = "fotos_media_invalid_content"
+    status_code = 422
+
+    def __init__(
+        self,
+        message: str,
+    ) -> None:
         super().__init__(
-            f"Tipo de mídia não permitido: {content_type}."
+            message,
         )
 
 
@@ -73,10 +81,7 @@ class FotosMediaTooLargeError(ApplicationError):
         self,
         max_size_mb: int,
     ) -> None:
-        super().__init__(
-            "A mídia excede o tamanho máximo permitido "
-            f"de {max_size_mb} MB."
-        )
+        super().__init__(f"A mídia excede o tamanho máximo permitido de {max_size_mb} MB.")
 
 
 class FotosMediaEmptyFileError(ApplicationError):
@@ -86,9 +91,7 @@ class FotosMediaEmptyFileError(ApplicationError):
     status_code = 422
 
     def __init__(self) -> None:
-        super().__init__(
-            "O arquivo de mídia enviado está vazio."
-        )
+        super().__init__("O arquivo de mídia enviado está vazio.")
 
 
 class FotosMediaFileNotFoundError(ResourceNotFoundError):
@@ -101,6 +104,5 @@ class FotosMediaFileNotFoundError(ResourceNotFoundError):
         media_id: str,
     ) -> None:
         super().__init__(
-            "O arquivo original da mídia não foi encontrado "
-            f"no armazenamento: {media_id}."
+            f"O arquivo original da mídia não foi encontrado no armazenamento: {media_id}."
         )

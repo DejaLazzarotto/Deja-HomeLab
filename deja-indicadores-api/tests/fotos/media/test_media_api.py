@@ -1,8 +1,13 @@
+import subprocess
+import tempfile
 from collections.abc import Mapping
+from io import BytesIO
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from deja_indicadores_api.core.config import Settings
 from tests.authentication.test_authentication_api import (
@@ -73,6 +78,76 @@ def media_context(
     )
 
 
+def create_test_jpeg(
+    *,
+    width: int = 16,
+    height: int = 12,
+) -> bytes:
+    """Cria uma imagem JPEG real para os testes."""
+
+    buffer = BytesIO()
+
+    image = Image.new(
+        "RGB",
+        (width, height),
+    )
+
+    image.save(
+        buffer,
+        format="JPEG",
+    )
+
+    return buffer.getvalue()
+
+
+def create_test_mp4(
+    *,
+    width: int = 16,
+    height: int = 12,
+    duration_seconds: float = 1.0,
+) -> bytes:
+    """Cria um vídeo MP4 real para os testes usando FFmpeg."""
+
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        output_path = (
+            Path(temporary_directory)
+            / "video.mp4"
+        )
+
+        command = [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            (
+                "color=c=black:"
+                f"s={width}x{height}:"
+                f"d={duration_seconds}"
+            ),
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-an",
+            "-movflags",
+            "+faststart",
+            "-y",
+            str(output_path),
+        ]
+
+        subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        return output_path.read_bytes()
+
+
 def upload_image(
     client: TestClient,
     *,
@@ -80,10 +155,10 @@ def upload_image(
     album_id: str | None,
     headers: Mapping[str, str],
     file_name: str = "foto.jpg",
-    content: bytes = b"conteudo-da-foto",
+    content: bytes | None = None,
     content_type: str = "image/jpeg",
 ):
-    """Envia uma mídia de teste."""
+    """Envia uma imagem de teste."""
 
     data = {
         "environment_id": environment_id,
@@ -91,6 +166,9 @@ def upload_image(
 
     if album_id is not None:
         data["album_id"] = album_id
+
+    if content is None:
+        content = create_test_jpeg()
 
     return client.post(
         MEDIA_URL,
@@ -100,6 +178,41 @@ def upload_image(
                 file_name,
                 content,
                 content_type,
+            )
+        },
+        headers=headers,
+    )
+
+
+def upload_video(
+    client: TestClient,
+    *,
+    environment_id: str,
+    album_id: str | None,
+    headers: Mapping[str, str],
+    file_name: str = "video.mp4",
+    content: bytes | None = None,
+):
+    """Envia um vídeo de teste."""
+
+    data = {
+        "environment_id": environment_id,
+    }
+
+    if album_id is not None:
+        data["album_id"] = album_id
+
+    if content is None:
+        content = create_test_mp4()
+
+    return client.post(
+        MEDIA_URL,
+        data=data,
+        files={
+            "file": (
+                file_name,
+                content,
+                "video/mp4",
             )
         },
         headers=headers,
@@ -127,11 +240,17 @@ def test_upload_media_derives_scope_and_stores_original(
         headers,
     ) = media_context
 
+    content = create_test_jpeg(
+        width=16,
+        height=12,
+    )
+
     response = upload_image(
         client,
         environment_id=environment_id,
         album_id=album_id,
         headers=headers,
+        content=content,
     )
 
     assert response.status_code == 201
@@ -147,9 +266,13 @@ def test_upload_media_derives_scope_and_stores_original(
     assert body["media_type"] == "image"
     assert body["content_type"] == "image/jpeg"
     assert body["file_extension"] == ".jpg"
-    assert body["file_size"] == len(b"conteudo-da-foto")
+    assert body["file_size"] == len(content)
     assert len(body["checksum_sha256"]) == 64
     assert body["processing_status"] == "received"
+    assert body["width"] == 16
+    assert body["height"] == 12
+    assert body["duration_seconds"] is None
+    assert body["original_date"] is None
     assert body["view_count"] == 0
     assert body["deleted_at"] is None
 
@@ -165,7 +288,83 @@ def test_upload_media_derives_scope_and_stores_original(
     )
 
     assert original_path.is_file()
-    assert original_path.read_bytes() == b"conteudo-da-foto"
+    assert original_path.read_bytes() == content
+
+
+def test_upload_video_extracts_metadata(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Valida vídeo real e extrai seus metadados."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    content = create_test_mp4(
+        width=16,
+        height=12,
+        duration_seconds=1.0,
+    )
+
+    response = upload_video(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=content,
+    )
+
+    assert response.status_code == 201
+
+    body = response.json()
+
+    assert body["organization_id"] == organization_id
+    assert body["tenant_id"] == tenant_id
+    assert body["environment_id"] == environment_id
+    assert body["album_id"] == album_id
+    assert body["original_name"] == "video.mp4"
+    assert body["media_type"] == "video"
+    assert body["content_type"] == "video/mp4"
+    assert body["file_extension"] == ".mp4"
+    assert body["file_size"] == len(content)
+    assert len(body["checksum_sha256"]) == 64
+    assert body["processing_status"] == "received"
+    assert body["width"] == 16
+    assert body["height"] == 12
+    assert body["original_date"] is None
+    assert body["view_count"] == 0
+    assert body["deleted_at"] is None
+
+    duration = body["duration_seconds"]
+
+    assert duration is not None
+    assert 0.9 <= duration <= 1.1
+
+    original_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / body["id"]
+        / "original.mp4"
+    )
+
+    assert original_path.is_file()
+    assert original_path.read_bytes() == content
 
 
 def test_upload_media_without_album(
@@ -207,21 +406,27 @@ def test_list_media_filters_by_album(
 
     _, _, environment_id, album_id, headers = media_context
 
-    linked = upload_image(
+    linked_response = upload_image(
         client,
         environment_id=environment_id,
         album_id=album_id,
         headers=headers,
         file_name="vinculada.jpg",
-    ).json()
+    )
 
-    upload_image(
+    assert linked_response.status_code == 201
+
+    linked = linked_response.json()
+
+    unlinked_response = upload_image(
         client,
         environment_id=environment_id,
         album_id=None,
         headers=headers,
         file_name="sem-album.jpg",
     )
+
+    assert unlinked_response.status_code == 201
 
     response = client.get(
         MEDIA_URL,
@@ -254,12 +459,16 @@ def test_get_media_by_id(
 
     _, _, environment_id, album_id, headers = media_context
 
-    created = upload_image(
+    create_response = upload_image(
         client,
         environment_id=environment_id,
         album_id=album_id,
         headers=headers,
-    ).json()
+    )
+
+    assert create_response.status_code == 201
+
+    created = create_response.json()
 
     response = client.get(
         f"{MEDIA_URL}/{created['id']}",
@@ -284,15 +493,19 @@ def test_download_original_media(
 
     _, _, environment_id, album_id, headers = media_context
 
-    content = b"imagem-original"
+    content = create_test_jpeg()
 
-    created = upload_image(
+    create_response = upload_image(
         client,
         environment_id=environment_id,
         album_id=album_id,
         headers=headers,
         content=content,
-    ).json()
+    )
+
+    assert create_response.status_code == 201
+
+    created = create_response.json()
 
     response = client.get(
         f"{MEDIA_URL}/{created['id']}/original",
@@ -325,12 +538,16 @@ def test_delete_media_is_logical(
         headers,
     ) = media_context
 
-    created = upload_image(
+    create_response = upload_image(
         client,
         environment_id=environment_id,
         album_id=album_id,
         headers=headers,
-    ).json()
+    )
+
+    assert create_response.status_code == 201
+
+    created = create_response.json()
 
     original_path = (
         test_settings.uploads_dir
@@ -398,6 +615,65 @@ def test_upload_media_rejects_invalid_type(
     assert response.status_code == expected_status
 
 
+def test_upload_media_rejects_invalid_image_content(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Rejeita arquivo falso mesmo com MIME de imagem permitido."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=b"isto-nao-e-um-jpeg",
+        content_type="image/jpeg",
+    )
+
+    assert response.status_code == 422
+    assert (
+        response.json()["error"]
+        == "fotos_media_invalid_content"
+    )
+
+
+def test_upload_media_rejects_invalid_video_content(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Rejeita arquivo falso mesmo com MIME de vídeo permitido."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    response = upload_video(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=b"isto-nao-e-um-video-mp4",
+    )
+
+    assert response.status_code == 422
+    assert (
+        response.json()["error"]
+        == "fotos_media_invalid_content"
+    )
+
+
 def test_upload_media_rejects_empty_file(
     client: TestClient,
     media_context: tuple[
@@ -421,6 +697,10 @@ def test_upload_media_rejects_empty_file(
     )
 
     assert response.status_code == 422
+    assert (
+        response.json()["error"]
+        == "fotos_media_empty_file"
+    )
 
 
 def test_unknown_media_returns_not_found(
