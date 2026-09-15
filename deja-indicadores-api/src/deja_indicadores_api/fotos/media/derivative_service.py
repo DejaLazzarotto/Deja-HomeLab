@@ -19,6 +19,7 @@ from deja_indicadores_api.fotos.media.repository import (
 )
 from deja_indicadores_api.fotos.media.video_derivatives import (
     generate_video_poster,
+    generate_video_preview,
 )
 
 
@@ -115,7 +116,7 @@ class FotosMediaDerivativeService:
         self,
         media: FotosMediaModel,
     ) -> list[FotosMediaDerivativeModel]:
-        """Gera o poster de um vídeo."""
+        """Gera poster e preview de um vídeo."""
 
         if media.media_type != "video":
             raise ValueError(
@@ -127,6 +128,8 @@ class FotosMediaDerivativeService:
         )
 
         duration_seconds = media.duration_seconds
+        width = media.width
+        height = media.height
 
         if (
             duration_seconds is None
@@ -136,6 +139,16 @@ class FotosMediaDerivativeService:
                 "A mídia não possui duração de vídeo válida."
             )
 
+        if (
+            width is None
+            or height is None
+            or width <= 0
+            or height <= 0
+        ):
+            raise ValueError(
+                "A mídia não possui dimensões de vídeo válidas."
+            )
+
         media.processing_status = "processing"
         media.processing_error = None
 
@@ -143,23 +156,50 @@ class FotosMediaDerivativeService:
             media
         )
 
+        derivatives: list[
+            FotosMediaDerivativeModel
+        ] = []
+
         newly_created: list[
             FotosMediaDerivativeModel
         ] = []
 
         try:
             (
-                derivative,
-                was_created,
+                poster,
+                poster_created,
             ) = self._generate_video_poster_derivative(
                 media,
                 original_path=original_path,
                 duration_seconds=duration_seconds,
             )
 
-            if was_created:
+            derivatives.append(
+                poster
+            )
+
+            if poster_created:
                 newly_created.append(
-                    derivative
+                    poster
+                )
+
+            (
+                preview,
+                preview_created,
+            ) = self._generate_video_preview_derivative(
+                media,
+                original_path=original_path,
+                width=width,
+                height=height,
+            )
+
+            derivatives.append(
+                preview
+            )
+
+            if preview_created:
+                newly_created.append(
+                    preview
                 )
 
         except Exception as exc:
@@ -183,9 +223,7 @@ class FotosMediaDerivativeService:
             media
         )
 
-        return [
-            derivative
-        ]
+        return derivatives
 
     def get_derivative_file(
         self,
@@ -270,6 +308,7 @@ class FotosMediaDerivativeService:
         storage_key = self._build_derivative_storage_key(
             media,
             derivative_type,
+            ".webp",
         )
 
         destination_path = (
@@ -329,6 +368,7 @@ class FotosMediaDerivativeService:
         storage_key = self._build_derivative_storage_key(
             media,
             derivative_type,
+            ".webp",
         )
 
         destination_path = (
@@ -362,10 +402,74 @@ class FotosMediaDerivativeService:
             destination_path=destination_path,
         )
 
+    def _generate_video_preview_derivative(
+        self,
+        media: FotosMediaModel,
+        *,
+        original_path: Path,
+        width: int,
+        height: int,
+    ) -> tuple[
+        FotosMediaDerivativeModel,
+        bool,
+    ]:
+        """Gera e persiste o preview MP4 de um vídeo."""
+
+        derivative_type = "preview"
+
+        existing = (
+            self._derivative_repository.find_by_media_and_type(
+                media.id,
+                derivative_type,
+            )
+        )
+
+        if existing is not None:
+            return existing, False
+
+        storage_key = self._build_derivative_storage_key(
+            media,
+            derivative_type,
+            ".mp4",
+        )
+
+        destination_path = (
+            self._settings.uploads_dir
+            / storage_key
+        )
+
+        generated = generate_video_preview(
+            original_path,
+            destination_path,
+            ffmpeg_executable=self._settings.ffmpeg_executable,
+            width=width,
+            height=height,
+        )
+
+        derivative = FotosMediaDerivativeModel(
+            id=str(
+                uuid4()
+            ),
+            media_id=media.id,
+            derivative_type=derivative_type,
+            storage_key=storage_key.as_posix(),
+            content_type=generated.content_type,
+            file_extension=generated.file_extension,
+            file_size=generated.file_size,
+            width=generated.width,
+            height=generated.height,
+        )
+
+        return self._persist_derivative(
+            derivative,
+            destination_path=destination_path,
+        )
+
     def _build_derivative_storage_key(
         self,
         media: FotosMediaModel,
         derivative_type: str,
+        file_extension: str,
     ) -> Path:
         """Monta a chave de armazenamento de um derivado."""
 
@@ -376,7 +480,7 @@ class FotosMediaDerivativeService:
             / media.environment_id
             / "derivatives"
             / media.id
-            / f"{derivative_type}.webp"
+            / f"{derivative_type}{file_extension}"
         )
 
     def _persist_derivative(

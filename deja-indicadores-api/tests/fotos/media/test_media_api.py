@@ -1056,3 +1056,100 @@ def test_media_id_requires_36_characters(
     )
 
     assert response.status_code == 422
+
+def test_process_video_creates_and_returns_preview(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Gera preview MP4 reduzido e o disponibiliza pela API."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    content = create_test_mp4(
+        width=1920,
+        height=1080,
+        duration_seconds=2.0,
+    )
+
+    upload_response = upload_video(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=content,
+    )
+
+    assert upload_response.status_code == 201
+
+    created = upload_response.json()
+
+    process_response = client.post(
+        f"{MEDIA_URL}/{created['id']}/process",
+        headers=headers,
+    )
+
+    assert process_response.status_code == 200
+    assert (
+        process_response.json()["processing_status"]
+        == "ready"
+    )
+
+    preview_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "derivatives"
+        / created["id"]
+        / "preview.mp4"
+    )
+
+    assert preview_path.is_file()
+    assert preview_path.stat().st_size > 0
+
+    probe = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height",
+            "-of",
+            "csv=s=x:p=0",
+            str(preview_path),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert probe.stdout.strip() == "1280x720"
+
+    preview_response = client.get(
+        f"{MEDIA_URL}/{created['id']}/preview",
+        headers=headers,
+    )
+
+    assert preview_response.status_code == 200
+    assert (
+        preview_response.headers["content-type"]
+        == "video/mp4"
+    )
+    assert preview_response.content == preview_path.read_bytes()
