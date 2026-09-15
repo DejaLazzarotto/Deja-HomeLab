@@ -36,6 +36,20 @@ class FotosMediaDerivativeService:
         self._derivative_repository = derivative_repository
         self._settings = settings
 
+    def process(
+        self,
+        media: FotosMediaModel,
+    ) -> list[FotosMediaDerivativeModel]:
+        """Processa os derivados conforme o tipo da mídia."""
+
+        if media.media_type == "image":
+            return self.process_image(media)
+
+        if media.media_type == "video":
+            return self.process_video(media)
+
+        raise ValueError("Tipo de mídia não suportado para processamento.")
+
     def process_image(
         self,
         media: FotosMediaModel,

@@ -203,12 +203,7 @@ def process_media(
         current_user,
     )
 
-    if media.media_type == "image":
-        derivative_service.process_image(media)
-    elif media.media_type == "video":
-        derivative_service.process_video(media)
-    else:
-        raise ValueError("Tipo de mídia não suportado para processamento.")
+    derivative_service.process(media)
 
     return media
 
