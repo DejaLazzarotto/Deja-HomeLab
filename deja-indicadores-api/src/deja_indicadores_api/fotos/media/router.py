@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     File,
     Form,
@@ -18,9 +19,14 @@ from deja_indicadores_api.authentication.dependencies import (
 from deja_indicadores_api.authentication.schemas import (
     AuthenticatedUser,
 )
+from deja_indicadores_api.fotos.media.background_processing import (
+    process_media_in_background,
+)
 from deja_indicadores_api.fotos.media.dependencies import (
     FotosMediaDerivativeServiceDependency,
     FotosMediaServiceDependency,
+    FotosMediaSessionFactoryDependency,
+    SettingsDependency,
 )
 from deja_indicadores_api.fotos.media.schemas import (
     FotosMediaDerivativeResponse,
@@ -63,10 +69,7 @@ EnvironmentIdForm = Annotated[
 
 AlbumIdForm = Annotated[
     str | None,
-    Form(
-        min_length=36,
-        max_length=36,
-    ),
+    Form(),
 ]
 
 
@@ -105,19 +108,6 @@ FotosMediaOperator = Annotated[
 ]
 
 
-FotosMediaManager = Annotated[
-    AuthenticatedUser,
-    Depends(
-        require_roles(
-            UserRole.PLATFORM_ADMIN,
-            UserRole.ORGANIZATION_ADMIN,
-            UserRole.TENANT_ADMIN,
-            UserRole.MANAGER,
-        )
-    ),
-]
-
-
 @router.get(
     "",
     response_model=list[FotosMediaResponse],
@@ -125,49 +115,23 @@ FotosMediaManager = Annotated[
 def list_media(
     service: FotosMediaServiceDependency,
     current_user: FotosMediaReader,
-    organization_id: Annotated[
-        str | None,
-        Query(
-            min_length=36,
-            max_length=36,
-        ),
-    ] = None,
-    tenant_id: Annotated[
-        str | None,
-        Query(
-            min_length=36,
-            max_length=36,
-        ),
-    ] = None,
-    environment_id: Annotated[
-        str | None,
-        Query(
-            min_length=36,
-            max_length=36,
-        ),
-    ] = None,
-    album_id: Annotated[
-        str | None,
-        Query(
-            min_length=36,
-            max_length=36,
-        ),
-    ] = None,
-    media_type: FotosMediaType | None = None,
-    processing_status: FotosMediaProcessingStatus | None = None,
-    include_deleted: bool = False,
+    organization_id: str | None = Query(default=None),
+    tenant_id: str | None = Query(default=None),
+    environment_id: str | None = Query(default=None),
+    album_id: str | None = Query(default=None),
+    media_type: Annotated[FotosMediaType | None, Query()] = None,
+    processing_status: Annotated[FotosMediaProcessingStatus | None, Query()] = None,
 ) -> list[FotosMediaResponse]:
-    """Lista mídias dentro do escopo autorizado."""
+    """Lista mídias autorizadas pelos filtros informados."""
 
     return service.list(
-        current_user,
+        current_user=current_user,
         organization_id=organization_id,
         tenant_id=tenant_id,
         environment_id=environment_id,
         album_id=album_id,
         media_type=media_type,
         processing_status=processing_status,
-        include_deleted=include_deleted,
     )
 
 
@@ -194,20 +158,32 @@ def get_media(
     status_code=http_status.HTTP_201_CREATED,
 )
 async def upload_media(
+    background_tasks: BackgroundTasks,
     service: FotosMediaServiceDependency,
+    session_factory: FotosMediaSessionFactoryDependency,
+    settings: SettingsDependency,
     current_user: FotosMediaOperator,
     environment_id: EnvironmentIdForm,
     file: MediaFile,
     album_id: AlbumIdForm = None,
 ) -> FotosMediaResponse:
-    """Recebe e armazena uma mídia original."""
+    """Recebe, armazena e agenda o processamento de uma mídia original."""
 
-    return await service.create_from_upload(
+    media = await service.create_from_upload(
         environment_id=environment_id,
         album_id=album_id,
         file=file,
         current_user=current_user,
     )
+
+    background_tasks.add_task(
+        process_media_in_background,
+        media.id,
+        session_factory=session_factory,
+        settings=settings,
+    )
+
+    return media
 
 
 @router.post(
@@ -293,7 +269,7 @@ def get_media_preview(
     derivative_service: FotosMediaDerivativeServiceDependency,
     current_user: FotosMediaReader,
 ) -> FileResponse:
-    """Retorna o preview WebP de uma mídia autorizada."""
+    """Retorna o preview de uma mídia autorizada."""
 
     service.find_by_id(
         media_id,
@@ -320,7 +296,7 @@ def get_media_poster(
     derivative_service: FotosMediaDerivativeServiceDependency,
     current_user: FotosMediaReader,
 ) -> FileResponse:
-    """Retorna o poster WebP de um vídeo autorizado."""
+    """Retorna o poster de uma mídia de vídeo autorizada."""
 
     service.find_by_id(
         media_id,
@@ -341,12 +317,12 @@ def get_media_poster(
 @router.get(
     "/{media_id}/original",
 )
-def download_original_media(
+def get_media_original(
     media_id: MediaId,
     service: FotosMediaServiceDependency,
     current_user: FotosMediaReader,
 ) -> FileResponse:
-    """Baixa o arquivo original de uma mídia autorizada."""
+    """Retorna o arquivo original de uma mídia autorizada."""
 
     file_path, media = service.get_original_file(
         media_id,
@@ -355,8 +331,8 @@ def download_original_media(
 
     return FileResponse(
         path=file_path,
-        filename=media.original_name,
         media_type=media.content_type,
+        filename=media.original_name,
     )
 
 
@@ -367,7 +343,7 @@ def download_original_media(
 def delete_media(
     media_id: MediaId,
     service: FotosMediaServiceDependency,
-    current_user: FotosMediaManager,
+    current_user: FotosMediaOperator,
 ) -> None:
     """Realiza exclusão lógica de uma mídia."""
 

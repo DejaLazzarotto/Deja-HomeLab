@@ -30,6 +30,9 @@ from deja_indicadores_api.core.database import (
 from deja_indicadores_api.fotos.albums.models import (
     FotosAlbumModel,
 )
+from deja_indicadores_api.fotos.media.dependencies import (
+    get_fotos_media_session_factory,
+)
 from deja_indicadores_api.fotos.media.derivative_models import (
     FotosMediaDerivativeModel,
 )
@@ -173,14 +176,19 @@ def test_app(
     def override_get_settings() -> Settings:
         return test_settings
 
+    def override_get_fotos_media_session_factory() -> sessionmaker[Session]:
+        return test_session_factory
+
     app.dependency_overrides[get_db_session] = override_get_db_session
     app.dependency_overrides[get_settings] = override_get_settings
+    app.dependency_overrides[get_fotos_media_session_factory] = (
+        override_get_fotos_media_session_factory
+    )
 
     try:
         yield app
     finally:
         app.dependency_overrides.clear()
-
 
 @pytest.fixture()
 def client(

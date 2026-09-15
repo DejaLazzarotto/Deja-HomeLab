@@ -721,7 +721,22 @@ def test_get_media_by_id(
     )
 
     assert response.status_code == 200
-    assert response.json() == created
+
+    body = response.json()
+
+    assert body["id"] == created["id"]
+    assert body["organization_id"] == created["organization_id"]
+    assert body["tenant_id"] == created["tenant_id"]
+    assert body["environment_id"] == created["environment_id"]
+    assert body["album_id"] == created["album_id"]
+    assert body["original_name"] == created["original_name"]
+    assert body["media_type"] == created["media_type"]
+    assert body["content_type"] == created["content_type"]
+    assert body["file_extension"] == created["file_extension"]
+    assert body["file_size"] == created["file_size"]
+    assert body["checksum_sha256"] == created["checksum_sha256"]
+    assert body["processing_status"] == "ready"
+    assert body["processing_error"] is None
 
 
 def test_download_original_media(
