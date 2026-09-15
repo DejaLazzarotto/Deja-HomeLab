@@ -15,6 +15,9 @@ from deja_indicadores_api.fotos.albums.repository import (
 from deja_indicadores_api.fotos.albums.service import (
     FotosAlbumService,
 )
+from deja_indicadores_api.fotos.media.repository import (
+    FotosMediaRepository,
+)
 from deja_indicadores_api.tenant_management.repository import (
     EnvironmentRepository,
     TenantRepository,
@@ -31,6 +34,7 @@ def get_fotos_album_service(
 
     return FotosAlbumService(
         repository=FotosAlbumRepository(session),
+        media_repository=FotosMediaRepository(session),
         tenant_repository=TenantRepository(session),
         environment_repository=EnvironmentRepository(session),
         authorization_service=AuthorizationService(),

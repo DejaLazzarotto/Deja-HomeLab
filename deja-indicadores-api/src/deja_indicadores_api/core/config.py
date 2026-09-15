@@ -53,6 +53,11 @@ class Settings(BaseSettings):
         gt=0,
         alias="TICKET_ATTACHMENT_MAX_SIZE_MB",
     )
+    fotos_media_max_size_mb: int = Field(
+        default=500,
+        gt=0,
+        alias="FOTOS_MEDIA_MAX_SIZE_MB",
+    )
 
     @property
     def database_url(self) -> str:

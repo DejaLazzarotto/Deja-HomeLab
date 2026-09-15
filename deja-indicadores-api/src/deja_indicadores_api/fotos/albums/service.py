@@ -8,6 +8,7 @@ from deja_indicadores_api.authentication.schemas import (
 )
 from deja_indicadores_api.fotos.albums.exceptions import (
     FotosAlbumAlreadyExistsError,
+    FotosAlbumHasMediaError,
     FotosAlbumNotFoundError,
 )
 from deja_indicadores_api.fotos.albums.models import (
@@ -19,6 +20,9 @@ from deja_indicadores_api.fotos.albums.repository import (
 from deja_indicadores_api.fotos.albums.schemas import (
     FotosAlbumCreate,
     FotosAlbumUpdate,
+)
+from deja_indicadores_api.fotos.media.repository import (
+    FotosMediaRepository,
 )
 from deja_indicadores_api.tenant_management.exceptions import (
     EnvironmentNotFoundError,
@@ -73,11 +77,13 @@ class FotosAlbumService:
     def __init__(
         self,
         repository: FotosAlbumRepository,
+        media_repository: FotosMediaRepository,
         tenant_repository: TenantRepository,
         environment_repository: EnvironmentRepository,
         authorization_service: AuthorizationService,
     ) -> None:
         self._repository = repository
+        self._media_repository = media_repository
         self._tenant_repository = tenant_repository
         self._environment_repository = environment_repository
         self._authorization_service = authorization_service
@@ -270,7 +276,7 @@ class FotosAlbumService:
         album_id: str,
         current_user: AuthenticatedUser,
     ) -> None:
-        """Exclui um álbum dentro do escopo permitido."""
+        """Exclui um álbum vazio dentro do escopo permitido."""
 
         self._require_roles(
             current_user,
@@ -290,6 +296,13 @@ class FotosAlbumService:
             environment,
             tenant,
         )
+
+        if self._media_repository.exists_by_album_id(
+            album.id,
+        ):
+            raise FotosAlbumHasMediaError(
+                album.id,
+            )
 
         self._repository.delete(
             album,

@@ -36,6 +36,9 @@ from deja_indicadores_api.dashboards.router import (
 from deja_indicadores_api.fotos.albums.router import (
     router as fotos_albums_router,
 )
+from deja_indicadores_api.fotos.media.router import (
+    router as fotos_media_router,
+)
 from deja_indicadores_api.indicators.router import (
     router as indicators_router,
 )
@@ -72,6 +75,7 @@ api_router.include_router(companies_router)
 api_router.include_router(dashboards_router)
 
 api_router.include_router(fotos_albums_router)
+api_router.include_router(fotos_media_router)
 
 api_router.include_router(indicators_router)
 api_router.include_router(measurements_router)

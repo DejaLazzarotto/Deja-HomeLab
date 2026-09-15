@@ -546,3 +546,59 @@ def test_album_id_requires_36_characters(
     )
 
     assert response.status_code == 422
+
+def test_delete_album_with_media_returns_conflict(
+    client: TestClient,
+    album_context: tuple[
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Impede exclusão de álbum com mídia ativa vinculada."""
+
+    _, _, environment_id, headers = album_context
+
+    album = create_album(
+        client,
+        FIRST_ALBUM,
+        environment_id,
+        headers,
+    )
+
+    upload_response = client.post(
+        "/api/fotos/media",
+        data={
+            "environment_id": environment_id,
+            "album_id": album["id"],
+        },
+        files={
+            "file": (
+                "foto.jpg",
+                b"conteudo-da-foto",
+                "image/jpeg",
+            ),
+        },
+        headers=headers,
+    )
+
+    assert upload_response.status_code == 201
+
+    delete_response = client.delete(
+        f"{ALBUMS_URL}/{album['id']}",
+        headers=headers,
+    )
+
+    assert delete_response.status_code == 409
+    assert (
+        delete_response.json()["error"]
+        == "fotos_album_has_media"
+    )
+
+    get_response = client.get(
+        f"{ALBUMS_URL}/{album['id']}",
+        headers=headers,
+    )
+
+    assert get_response.status_code == 200
