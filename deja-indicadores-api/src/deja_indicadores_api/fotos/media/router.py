@@ -230,9 +230,18 @@ def process_media(
         current_user,
     )
 
-    derivative_service.process_image(
-        media
-    )
+    if media.media_type == "image":
+        derivative_service.process_image(
+            media
+        )
+    elif media.media_type == "video":
+        derivative_service.process_video(
+            media
+        )
+    else:
+        raise ValueError(
+            "Tipo de mídia não suportado para processamento."
+        )
 
     return media
 
@@ -286,6 +295,35 @@ def get_media_preview(
         derivative_service.get_derivative_file(
             media_id,
             "preview",
+        )
+    )
+
+    return FileResponse(
+        path=file_path,
+        media_type=derivative.content_type,
+    )
+
+
+@router.get(
+    "/{media_id}/poster",
+)
+def get_media_poster(
+    media_id: MediaId,
+    service: FotosMediaServiceDependency,
+    derivative_service: FotosMediaDerivativeServiceDependency,
+    current_user: FotosMediaReader,
+) -> FileResponse:
+    """Retorna o poster WebP de um vídeo autorizado."""
+
+    service.find_by_id(
+        media_id,
+        current_user,
+    )
+
+    file_path, derivative = (
+        derivative_service.get_derivative_file(
+            media_id,
+            "poster",
         )
     )
 

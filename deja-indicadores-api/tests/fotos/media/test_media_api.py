@@ -461,6 +461,88 @@ def test_process_image_creates_thumbnail_and_preview(
         assert preview.size == (1600, 800)
 
 
+def test_process_video_creates_poster(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Gera poster WebP de vídeo preservando o original."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    content = create_test_mp4(
+        width=640,
+        height=360,
+        duration_seconds=2.0,
+    )
+
+    upload_response = upload_video(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=content,
+    )
+
+    assert upload_response.status_code == 201
+
+    created = upload_response.json()
+
+    response = client.post(
+        f"{MEDIA_URL}/{created['id']}/process",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["processing_status"] == "ready"
+    assert body["processing_error"] is None
+
+    base_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+    )
+
+    original_path = (
+        base_path
+        / "originals"
+        / created["id"]
+        / "original.mp4"
+    )
+
+    poster_path = (
+        base_path
+        / "derivatives"
+        / created["id"]
+        / "poster.webp"
+    )
+
+    assert original_path.is_file()
+    assert original_path.read_bytes() == content
+
+    assert poster_path.is_file()
+
+    with Image.open(poster_path) as poster:
+        assert poster.format == "WEBP"
+        assert poster.size == (640, 360)
+
 
 def test_get_thumbnail_and_preview(
     client: TestClient,
@@ -472,7 +554,7 @@ def test_get_thumbnail_and_preview(
         Mapping[str, str],
     ],
 ) -> None:
-    """Retorna os derivados WebP ap?s o processamento."""
+    """Retorna os derivados WebP após o processamento."""
 
     _, _, environment_id, album_id, headers = media_context
 
@@ -534,6 +616,62 @@ def test_get_thumbnail_and_preview(
         assert preview.format == "WEBP"
         assert preview.size == (1600, 800)
 
+
+def test_get_video_poster(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Retorna o poster WebP após o processamento do vídeo."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    content = create_test_mp4(
+        width=640,
+        height=360,
+        duration_seconds=2.0,
+    )
+
+    upload_response = upload_video(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=content,
+    )
+
+    assert upload_response.status_code == 201
+
+    created = upload_response.json()
+
+    process_response = client.post(
+        f"{MEDIA_URL}/{created['id']}/process",
+        headers=headers,
+    )
+
+    assert process_response.status_code == 200
+
+    poster_response = client.get(
+        f"{MEDIA_URL}/{created['id']}/poster",
+        headers=headers,
+    )
+
+    assert poster_response.status_code == 200
+    assert (
+        poster_response.headers["content-type"]
+        == "image/webp"
+    )
+
+    with Image.open(
+        BytesIO(poster_response.content)
+    ) as poster:
+        assert poster.format == "WEBP"
+        assert poster.size == (640, 360)
 
 
 def test_upload_media_without_album(

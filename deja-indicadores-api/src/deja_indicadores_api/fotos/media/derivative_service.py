@@ -17,6 +17,9 @@ from deja_indicadores_api.fotos.media.models import (
 from deja_indicadores_api.fotos.media.repository import (
     FotosMediaRepository,
 )
+from deja_indicadores_api.fotos.media.video_derivatives import (
+    generate_video_poster,
+)
 
 
 class FotosMediaDerivativeService:
@@ -43,18 +46,9 @@ class FotosMediaDerivativeService:
                 "A mídia informada não é uma imagem."
             )
 
-        original_path = (
-            self._settings.uploads_dir
-            / Path(media.original_storage_key)
+        original_path = self._resolve_original_path(
+            media
         )
-
-        if (
-            not original_path.exists()
-            or not original_path.is_file()
-        ):
-            raise FileNotFoundError(
-                "O arquivo original da mídia não foi encontrado."
-            )
 
         media.processing_status = "processing"
         media.processing_error = None
@@ -79,7 +73,7 @@ class FotosMediaDerivativeService:
                 (
                     derivative,
                     was_created,
-                ) = self._generate_derivative(
+                ) = self._generate_image_derivative(
                     media,
                     original_path=original_path,
                     derivative_type=derivative_type,
@@ -116,6 +110,82 @@ class FotosMediaDerivativeService:
         )
 
         return derivatives
+
+    def process_video(
+        self,
+        media: FotosMediaModel,
+    ) -> list[FotosMediaDerivativeModel]:
+        """Gera o poster de um vídeo."""
+
+        if media.media_type != "video":
+            raise ValueError(
+                "A mídia informada não é um vídeo."
+            )
+
+        original_path = self._resolve_original_path(
+            media
+        )
+
+        duration_seconds = media.duration_seconds
+
+        if (
+            duration_seconds is None
+            or duration_seconds <= 0
+        ):
+            raise ValueError(
+                "A mídia não possui duração de vídeo válida."
+            )
+
+        media.processing_status = "processing"
+        media.processing_error = None
+
+        self._media_repository.update(
+            media
+        )
+
+        newly_created: list[
+            FotosMediaDerivativeModel
+        ] = []
+
+        try:
+            (
+                derivative,
+                was_created,
+            ) = self._generate_video_poster_derivative(
+                media,
+                original_path=original_path,
+                duration_seconds=duration_seconds,
+            )
+
+            if was_created:
+                newly_created.append(
+                    derivative
+                )
+
+        except Exception as exc:
+            self._cleanup_new_derivatives(
+                newly_created
+            )
+
+            media.processing_status = "failed"
+            media.processing_error = str(exc)
+
+            self._media_repository.update(
+                media
+            )
+
+            raise
+
+        media.processing_status = "ready"
+        media.processing_error = None
+
+        self._media_repository.update(
+            media
+        )
+
+        return [
+            derivative
+        ]
 
     def get_derivative_file(
         self,
@@ -154,7 +224,28 @@ class FotosMediaDerivativeService:
 
         return file_path, derivative
 
-    def _generate_derivative(
+    def _resolve_original_path(
+        self,
+        media: FotosMediaModel,
+    ) -> Path:
+        """Resolve e valida o caminho físico do original."""
+
+        original_path = (
+            self._settings.uploads_dir
+            / Path(media.original_storage_key)
+        )
+
+        if (
+            not original_path.exists()
+            or not original_path.is_file()
+        ):
+            raise FileNotFoundError(
+                "O arquivo original da mídia não foi encontrado."
+            )
+
+        return original_path
+
+    def _generate_image_derivative(
         self,
         media: FotosMediaModel,
         *,
@@ -164,7 +255,7 @@ class FotosMediaDerivativeService:
         FotosMediaDerivativeModel,
         bool,
     ]:
-        """Gera e persiste um derivado individual."""
+        """Gera e persiste um derivado individual de imagem."""
 
         existing = (
             self._derivative_repository.find_by_media_and_type(
@@ -176,14 +267,9 @@ class FotosMediaDerivativeService:
         if existing is not None:
             return existing, False
 
-        storage_key = (
-            Path("fotos")
-            / media.organization_id
-            / media.tenant_id
-            / media.environment_id
-            / "derivatives"
-            / media.id
-            / f"{derivative_type}.webp"
+        storage_key = self._build_derivative_storage_key(
+            media,
+            derivative_type,
         )
 
         destination_path = (
@@ -210,6 +296,99 @@ class FotosMediaDerivativeService:
             width=generated.width,
             height=generated.height,
         )
+
+        return self._persist_derivative(
+            derivative,
+            destination_path=destination_path,
+        )
+
+    def _generate_video_poster_derivative(
+        self,
+        media: FotosMediaModel,
+        *,
+        original_path: Path,
+        duration_seconds: float,
+    ) -> tuple[
+        FotosMediaDerivativeModel,
+        bool,
+    ]:
+        """Gera e persiste o poster de um vídeo."""
+
+        derivative_type = "poster"
+
+        existing = (
+            self._derivative_repository.find_by_media_and_type(
+                media.id,
+                derivative_type,
+            )
+        )
+
+        if existing is not None:
+            return existing, False
+
+        storage_key = self._build_derivative_storage_key(
+            media,
+            derivative_type,
+        )
+
+        destination_path = (
+            self._settings.uploads_dir
+            / storage_key
+        )
+
+        generated = generate_video_poster(
+            original_path,
+            destination_path,
+            ffmpeg_executable=self._settings.ffmpeg_executable,
+            duration_seconds=duration_seconds,
+        )
+
+        derivative = FotosMediaDerivativeModel(
+            id=str(
+                uuid4()
+            ),
+            media_id=media.id,
+            derivative_type=derivative_type,
+            storage_key=storage_key.as_posix(),
+            content_type=generated.content_type,
+            file_extension=generated.file_extension,
+            file_size=generated.file_size,
+            width=generated.width,
+            height=generated.height,
+        )
+
+        return self._persist_derivative(
+            derivative,
+            destination_path=destination_path,
+        )
+
+    def _build_derivative_storage_key(
+        self,
+        media: FotosMediaModel,
+        derivative_type: str,
+    ) -> Path:
+        """Monta a chave de armazenamento de um derivado."""
+
+        return (
+            Path("fotos")
+            / media.organization_id
+            / media.tenant_id
+            / media.environment_id
+            / "derivatives"
+            / media.id
+            / f"{derivative_type}.webp"
+        )
+
+    def _persist_derivative(
+        self,
+        derivative: FotosMediaDerivativeModel,
+        *,
+        destination_path: Path,
+    ) -> tuple[
+        FotosMediaDerivativeModel,
+        bool,
+    ]:
+        """Persiste o derivado e remove o arquivo se houver falha."""
 
         try:
             persisted = self._derivative_repository.add(

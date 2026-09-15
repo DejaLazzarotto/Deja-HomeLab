@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Configurações da aplicação carregadas por variáveis de ambiente."""
+    """ConfiguraÃ§Ãµes da aplicaÃ§Ã£o carregadas por variÃ¡veis de ambiente."""
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -100,6 +100,11 @@ class Settings(BaseSettings):
         alias="FFPROBE_EXECUTABLE",
     )
 
+    ffmpeg_executable: str = Field(
+        default="ffmpeg",
+        alias="FFMPEG_EXECUTABLE",
+    )
+
     @property
     def database_url(self) -> str:
         user = quote_plus(
@@ -118,6 +123,6 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Retorna uma instância compartilhada das configurações."""
+    """Retorna uma instÃ¢ncia compartilhada das configuraÃ§Ãµes."""
 
     return Settings()
