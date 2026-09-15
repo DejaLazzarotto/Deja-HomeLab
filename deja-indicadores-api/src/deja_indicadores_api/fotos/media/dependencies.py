@@ -11,6 +11,12 @@ from deja_indicadores_api.core.database import get_db_session
 from deja_indicadores_api.fotos.albums.repository import (
     FotosAlbumRepository,
 )
+from deja_indicadores_api.fotos.media.derivative_repository import (
+    FotosMediaDerivativeRepository,
+)
+from deja_indicadores_api.fotos.media.derivative_service import (
+    FotosMediaDerivativeService,
+)
 from deja_indicadores_api.fotos.media.repository import (
     FotosMediaRepository,
 )
@@ -52,4 +58,23 @@ def get_fotos_media_service(
 FotosMediaServiceDependency = Annotated[
     FotosMediaService,
     Depends(get_fotos_media_service),
+]
+
+
+def get_fotos_media_derivative_service(
+    session: DatabaseSession,
+    settings: SettingsDependency,
+) -> FotosMediaDerivativeService:
+    """Cria o serviço de derivados para a sessão da requisição."""
+
+    return FotosMediaDerivativeService(
+        FotosMediaRepository(session),
+        FotosMediaDerivativeRepository(session),
+        settings,
+    )
+
+
+FotosMediaDerivativeServiceDependency = Annotated[
+    FotosMediaDerivativeService,
+    Depends(get_fotos_media_derivative_service),
 ]

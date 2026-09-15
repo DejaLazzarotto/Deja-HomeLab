@@ -30,6 +30,9 @@ from deja_indicadores_api.core.database import (
 from deja_indicadores_api.fotos.albums.models import (
     FotosAlbumModel,
 )
+from deja_indicadores_api.fotos.media.derivative_models import (
+    FotosMediaDerivativeModel,
+)
 from deja_indicadores_api.fotos.media.models import (
     FotosMediaModel,
 )
@@ -125,6 +128,7 @@ def clear_database(
         session.execute(delete(ChamadosTicketModel))
         session.execute(delete(ChamadosClientUserModel))
         session.execute(delete(ChamadosClientModel))
+        session.execute(delete(FotosMediaDerivativeModel))
         session.execute(delete(FotosMediaModel))
         session.execute(delete(FotosAlbumModel))
         session.execute(delete(UserModel))

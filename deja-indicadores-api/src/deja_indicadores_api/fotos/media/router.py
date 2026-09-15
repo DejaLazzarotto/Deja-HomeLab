@@ -19,6 +19,7 @@ from deja_indicadores_api.authentication.schemas import (
     AuthenticatedUser,
 )
 from deja_indicadores_api.fotos.media.dependencies import (
+    FotosMediaDerivativeServiceDependency,
     FotosMediaServiceDependency,
 )
 from deja_indicadores_api.fotos.media.schemas import (
@@ -209,6 +210,88 @@ async def upload_media(
         album_id=album_id,
         file=file,
         current_user=current_user,
+    )
+
+
+@router.post(
+    "/{media_id}/process",
+    response_model=FotosMediaResponse,
+)
+def process_media(
+    media_id: MediaId,
+    service: FotosMediaServiceDependency,
+    derivative_service: FotosMediaDerivativeServiceDependency,
+    current_user: FotosMediaOperator,
+) -> FotosMediaResponse:
+    """Processa os arquivos derivados de uma mídia."""
+
+    media = service.find_by_id(
+        media_id,
+        current_user,
+    )
+
+    derivative_service.process_image(
+        media
+    )
+
+    return media
+
+
+@router.get(
+    "/{media_id}/thumbnail",
+)
+def get_media_thumbnail(
+    media_id: MediaId,
+    service: FotosMediaServiceDependency,
+    derivative_service: FotosMediaDerivativeServiceDependency,
+    current_user: FotosMediaReader,
+) -> FileResponse:
+    """Retorna o thumbnail WebP de uma mídia autorizada."""
+
+    service.find_by_id(
+        media_id,
+        current_user,
+    )
+
+    file_path, derivative = (
+        derivative_service.get_derivative_file(
+            media_id,
+            "thumbnail",
+        )
+    )
+
+    return FileResponse(
+        path=file_path,
+        media_type=derivative.content_type,
+    )
+
+
+@router.get(
+    "/{media_id}/preview",
+)
+def get_media_preview(
+    media_id: MediaId,
+    service: FotosMediaServiceDependency,
+    derivative_service: FotosMediaDerivativeServiceDependency,
+    current_user: FotosMediaReader,
+) -> FileResponse:
+    """Retorna o preview WebP de uma mídia autorizada."""
+
+    service.find_by_id(
+        media_id,
+        current_user,
+    )
+
+    file_path, derivative = (
+        derivative_service.get_derivative_file(
+            media_id,
+            "preview",
+        )
+    )
+
+    return FileResponse(
+        path=file_path,
+        media_type=derivative.content_type,
     )
 
 

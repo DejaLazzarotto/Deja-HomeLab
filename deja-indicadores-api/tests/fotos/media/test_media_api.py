@@ -367,6 +367,175 @@ def test_upload_video_extracts_metadata(
     assert original_path.read_bytes() == content
 
 
+def test_process_image_creates_thumbnail_and_preview(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Gera thumbnail e preview preservando o original."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    content = create_test_jpeg(
+        width=2000,
+        height=1000,
+    )
+
+    upload_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=content,
+    )
+
+    assert upload_response.status_code == 201
+
+    created = upload_response.json()
+
+    response = client.post(
+        f"{MEDIA_URL}/{created['id']}/process",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["processing_status"] == "ready"
+    assert body["processing_error"] is None
+
+    base_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+    )
+
+    original_path = (
+        base_path
+        / "originals"
+        / created["id"]
+        / "original.jpg"
+    )
+
+    thumbnail_path = (
+        base_path
+        / "derivatives"
+        / created["id"]
+        / "thumbnail.webp"
+    )
+
+    preview_path = (
+        base_path
+        / "derivatives"
+        / created["id"]
+        / "preview.webp"
+    )
+
+    assert original_path.is_file()
+    assert original_path.read_bytes() == content
+
+    assert thumbnail_path.is_file()
+    assert preview_path.is_file()
+
+    with Image.open(thumbnail_path) as thumbnail:
+        assert thumbnail.format == "WEBP"
+        assert thumbnail.size == (320, 160)
+
+    with Image.open(preview_path) as preview:
+        assert preview.format == "WEBP"
+        assert preview.size == (1600, 800)
+
+
+
+def test_get_thumbnail_and_preview(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Retorna os derivados WebP ap?s o processamento."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    content = create_test_jpeg(
+        width=2000,
+        height=1000,
+    )
+
+    upload_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=content,
+    )
+
+    assert upload_response.status_code == 201
+
+    created = upload_response.json()
+
+    process_response = client.post(
+        f"{MEDIA_URL}/{created['id']}/process",
+        headers=headers,
+    )
+
+    assert process_response.status_code == 200
+
+    thumbnail_response = client.get(
+        f"{MEDIA_URL}/{created['id']}/thumbnail",
+        headers=headers,
+    )
+
+    assert thumbnail_response.status_code == 200
+    assert (
+        thumbnail_response.headers["content-type"]
+        == "image/webp"
+    )
+
+    with Image.open(
+        BytesIO(thumbnail_response.content)
+    ) as thumbnail:
+        assert thumbnail.format == "WEBP"
+        assert thumbnail.size == (320, 160)
+
+    preview_response = client.get(
+        f"{MEDIA_URL}/{created['id']}/preview",
+        headers=headers,
+    )
+
+    assert preview_response.status_code == 200
+    assert (
+        preview_response.headers["content-type"]
+        == "image/webp"
+    )
+
+    with Image.open(
+        BytesIO(preview_response.content)
+    ) as preview:
+        assert preview.format == "WEBP"
+        assert preview.size == (1600, 800)
+
+
+
 def test_upload_media_without_album(
     client: TestClient,
     media_context: tuple[
