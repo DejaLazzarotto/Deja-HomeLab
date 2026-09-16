@@ -12,6 +12,15 @@ from PIL import Image
 from sqlalchemy.orm import Session, sessionmaker
 
 from deja_indicadores_api.core.config import Settings
+from deja_indicadores_api.fotos.media import (
+    derivative_service as derivative_service_module,
+)
+from deja_indicadores_api.fotos.media.derivative_models import (
+    FotosMediaDerivativeModel,
+)
+from deja_indicadores_api.fotos.media.image_derivatives import (
+    FotosImageDerivativeError,
+)
 from deja_indicadores_api.fotos.media.models import FotosMediaModel
 from tests.authentication.test_authentication_api import (
     create_environment,
@@ -1228,6 +1237,477 @@ def test_process_ready_media_is_idempotent(
 
     assert after_response.status_code == 200
     assert after_response.json() == before
+
+
+def test_process_ready_media_recovers_missing_derivative_file(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Regenera um arquivo ausente sem duplicar seu registro."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    upload_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=create_test_jpeg(
+            width=2000,
+            height=1000,
+        ),
+    )
+
+    assert upload_response.status_code == 201
+
+    media_id = upload_response.json()["id"]
+
+    before_response = client.get(
+        f"{MEDIA_URL}/{media_id}/derivatives",
+        headers=headers,
+    )
+
+    assert before_response.status_code == 200
+
+    before = before_response.json()
+    before_ids = {
+        derivative["derivative_type"]: derivative["id"]
+        for derivative in before
+    }
+
+    thumbnail_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "derivatives"
+        / media_id
+        / "thumbnail.webp"
+    )
+
+    assert thumbnail_path.is_file()
+
+    thumbnail_path.unlink()
+
+    assert not thumbnail_path.exists()
+
+    response = client.post(
+        f"{MEDIA_URL}/{media_id}/process",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["processing_status"] == "ready"
+    assert response.json()["processing_error"] is None
+    assert thumbnail_path.is_file()
+    assert thumbnail_path.stat().st_size > 0
+
+    with Image.open(thumbnail_path) as thumbnail:
+        thumbnail.load()
+
+        assert thumbnail.format == "WEBP"
+        assert thumbnail.size == (320, 160)
+
+    after_response = client.get(
+        f"{MEDIA_URL}/{media_id}/derivatives",
+        headers=headers,
+    )
+
+    assert after_response.status_code == 200
+
+    after = after_response.json()
+    after_ids = {
+        derivative["derivative_type"]: derivative["id"]
+        for derivative in after
+    }
+
+    assert len(after) == 2
+    assert after_ids == before_ids
+
+
+def test_process_ready_video_recovers_corrupted_preview(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Regenera um preview MP4 corrompido preservando seu registro."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    upload_response = upload_video(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=create_test_mp4(
+            width=640,
+            height=360,
+            duration_seconds=1.0,
+        ),
+    )
+
+    assert upload_response.status_code == 201
+
+    media_id = upload_response.json()["id"]
+
+    before_response = client.get(
+        f"{MEDIA_URL}/{media_id}/derivatives",
+        headers=headers,
+    )
+
+    assert before_response.status_code == 200
+
+    before = before_response.json()
+    before_ids = {
+        derivative["derivative_type"]: derivative["id"]
+        for derivative in before
+    }
+
+    preview_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "derivatives"
+        / media_id
+        / "preview.mp4"
+    )
+
+    assert preview_path.is_file()
+
+    preview_size = preview_path.stat().st_size
+
+    assert preview_size > 0
+
+    preview_path.write_bytes(
+        b"\x00" * preview_size
+    )
+
+    assert preview_path.stat().st_size == preview_size
+
+    response = client.post(
+        f"{MEDIA_URL}/{media_id}/process",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["processing_status"] == "ready"
+    assert response.json()["processing_error"] is None
+    assert preview_path.is_file()
+    assert preview_path.stat().st_size > 0
+
+    probe = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height",
+            "-of",
+            "csv=s=x:p=0",
+            str(preview_path),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert probe.stdout.strip() == "640x360"
+
+    after_response = client.get(
+        f"{MEDIA_URL}/{media_id}/derivatives",
+        headers=headers,
+    )
+
+    assert after_response.status_code == 200
+
+    after = after_response.json()
+    after_ids = {
+        derivative["derivative_type"]: derivative["id"]
+        for derivative in after
+    }
+
+    assert len(after) == 2
+    assert after_ids == before_ids
+
+
+def test_process_ready_media_replaces_orphan_file(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_session_factory: sessionmaker[Session],
+    test_settings: Settings,
+) -> None:
+    """Substitui arquivo órfão e recria seu registro de derivado."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    upload_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=create_test_jpeg(
+            width=2000,
+            height=1000,
+        ),
+    )
+
+    assert upload_response.status_code == 201
+
+    media_id = upload_response.json()["id"]
+
+    before_response = client.get(
+        f"{MEDIA_URL}/{media_id}/derivatives",
+        headers=headers,
+    )
+
+    assert before_response.status_code == 200
+
+    before = before_response.json()
+    preview_before = next(
+        derivative
+        for derivative in before
+        if derivative["derivative_type"] == "preview"
+    )
+
+    preview_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "derivatives"
+        / media_id
+        / "preview.webp"
+    )
+
+    assert preview_path.is_file()
+
+    with test_session_factory() as session:
+        derivative = session.get(
+            FotosMediaDerivativeModel,
+            preview_before["id"],
+        )
+
+        assert derivative is not None
+
+        session.delete(derivative)
+        session.commit()
+
+    preview_path.write_bytes(
+        b"orphan-derivative"
+    )
+
+    response = client.post(
+        f"{MEDIA_URL}/{media_id}/process",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["processing_status"] == "ready"
+    assert response.json()["processing_error"] is None
+
+    with Image.open(preview_path) as preview:
+        preview.load()
+
+        assert preview.format == "WEBP"
+        assert preview.size == (1600, 800)
+
+    after_response = client.get(
+        f"{MEDIA_URL}/{media_id}/derivatives",
+        headers=headers,
+    )
+
+    assert after_response.status_code == 200
+
+    after = after_response.json()
+    preview_after = next(
+        derivative
+        for derivative in after
+        if derivative["derivative_type"] == "preview"
+    )
+
+    assert len(after) == 2
+    assert preview_after["id"] != preview_before["id"]
+
+
+def test_processing_failure_preserves_recovered_derivative(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Preserva derivado recuperado quando o seguinte falha."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    upload_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=create_test_jpeg(
+            width=2000,
+            height=1000,
+        ),
+    )
+
+    assert upload_response.status_code == 201
+
+    media_id = upload_response.json()["id"]
+
+    before_response = client.get(
+        f"{MEDIA_URL}/{media_id}/derivatives",
+        headers=headers,
+    )
+
+    assert before_response.status_code == 200
+
+    before = before_response.json()
+    before_ids = {
+        derivative["derivative_type"]: derivative["id"]
+        for derivative in before
+    }
+
+    derivatives_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "derivatives"
+        / media_id
+    )
+    thumbnail_path = derivatives_path / "thumbnail.webp"
+    preview_path = derivatives_path / "preview.webp"
+
+    assert thumbnail_path.is_file()
+    assert preview_path.is_file()
+
+    thumbnail_path.unlink()
+    preview_path.unlink()
+
+    original_generate = (
+        derivative_service_module.generate_image_derivative
+    )
+
+    def generate_with_preview_failure(
+        source_path: Path,
+        destination_path: Path,
+        *,
+        derivative_type: str,
+    ):
+        if derivative_type == "preview":
+            raise FotosImageDerivativeError(
+                "Falha simulada no preview."
+            )
+
+        return original_generate(
+            source_path,
+            destination_path,
+            derivative_type=derivative_type,
+        )
+
+    monkeypatch.setattr(
+        derivative_service_module,
+        "generate_image_derivative",
+        generate_with_preview_failure,
+    )
+
+    with pytest.raises(
+        FotosImageDerivativeError,
+        match="Falha simulada no preview",
+    ):
+        client.post(
+            f"{MEDIA_URL}/{media_id}/process",
+            headers=headers,
+        )
+
+    assert thumbnail_path.is_file()
+    assert thumbnail_path.stat().st_size > 0
+    assert not preview_path.exists()
+
+    after_response = client.get(
+        f"{MEDIA_URL}/{media_id}/derivatives",
+        headers=headers,
+    )
+
+    assert after_response.status_code == 200
+
+    after = after_response.json()
+    after_ids = {
+        derivative["derivative_type"]: derivative["id"]
+        for derivative in after
+    }
+
+    assert len(after) == 2
+    assert after_ids == before_ids
+
+    media_response = client.get(
+        f"{MEDIA_URL}/{media_id}",
+        headers=headers,
+    )
+
+    assert media_response.status_code == 200
+    assert media_response.json()["processing_status"] == "failed"
+    assert (
+        media_response.json()["processing_error"]
+        == "Falha simulada no preview."
+    )
 
 
 def test_process_failed_media_retries_successfully(

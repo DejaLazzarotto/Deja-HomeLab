@@ -2,6 +2,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
+from PIL import Image, UnidentifiedImageError
+
 from deja_indicadores_api.core.config import Settings
 from deja_indicadores_api.fotos.media.derivative_models import (
     FotosMediaDerivativeModel,
@@ -13,6 +15,7 @@ from deja_indicadores_api.fotos.media.exceptions import (
     FotosMediaAlreadyProcessingError,
 )
 from deja_indicadores_api.fotos.media.image_derivatives import (
+    FotosImageDerivative,
     generate_image_derivative,
 )
 from deja_indicadores_api.fotos.media.models import (
@@ -22,8 +25,13 @@ from deja_indicadores_api.fotos.media.repository import (
     FotosMediaRepository,
 )
 from deja_indicadores_api.fotos.media.video_derivatives import (
+    FotosVideoDerivative,
     generate_video_poster,
     generate_video_preview,
+)
+from deja_indicadores_api.fotos.media.video_inspection import (
+    FotosVideoInspectionError,
+    inspect_video,
 )
 
 
@@ -247,6 +255,89 @@ class FotosMediaDerivativeService:
 
         return original_path
 
+    def _is_derivative_file_valid(
+        self,
+        derivative: FotosMediaDerivativeModel,
+    ) -> bool:
+        """Valida o arquivo físico e os metadados de um derivado."""
+
+        file_path = self._settings.uploads_dir / Path(
+            derivative.storage_key
+        )
+
+        try:
+            if not file_path.is_file():
+                return False
+
+            file_size = file_path.stat().st_size
+
+            if file_size <= 0 or file_size != derivative.file_size:
+                return False
+
+            if derivative.content_type == "image/webp":
+                with Image.open(file_path) as image:
+                    image_format = image.format
+                    image.load()
+                    width, height = image.size
+
+                return (
+                    image_format == "WEBP"
+                    and width == derivative.width
+                    and height == derivative.height
+                )
+
+            if derivative.content_type == "video/mp4":
+                inspection = inspect_video(
+                    file_path,
+                    ffprobe_executable=self._settings.ffprobe_executable,
+                )
+
+                return (
+                    inspection.width == derivative.width
+                    and inspection.height == derivative.height
+                )
+
+        except (
+            FotosVideoInspectionError,
+            OSError,
+            UnidentifiedImageError,
+            ValueError,
+        ):
+            return False
+
+        return False
+
+    def _update_existing_derivative(
+        self,
+        derivative: FotosMediaDerivativeModel,
+        generated: FotosImageDerivative | FotosVideoDerivative,
+        *,
+        destination_path: Path,
+    ) -> tuple[
+        FotosMediaDerivativeModel,
+        bool,
+    ]:
+        """Atualiza um registro depois de regenerar seu arquivo."""
+
+        derivative.content_type = generated.content_type
+        derivative.file_extension = generated.file_extension
+        derivative.file_size = generated.file_size
+        derivative.width = generated.width
+        derivative.height = generated.height
+
+        try:
+            persisted = self._derivative_repository.update(
+                derivative
+            )
+        except Exception:
+            destination_path.unlink(
+                missing_ok=True,
+            )
+
+            raise
+
+        return persisted, False
+
     def _generate_image_derivative(
         self,
         media: FotosMediaModel,
@@ -264,14 +355,20 @@ class FotosMediaDerivativeService:
             derivative_type,
         )
 
-        if existing is not None:
+        if (
+            existing is not None
+            and self._is_derivative_file_valid(existing)
+        ):
             return existing, False
 
-        storage_key = self._build_derivative_storage_key(
-            media,
-            derivative_type,
-            ".webp",
-        )
+        if existing is not None:
+            storage_key = Path(existing.storage_key)
+        else:
+            storage_key = self._build_derivative_storage_key(
+                media,
+                derivative_type,
+                ".webp",
+            )
 
         destination_path = self._settings.uploads_dir / storage_key
 
@@ -280,6 +377,13 @@ class FotosMediaDerivativeService:
             destination_path,
             derivative_type=derivative_type,
         )
+
+        if existing is not None:
+            return self._update_existing_derivative(
+                existing,
+                generated,
+                destination_path=destination_path,
+            )
 
         derivative = FotosMediaDerivativeModel(
             id=str(uuid4()),
@@ -317,14 +421,20 @@ class FotosMediaDerivativeService:
             derivative_type,
         )
 
-        if existing is not None:
+        if (
+            existing is not None
+            and self._is_derivative_file_valid(existing)
+        ):
             return existing, False
 
-        storage_key = self._build_derivative_storage_key(
-            media,
-            derivative_type,
-            ".webp",
-        )
+        if existing is not None:
+            storage_key = Path(existing.storage_key)
+        else:
+            storage_key = self._build_derivative_storage_key(
+                media,
+                derivative_type,
+                ".webp",
+            )
 
         destination_path = self._settings.uploads_dir / storage_key
 
@@ -334,6 +444,13 @@ class FotosMediaDerivativeService:
             ffmpeg_executable=self._settings.ffmpeg_executable,
             duration_seconds=duration_seconds,
         )
+
+        if existing is not None:
+            return self._update_existing_derivative(
+                existing,
+                generated,
+                destination_path=destination_path,
+            )
 
         derivative = FotosMediaDerivativeModel(
             id=str(uuid4()),
@@ -372,14 +489,20 @@ class FotosMediaDerivativeService:
             derivative_type,
         )
 
-        if existing is not None:
+        if (
+            existing is not None
+            and self._is_derivative_file_valid(existing)
+        ):
             return existing, False
 
-        storage_key = self._build_derivative_storage_key(
-            media,
-            derivative_type,
-            ".mp4",
-        )
+        if existing is not None:
+            storage_key = Path(existing.storage_key)
+        else:
+            storage_key = self._build_derivative_storage_key(
+                media,
+                derivative_type,
+                ".mp4",
+            )
 
         destination_path = self._settings.uploads_dir / storage_key
 
@@ -390,6 +513,13 @@ class FotosMediaDerivativeService:
             width=width,
             height=height,
         )
+
+        if existing is not None:
+            return self._update_existing_derivative(
+                existing,
+                generated,
+                destination_path=destination_path,
+            )
 
         derivative = FotosMediaDerivativeModel(
             id=str(uuid4()),

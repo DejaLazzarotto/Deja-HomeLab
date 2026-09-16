@@ -75,6 +75,19 @@ class FotosMediaDerivativeRepository:
 
         return derivative
 
+    def update(
+        self,
+        derivative: FotosMediaDerivativeModel,
+    ) -> FotosMediaDerivativeModel:
+        """Persiste alterações nos metadados de um derivado."""
+
+        self._session.commit()
+        self._session.refresh(
+            derivative
+        )
+
+        return derivative
+
     def delete(
         self,
         derivative: FotosMediaDerivativeModel,
