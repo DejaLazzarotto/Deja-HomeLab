@@ -1,6 +1,7 @@
 import json
 import subprocess
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 
@@ -13,6 +14,7 @@ class FotosVideoInspection:
     duration_seconds: float
     video_codec: str | None
     audio_codec: str | None
+    original_date: datetime | None
 
 
 class FotosVideoInspectionError(Exception):
@@ -33,7 +35,9 @@ def inspect_video(
         "-show_entries",
         (
             "format=duration:"
-            "stream=index,codec_type,codec_name,width,height"
+            "format_tags=creation_time:"
+            "stream=index,codec_type,codec_name,width,height:"
+            "stream_tags=creation_time"
         ),
         "-of",
         "json",
@@ -154,4 +158,68 @@ def inspect_video(
             if audio_stream is not None
             else None
         ),
+        original_date=_extract_original_date(
+            format_data,
+            video_stream,
+        ),
     )
+
+
+def _extract_original_date(
+    format_data: object,
+    video_stream: object,
+) -> datetime | None:
+    """Extrai e normaliza a data interna conhecida do vídeo."""
+
+    candidates: list[object] = []
+
+    if isinstance(format_data, dict):
+        tags = format_data.get(
+            "tags",
+            {},
+        )
+
+        if isinstance(tags, dict):
+            candidates.append(
+                tags.get(
+                    "creation_time"
+                )
+            )
+
+    if isinstance(video_stream, dict):
+        tags = video_stream.get(
+            "tags",
+            {},
+        )
+
+        if isinstance(tags, dict):
+            candidates.append(
+                tags.get(
+                    "creation_time"
+                )
+            )
+
+    for candidate in candidates:
+        if not isinstance(candidate, str):
+            continue
+
+        try:
+            parsed = datetime.fromisoformat(
+                candidate.strip().replace(
+                    "Z",
+                    "+00:00",
+                )
+            )
+        except ValueError:
+            continue
+
+        if parsed.tzinfo is not None:
+            parsed = parsed.astimezone(
+                UTC
+            ).replace(
+                tzinfo=None
+            )
+
+        return parsed
+
+    return None

@@ -33,6 +33,9 @@ from deja_indicadores_api.fotos.media.video_inspection import (
     FotosVideoInspectionError,
     inspect_video,
 )
+from deja_indicadores_api.fotos.media.video_normalization import (
+    normalize_video,
+)
 
 
 class FotosMediaDerivativeService:
@@ -139,10 +142,10 @@ class FotosMediaDerivativeService:
         self,
         media: FotosMediaModel,
     ) -> list[FotosMediaDerivativeModel]:
-        """Gera poster e preview de um vídeo."""
+        """Normaliza o v?deo e gera poster e preview."""
 
         if media.media_type != "video":
-            raise ValueError("A mídia informada não é um vídeo.")
+            raise ValueError("A m?dia informada n?o ? um v?deo.")
 
         original_path = self._resolve_original_path(media)
 
@@ -151,18 +154,45 @@ class FotosMediaDerivativeService:
         height = media.height
 
         if duration_seconds is None or duration_seconds <= 0:
-            raise ValueError("A mídia não possui duração de vídeo válida.")
+            raise ValueError("A m?dia n?o possui dura??o de v?deo v?lida.")
 
         if width is None or height is None or width <= 0 or height <= 0:
-            raise ValueError("A mídia não possui dimensões de vídeo válidas.")
+            raise ValueError("A m?dia n?o possui dimens?es de v?deo v?lidas.")
 
         self._claim_processing(media)
 
         derivatives: list[FotosMediaDerivativeModel] = []
-
         newly_created: list[FotosMediaDerivativeModel] = []
+        replaced_original_path: Path | None = None
 
         try:
+            (
+                original_path,
+                replaced_original_path,
+            ) = self._normalize_video_original(
+                media,
+                original_path,
+            )
+
+            duration_seconds = media.duration_seconds
+            width = media.width
+            height = media.height
+
+            if duration_seconds is None or duration_seconds <= 0:
+                raise ValueError(
+                    "O v?deo normalizado n?o possui dura??o v?lida."
+                )
+
+            if (
+                width is None
+                or height is None
+                or width <= 0
+                or height <= 0
+            ):
+                raise ValueError(
+                    "O v?deo normalizado n?o possui dimens?es v?lidas."
+                )
+
             (
                 poster,
                 poster_created,
@@ -199,6 +229,9 @@ class FotosMediaDerivativeService:
             media.processing_error = str(exc)
 
             self._media_repository.update(media)
+            self._remove_replaced_original(
+                replaced_original_path
+            )
 
             raise
 
@@ -206,8 +239,83 @@ class FotosMediaDerivativeService:
         media.processing_error = None
 
         self._media_repository.update(media)
+        self._remove_replaced_original(
+            replaced_original_path
+        )
 
         return derivatives
+
+    def _normalize_video_original(
+        self,
+        media: FotosMediaModel,
+        original_path: Path,
+    ) -> tuple[
+        Path,
+        Path | None,
+    ]:
+        """Normaliza o v?deo e atualiza seus metadados em mem?ria."""
+
+        inspection = inspect_video(
+            original_path,
+            ffprobe_executable=(
+                self._settings.ffprobe_executable
+            ),
+        )
+
+        normalized = normalize_video(
+            original_path,
+            source_extension=media.file_extension,
+            inspection=inspection,
+            ffmpeg_executable=(
+                self._settings.ffmpeg_executable
+            ),
+            ffprobe_executable=(
+                self._settings.ffprobe_executable
+            ),
+            timeout_seconds=(
+                self._settings
+                .fotos_media_video_conversion_timeout_seconds
+            ),
+        )
+
+        if not normalized.was_converted:
+            return original_path, None
+
+        normalized_storage_key = Path(
+            media.original_storage_key
+        ).with_name(
+            normalized.file_path.name
+        )
+
+        media.content_type = normalized.content_type
+        media.file_extension = normalized.file_extension
+        media.file_size = normalized.file_size
+        media.checksum_sha256 = normalized.checksum_sha256
+        media.was_converted = True
+        media.original_storage_key = (
+            normalized_storage_key.as_posix()
+        )
+        media.width = normalized.width
+        media.height = normalized.height
+        media.duration_seconds = normalized.duration_seconds
+
+        return normalized.file_path, original_path
+
+    @staticmethod
+    def _remove_replaced_original(
+        replaced_original_path: Path | None,
+    ) -> None:
+        """Remove a fonte substitu?da ap?s persist?ncia bem-sucedida."""
+
+        if replaced_original_path is None:
+            return
+
+        try:
+            replaced_original_path.unlink(
+                missing_ok=True,
+            )
+        except OSError:
+            pass
 
     def list_derivatives(
         self,

@@ -142,6 +142,30 @@ class FotosMediaRepository:
 
         return self._session.scalar(statement)
 
+    def find_by_source_checksum(
+        self,
+        source_checksum_sha256: str,
+        *,
+        environment_id: str,
+    ) -> FotosMediaModel | None:
+        """Localiza m?dia pelo checksum da fonte no ambiente."""
+
+        statement = (
+            select(FotosMediaModel)
+            .where(
+                FotosMediaModel.environment_id
+                == environment_id,
+                FotosMediaModel.source_checksum_sha256
+                == source_checksum_sha256,
+            )
+            .order_by(
+                FotosMediaModel.deleted_at.asc(),
+                FotosMediaModel.created_at.asc(),
+            )
+        )
+
+        return self._session.scalar(statement)
+
     def exists_by_album_id(
         self,
         album_id: str,

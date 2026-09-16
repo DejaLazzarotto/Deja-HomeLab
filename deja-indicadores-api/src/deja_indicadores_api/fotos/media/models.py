@@ -2,11 +2,13 @@ from datetime import datetime
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     DateTime,
     Float,
     ForeignKey,
     Integer,
     String,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -18,6 +20,17 @@ class FotosMediaModel(Base):
     """Mídia original armazenada pelo módulo Deja Fotos."""
 
     __tablename__ = "fotos_media"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "environment_id",
+            "source_checksum_sha256",
+            name=(
+                "uq_fotos_media_"
+                "environment_source_checksum"
+            ),
+        ),
+    )
 
     id: Mapped[str] = mapped_column(
         String(36),
@@ -73,6 +86,27 @@ class FotosMediaModel(Base):
         nullable=False,
     )
 
+    source_content_type: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
+    source_file_extension: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+
+    source_file_size: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+    )
+
+    source_checksum_sha256: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        index=True,
+    )
+
     media_type: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
@@ -100,6 +134,12 @@ class FotosMediaModel(Base):
         index=True,
     )
 
+    was_converted: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+
     original_storage_key: Mapped[str] = mapped_column(
         String(512),
         nullable=False,
@@ -122,6 +162,23 @@ class FotosMediaModel(Base):
         DateTime,
         nullable=True,
         index=True,
+    )
+
+    original_date_source: Mapped[str | None] = mapped_column(
+        String(30),
+        nullable=True,
+    )
+
+    original_date_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+
+    original_date_conflict: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
     )
 
     width: Mapped[int | None] = mapped_column(

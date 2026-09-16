@@ -101,6 +101,12 @@ class Settings(BaseSettings):
         alias="FOTOS_MEDIA_PROCESSING_TIMEOUT_MINUTES",
     )
 
+    fotos_media_video_conversion_timeout_seconds: int = Field(
+        default=3600,
+        gt=0,
+        alias="FOTOS_MEDIA_VIDEO_CONVERSION_TIMEOUT_SECONDS",
+    )
+
     ffprobe_executable: str = Field(
         default="ffprobe",
         alias="FFPROBE_EXECUTABLE",

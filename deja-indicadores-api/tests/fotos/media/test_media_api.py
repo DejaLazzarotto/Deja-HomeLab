@@ -94,6 +94,7 @@ def create_test_jpeg(
     *,
     width: int = 16,
     height: int = 12,
+    original_date: datetime | None = None,
 ) -> bytes:
     """Cria uma imagem JPEG real para os testes."""
 
@@ -104,13 +105,76 @@ def create_test_jpeg(
         (width, height),
     )
 
+    exif = Image.Exif()
+
+    if original_date is not None:
+        exif[36867] = original_date.strftime(
+            "%Y:%m:%d %H:%M:%S",
+        )
+
     image.save(
         buffer,
         format="JPEG",
+        exif=exif,
     )
 
     return buffer.getvalue()
 
+
+
+def create_test_gif(
+    *,
+    width: int = 16,
+    height: int = 12,
+) -> bytes:
+    """Cria um GIF animado real para os testes."""
+
+    buffer = BytesIO()
+
+    first_frame = Image.new(
+        "RGB",
+        (width, height),
+        color="red",
+    )
+    second_frame = Image.new(
+        "RGB",
+        (width, height),
+        color="blue",
+    )
+
+    first_frame.save(
+        buffer,
+        format="GIF",
+        save_all=True,
+        append_images=[second_frame],
+        duration=100,
+        loop=0,
+    )
+
+    return buffer.getvalue()
+
+
+def create_test_bmp(
+    *,
+    width: int = 16,
+    height: int = 12,
+) -> bytes:
+    """Cria uma imagem BMP real para os testes."""
+
+    buffer = BytesIO()
+
+    image = Image.new(
+        "RGB",
+        (width, height),
+        color="green",
+    )
+
+    image.save(
+        buffer,
+        format="BMP",
+    )
+
+    return buffer.getvalue()
 
 def create_test_mp4(
     *,
@@ -138,6 +202,53 @@ def create_test_mp4(
             "-an",
             "-movflags",
             "+faststart",
+            "-y",
+            str(output_path),
+        ]
+
+        subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        return output_path.read_bytes()
+
+
+def create_test_legacy_video(
+    *,
+    file_extension: str,
+    video_codec: str,
+    width: int = 16,
+    height: int = 12,
+    duration_seconds: float = 1.0,
+) -> bytes:
+    """Cria um v?deo legado real para os testes."""
+
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        output_path = (
+            Path(temporary_directory)
+            / f"video{file_extension}"
+        )
+
+        command = [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            (
+                f"color=c=black:s={width}x{height}:"
+                f"d={duration_seconds}"
+            ),
+            "-c:v",
+            video_codec,
+            "-pix_fmt",
+            "yuv420p",
+            "-an",
             "-y",
             str(output_path),
         ]
@@ -197,8 +308,9 @@ def upload_video(
     headers: Mapping[str, str],
     file_name: str = "video.mp4",
     content: bytes | None = None,
+    content_type: str = "video/mp4",
 ):
-    """Envia um vídeo de teste."""
+    """Envia um v?deo de teste."""
 
     data = {
         "environment_id": environment_id,
@@ -217,7 +329,7 @@ def upload_video(
             "file": (
                 file_name,
                 content,
-                "video/mp4",
+                content_type,
             )
         },
         headers=headers,
@@ -268,16 +380,28 @@ def test_upload_media_derives_scope_and_stores_original(
     assert body["environment_id"] == environment_id
     assert body["album_id"] == album_id
     assert body["original_name"] == "foto.jpg"
+    assert body["source_content_type"] == "image/jpeg"
+    assert body["source_file_extension"] == ".jpg"
+    assert body["source_file_size"] == len(content)
+    assert len(body["source_checksum_sha256"]) == 64
     assert body["media_type"] == "image"
     assert body["content_type"] == "image/jpeg"
     assert body["file_extension"] == ".jpg"
     assert body["file_size"] == len(content)
     assert len(body["checksum_sha256"]) == 64
+    assert (
+        body["source_checksum_sha256"]
+        == body["checksum_sha256"]
+    )
+    assert body["was_converted"] is False
     assert body["processing_status"] == "received"
     assert body["width"] == 16
     assert body["height"] == 12
     assert body["duration_seconds"] is None
     assert body["original_date"] is None
+    assert body["original_date_source"] is None
+    assert body["original_date_verified"] is False
+    assert body["original_date_conflict"] is False
     assert body["view_count"] == 0
     assert body["deleted_at"] is None
 
@@ -288,6 +412,7 @@ def test_upload_media_derives_scope_and_stores_original(
         / tenant_id
         / environment_id
         / "originals"
+        / "sem-data"
         / body["id"]
         / "original.jpg"
     )
@@ -295,6 +420,243 @@ def test_upload_media_derives_scope_and_stores_original(
     assert original_path.is_file()
     assert original_path.read_bytes() == content
 
+
+
+def test_upload_media_stores_image_by_embedded_year_and_month(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Armazena imagem com data EXIF no diret?rio cronol?gico."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    original_date = datetime(
+        2021,
+        4,
+        9,
+        18,
+        30,
+        15,
+    )
+
+    content = create_test_jpeg(
+        width=20,
+        height=15,
+        original_date=original_date,
+    )
+
+    response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=content,
+    )
+
+    assert response.status_code == 201
+
+    body = response.json()
+
+    assert body["original_date"] == "2021-04-09T18:30:15"
+    assert body["original_date_source"] == "embedded_metadata"
+    assert body["original_date_verified"] is False
+    assert body["original_date_conflict"] is False
+    assert body["was_converted"] is False
+
+    original_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / "2021"
+        / "04"
+        / body["id"]
+        / "original.jpg"
+    )
+
+    staging_directory = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / ".staging"
+        / body["id"]
+    )
+
+    assert original_path.is_file()
+    assert original_path.read_bytes() == content
+    assert not staging_directory.exists()
+
+
+def test_upload_gif_preserves_animated_original(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Preserva integralmente o GIF animado recebido."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    content = create_test_gif(
+        width=20,
+        height=15,
+    )
+
+    response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="animacao.gif",
+        content=content,
+        content_type="image/gif",
+    )
+
+    assert response.status_code == 201
+
+    body = response.json()
+
+    assert body["original_name"] == "animacao.gif"
+    assert body["source_content_type"] == "image/gif"
+    assert body["source_file_extension"] == ".gif"
+    assert body["source_file_size"] == len(content)
+    assert body["content_type"] == "image/gif"
+    assert body["file_extension"] == ".gif"
+    assert body["file_size"] == len(content)
+    assert (
+        body["source_checksum_sha256"]
+        == body["checksum_sha256"]
+    )
+    assert body["was_converted"] is False
+    assert body["original_date"] is None
+
+    original_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / "sem-data"
+        / body["id"]
+        / "original.gif"
+    )
+
+    assert original_path.is_file()
+    assert original_path.read_bytes() == content
+
+    with Image.open(original_path) as stored:
+        assert stored.format == "GIF"
+        assert stored.size == (20, 15)
+        assert stored.n_frames == 2
+
+
+def test_upload_bmp_converts_managed_original_to_png(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Converte BMP para PNG preservando os metadados da fonte."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    content = create_test_bmp(
+        width=20,
+        height=15,
+    )
+
+    response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="foto-legada.bmp",
+        content=content,
+        content_type="image/bmp",
+    )
+
+    assert response.status_code == 201
+
+    body = response.json()
+
+    assert body["original_name"] == "foto-legada.bmp"
+    assert body["source_content_type"] == "image/bmp"
+    assert body["source_file_extension"] == ".bmp"
+    assert body["source_file_size"] == len(content)
+    assert len(body["source_checksum_sha256"]) == 64
+
+    assert body["media_type"] == "image"
+    assert body["content_type"] == "image/png"
+    assert body["file_extension"] == ".png"
+    assert body["file_size"] > 0
+    assert len(body["checksum_sha256"]) == 64
+    assert (
+        body["source_checksum_sha256"]
+        != body["checksum_sha256"]
+    )
+    assert body["was_converted"] is True
+    assert body["width"] == 20
+    assert body["height"] == 15
+
+    original_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / "sem-data"
+        / body["id"]
+        / "original.png"
+    )
+
+    assert original_path.is_file()
+    assert original_path.stat().st_size == body["file_size"]
+    assert original_path.read_bytes() != content
+
+    with Image.open(original_path) as stored:
+        assert stored.format == "PNG"
+        assert stored.size == (20, 15)
 
 def test_upload_video_extracts_metadata(
     client: TestClient,
@@ -364,12 +726,148 @@ def test_upload_video_extracts_metadata(
         / tenant_id
         / environment_id
         / "originals"
+        / "sem-data"
         / body["id"]
         / "original.mp4"
     )
 
     assert original_path.is_file()
     assert original_path.read_bytes() == content
+
+
+@pytest.mark.parametrize(
+    (
+        "source_extension",
+        "source_content_type",
+        "source_video_codec",
+    ),
+    [
+        (
+            ".mov",
+            "video/quicktime",
+            "libx264",
+        ),
+        (
+            ".mpg",
+            "video/mpeg",
+            "mpeg2video",
+        ),
+    ],
+)
+def test_upload_legacy_video_converts_original_to_mp4(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+    source_extension: str,
+    source_content_type: str,
+    source_video_codec: str,
+) -> None:
+    """Converte v?deo legado para MP4 durante o processamento."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    content = create_test_legacy_video(
+        file_extension=source_extension,
+        video_codec=source_video_codec,
+        width=20,
+        height=16,
+    )
+
+    upload_response = upload_video(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name=f"video-legado{source_extension}",
+        content=content,
+        content_type=source_content_type,
+    )
+
+    assert upload_response.status_code == 201
+
+    created = upload_response.json()
+
+    assert created["source_content_type"] == source_content_type
+    assert created["source_file_extension"] == source_extension
+    assert created["source_file_size"] == len(content)
+    assert created["was_converted"] is False
+
+    response = client.get(
+        f"{MEDIA_URL}/{created['id']}",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["processing_status"] == "ready"
+    assert body["processing_error"] is None
+    assert body["source_content_type"] == source_content_type
+    assert body["source_file_extension"] == source_extension
+    assert body["source_file_size"] == len(content)
+    assert body["source_checksum_sha256"] == (
+        created["source_checksum_sha256"]
+    )
+
+    assert body["content_type"] == "video/mp4"
+    assert body["file_extension"] == ".mp4"
+    assert body["file_size"] > 0
+    assert body["was_converted"] is True
+    assert body["width"] == 20
+    assert body["height"] == 16
+    assert (
+        body["checksum_sha256"]
+        != body["source_checksum_sha256"]
+    )
+
+    media_directory = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / "sem-data"
+        / body["id"]
+    )
+
+    source_path = (
+        media_directory
+        / f"original{source_extension}"
+    )
+    normalized_path = (
+        media_directory
+        / "normalized.mp4"
+    )
+
+    assert not source_path.exists()
+    assert normalized_path.is_file()
+    assert normalized_path.stat().st_size == body["file_size"]
+
+    download_response = client.get(
+        f"{MEDIA_URL}/{body['id']}/original",
+        headers=headers,
+    )
+
+    assert download_response.status_code == 200
+    assert download_response.headers["content-type"] == "video/mp4"
+    assert "video-legado.mp4" in (
+        download_response.headers["content-disposition"]
+    )
+    assert download_response.content == normalized_path.read_bytes()
 
 
 def test_process_image_creates_thumbnail_and_preview(
@@ -424,7 +922,7 @@ def test_process_image_creates_thumbnail_and_preview(
 
     base_path = test_settings.uploads_dir / "fotos" / organization_id / tenant_id / environment_id
 
-    original_path = base_path / "originals" / created["id"] / "original.jpg"
+    original_path = base_path / "originals" / "sem-data" / created["id"] / "original.jpg"
 
     thumbnail_path = base_path / "derivatives" / created["id"] / "thumbnail.webp"
 
@@ -498,7 +996,7 @@ def test_process_video_creates_poster(
 
     base_path = test_settings.uploads_dir / "fotos" / organization_id / tenant_id / environment_id
 
-    original_path = base_path / "originals" / created["id"] / "original.mp4"
+    original_path = base_path / "originals" / "sem-data" / created["id"] / "original.mp4"
 
     poster_path = base_path / "derivatives" / created["id"] / "poster.webp"
 
@@ -684,6 +1182,10 @@ def test_list_media_filters_by_album(
         album_id=None,
         headers=headers,
         file_name="sem-album.jpg",
+        content=create_test_jpeg(
+            width=17,
+            height=13,
+        ),
     )
 
     assert unlinked_response.status_code == 201
@@ -828,6 +1330,7 @@ def test_delete_media_is_logical(
         / tenant_id
         / environment_id
         / "originals"
+        / "sem-data"
         / created["id"]
         / "original.jpg"
     )
@@ -848,6 +1351,86 @@ def test_delete_media_is_logical(
 
     assert get_response.status_code == 404
     assert get_response.json()["error"] == "fotos_media_not_found"
+
+
+def test_upload_media_rejects_duplicate_source(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Rejeita arquivo-fonte j? cadastrado no mesmo ambiente."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    content = create_test_jpeg(
+        width=24,
+        height=18,
+    )
+
+    first_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=content,
+    )
+
+    assert first_response.status_code == 201
+
+    first = first_response.json()
+
+    duplicate_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="copia.jpg",
+        content=content,
+    )
+
+    assert duplicate_response.status_code == 409
+    assert (
+        duplicate_response.json()["error"]
+        == "fotos_media_duplicate"
+    )
+    assert first["id"] in duplicate_response.json()["message"]
+
+    list_response = client.get(
+        MEDIA_URL,
+        params={
+            "environment_id": environment_id,
+        },
+        headers=headers,
+    )
+
+    assert list_response.status_code == 200
+    assert len(list_response.json()) == 1
+
+    staging_root = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / ".staging"
+    )
+
+    assert (
+        not staging_root.exists()
+        or not any(staging_root.iterdir())
+    )
 
 
 @pytest.mark.parametrize(

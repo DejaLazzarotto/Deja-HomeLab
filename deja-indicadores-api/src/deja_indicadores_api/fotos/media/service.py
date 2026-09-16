@@ -21,12 +21,17 @@ from deja_indicadores_api.fotos.albums.repository import (
 from deja_indicadores_api.fotos.media.exceptions import (
     FotosMediaAlbumNotFoundError,
     FotosMediaAlbumScopeMismatchError,
+    FotosMediaDuplicateError,
     FotosMediaEmptyFileError,
     FotosMediaFileNotFoundError,
     FotosMediaInvalidContentError,
     FotosMediaInvalidTypeError,
     FotosMediaNotFoundError,
     FotosMediaTooLargeError,
+)
+from deja_indicadores_api.fotos.media.image_normalization import (
+    FotosImageNormalizationError,
+    normalize_image,
 )
 from deja_indicadores_api.fotos.media.inspection import (
     FotosImageInspectionError,
@@ -37,6 +42,9 @@ from deja_indicadores_api.fotos.media.models import (
 )
 from deja_indicadores_api.fotos.media.repository import (
     FotosMediaRepository,
+)
+from deja_indicadores_api.fotos.media.storage import (
+    build_original_storage_key,
 )
 from deja_indicadores_api.fotos.media.video_inspection import (
     FotosVideoInspectionError,
@@ -92,7 +100,12 @@ ALLOWED_FOTOS_CONTENT_TYPES = {
     "image/jpeg": "image",
     "image/png": "image",
     "image/webp": "image",
+    "image/gif": "image",
+    "image/bmp": "image",
+    "image/x-ms-bmp": "image",
     "video/mp4": "video",
+    "video/quicktime": "video",
+    "video/mpeg": "video",
 }
 
 UPLOAD_CHUNK_SIZE = 1024 * 1024
@@ -234,25 +247,25 @@ class FotosMediaService:
                 environment_id=environment.id,
             )
 
-        content_type = (
+        source_content_type = (
             file.content_type
             or "application/octet-stream"
         )
 
         media_type = ALLOWED_FOTOS_CONTENT_TYPES.get(
-            content_type
+            source_content_type
         )
 
         if media_type is None:
             raise FotosMediaInvalidTypeError(
-                content_type,
+                source_content_type,
             )
 
         original_name = Path(
             file.filename or "arquivo"
         ).name
 
-        extension = Path(
+        source_extension = Path(
             original_name
         ).suffix.lower()
 
@@ -260,22 +273,24 @@ class FotosMediaService:
             uuid4()
         )
 
-        storage_key = (
+        staging_key = (
             Path("fotos")
             / tenant.organization_id
             / tenant.id
             / environment.id
-            / "originals"
+            / ".staging"
             / media_id
-            / f"original{extension}"
+            / f"source{source_extension}"
         )
 
         file_path = (
             self._settings.uploads_dir
-            / storage_key
+            / staging_key
         )
 
-        file_path.parent.mkdir(
+        staging_directory = file_path.parent
+
+        staging_directory.mkdir(
             parents=True,
             exist_ok=True,
         )
@@ -321,18 +336,51 @@ class FotosMediaService:
             if total_size == 0:
                 raise FotosMediaEmptyFileError()
 
+            source_checksum = digest.hexdigest()
+
+            existing_media = (
+                self._repository.find_by_source_checksum(
+                    source_checksum,
+                    environment_id=environment.id,
+                )
+            )
+
+            if existing_media is not None:
+                raise FotosMediaDuplicateError(
+                    existing_media.id,
+                )
+
+            managed_content_type = source_content_type
+            managed_extension = source_extension
+            managed_file_size = total_size
+            managed_checksum = source_checksum
+            was_converted = False
+
             if media_type == "image":
                 try:
                     inspection = inspect_image(
                         file_path,
                     )
-                except FotosImageInspectionError as exc:
+                    normalized = normalize_image(
+                        file_path,
+                        inspection,
+                    )
+                except (
+                    FotosImageInspectionError,
+                    FotosImageNormalizationError,
+                ) as exc:
                     raise FotosMediaInvalidContentError(
                         str(exc),
                     ) from exc
 
-                width = inspection.width
-                height = inspection.height
+                file_path = normalized.file_path
+                managed_content_type = normalized.content_type
+                managed_extension = normalized.file_extension
+                managed_file_size = normalized.file_size
+                managed_checksum = normalized.checksum_sha256
+                was_converted = normalized.was_converted
+                width = normalized.width
+                height = normalized.height
                 original_date = inspection.original_date
 
             elif media_type == "video":
@@ -351,10 +399,45 @@ class FotosMediaService:
                 width = inspection.width
                 height = inspection.height
                 duration_seconds = inspection.duration_seconds
+                original_date = inspection.original_date
+
+            storage_key = build_original_storage_key(
+                organization_id=tenant.organization_id,
+                tenant_id=tenant.id,
+                environment_id=environment.id,
+                media_id=media_id,
+                file_extension=managed_extension,
+                original_date=original_date,
+            )
+
+            destination_path = (
+                self._settings.uploads_dir
+                / storage_key
+            )
+
+            destination_path.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            file_path.replace(
+                destination_path,
+            )
+            file_path = destination_path
+
+            try:
+                staging_directory.rmdir()
+            except OSError:
+                pass
 
         except Exception:
             if file_path.exists():
                 file_path.unlink()
+
+            try:
+                staging_directory.rmdir()
+            except OSError:
+                pass
 
             raise
 
@@ -365,15 +448,27 @@ class FotosMediaService:
             environment_id=environment.id,
             album_id=album_id,
             original_name=original_name,
+            source_content_type=source_content_type,
+            source_file_extension=source_extension or None,
+            source_file_size=total_size,
+            source_checksum_sha256=source_checksum,
             media_type=media_type,
-            content_type=content_type,
-            file_extension=extension or None,
-            file_size=total_size,
-            checksum_sha256=digest.hexdigest(),
+            content_type=managed_content_type,
+            file_extension=managed_extension or None,
+            file_size=managed_file_size,
+            checksum_sha256=managed_checksum,
+            was_converted=was_converted,
             original_storage_key=storage_key.as_posix(),
             processing_status="received",
             processing_error=None,
             original_date=original_date,
+            original_date_source=(
+                "embedded_metadata"
+                if original_date is not None
+                else None
+            ),
+            original_date_verified=False,
+            original_date_conflict=False,
             width=width,
             height=height,
             duration_seconds=duration_seconds,

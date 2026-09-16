@@ -94,6 +94,22 @@ class FotosMediaEmptyFileError(ApplicationError):
         super().__init__("O arquivo de mídia enviado está vazio.")
 
 
+class FotosMediaDuplicateError(ResourceConflictError):
+    """Arquivo-fonte j? cadastrado no mesmo ambiente."""
+
+    error_code = "fotos_media_duplicate"
+
+    def __init__(
+        self,
+        existing_media_id: str,
+    ) -> None:
+        super().__init__(
+            "A m?dia enviada j? est? cadastrada "
+            f"com o ID '{existing_media_id}'."
+        )
+
+
+
 class FotosMediaFileNotFoundError(ResourceNotFoundError):
     """Registro existe, mas o original físico não está disponível."""
 

@@ -17,6 +17,15 @@ FotosMediaProcessingStatus = Literal[
     "quarantine",
 ]
 
+FotosMediaOriginalDateSource = Literal[
+    "embedded_metadata",
+    "source_folder",
+    "filename",
+    "filesystem",
+    "manual",
+    "ai_suggested",
+]
+
 
 class FotosMediaResponse(BaseModel):
     """Representação pública de uma mídia do Deja Fotos."""
@@ -34,16 +43,26 @@ class FotosMediaResponse(BaseModel):
     album_id: str | None
 
     original_name: str
+
+    source_content_type: str
+    source_file_extension: str | None
+    source_file_size: int
+    source_checksum_sha256: str
+
     media_type: FotosMediaType
     content_type: str
     file_extension: str | None
     file_size: int
     checksum_sha256: str
+    was_converted: bool
 
     processing_status: FotosMediaProcessingStatus
     processing_error: str | None
 
     original_date: datetime | None
+    original_date_source: FotosMediaOriginalDateSource | None
+    original_date_verified: bool
+    original_date_conflict: bool
 
     width: int | None
     height: int | None

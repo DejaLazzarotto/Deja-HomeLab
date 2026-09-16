@@ -1,3 +1,4 @@
+from pathlib import Path as FilePath
 from typing import Annotated
 
 from fastapi import (
@@ -324,10 +325,15 @@ def get_media_original(
         current_user,
     )
 
+    download_name = (
+        f"{FilePath(media.original_name).stem}"
+        f"{media.file_extension or ''}"
+    )
+
     return FileResponse(
         path=file_path,
         media_type=media.content_type,
-        filename=media.original_name,
+        filename=download_name,
     )
 
 
