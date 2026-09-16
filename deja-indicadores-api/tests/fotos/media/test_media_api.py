@@ -1,6 +1,7 @@
 import subprocess
 import tempfile
 from collections.abc import Mapping
+from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from uuid import uuid4
@@ -8,8 +9,10 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
+from sqlalchemy.orm import Session, sessionmaker
 
 from deja_indicadores_api.core.config import Settings
+from deja_indicadores_api.fotos.media.models import FotosMediaModel
 from tests.authentication.test_authentication_api import (
     create_environment,
     create_organization,
@@ -1149,3 +1152,222 @@ def test_list_media_derivatives(
         assert "height" in derivative
         assert "created_at" in derivative
         assert "storage_key" not in derivative
+
+
+def set_media_processing_state(
+    test_session_factory: sessionmaker[Session],
+    media_id: str,
+    *,
+    status: str,
+    error: str | None = None,
+    updated_at: datetime | None = None,
+) -> None:
+    """Prepara um estado operacional especifico para a midia."""
+
+    with test_session_factory() as session:
+        media = session.get(FotosMediaModel, media_id)
+
+        assert media is not None
+
+        media.processing_status = status
+        media.processing_error = error
+
+        if updated_at is not None:
+            media.updated_at = updated_at
+
+        session.commit()
+
+
+def test_process_ready_media_is_idempotent(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Reutiliza os mesmos derivados quando a midia ja esta pronta."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    upload_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+    )
+
+    assert upload_response.status_code == 201
+
+    media_id = upload_response.json()["id"]
+
+    before_response = client.get(
+        f"{MEDIA_URL}/{media_id}/derivatives",
+        headers=headers,
+    )
+
+    assert before_response.status_code == 200
+
+    before = before_response.json()
+
+    response = client.post(
+        f"{MEDIA_URL}/{media_id}/process",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["processing_status"] == "ready"
+    assert response.json()["processing_error"] is None
+
+    after_response = client.get(
+        f"{MEDIA_URL}/{media_id}/derivatives",
+        headers=headers,
+    )
+
+    assert after_response.status_code == 200
+    assert after_response.json() == before
+
+
+def test_process_failed_media_retries_successfully(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Permite retry de uma midia com processamento anterior falho."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    upload_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+    )
+
+    assert upload_response.status_code == 201
+
+    media_id = upload_response.json()["id"]
+
+    set_media_processing_state(
+        test_session_factory,
+        media_id,
+        status="failed",
+        error="Falha simulada.",
+    )
+
+    response = client.post(
+        f"{MEDIA_URL}/{media_id}/process",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["processing_status"] == "ready"
+    assert response.json()["processing_error"] is None
+
+
+def test_process_recent_processing_media_returns_conflict(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Bloqueia nova tentativa enquanto o processamento esta ativo."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    upload_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+    )
+
+    assert upload_response.status_code == 201
+
+    media_id = upload_response.json()["id"]
+
+    set_media_processing_state(
+        test_session_factory,
+        media_id,
+        status="processing",
+        updated_at=datetime.now(UTC).replace(tzinfo=None),
+    )
+
+    response = client.post(
+        f"{MEDIA_URL}/{media_id}/process",
+        headers=headers,
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"] == "fotos_media_already_processing"
+
+    get_response = client.get(
+        f"{MEDIA_URL}/{media_id}",
+        headers=headers,
+    )
+
+    assert get_response.status_code == 200
+    assert get_response.json()["processing_status"] == "processing"
+
+
+def test_process_stale_processing_media_recovers(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_session_factory: sessionmaker[Session],
+    test_settings: Settings,
+) -> None:
+    """Recupera uma tentativa abandonada apos o limite configurado."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    upload_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+    )
+
+    assert upload_response.status_code == 201
+
+    media_id = upload_response.json()["id"]
+    stale_at = datetime.now(UTC).replace(tzinfo=None) - timedelta(
+        minutes=(
+            test_settings.fotos_media_processing_timeout_minutes
+            + 1
+        ),
+    )
+
+    set_media_processing_state(
+        test_session_factory,
+        media_id,
+        status="processing",
+        updated_at=stale_at,
+    )
+
+    response = client.post(
+        f"{MEDIA_URL}/{media_id}/process",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["processing_status"] == "ready"
+    assert response.json()["processing_error"] is None

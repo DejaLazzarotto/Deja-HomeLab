@@ -1,3 +1,4 @@
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -7,6 +8,9 @@ from deja_indicadores_api.fotos.media.derivative_models import (
 )
 from deja_indicadores_api.fotos.media.derivative_repository import (
     FotosMediaDerivativeRepository,
+)
+from deja_indicadores_api.fotos.media.exceptions import (
+    FotosMediaAlreadyProcessingError,
 )
 from deja_indicadores_api.fotos.media.image_derivatives import (
     generate_image_derivative,
@@ -50,6 +54,26 @@ class FotosMediaDerivativeService:
 
         raise ValueError("Tipo de mídia não suportado para processamento.")
 
+    def _claim_processing(
+        self,
+        media: FotosMediaModel,
+    ) -> None:
+        """Assume uma tentativa ou rejeita processamento concorrente."""
+
+        started_at = datetime.now(UTC).replace(tzinfo=None)
+        stale_before = started_at - timedelta(
+            minutes=self._settings.fotos_media_processing_timeout_minutes,
+        )
+
+        claimed = self._media_repository.try_start_processing(
+            media,
+            stale_before=stale_before,
+            started_at=started_at,
+        )
+
+        if not claimed:
+            raise FotosMediaAlreadyProcessingError(media.id)
+
     def process_image(
         self,
         media: FotosMediaModel,
@@ -61,10 +85,7 @@ class FotosMediaDerivativeService:
 
         original_path = self._resolve_original_path(media)
 
-        media.processing_status = "processing"
-        media.processing_error = None
-
-        self._media_repository.update(media)
+        self._claim_processing(media)
 
         derivatives: list[FotosMediaDerivativeModel] = []
 
@@ -127,10 +148,7 @@ class FotosMediaDerivativeService:
         if width is None or height is None or width <= 0 or height <= 0:
             raise ValueError("A mídia não possui dimensões de vídeo válidas.")
 
-        media.processing_status = "processing"
-        media.processing_error = None
-
-        self._media_repository.update(media)
+        self._claim_processing(media)
 
         derivatives: list[FotosMediaDerivativeModel] = []
 

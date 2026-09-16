@@ -1,4 +1,6 @@
-from sqlalchemy import exists, select
+from datetime import datetime
+
+from sqlalchemy import exists, or_, select, update
 from sqlalchemy.orm import Session
 
 from deja_indicadores_api.fotos.media.models import (
@@ -179,3 +181,34 @@ class FotosMediaRepository:
         self._session.refresh(media)
 
         return media
+
+    def try_start_processing(
+        self,
+        media: FotosMediaModel,
+        *,
+        stale_before: datetime,
+        started_at: datetime,
+    ) -> bool:
+        """Assume atomicamente um processamento permitido ou abandonado."""
+
+        statement = (
+            update(FotosMediaModel)
+            .where(
+                FotosMediaModel.id == media.id,
+                or_(
+                    FotosMediaModel.processing_status != "processing",
+                    FotosMediaModel.updated_at <= stale_before,
+                ),
+            )
+            .values(
+                processing_status="processing",
+                processing_error=None,
+                updated_at=started_at,
+            )
+        )
+
+        result = self._session.execute(statement)
+        self._session.commit()
+        self._session.refresh(media)
+
+        return result.rowcount == 1

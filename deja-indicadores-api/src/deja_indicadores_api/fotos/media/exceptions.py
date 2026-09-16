@@ -106,3 +106,18 @@ class FotosMediaFileNotFoundError(ResourceNotFoundError):
         super().__init__(
             f"O arquivo original da mídia não foi encontrado no armazenamento: {media_id}."
         )
+
+
+
+class FotosMediaAlreadyProcessingError(ResourceConflictError):
+    """Mídia já possui uma tentativa de processamento em andamento."""
+
+    error_code = "fotos_media_already_processing"
+
+    def __init__(
+        self,
+        media_id: str,
+    ) -> None:
+        super().__init__(
+            f"A mídia com ID '{media_id}' já está sendo processada."
+        )

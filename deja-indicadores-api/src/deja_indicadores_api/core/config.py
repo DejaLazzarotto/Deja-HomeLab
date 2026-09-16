@@ -95,6 +95,12 @@ class Settings(BaseSettings):
         alias="FOTOS_MEDIA_MAX_SIZE_MB",
     )
 
+    fotos_media_processing_timeout_minutes: int = Field(
+        default=60,
+        gt=0,
+        alias="FOTOS_MEDIA_PROCESSING_TIMEOUT_MINUTES",
+    )
+
     ffprobe_executable: str = Field(
         default="ffprobe",
         alias="FFPROBE_EXECUTABLE",
