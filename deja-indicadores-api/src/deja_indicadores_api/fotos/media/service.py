@@ -27,6 +27,8 @@ from deja_indicadores_api.fotos.media.exceptions import (
     FotosMediaInvalidContentError,
     FotosMediaInvalidTypeError,
     FotosMediaNotFoundError,
+    FotosMediaStorageConflictError,
+    FotosMediaStorageMoveError,
     FotosMediaTooLargeError,
 )
 from deja_indicadores_api.fotos.media.image_normalization import (
@@ -140,9 +142,19 @@ class FotosMediaService:
         album_id: str | None = None,
         media_type: str | None = None,
         processing_status: str | None = None,
+        original_date_from: datetime | None = None,
+        original_date_to: datetime | None = None,
+        original_year: int | None = None,
+        original_month: int | None = None,
+        without_original_date: bool = False,
+        original_date_verified: bool | None = None,
+        original_date_conflict: bool | None = None,
+        was_converted: bool | None = None,
         include_deleted: bool = False,
-    ) -> list[FotosMediaModel]:
-        """Lista mídias dentro do escopo permitido."""
+        page: int = 1,
+        page_size: int = 50,
+    ) -> tuple[list[FotosMediaModel], int]:
+        """Lista uma p?gina de m?dias dentro do escopo permitido."""
 
         self._require_roles(
             current_user,
@@ -171,6 +183,17 @@ class FotosMediaService:
                 environment_id=effective_environment_id,
             )
 
+        normalized_original_date_from = (
+            self._normalize_datetime(
+                original_date_from,
+            )
+        )
+        normalized_original_date_to = (
+            self._normalize_datetime(
+                original_date_to,
+            )
+        )
+
         return self._repository.list(
             organization_id=effective_organization_id,
             tenant_id=effective_tenant_id,
@@ -178,7 +201,17 @@ class FotosMediaService:
             album_id=album_id,
             media_type=media_type,
             processing_status=processing_status,
+            original_date_from=normalized_original_date_from,
+            original_date_to=normalized_original_date_to,
+            original_year=original_year,
+            original_month=original_month,
+            without_original_date=without_original_date,
+            original_date_verified=original_date_verified,
+            original_date_conflict=original_date_conflict,
+            was_converted=was_converted,
             include_deleted=include_deleted,
+            page=page,
+            page_size=page_size,
         )
 
     def find_by_id(
@@ -516,6 +549,167 @@ class FotosMediaService:
 
         return file_path, media
 
+    def update_original_date(
+        self,
+        media_id: str,
+        original_date: datetime,
+        current_user: AuthenticatedUser,
+    ) -> FotosMediaModel:
+        """Corrige a data e reorganiza o original gerenciado."""
+
+        self._require_roles(
+            current_user,
+            FOTOS_MEDIA_MANAGER_ROLES,
+        )
+
+        media = self._require_media(
+            media_id,
+        )
+
+        self._authorization_service.require_scope(
+            current_user,
+            organization_id=media.organization_id,
+            tenant_id=media.tenant_id,
+            environment_id=media.environment_id,
+        )
+
+        normalized_date = self._normalize_datetime(
+            original_date,
+        )
+
+        if normalized_date is None:
+            raise ValueError(
+                "A data original ? obrigat?ria."
+            )
+
+        current_storage_key = Path(
+            media.original_storage_key
+        )
+        current_path = (
+            self._settings.uploads_dir
+            / current_storage_key
+        )
+
+        if (
+            not current_path.exists()
+            or not current_path.is_file()
+        ):
+            raise FotosMediaFileNotFoundError(
+                media.id,
+            )
+
+        target_storage_key = build_original_storage_key(
+            organization_id=media.organization_id,
+            tenant_id=media.tenant_id,
+            environment_id=media.environment_id,
+            media_id=media.id,
+            file_extension=media.file_extension or "",
+            original_date=normalized_date,
+        )
+        target_path = (
+            self._settings.uploads_dir
+            / target_storage_key
+        )
+
+        if target_path != current_path:
+            if (
+                target_path.exists()
+                or target_path.parent.exists()
+            ):
+                raise FotosMediaStorageConflictError(
+                    media.id,
+                )
+
+            try:
+                target_path.parent.mkdir(
+                    parents=True,
+                    exist_ok=False,
+                )
+                current_path.replace(
+                    target_path,
+                )
+            except FileExistsError as error:
+                raise FotosMediaStorageConflictError(
+                    media.id,
+                ) from error
+            except OSError as error:
+                if target_path.parent.exists():
+                    try:
+                        target_path.parent.rmdir()
+                    except OSError:
+                        pass
+
+                raise FotosMediaStorageMoveError(
+                    media.id,
+                ) from error
+
+            try:
+                current_path.parent.rmdir()
+            except OSError:
+                pass
+
+        previous_original_date = media.original_date
+        previous_original_date_source = (
+            media.original_date_source
+        )
+        previous_original_date_verified = (
+            media.original_date_verified
+        )
+        previous_original_date_conflict = (
+            media.original_date_conflict
+        )
+        previous_storage_key = (
+            media.original_storage_key
+        )
+
+        media.original_date = normalized_date
+        media.original_date_source = "manual"
+        media.original_date_verified = True
+        media.original_date_conflict = False
+        media.original_storage_key = (
+            target_storage_key.as_posix()
+        )
+
+        try:
+            return self._repository.update(
+                media,
+            )
+        except Exception:
+            media.original_date = previous_original_date
+            media.original_date_source = (
+                previous_original_date_source
+            )
+            media.original_date_verified = (
+                previous_original_date_verified
+            )
+            media.original_date_conflict = (
+                previous_original_date_conflict
+            )
+            media.original_storage_key = (
+                previous_storage_key
+            )
+
+            if target_path != current_path:
+                try:
+                    current_path.parent.mkdir(
+                        parents=True,
+                        exist_ok=True,
+                    )
+                    target_path.replace(
+                        current_path,
+                    )
+
+                    try:
+                        target_path.parent.rmdir()
+                    except OSError:
+                        pass
+                except OSError as error:
+                    raise FotosMediaStorageMoveError(
+                        media.id,
+                    ) from error
+
+            raise
+
     def delete(
         self,
         media_id: str,
@@ -652,6 +846,24 @@ class FotosMediaService:
             raise FotosMediaAlbumScopeMismatchError(
                 album.id,
             )
+
+    @staticmethod
+    def _normalize_datetime(
+        value: datetime | None,
+    ) -> datetime | None:
+        """Normaliza uma data com timezone para UTC sem timezone."""
+
+        if (
+            value is None
+            or value.tzinfo is None
+        ):
+            return value
+
+        return (
+            value
+            .astimezone(UTC)
+            .replace(tzinfo=None)
+        )
 
     def _require_roles(
         self,

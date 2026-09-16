@@ -110,6 +110,37 @@ class FotosMediaDuplicateError(ResourceConflictError):
 
 
 
+class FotosMediaStorageConflictError(ResourceConflictError):
+    """O destino calculado para o original j? est? ocupado."""
+
+    error_code = "fotos_media_storage_conflict"
+
+    def __init__(
+        self,
+        media_id: str,
+    ) -> None:
+        super().__init__(
+            "O destino f?sico calculado para a m?dia "
+            f"'{media_id}' j? est? ocupado."
+        )
+
+
+class FotosMediaStorageMoveError(ApplicationError):
+    """Falha controlada ao mover o original gerenciado."""
+
+    error_code = "fotos_media_storage_move_failed"
+    status_code = 500
+
+    def __init__(
+        self,
+        media_id: str,
+    ) -> None:
+        super().__init__(
+            "N?o foi poss?vel reorganizar o arquivo original "
+            f"da m?dia '{media_id}'."
+        )
+
+
 class FotosMediaFileNotFoundError(ResourceNotFoundError):
     """Registro existe, mas o original físico não está disponível."""
 

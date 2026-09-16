@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import exists, or_, select, update
+from sqlalchemy import exists, extract, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from deja_indicadores_api.fotos.media.models import (
@@ -26,62 +26,151 @@ class FotosMediaRepository:
         album_id: str | None = None,
         media_type: str | None = None,
         processing_status: str | None = None,
+        original_date_from: datetime | None = None,
+        original_date_to: datetime | None = None,
+        original_year: int | None = None,
+        original_month: int | None = None,
+        without_original_date: bool = False,
+        original_date_verified: bool | None = None,
+        original_date_conflict: bool | None = None,
+        was_converted: bool | None = None,
         include_deleted: bool = False,
-    ) -> list[FotosMediaModel]:
-        """Lista mídias dentro dos filtros informados."""
+        page: int = 1,
+        page_size: int = 50,
+    ) -> tuple[list[FotosMediaModel], int]:
+        """Lista uma página de mídias e retorna o total filtrado."""
 
-        statement = select(FotosMediaModel)
+        conditions = []
 
         if organization_id is not None:
-            statement = statement.where(
+            conditions.append(
                 FotosMediaModel.organization_id
                 == organization_id
             )
 
         if tenant_id is not None:
-            statement = statement.where(
+            conditions.append(
                 FotosMediaModel.tenant_id
                 == tenant_id
             )
 
         if environment_id is not None:
-            statement = statement.where(
+            conditions.append(
                 FotosMediaModel.environment_id
                 == environment_id
             )
 
         if album_id is not None:
-            statement = statement.where(
+            conditions.append(
                 FotosMediaModel.album_id
                 == album_id
             )
 
         if media_type is not None:
-            statement = statement.where(
+            conditions.append(
                 FotosMediaModel.media_type
                 == media_type
             )
 
         if processing_status is not None:
-            statement = statement.where(
+            conditions.append(
                 FotosMediaModel.processing_status
                 == processing_status
             )
 
+        if original_date_from is not None:
+            conditions.append(
+                FotosMediaModel.original_date
+                >= original_date_from
+            )
+
+        if original_date_to is not None:
+            conditions.append(
+                FotosMediaModel.original_date
+                <= original_date_to
+            )
+
+        if original_year is not None:
+            conditions.append(
+                extract(
+                    "year",
+                    FotosMediaModel.original_date,
+                )
+                == original_year
+            )
+
+        if original_month is not None:
+            conditions.append(
+                extract(
+                    "month",
+                    FotosMediaModel.original_date,
+                )
+                == original_month
+            )
+
+        if without_original_date:
+            conditions.append(
+                FotosMediaModel.original_date.is_(None)
+            )
+
+        if original_date_verified is not None:
+            conditions.append(
+                FotosMediaModel.original_date_verified
+                == original_date_verified
+            )
+
+        if original_date_conflict is not None:
+            conditions.append(
+                FotosMediaModel.original_date_conflict
+                == original_date_conflict
+            )
+
+        if was_converted is not None:
+            conditions.append(
+                FotosMediaModel.was_converted
+                == was_converted
+            )
+
         if not include_deleted:
-            statement = statement.where(
+            conditions.append(
                 FotosMediaModel.deleted_at.is_(None)
             )
 
-        statement = statement.order_by(
-            FotosMediaModel.original_date.desc(),
-            FotosMediaModel.created_at.desc(),
-            FotosMediaModel.id.asc(),
+        count_statement = (
+            select(
+                func.count(FotosMediaModel.id)
+            )
+            .where(*conditions)
         )
 
-        return list(
+        total = int(
+            self._session.scalar(
+                count_statement
+            )
+            or 0
+        )
+
+        statement = (
+            select(FotosMediaModel)
+            .where(*conditions)
+            .order_by(
+                FotosMediaModel.original_date.desc(),
+                FotosMediaModel.created_at.desc(),
+                FotosMediaModel.id.asc(),
+            )
+            .offset(
+                (page - 1) * page_size
+            )
+            .limit(
+                page_size
+            )
+        )
+
+        items = list(
             self._session.scalars(statement).all()
         )
+
+        return items, total
 
     def find_by_id(
         self,
@@ -148,7 +237,7 @@ class FotosMediaRepository:
         *,
         environment_id: str,
     ) -> FotosMediaModel | None:
-        """Localiza m?dia pelo checksum da fonte no ambiente."""
+        """Localiza mídia pelo checksum da fonte no ambiente."""
 
         statement = (
             select(FotosMediaModel)

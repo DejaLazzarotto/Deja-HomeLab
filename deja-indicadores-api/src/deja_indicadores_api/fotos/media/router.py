@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path as FilePath
 from typing import Annotated
 
@@ -31,6 +32,8 @@ from deja_indicadores_api.fotos.media.dependencies import (
 )
 from deja_indicadores_api.fotos.media.schemas import (
     FotosMediaDerivativeResponse,
+    FotosMediaListResponse,
+    FotosMediaOriginalDateUpdate,
     FotosMediaProcessingStatus,
     FotosMediaResponse,
     FotosMediaType,
@@ -95,6 +98,19 @@ FotosMediaReader = Annotated[
 ]
 
 
+FotosMediaManager = Annotated[
+    AuthenticatedUser,
+    Depends(
+        require_roles(
+            UserRole.PLATFORM_ADMIN,
+            UserRole.ORGANIZATION_ADMIN,
+            UserRole.TENANT_ADMIN,
+            UserRole.MANAGER,
+        )
+    ),
+]
+
+
 FotosMediaOperator = Annotated[
     AuthenticatedUser,
     Depends(
@@ -111,7 +127,7 @@ FotosMediaOperator = Annotated[
 
 @router.get(
     "",
-    response_model=list[FotosMediaResponse],
+    response_model=FotosMediaListResponse,
 )
 def list_media(
     service: FotosMediaServiceDependency,
@@ -121,11 +137,45 @@ def list_media(
     environment_id: str | None = Query(default=None),
     album_id: str | None = Query(default=None),
     media_type: Annotated[FotosMediaType | None, Query()] = None,
-    processing_status: Annotated[FotosMediaProcessingStatus | None, Query()] = None,
-) -> list[FotosMediaResponse]:
-    """Lista mídias autorizadas pelos filtros informados."""
+    processing_status: Annotated[
+        FotosMediaProcessingStatus | None,
+        Query(),
+    ] = None,
+    original_date_from: Annotated[
+        datetime | None,
+        Query(),
+    ] = None,
+    original_date_to: Annotated[
+        datetime | None,
+        Query(),
+    ] = None,
+    original_year: int | None = Query(
+        default=None,
+        ge=1,
+        le=9999,
+    ),
+    original_month: int | None = Query(
+        default=None,
+        ge=1,
+        le=12,
+    ),
+    without_original_date: bool = Query(default=False),
+    original_date_verified: bool | None = Query(default=None),
+    original_date_conflict: bool | None = Query(default=None),
+    was_converted: bool | None = Query(default=None),
+    page: int = Query(
+        default=1,
+        ge=1,
+    ),
+    page_size: int = Query(
+        default=50,
+        ge=1,
+        le=200,
+    ),
+) -> FotosMediaListResponse:
+    """Lista uma p?gina de m?dias autorizadas pelos filtros."""
 
-    return service.list(
+    items, total = service.list(
         current_user=current_user,
         organization_id=organization_id,
         tenant_id=tenant_id,
@@ -133,6 +183,28 @@ def list_media(
         album_id=album_id,
         media_type=media_type,
         processing_status=processing_status,
+        original_date_from=original_date_from,
+        original_date_to=original_date_to,
+        original_year=original_year,
+        original_month=original_month,
+        without_original_date=without_original_date,
+        original_date_verified=original_date_verified,
+        original_date_conflict=original_date_conflict,
+        was_converted=was_converted,
+        page=page,
+        page_size=page_size,
+    )
+
+    total_pages = (
+        total + page_size - 1
+    ) // page_size
+
+    return FotosMediaListResponse(
+        items=items,
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=total_pages,
     )
 
 
@@ -149,6 +221,25 @@ def get_media(
 
     return service.find_by_id(
         media_id,
+        current_user,
+    )
+
+
+@router.patch(
+    "/{media_id}/original-date",
+    response_model=FotosMediaResponse,
+)
+def update_media_original_date(
+    media_id: MediaId,
+    payload: FotosMediaOriginalDateUpdate,
+    service: FotosMediaServiceDependency,
+    current_user: FotosMediaManager,
+) -> FotosMediaResponse:
+    """Confirma manualmente a data original da m?dia."""
+
+    return service.update_original_date(
+        media_id,
+        payload.original_date,
         current_user,
     )
 

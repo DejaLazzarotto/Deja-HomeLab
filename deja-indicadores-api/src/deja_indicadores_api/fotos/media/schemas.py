@@ -27,6 +27,12 @@ FotosMediaOriginalDateSource = Literal[
 ]
 
 
+class FotosMediaOriginalDateUpdate(BaseModel):
+    """Corre??o manual da data original de uma m?dia."""
+
+    original_date: datetime
+
+
 class FotosMediaResponse(BaseModel):
     """Representação pública de uma mídia do Deja Fotos."""
 
@@ -77,6 +83,16 @@ class FotosMediaResponse(BaseModel):
     deleted_at: datetime | None
 
 
+class FotosMediaListResponse(BaseModel):
+    """Página de mídias do Deja Fotos."""
+
+    items: list[FotosMediaResponse]
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
+
+
 class FotosMediaDerivativeResponse(BaseModel):
     """Representação pública de um derivado de mídia."""
 
@@ -122,7 +138,37 @@ class FotosMediaListFilters(BaseModel):
     )
 
     media_type: FotosMediaType | None = None
-
     processing_status: FotosMediaProcessingStatus | None = None
 
+    original_date_from: datetime | None = None
+    original_date_to: datetime | None = None
+
+    original_year: int | None = Field(
+        default=None,
+        ge=1,
+        le=9999,
+    )
+
+    original_month: int | None = Field(
+        default=None,
+        ge=1,
+        le=12,
+    )
+
+    without_original_date: bool = False
+    original_date_verified: bool | None = None
+    original_date_conflict: bool | None = None
+    was_converted: bool | None = None
+
     include_deleted: bool = False
+
+    page: int = Field(
+        default=1,
+        ge=1,
+    )
+
+    page_size: int = Field(
+        default=50,
+        ge=1,
+        le=200,
+    )

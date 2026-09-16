@@ -1199,9 +1199,303 @@ def test_list_media_filters_by_album(
     )
 
     assert response.status_code == 200
-    assert [media["id"] for media in response.json()] == [
+
+    payload = response.json()
+
+    assert [media["id"] for media in payload["items"]] == [
         linked["id"],
     ]
+    assert payload["page"] == 1
+    assert payload["page_size"] == 50
+    assert payload["total"] == 1
+    assert payload["total_pages"] == 1
+
+
+def test_list_media_paginates_results(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Retorna somente a p?gina solicitada e informa os totais."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    created_ids = []
+
+    for day in (1, 2, 3):
+        response = upload_image(
+            client,
+            environment_id=environment_id,
+            album_id=album_id,
+            headers=headers,
+            file_name=f"foto-{day}.jpg",
+            content=create_test_jpeg(
+                width=16 + day,
+                height=12,
+                original_date=datetime(
+                    2024,
+                    1,
+                    day,
+                    12,
+                ),
+            ),
+        )
+
+        assert response.status_code == 201
+
+        created_ids.append(
+            response.json()["id"]
+        )
+
+    first_page_response = client.get(
+        MEDIA_URL,
+        params={
+            "environment_id": environment_id,
+            "page": 1,
+            "page_size": 2,
+        },
+        headers=headers,
+    )
+
+    assert first_page_response.status_code == 200
+
+    first_page = first_page_response.json()
+
+    assert [item["id"] for item in first_page["items"]] == [
+        created_ids[2],
+        created_ids[1],
+    ]
+    assert first_page["page"] == 1
+    assert first_page["page_size"] == 2
+    assert first_page["total"] == 3
+    assert first_page["total_pages"] == 2
+
+    second_page_response = client.get(
+        MEDIA_URL,
+        params={
+            "environment_id": environment_id,
+            "page": 2,
+            "page_size": 2,
+        },
+        headers=headers,
+    )
+
+    assert second_page_response.status_code == 200
+
+    second_page = second_page_response.json()
+
+    assert [item["id"] for item in second_page["items"]] == [
+        created_ids[0],
+    ]
+    assert second_page["page"] == 2
+    assert second_page["page_size"] == 2
+    assert second_page["total"] == 3
+    assert second_page["total_pages"] == 2
+
+
+def test_list_media_filters_by_original_date_and_curation_flags(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Filtra m?dias por data original e pelos estados de curadoria."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    january_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="janeiro-2023.jpg",
+        content=create_test_jpeg(
+            width=21,
+            height=13,
+            original_date=datetime(
+                2023,
+                1,
+                15,
+                10,
+            ),
+        ),
+    )
+
+    february_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="fevereiro-2024.jpg",
+        content=create_test_jpeg(
+            width=22,
+            height=13,
+            original_date=datetime(
+                2024,
+                2,
+                20,
+                11,
+            ),
+        ),
+    )
+
+    without_date_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="sem-data.jpg",
+        content=create_test_jpeg(
+            width=23,
+            height=13,
+        ),
+    )
+
+    converted_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="convertida.bmp",
+        content=create_test_bmp(
+            width=24,
+            height=13,
+        ),
+        content_type="image/bmp",
+    )
+
+    assert january_response.status_code == 201
+    assert february_response.status_code == 201
+    assert without_date_response.status_code == 201
+    assert converted_response.status_code == 201
+
+    january_id = january_response.json()["id"]
+    february_id = february_response.json()["id"]
+    without_date_id = without_date_response.json()["id"]
+    converted_id = converted_response.json()["id"]
+
+    with test_session_factory() as session:
+        january = session.get(
+            FotosMediaModel,
+            january_id,
+        )
+        february = session.get(
+            FotosMediaModel,
+            february_id,
+        )
+
+        assert january is not None
+        assert february is not None
+
+        january.original_date_verified = True
+        february.original_date_conflict = True
+
+        session.commit()
+
+    year_month_response = client.get(
+        MEDIA_URL,
+        params={
+            "environment_id": environment_id,
+            "original_year": 2024,
+            "original_month": 2,
+        },
+        headers=headers,
+    )
+
+    assert year_month_response.status_code == 200
+    assert [
+        item["id"]
+        for item in year_month_response.json()["items"]
+    ] == [february_id]
+
+    interval_response = client.get(
+        MEDIA_URL,
+        params={
+            "environment_id": environment_id,
+            "original_date_from": "2024-02-20T07:00:00-03:00",
+            "original_date_to": "2024-02-20T09:00:00-03:00",
+        },
+        headers=headers,
+    )
+
+    assert interval_response.status_code == 200
+    assert [
+        item["id"]
+        for item in interval_response.json()["items"]
+    ] == [february_id]
+
+    without_date_filter_response = client.get(
+        MEDIA_URL,
+        params={
+            "environment_id": environment_id,
+            "without_original_date": True,
+        },
+        headers=headers,
+    )
+
+    assert without_date_filter_response.status_code == 200
+    assert {
+        item["id"]
+        for item in without_date_filter_response.json()["items"]
+    } == {
+        without_date_id,
+        converted_id,
+    }
+
+    verified_response = client.get(
+        MEDIA_URL,
+        params={
+            "environment_id": environment_id,
+            "original_date_verified": True,
+        },
+        headers=headers,
+    )
+
+    assert verified_response.status_code == 200
+    assert [
+        item["id"]
+        for item in verified_response.json()["items"]
+    ] == [january_id]
+
+    conflict_response = client.get(
+        MEDIA_URL,
+        params={
+            "environment_id": environment_id,
+            "original_date_conflict": True,
+        },
+        headers=headers,
+    )
+
+    assert conflict_response.status_code == 200
+    assert [
+        item["id"]
+        for item in conflict_response.json()["items"]
+    ] == [february_id]
+
+    converted_filter_response = client.get(
+        MEDIA_URL,
+        params={
+            "environment_id": environment_id,
+            "was_converted": True,
+        },
+        headers=headers,
+    )
+
+    assert converted_filter_response.status_code == 200
+    assert [
+        item["id"]
+        for item in converted_filter_response.json()["items"]
+    ] == [converted_id]
 
 
 def test_get_media_by_id(
@@ -1289,6 +1583,376 @@ def test_download_original_media(
     assert response.status_code == 200
     assert response.content == content
     assert response.headers["content-type"] == "image/jpeg"
+
+
+def test_update_original_date_moves_original_and_preserves_derivatives(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Move o original e mant?m os derivados ap?s confirma??o manual."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    content = create_test_jpeg(
+        width=25,
+        height=17,
+    )
+
+    create_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="data-manual.jpg",
+        content=content,
+    )
+
+    assert create_response.status_code == 201
+
+    created = create_response.json()
+    media_id = created["id"]
+
+    old_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / "sem-data"
+        / media_id
+        / "original.jpg"
+    )
+
+    new_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / "2020"
+        / "05"
+        / media_id
+        / "original.jpg"
+    )
+
+    assert old_path.is_file()
+
+    thumbnail_before = client.get(
+        f"{MEDIA_URL}/{media_id}/thumbnail",
+        headers=headers,
+    )
+
+    assert thumbnail_before.status_code == 200
+
+    with test_session_factory() as session:
+        media = session.get(
+            FotosMediaModel,
+            media_id,
+        )
+
+        assert media is not None
+
+        media.original_date_conflict = True
+        session.commit()
+
+    response = client.patch(
+        f"{MEDIA_URL}/{media_id}/original-date",
+        json={
+            "original_date": "2020-05-17T15:30:00-03:00",
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+
+    updated = response.json()
+
+    assert updated["original_date"] == "2020-05-17T18:30:00"
+    assert updated["original_date_source"] == "manual"
+    assert updated["original_date_verified"] is True
+    assert updated["original_date_conflict"] is False
+
+    assert not old_path.exists()
+    assert new_path.read_bytes() == content
+
+    thumbnail_after = client.get(
+        f"{MEDIA_URL}/{media_id}/thumbnail",
+        headers=headers,
+    )
+
+    assert thumbnail_after.status_code == 200
+    assert thumbnail_after.content == thumbnail_before.content
+
+    with test_session_factory() as session:
+        media = session.get(
+            FotosMediaModel,
+            media_id,
+        )
+
+        assert media is not None
+        assert media.original_storage_key.endswith(
+            f"/2020/05/{media_id}/original.jpg"
+        )
+
+
+def test_update_original_date_in_same_month_keeps_storage_path(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Atualiza a data sem mover o original quando o m?s n?o muda."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    content = create_test_jpeg(
+        width=26,
+        height=17,
+        original_date=datetime(
+            2020,
+            5,
+            1,
+            10,
+        ),
+    )
+
+    create_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="mesmo-mes.jpg",
+        content=content,
+    )
+
+    assert create_response.status_code == 201
+
+    media_id = create_response.json()["id"]
+
+    original_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / "2020"
+        / "05"
+        / media_id
+        / "original.jpg"
+    )
+
+    with test_session_factory() as session:
+        media = session.get(
+            FotosMediaModel,
+            media_id,
+        )
+
+        assert media is not None
+
+        previous_storage_key = media.original_storage_key
+
+    response = client.patch(
+        f"{MEDIA_URL}/{media_id}/original-date",
+        json={
+            "original_date": "2020-05-20T14:00:00",
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["original_date"] == "2020-05-20T14:00:00"
+    assert response.json()["original_date_source"] == "manual"
+    assert response.json()["original_date_verified"] is True
+    assert original_path.read_bytes() == content
+
+    with test_session_factory() as session:
+        media = session.get(
+            FotosMediaModel,
+            media_id,
+        )
+
+        assert media is not None
+        assert media.original_storage_key == previous_storage_key
+
+
+def test_update_original_date_rejects_occupied_destination(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """N?o sobrescreve um destino f?sico j? ocupado."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    content = create_test_jpeg(
+        width=27,
+        height=17,
+    )
+
+    create_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="conflito-destino.jpg",
+        content=content,
+    )
+
+    assert create_response.status_code == 201
+
+    media_id = create_response.json()["id"]
+
+    old_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / "sem-data"
+        / media_id
+        / "original.jpg"
+    )
+
+    occupied_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / "2021"
+        / "06"
+        / media_id
+        / "original.jpg"
+    )
+
+    occupied_path.parent.mkdir(
+        parents=True,
+        exist_ok=False,
+    )
+    occupied_path.write_bytes(
+        b"arquivo-preexistente"
+    )
+
+    response = client.patch(
+        f"{MEDIA_URL}/{media_id}/original-date",
+        json={
+            "original_date": "2021-06-10T12:00:00",
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 409
+    assert (
+        response.json()["error"]
+        == "fotos_media_storage_conflict"
+    )
+    assert old_path.read_bytes() == content
+    assert occupied_path.read_bytes() == b"arquivo-preexistente"
+
+
+def test_update_original_date_rejects_analyst(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Impede que analista confirme manualmente a data original."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        administrator_headers,
+    ) = media_context
+
+    create_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=administrator_headers,
+        file_name="sem-permissao.jpg",
+        content=create_test_jpeg(
+            width=28,
+            height=17,
+        ),
+    )
+
+    assert create_response.status_code == 201
+
+    analyst = create_user(
+        client,
+        organization_id,
+        tenant_id=tenant_id,
+        environment_id=environment_id,
+        email="analyst.fotos.media@deja.com",
+        role="analyst",
+    )
+    analyst_headers = authorization_headers(
+        test_settings,
+        analyst,
+    )
+
+    response = client.patch(
+        (
+            f"{MEDIA_URL}/"
+            f"{create_response.json()['id']}/original-date"
+        ),
+        json={
+            "original_date": "2022-07-10T12:00:00",
+        },
+        headers=analyst_headers,
+    )
+
+    assert response.status_code == 403
 
 
 def test_delete_media_is_logical(
@@ -1416,7 +2080,8 @@ def test_upload_media_rejects_duplicate_source(
     )
 
     assert list_response.status_code == 200
-    assert len(list_response.json()) == 1
+    assert len(list_response.json()["items"]) == 1
+    assert list_response.json()["total"] == 1
 
     staging_root = (
         test_settings.uploads_dir
