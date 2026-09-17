@@ -193,6 +193,23 @@ class FotosMediaRepository:
 
         return self._session.scalar(statement)
 
+    def find_by_id_for_update(
+        self,
+        media_id: str,
+    ) -> FotosMediaModel | None:
+        """Localiza e bloqueia uma m?dia ativa para atualiza??o."""
+
+        statement = (
+            select(FotosMediaModel)
+            .where(
+                FotosMediaModel.id == media_id,
+                FotosMediaModel.deleted_at.is_(None),
+            )
+            .with_for_update()
+        )
+
+        return self._session.scalar(statement)
+
     def find_by_checksum(
         self,
         checksum_sha256: str,
@@ -294,6 +311,11 @@ class FotosMediaRepository:
         self._session.refresh(media)
 
         return media
+
+    def rollback(self) -> None:
+        """Desfaz a transa??o atual e libera seus bloqueios."""
+
+        self._session.rollback()
 
     def try_start_processing(
         self,

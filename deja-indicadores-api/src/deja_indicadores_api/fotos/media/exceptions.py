@@ -141,6 +141,21 @@ class FotosMediaStorageMoveError(ApplicationError):
         )
 
 
+class FotosMediaOriginalDateMissingError(ResourceConflictError):
+    """A m?dia ainda n?o possui data original para confirma??o."""
+
+    error_code = "fotos_media_original_date_missing"
+
+    def __init__(
+        self,
+        media_id: str,
+    ) -> None:
+        super().__init__(
+            "A m?dia "
+            f"'{media_id}' ainda n?o possui data original para confirma??o."
+        )
+
+
 class FotosMediaFileNotFoundError(ResourceNotFoundError):
     """Registro existe, mas o original físico não está disponível."""
 

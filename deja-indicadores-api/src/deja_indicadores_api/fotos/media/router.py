@@ -31,6 +31,8 @@ from deja_indicadores_api.fotos.media.dependencies import (
     SettingsDependency,
 )
 from deja_indicadores_api.fotos.media.schemas import (
+    FotosMediaBulkResponse,
+    FotosMediaBulkUpdate,
     FotosMediaDerivativeResponse,
     FotosMediaListResponse,
     FotosMediaOriginalDateUpdate,
@@ -205,6 +207,23 @@ def list_media(
         page_size=page_size,
         total=total,
         total_pages=total_pages,
+    )
+
+
+@router.patch(
+    "/bulk",
+    response_model=FotosMediaBulkResponse,
+)
+def bulk_update_media(
+    payload: FotosMediaBulkUpdate,
+    service: FotosMediaServiceDependency,
+    current_user: FotosMediaManager,
+) -> FotosMediaBulkResponse:
+    """Executa uma opera??o administrativa em lote."""
+
+    return service.bulk_update(
+        payload,
+        current_user,
     )
 
 

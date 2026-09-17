@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -12,6 +13,7 @@ from deja_indicadores_api.authentication.schemas import (
     AuthenticatedUser,
 )
 from deja_indicadores_api.core.config import Settings
+from deja_indicadores_api.core.exceptions import ApplicationError
 from deja_indicadores_api.fotos.albums.models import (
     FotosAlbumModel,
 )
@@ -27,6 +29,7 @@ from deja_indicadores_api.fotos.media.exceptions import (
     FotosMediaInvalidContentError,
     FotosMediaInvalidTypeError,
     FotosMediaNotFoundError,
+    FotosMediaOriginalDateMissingError,
     FotosMediaStorageConflictError,
     FotosMediaStorageMoveError,
     FotosMediaTooLargeError,
@@ -44,6 +47,15 @@ from deja_indicadores_api.fotos.media.models import (
 )
 from deja_indicadores_api.fotos.media.repository import (
     FotosMediaRepository,
+)
+from deja_indicadores_api.fotos.media.schemas import (
+    FotosMediaBulkClearOriginalDateConflict,
+    FotosMediaBulkItemResult,
+    FotosMediaBulkResponse,
+    FotosMediaBulkSetAlbum,
+    FotosMediaBulkSetOriginalDate,
+    FotosMediaBulkUpdate,
+    FotosMediaBulkVerifyOriginalDate,
 )
 from deja_indicadores_api.fotos.media.storage import (
     build_original_storage_key,
@@ -111,6 +123,8 @@ ALLOWED_FOTOS_CONTENT_TYPES = {
 }
 
 UPLOAD_CHUNK_SIZE = 1024 * 1024
+
+logger = logging.getLogger(__name__)
 
 
 class FotosMediaService:
@@ -562,7 +576,107 @@ class FotosMediaService:
             FOTOS_MEDIA_MANAGER_ROLES,
         )
 
-        media = self._require_media(
+        media = self._require_media_for_update(
+            media_id,
+        )
+
+        try:
+            self._authorization_service.require_scope(
+                current_user,
+                organization_id=media.organization_id,
+                tenant_id=media.tenant_id,
+                environment_id=media.environment_id,
+            )
+
+            return self._set_original_date(
+                media,
+                original_date,
+            )
+        except Exception:
+            self._repository.rollback()
+            raise
+
+    def bulk_update(
+        self,
+        payload: FotosMediaBulkUpdate,
+        current_user: AuthenticatedUser,
+    ) -> FotosMediaBulkResponse:
+        """Executa uma opera??o administrativa sobre v?rias m?dias."""
+
+        self._require_roles(
+            current_user,
+            FOTOS_MEDIA_MANAGER_ROLES,
+        )
+
+        results: list[FotosMediaBulkItemResult] = []
+
+        for media_id in payload.media_ids:
+            try:
+                media = self._bulk_update_item(
+                    media_id,
+                    payload,
+                    current_user,
+                )
+            except ApplicationError as error:
+                self._repository.rollback()
+                results.append(
+                    FotosMediaBulkItemResult(
+                        media_id=media_id,
+                        success=False,
+                        error_code=error.error_code,
+                        error_message=error.message,
+                    )
+                )
+            except Exception:
+                self._repository.rollback()
+                logger.exception(
+                    "Falha inesperada na opera??o em lote da m?dia %s.",
+                    media_id,
+                )
+                results.append(
+                    FotosMediaBulkItemResult(
+                        media_id=media_id,
+                        success=False,
+                        error_code="fotos_media_bulk_item_failed",
+                        error_message=(
+                            "N?o foi poss?vel atualizar a m?dia."
+                        ),
+                    )
+                )
+            else:
+                results.append(
+                    FotosMediaBulkItemResult(
+                        media_id=media_id,
+                        success=True,
+                        media=media,
+                    )
+                )
+
+        succeeded_count = sum(
+            result.success
+            for result in results
+        )
+
+        return FotosMediaBulkResponse(
+            operation=payload.operation,
+            requested_count=len(payload.media_ids),
+            succeeded_count=succeeded_count,
+            failed_count=(
+                len(payload.media_ids)
+                - succeeded_count
+            ),
+            results=results,
+        )
+
+    def _bulk_update_item(
+        self,
+        media_id: str,
+        payload: FotosMediaBulkUpdate,
+        current_user: AuthenticatedUser,
+    ) -> FotosMediaModel:
+        """Executa a opera??o solicitada sobre uma m?dia bloqueada."""
+
+        media = self._require_media_for_update(
             media_id,
         )
 
@@ -572,6 +686,51 @@ class FotosMediaService:
             tenant_id=media.tenant_id,
             environment_id=media.environment_id,
         )
+
+        if isinstance(
+            payload,
+            FotosMediaBulkSetOriginalDate,
+        ):
+            return self._set_original_date(
+                media,
+                payload.original_date,
+            )
+
+        if isinstance(
+            payload,
+            FotosMediaBulkVerifyOriginalDate,
+        ):
+            return self._verify_original_date(
+                media,
+            )
+
+        if isinstance(
+            payload,
+            FotosMediaBulkClearOriginalDateConflict,
+        ):
+            return self._clear_original_date_conflict(
+                media,
+            )
+
+        if isinstance(
+            payload,
+            FotosMediaBulkSetAlbum,
+        ):
+            return self._set_album(
+                media,
+                payload.album_id,
+            )
+
+        raise ValueError(
+            "Opera??o em lote n?o suportada."
+        )
+
+    def _set_original_date(
+        self,
+        media: FotosMediaModel,
+        original_date: datetime,
+    ) -> FotosMediaModel:
+        """Aplica a data manual e reorganiza o original gerenciado."""
 
         normalized_date = self._normalize_datetime(
             original_date,
@@ -710,6 +869,60 @@ class FotosMediaService:
 
             raise
 
+    def _verify_original_date(
+        self,
+        media: FotosMediaModel,
+    ) -> FotosMediaModel:
+        """Confirma a data existente e encerra seu conflito."""
+
+        if media.original_date is None:
+            raise FotosMediaOriginalDateMissingError(
+                media.id,
+            )
+
+        media.original_date_verified = True
+        media.original_date_conflict = False
+
+        return self._repository.update(
+            media,
+        )
+
+    def _clear_original_date_conflict(
+        self,
+        media: FotosMediaModel,
+    ) -> FotosMediaModel:
+        """Limpa o conflito sem alterar a confirma??o existente."""
+
+        media.original_date_conflict = False
+
+        return self._repository.update(
+            media,
+        )
+
+    def _set_album(
+        self,
+        media: FotosMediaModel,
+        album_id: str | None,
+    ) -> FotosMediaModel:
+        """Associa a m?dia a um ?lbum ou remove sua associa??o."""
+
+        if album_id is not None:
+            album = self._require_album(
+                album_id,
+            )
+            self._require_album_matches_scope(
+                album,
+                organization_id=media.organization_id,
+                tenant_id=media.tenant_id,
+                environment_id=media.environment_id,
+            )
+
+        media.album_id = album_id
+
+        return self._repository.update(
+            media,
+        )
+
     def delete(
         self,
         media_id: str,
@@ -750,6 +963,23 @@ class FotosMediaService:
         """Retorna uma mídia ativa existente."""
 
         media = self._repository.find_by_id(
+            media_id,
+        )
+
+        if media is None:
+            raise FotosMediaNotFoundError(
+                media_id,
+            )
+
+        return media
+
+    def _require_media_for_update(
+        self,
+        media_id: str,
+    ) -> FotosMediaModel:
+        """Retorna e bloqueia uma m?dia ativa para atualiza??o."""
+
+        media = self._repository.find_by_id_for_update(
             media_id,
         )
 

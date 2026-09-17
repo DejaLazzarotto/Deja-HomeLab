@@ -33,6 +33,7 @@ from tests.authentication.test_user_authorization_api import (
 )
 from tests.fotos.albums.test_albums_api import (
     FIRST_ALBUM,
+    SECOND_ALBUM,
     create_album,
 )
 
@@ -1948,6 +1949,704 @@ def test_update_original_date_rejects_analyst(
         ),
         json={
             "original_date": "2022-07-10T12:00:00",
+        },
+        headers=analyst_headers,
+    )
+
+    assert response.status_code == 403
+
+
+def test_bulk_set_original_date_moves_originals(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Aplica uma data manual e move todos os originais do lote."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    contents = [
+        create_test_jpeg(
+            width=31,
+            height=17,
+        ),
+        create_test_jpeg(
+            width=32,
+            height=17,
+        ),
+    ]
+    media_ids: list[str] = []
+
+    for index, content in enumerate(contents):
+        create_response = upload_image(
+            client,
+            environment_id=environment_id,
+            album_id=album_id,
+            headers=headers,
+            file_name=f"lote-data-{index}.jpg",
+            content=content,
+        )
+
+        assert create_response.status_code == 201
+        media_ids.append(
+            create_response.json()["id"]
+        )
+
+    response = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={
+            "operation": "set_original_date",
+            "media_ids": media_ids,
+            "original_date": "2024-03-10T12:00:00-03:00",
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+
+    result = response.json()
+
+    assert result["operation"] == "set_original_date"
+    assert result["requested_count"] == 2
+    assert result["succeeded_count"] == 2
+    assert result["failed_count"] == 0
+    assert [
+        item["media_id"]
+        for item in result["results"]
+    ] == media_ids
+    assert all(
+        item["success"]
+        for item in result["results"]
+    )
+    assert all(
+        item["media"]["original_date"]
+        == "2024-03-10T15:00:00"
+        for item in result["results"]
+    )
+    assert all(
+        item["media"]["original_date_source"]
+        == "manual"
+        for item in result["results"]
+    )
+    assert all(
+        item["media"]["original_date_verified"]
+        is True
+        for item in result["results"]
+    )
+
+    for media_id, content in zip(
+        media_ids,
+        contents,
+        strict=True,
+    ):
+        old_path = (
+            test_settings.uploads_dir
+            / "fotos"
+            / organization_id
+            / tenant_id
+            / environment_id
+            / "originals"
+            / "sem-data"
+            / media_id
+            / "original.jpg"
+        )
+        new_path = (
+            test_settings.uploads_dir
+            / "fotos"
+            / organization_id
+            / tenant_id
+            / environment_id
+            / "originals"
+            / "2024"
+            / "03"
+            / media_id
+            / "original.jpg"
+        )
+
+        assert not old_path.exists()
+        assert new_path.read_bytes() == content
+
+
+def test_bulk_set_original_date_continues_after_storage_conflict(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Preserva a falha de um item e continua processando o lote."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    first_content = create_test_jpeg(
+        width=33,
+        height=17,
+    )
+    second_content = create_test_jpeg(
+        width=34,
+        height=17,
+    )
+
+    first_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="lote-conflito.jpg",
+        content=first_content,
+    )
+    second_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="lote-sucesso.jpg",
+        content=second_content,
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+
+    first_id = first_response.json()["id"]
+    second_id = second_response.json()["id"]
+
+    first_old_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / "sem-data"
+        / first_id
+        / "original.jpg"
+    )
+    occupied_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / "2025"
+        / "04"
+        / first_id
+        / "original.jpg"
+    )
+    second_new_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / "2025"
+        / "04"
+        / second_id
+        / "original.jpg"
+    )
+
+    occupied_path.parent.mkdir(
+        parents=True,
+        exist_ok=False,
+    )
+    occupied_path.write_bytes(
+        b"destino-ocupado"
+    )
+
+    response = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={
+            "operation": "set_original_date",
+            "media_ids": [
+                first_id,
+                second_id,
+            ],
+            "original_date": "2025-04-20T10:00:00",
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+
+    result = response.json()
+
+    assert result["requested_count"] == 2
+    assert result["succeeded_count"] == 1
+    assert result["failed_count"] == 1
+
+    first_result = result["results"][0]
+    second_result = result["results"][1]
+
+    assert first_result["media_id"] == first_id
+    assert first_result["success"] is False
+    assert (
+        first_result["error_code"]
+        == "fotos_media_storage_conflict"
+    )
+    assert second_result["media_id"] == second_id
+    assert second_result["success"] is True
+
+    assert first_old_path.read_bytes() == first_content
+    assert occupied_path.read_bytes() == b"destino-ocupado"
+    assert second_new_path.read_bytes() == second_content
+
+
+def test_bulk_verify_original_date_reports_missing_date(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Confirma datas existentes e relata individualmente a aus?ncia."""
+
+    (
+        _organization_id,
+        _tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    dated_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="lote-com-data.jpg",
+        content=create_test_jpeg(
+            width=35,
+            height=17,
+            original_date=datetime(
+                2021,
+                8,
+                15,
+                9,
+            ),
+        ),
+    )
+    undated_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="lote-sem-data.jpg",
+        content=create_test_jpeg(
+            width=36,
+            height=17,
+        ),
+    )
+
+    assert dated_response.status_code == 201
+    assert undated_response.status_code == 201
+
+    dated_id = dated_response.json()["id"]
+    undated_id = undated_response.json()["id"]
+
+    with test_session_factory() as session:
+        dated = session.get(
+            FotosMediaModel,
+            dated_id,
+        )
+        undated = session.get(
+            FotosMediaModel,
+            undated_id,
+        )
+
+        assert dated is not None
+        assert undated is not None
+
+        dated.original_date_verified = False
+        dated.original_date_conflict = True
+        undated.original_date_verified = False
+        undated.original_date_conflict = True
+        session.commit()
+
+    response = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={
+            "operation": "verify_original_date",
+            "media_ids": [
+                dated_id,
+                undated_id,
+            ],
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+
+    result = response.json()
+
+    assert result["succeeded_count"] == 1
+    assert result["failed_count"] == 1
+    assert result["results"][0]["success"] is True
+    assert (
+        result["results"][0]["media"]["original_date_verified"]
+        is True
+    )
+    assert (
+        result["results"][0]["media"]["original_date_conflict"]
+        is False
+    )
+    assert result["results"][1]["success"] is False
+    assert (
+        result["results"][1]["error_code"]
+        == "fotos_media_original_date_missing"
+    )
+
+    with test_session_factory() as session:
+        undated = session.get(
+            FotosMediaModel,
+            undated_id,
+        )
+
+        assert undated is not None
+        assert undated.original_date_verified is False
+        assert undated.original_date_conflict is True
+
+
+def test_bulk_clear_original_date_conflict_preserves_verification(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Limpa o conflito sem confirmar uma data ausente."""
+
+    (
+        _organization_id,
+        _tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    create_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="limpar-conflito.jpg",
+        content=create_test_jpeg(
+            width=37,
+            height=17,
+        ),
+    )
+
+    assert create_response.status_code == 201
+
+    media_id = create_response.json()["id"]
+
+    with test_session_factory() as session:
+        media = session.get(
+            FotosMediaModel,
+            media_id,
+        )
+
+        assert media is not None
+
+        media.original_date_verified = False
+        media.original_date_conflict = True
+        session.commit()
+
+    response = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={
+            "operation": "clear_original_date_conflict",
+            "media_ids": [media_id],
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+
+    result = response.json()
+
+    assert result["succeeded_count"] == 1
+    assert result["failed_count"] == 0
+    assert (
+        result["results"][0]["media"]["original_date_verified"]
+        is False
+    )
+    assert (
+        result["results"][0]["media"]["original_date_conflict"]
+        is False
+    )
+
+
+def test_bulk_set_album_handles_scope_and_removal(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Move entre ?lbuns, relata escopo inv?lido e remove associa??o."""
+
+    (
+        _organization_id,
+        _tenant_id,
+        environment_id,
+        first_album_id,
+        headers,
+    ) = media_context
+
+    second_album = create_album(
+        client,
+        SECOND_ALBUM,
+        environment_id,
+        headers,
+    )
+
+    primary_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=first_album_id,
+        headers=headers,
+        file_name="album-principal.jpg",
+        content=create_test_jpeg(
+            width=38,
+            height=17,
+        ),
+    )
+
+    other_organization = create_organization(
+        client,
+        name="Organiza??o Externa",
+    )
+    other_tenant = create_tenant(
+        client,
+        str(other_organization["id"]),
+        name="Tenant Externo",
+    )
+    other_environment = create_environment(
+        client,
+        str(other_tenant["id"]),
+        name="Ambiente Externo",
+    )
+    other_album = create_album(
+        client,
+        {
+            **FIRST_ALBUM,
+            "name": "?lbum Externo",
+        },
+        str(other_environment["id"]),
+        headers,
+    )
+    external_response = upload_image(
+        client,
+        environment_id=str(other_environment["id"]),
+        album_id=str(other_album["id"]),
+        headers=headers,
+        file_name="album-externo.jpg",
+        content=create_test_jpeg(
+            width=39,
+            height=17,
+        ),
+    )
+
+    assert primary_response.status_code == 201
+    assert external_response.status_code == 201
+
+    primary_id = primary_response.json()["id"]
+    external_id = external_response.json()["id"]
+
+    response = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={
+            "operation": "set_album",
+            "media_ids": [
+                primary_id,
+                external_id,
+            ],
+            "album_id": second_album["id"],
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+
+    result = response.json()
+
+    assert result["succeeded_count"] == 1
+    assert result["failed_count"] == 1
+    assert (
+        result["results"][0]["media"]["album_id"]
+        == second_album["id"]
+    )
+    assert result["results"][1]["success"] is False
+    assert (
+        result["results"][1]["error_code"]
+        == "fotos_media_album_scope_mismatch"
+    )
+
+    remove_response = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={
+            "operation": "set_album",
+            "media_ids": [primary_id],
+            "album_id": None,
+        },
+        headers=headers,
+    )
+
+    assert remove_response.status_code == 200
+    assert (
+        remove_response.json()["results"][0]["media"]["album_id"]
+        is None
+    )
+
+    external_get = client.get(
+        f"{MEDIA_URL}/{external_id}",
+        headers=headers,
+    )
+
+    assert external_get.status_code == 200
+    assert external_get.json()["album_id"] == other_album["id"]
+
+
+def test_bulk_rejects_invalid_selection_contract(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Rejeita IDs repetidos e lotes acima do limite."""
+
+    (
+        _organization_id,
+        _tenant_id,
+        _environment_id,
+        _album_id,
+        headers,
+    ) = media_context
+
+    repeated_id = str(uuid4())
+
+    duplicate_response = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={
+            "operation": "clear_original_date_conflict",
+            "media_ids": [
+                repeated_id,
+                repeated_id,
+            ],
+        },
+        headers=headers,
+    )
+
+    assert duplicate_response.status_code == 422
+
+    oversized_response = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={
+            "operation": "clear_original_date_conflict",
+            "media_ids": [
+                str(uuid4())
+                for _ in range(101)
+            ],
+        },
+        headers=headers,
+    )
+
+    assert oversized_response.status_code == 422
+
+
+def test_bulk_rejects_analyst(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Impede que analista execute curadoria administrativa em lote."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        administrator_headers,
+    ) = media_context
+
+    create_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=administrator_headers,
+        file_name="lote-sem-permissao.jpg",
+        content=create_test_jpeg(
+            width=40,
+            height=17,
+        ),
+    )
+
+    assert create_response.status_code == 201
+
+    analyst = create_user(
+        client,
+        organization_id,
+        tenant_id=tenant_id,
+        environment_id=environment_id,
+        email="analyst.bulk.fotos.media@deja.com",
+        role="analyst",
+    )
+    analyst_headers = authorization_headers(
+        test_settings,
+        analyst,
+    )
+
+    response = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={
+            "operation": "clear_original_date_conflict",
+            "media_ids": [
+                create_response.json()["id"],
+            ],
         },
         headers=analyst_headers,
     )

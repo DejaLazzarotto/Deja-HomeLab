@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 FotosMediaType = Literal[
     "image",
@@ -26,9 +26,24 @@ FotosMediaOriginalDateSource = Literal[
     "ai_suggested",
 ]
 
+FotosMediaBulkOperation = Literal[
+    "set_original_date",
+    "verify_original_date",
+    "clear_original_date_conflict",
+    "set_album",
+]
+
+FotosMediaIdentifier = Annotated[
+    str,
+    Field(
+        min_length=36,
+        max_length=36,
+    ),
+]
+
 
 class FotosMediaOriginalDateUpdate(BaseModel):
-    """Corre??o manual da data original de uma m?dia."""
+    """Correção manual da data original de uma mídia."""
 
     original_date: datetime
 
@@ -91,6 +106,93 @@ class FotosMediaListResponse(BaseModel):
     page_size: int
     total: int
     total_pages: int
+
+
+class FotosMediaBulkUpdateBase(BaseModel):
+    """Campos comuns das operações administrativas em lote."""
+
+    media_ids: list[FotosMediaIdentifier] = Field(
+        min_length=1,
+        max_length=100,
+    )
+
+    @field_validator("media_ids")
+    @classmethod
+    def validate_unique_media_ids(
+        cls,
+        media_ids: list[str],
+    ) -> list[str]:
+        """Rejeita identificadores repetidos no mesmo lote."""
+
+        if len(media_ids) != len(set(media_ids)):
+            raise ValueError(
+                "Os identificadores das mídias devem ser únicos."
+            )
+
+        return media_ids
+
+
+class FotosMediaBulkSetOriginalDate(
+    FotosMediaBulkUpdateBase
+):
+    """Aplica uma data original manual ao lote."""
+
+    operation: Literal["set_original_date"]
+    original_date: datetime
+
+
+class FotosMediaBulkVerifyOriginalDate(
+    FotosMediaBulkUpdateBase
+):
+    """Confirma as datas originais já existentes."""
+
+    operation: Literal["verify_original_date"]
+
+
+class FotosMediaBulkClearOriginalDateConflict(
+    FotosMediaBulkUpdateBase
+):
+    """Limpa conflitos de data sem confirmar a data."""
+
+    operation: Literal["clear_original_date_conflict"]
+
+
+class FotosMediaBulkSetAlbum(
+    FotosMediaBulkUpdateBase
+):
+    """Associa o lote a um álbum ou remove sua associação."""
+
+    operation: Literal["set_album"]
+    album_id: FotosMediaIdentifier | None
+
+
+FotosMediaBulkUpdate = Annotated[
+    FotosMediaBulkSetOriginalDate
+    | FotosMediaBulkVerifyOriginalDate
+    | FotosMediaBulkClearOriginalDateConflict
+    | FotosMediaBulkSetAlbum,
+    Field(discriminator="operation"),
+]
+
+
+class FotosMediaBulkItemResult(BaseModel):
+    """Resultado individual de uma operação em lote."""
+
+    media_id: str
+    success: bool
+    media: FotosMediaResponse | None = None
+    error_code: str | None = None
+    error_message: str | None = None
+
+
+class FotosMediaBulkResponse(BaseModel):
+    """Resultado consolidado de uma operação em lote."""
+
+    operation: FotosMediaBulkOperation
+    requested_count: int
+    succeeded_count: int
+    failed_count: int
+    results: list[FotosMediaBulkItemResult]
 
 
 class FotosMediaDerivativeResponse(BaseModel):
