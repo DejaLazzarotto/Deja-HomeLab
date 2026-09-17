@@ -1,0 +1,170 @@
+@if (items().length > 0) {
+  <div class="media-grid__selection-bar">
+    <label class="media-grid__select-page">
+      <input
+        type="checkbox"
+        [checked]="allPageItemsSelected()"
+        [indeterminate]="somePageItemsSelected()"
+        (change)="togglePageSelection($event)"
+      />
+
+      <span>Selecionar página atual</span>
+    </label>
+
+    <span>
+      {{ selectedIds().size }}
+      {{ selectedIds().size === 1 ? 'mídia selecionada' : 'mídias selecionadas' }}
+    </span>
+  </div>
+
+  <div class="media-grid">
+    @for (media of items(); track media.id) {
+      <article
+        class="media-card"
+        [class.media-card--selected]="isSelected(media.id)"
+        [class.media-card--conflict]="media.originalDateConflict"
+      >
+        <div class="media-card__preview">
+          @if (thumbnailUrl(media.id); as thumbnail) {
+            <img
+              [src]="thumbnail"
+              [alt]="'Miniatura de ' + media.originalName"
+              loading="lazy"
+            />
+          } @else if (thumbnailFailures().has(media.id)) {
+            <div class="media-card__placeholder">
+              <span aria-hidden="true">!</span>
+              <small>Miniatura indisponível</small>
+            </div>
+          } @else if (media.processingStatus === 'ready') {
+            <div class="media-card__placeholder">
+              <span
+                class="media-card__spinner"
+                aria-hidden="true"
+              ></span>
+              <small>Carregando</small>
+            </div>
+          } @else {
+            <div class="media-card__placeholder">
+              <span aria-hidden="true">
+                {{ media.mediaType === 'video' ? '▶' : '▧' }}
+              </span>
+              <small>{{ statusLabels[media.processingStatus] }}</small>
+            </div>
+          }
+
+          <label
+            class="media-card__selection"
+            [title]="isSelected(media.id) ? 'Remover da seleção' : 'Selecionar mídia'"
+          >
+            <input
+              type="checkbox"
+              [checked]="isSelected(media.id)"
+              (change)="toggleSelection(media.id, $event)"
+            />
+
+            <span class="sr-only">
+              Selecionar {{ media.originalName }}
+            </span>
+          </label>
+
+          <span class="media-card__type">
+            {{ typeLabels[media.mediaType] }}
+          </span>
+
+          @if (formatDuration(media.durationSeconds); as duration) {
+            <span class="media-card__duration">
+              {{ duration }}
+            </span>
+          }
+        </div>
+
+        <div class="media-card__content">
+          <h3 [title]="media.originalName">
+            {{ media.originalName }}
+          </h3>
+
+          <div class="media-card__badges">
+            <span
+              class="status-badge"
+              [class.status-badge--ready]="media.processingStatus === 'ready'"
+              [class.status-badge--failed]="media.processingStatus === 'failed'"
+              [class.status-badge--quarantine]="media.processingStatus === 'quarantine'"
+            >
+              {{ statusLabels[media.processingStatus] }}
+            </span>
+
+            @if (media.originalDateVerified) {
+              <span class="status-badge status-badge--verified">
+                Data confirmada
+              </span>
+            }
+
+            @if (media.originalDateConflict) {
+              <span class="status-badge status-badge--conflict">
+                Conflito de data
+              </span>
+            }
+
+            @if (media.wasConverted) {
+              <span class="status-badge">
+                Convertida
+              </span>
+            }
+          </div>
+
+          <dl>
+            <div>
+              <dt>Data original</dt>
+              <dd>{{ formatDate(media.originalDate) }}</dd>
+            </div>
+
+            <div>
+              <dt>Origem da data</dt>
+              <dd>
+                @if (media.originalDateSource) {
+                  {{ dateSourceLabels[media.originalDateSource] }}
+                } @else {
+                  Não identificada
+                }
+              </dd>
+            </div>
+
+            <div>
+              <dt>Álbum</dt>
+              <dd>{{ media.albumId ? 'Associada' : 'Sem álbum' }}</dd>
+            </div>
+
+            <div>
+              <dt>Arquivo</dt>
+              <dd>{{ formatFileSize(media.fileSize) }}</dd>
+            </div>
+
+            @if (media.width && media.height) {
+              <div>
+                <dt>Dimensões</dt>
+                <dd>{{ media.width }} × {{ media.height }}</dd>
+              </div>
+            }
+
+            <div>
+              <dt>Visualizações</dt>
+              <dd>{{ media.viewCount }}</dd>
+            </div>
+          </dl>
+
+          @if (media.processingError) {
+            <p class="media-card__error">
+              {{ media.processingError }}
+            </p>
+          }
+        </div>
+      </article>
+    }
+  </div>
+} @else {
+  <div class="media-grid__empty">
+    <strong>Nenhuma mídia encontrada.</strong>
+    <span>Ajuste os filtros para ampliar a consulta.</span>
+  </div>
+}

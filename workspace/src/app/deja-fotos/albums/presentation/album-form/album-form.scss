@@ -1,0 +1,191 @@
+:host {
+  display: block;
+}
+
+.album-form {
+  padding: var(--workspace-spacing-lg);
+  background: var(--workspace-color-surface);
+  border: 1px solid color-mix(
+    in srgb,
+    var(--workspace-color-primary) 28%,
+    var(--workspace-color-border)
+  );
+  border-radius: var(--workspace-radius-lg);
+  box-shadow: var(--workspace-shadow-md);
+}
+
+.album-form header,
+.album-form footer {
+  display: flex;
+  gap: var(--workspace-spacing-md);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.album-form header {
+  margin-bottom: var(--workspace-spacing-lg);
+}
+
+.album-form header span {
+  color: var(--workspace-color-primary);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.album-form h2 {
+  margin: 0.2rem 0 0;
+  color: var(--workspace-color-text);
+  font-size: 1.05rem;
+}
+
+.album-form__close {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  color: var(--workspace-color-text-secondary);
+  font: inherit;
+  font-size: 1.4rem;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--workspace-color-border);
+  border-radius: 50%;
+}
+
+.album-form__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr);
+  gap: var(--workspace-spacing-md);
+}
+
+.album-form label {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.album-form label > span {
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.album-form input[type='text'],
+.album-form select,
+.album-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  color: var(--workspace-color-text);
+  font: inherit;
+  font-size: 0.8rem;
+  background: var(--workspace-color-surface);
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-md);
+  resize: vertical;
+}
+
+.album-form input[type='text'],
+.album-form select {
+  min-height: 2.6rem;
+}
+
+.album-form input:focus,
+.album-form select:focus,
+.album-form textarea:focus {
+  border-color: var(--workspace-color-primary);
+  outline: 2px solid color-mix(
+    in srgb,
+    var(--workspace-color-primary) 18%,
+    transparent
+  );
+}
+
+.album-form__description {
+  grid-column: 1 / -1;
+}
+
+.album-form__description small {
+  color: var(--workspace-color-text-secondary);
+  font-size: 0.68rem;
+  text-align: right;
+}
+
+.album-form__active {
+  display: flex !important;
+  grid-column: 1 / -1;
+  gap: 0.55rem !important;
+  align-items: center;
+  justify-self: start;
+  min-height: 2.5rem;
+  cursor: pointer;
+}
+
+.album-form__active input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  accent-color: var(--workspace-color-primary);
+}
+
+.album-form__validation {
+  margin: var(--workspace-spacing-md) 0 0;
+  color: var(--workspace-color-danger);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.album-form footer {
+  justify-content: flex-end;
+  margin-top: var(--workspace-spacing-lg);
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 2.5rem;
+  padding: 0.6rem 0.9rem;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+  border-radius: var(--workspace-radius-md);
+}
+
+.primary-button {
+  color: #fff;
+  background: var(--workspace-color-primary);
+  border: 1px solid var(--workspace-color-primary);
+}
+
+.secondary-button {
+  color: var(--workspace-color-text);
+  background: var(--workspace-color-surface);
+  border: 1px solid var(--workspace-color-border);
+}
+
+.primary-button:disabled,
+.secondary-button:disabled,
+.album-form__close:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (max-width: 40rem) {
+  .album-form {
+    padding: var(--workspace-spacing-md);
+  }
+
+  .album-form__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .album-form__description,
+  .album-form__active {
+    grid-column: auto;
+  }
+
+  .album-form footer {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+}

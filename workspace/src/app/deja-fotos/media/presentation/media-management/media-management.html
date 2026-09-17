@@ -1,0 +1,383 @@
+<section class="media-management">
+  <header class="media-management__header">
+    <div>
+      <span class="media-management__eyebrow">
+        Deja Fotos
+      </span>
+
+      <h1>Album Admin</h1>
+
+      <p>
+        Consulte, organize e confirme as informações do acervo de mídias.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="secondary-button"
+      (click)="refresh()"
+      [disabled]="loading()"
+    >
+      Atualizar
+    </button>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="message message--error">
+      <span>{{ errorMessage() }}</span>
+
+      <button
+        type="button"
+        (click)="refresh()"
+      >
+        Tentar novamente
+      </button>
+    </div>
+  }
+
+  @if (albumErrorMessage()) {
+    <div class="message message--warning">
+      <span>{{ albumErrorMessage() }}</span>
+
+      <button
+        type="button"
+        (click)="loadAlbums()"
+      >
+        Recarregar álbuns
+      </button>
+    </div>
+  }
+
+  <section
+    class="filters"
+    aria-labelledby="media-filters-title"
+  >
+    <header class="filters__header">
+      <div>
+        <span class="filters__eyebrow">
+          Consulta
+        </span>
+
+        <h2 id="media-filters-title">
+          Filtros do acervo
+        </h2>
+      </div>
+
+      <button
+        type="button"
+        class="link-button"
+        (click)="clearFilters()"
+        [disabled]="loading()"
+      >
+        Limpar filtros
+      </button>
+    </header>
+
+    <div class="filters__grid">
+      <label>
+        <span>Ambiente</span>
+
+        <select
+          [ngModel]="environmentFilter()"
+          (ngModelChange)="environmentFilter.set($event)"
+        >
+          <option value="">Todos os ambientes</option>
+
+          @for (environment of environments(); track environment.id) {
+            <option [value]="environment.id">
+              {{ environment.name }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Álbum</span>
+
+        <select
+          [ngModel]="albumFilter()"
+          (ngModelChange)="albumFilter.set($event)"
+          [disabled]="loadingAlbums()"
+        >
+          <option value="">Todos os álbuns</option>
+
+          @for (album of albums(); track album.id) {
+            <option [value]="album.id">
+              {{ album.name }}{{ album.active ? '' : ' — inativo' }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Tipo</span>
+
+        <select
+          [ngModel]="mediaTypeFilter()"
+          (ngModelChange)="mediaTypeFilter.set($event)"
+        >
+          <option value="all">Todos os tipos</option>
+          <option value="image">Imagem</option>
+          <option value="video">Vídeo</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Processamento</span>
+
+        <select
+          [ngModel]="processingStatusFilter()"
+          (ngModelChange)="processingStatusFilter.set($event)"
+        >
+          <option value="all">Todos os estados</option>
+          <option value="received">Recebida</option>
+          <option value="validating">Validando</option>
+          <option value="processing">Processando</option>
+          <option value="ready">Pronta</option>
+          <option value="failed">Falhou</option>
+          <option value="quarantine">Quarentena</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Curadoria da data</span>
+
+        <select
+          [ngModel]="dateStateFilter()"
+          (ngModelChange)="dateStateFilter.set($event)"
+        >
+          <option value="all">Todas</option>
+          <option value="missing">Sem data original</option>
+          <option value="verified">Data confirmada</option>
+          <option value="unverified">Data não confirmada</option>
+          <option value="conflict">Com conflito</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Conversão</span>
+
+        <select
+          [ngModel]="convertedFilter()"
+          (ngModelChange)="convertedFilter.set($event)"
+        >
+          <option value="all">Originais e convertidas</option>
+          <option value="original">Somente preservadas</option>
+          <option value="converted">Somente convertidas</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Ano original</span>
+
+        <input
+          type="text"
+          inputmode="numeric"
+          maxlength="4"
+          placeholder="Ex.: 2024"
+          [ngModel]="originalYear()"
+          (ngModelChange)="originalYear.set($event)"
+        />
+      </label>
+
+      <label>
+        <span>Mês original</span>
+
+        <select
+          [ngModel]="originalMonth()"
+          (ngModelChange)="originalMonth.set($event)"
+        >
+          <option value="">Todos os meses</option>
+          <option value="1">Janeiro</option>
+          <option value="2">Fevereiro</option>
+          <option value="3">Março</option>
+          <option value="4">Abril</option>
+          <option value="5">Maio</option>
+          <option value="6">Junho</option>
+          <option value="7">Julho</option>
+          <option value="8">Agosto</option>
+          <option value="9">Setembro</option>
+          <option value="10">Outubro</option>
+          <option value="11">Novembro</option>
+          <option value="12">Dezembro</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Data inicial</span>
+
+        <input
+          type="date"
+          [ngModel]="originalDateFrom()"
+          (ngModelChange)="originalDateFrom.set($event)"
+        />
+      </label>
+
+      <label>
+        <span>Data final</span>
+
+        <input
+          type="date"
+          [ngModel]="originalDateTo()"
+          (ngModelChange)="originalDateTo.set($event)"
+        />
+      </label>
+    </div>
+
+    <div class="filters__actions">
+      <label class="page-size">
+        <span>Itens por página</span>
+
+        <select
+          [ngModel]="pageSize()"
+          (ngModelChange)="changePageSize($event)"
+          [disabled]="loading()"
+        >
+          <option [ngValue]="12">12</option>
+          <option [ngValue]="24">24</option>
+          <option [ngValue]="50">50</option>
+          <option [ngValue]="100">100</option>
+        </select>
+      </label>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="applyFilters()"
+        [disabled]="loading()"
+      >
+        Aplicar filtros
+      </button>
+    </div>
+  </section>
+
+  @if (canCurate()) {
+    <deja-media-bulk-actions
+      [selectedCount]="selectedIds().size"
+      [albums]="activeAlbums()"
+      [busy]="bulkBusy()"
+      (actionRequested)="executeBulkAction($event)"
+    />
+  } @else {
+    <div class="read-only-note">
+      Seu perfil possui acesso de consulta. As ações de curadoria são restritas à gestão.
+    </div>
+  }
+
+  @if (operationMessage()) {
+    <div
+      class="message message--success"
+      role="status"
+    >
+      {{ operationMessage() }}
+    </div>
+  }
+
+  @if (operationError()) {
+    <div
+      class="message message--error"
+      role="alert"
+    >
+      {{ operationError() }}
+    </div>
+  }
+
+  @if (bulkResult(); as result) {
+    <section class="bulk-result">
+      <header>
+        <h2>Resultado da operação</h2>
+
+        <div class="bulk-result__summary">
+          <span>{{ result.requestedCount }} solicitadas</span>
+          <span class="bulk-result__success">
+            {{ result.succeededCount }} concluídas
+          </span>
+
+          @if (result.failedCount > 0) {
+            <span class="bulk-result__failure">
+              {{ result.failedCount }} falharam
+            </span>
+          }
+        </div>
+      </header>
+
+      @if (result.failedCount > 0) {
+        <ul>
+          @for (item of result.results; track item.mediaId) {
+            @if (!item.success) {
+              <li>
+                <code>{{ item.mediaId }}</code>
+
+                <span>
+                  {{ item.errorMessage || item.errorCode || 'Falha não identificada.' }}
+                </span>
+              </li>
+            }
+          }
+        </ul>
+      }
+    </section>
+  }
+
+  <div class="media-results__header">
+    <div>
+      <h2>Mídias</h2>
+      <span>{{ paginationLabel() }}</span>
+    </div>
+
+    @if (selectedIds().size > 0) {
+      <button
+        type="button"
+        class="link-button"
+        (click)="clearSelection()"
+      >
+        Limpar seleção
+      </button>
+    }
+  </div>
+
+  @if (loading()) {
+    <div
+      class="loading-state"
+      role="status"
+    >
+      <span aria-hidden="true"></span>
+      Carregando mídias...
+    </div>
+  } @else {
+    <deja-media-grid
+      [items]="items()"
+      [service]="mediaService()"
+      [selectedIds]="selectedIds()"
+      (selectionChange)="toggleMediaSelection($event)"
+      (pageSelectionChange)="togglePageSelection($event)"
+    />
+  }
+
+  @if (totalPages() > 1) {
+    <nav
+      class="pagination"
+      aria-label="Paginação das mídias"
+    >
+      <button
+        type="button"
+        (click)="previousPage()"
+        [disabled]="loading() || page() <= 1"
+      >
+        Anterior
+      </button>
+
+      <span>
+        Página {{ page() }} de {{ totalPages() }}
+      </span>
+
+      <button
+        type="button"
+        (click)="nextPage()"
+        [disabled]="loading() || page() >= totalPages()"
+      >
+        Próxima
+      </button>
+    </nav>
+  }
+</section>

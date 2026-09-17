@@ -1,0 +1,127 @@
+<section
+  class="bulk-actions"
+  aria-labelledby="bulk-actions-title"
+>
+  <header class="bulk-actions__header">
+    <div>
+      <span class="bulk-actions__eyebrow">
+        Curadoria
+      </span>
+
+      <h2 id="bulk-actions-title">
+        Ações em lote
+      </h2>
+    </div>
+
+    <span class="bulk-actions__count">
+      {{ selectedCount() }}
+      {{ selectedCount() === 1 ? 'selecionada' : 'selecionadas' }}
+    </span>
+  </header>
+
+  <div class="bulk-actions__grid">
+    <div class="bulk-action">
+      <label for="bulk-original-date">
+        Corrigir data original
+      </label>
+
+      <div class="bulk-action__controls">
+        <input
+          id="bulk-original-date"
+          type="datetime-local"
+          [ngModel]="originalDate()"
+          (ngModelChange)="originalDate.set($event)"
+          [disabled]="busy()"
+        />
+
+        <button
+          type="button"
+          (click)="applyOriginalDate()"
+          [disabled]="selectedCount() === 0 || busy()"
+        >
+          Aplicar data
+        </button>
+      </div>
+    </div>
+
+    <div class="bulk-action">
+      <span class="bulk-action__label">
+        Confirmar datas existentes
+      </span>
+
+      <button
+        type="button"
+        (click)="verifyOriginalDate()"
+        [disabled]="selectedCount() === 0 || busy()"
+      >
+        Confirmar datas
+      </button>
+    </div>
+
+    <div class="bulk-action">
+      <span class="bulk-action__label">
+        Limpar conflitos sinalizados
+      </span>
+
+      <button
+        type="button"
+        (click)="clearOriginalDateConflict()"
+        [disabled]="selectedCount() === 0 || busy()"
+      >
+        Limpar conflitos
+      </button>
+    </div>
+
+    <div class="bulk-action">
+      <label for="bulk-album">
+        Movimentar para álbum
+      </label>
+
+      <div class="bulk-action__controls">
+        <select
+          id="bulk-album"
+          [ngModel]="albumSelection()"
+          (ngModelChange)="albumSelection.set($event)"
+          [disabled]="busy()"
+        >
+          <option value="">
+            Selecione uma opção
+          </option>
+
+          <option value="__without_album__">
+            Remover do álbum
+          </option>
+
+          @for (album of albums(); track album.id) {
+            <option [value]="album.id">
+              {{ album.name }}
+            </option>
+          }
+        </select>
+
+        <button
+          type="button"
+          (click)="setAlbum()"
+          [disabled]="selectedCount() === 0 || busy()"
+        >
+          Aplicar álbum
+        </button>
+      </div>
+    </div>
+  </div>
+
+  @if (validationMessage()) {
+    <p class="bulk-actions__validation">
+      {{ validationMessage() }}
+    </p>
+  }
+
+  @if (busy()) {
+    <p
+      class="bulk-actions__progress"
+      role="status"
+    >
+      Processando a seleção...
+    </p>
+  }
+</section>

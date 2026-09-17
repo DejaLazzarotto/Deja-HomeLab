@@ -166,6 +166,31 @@ export const routes: Routes = [
     loadComponent: workspacePage,
   },
   {
+    path: 'fotos',
+    redirectTo: 'fotos/media',
+    pathMatch: 'full',
+  },
+  {
+    path: 'fotos/media',
+    title: 'Album Admin | Deja Fotos',
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+      moduleGuard('fotos'),
+    ],
+    loadComponent: workspacePage,
+  },
+  {
+    path: 'fotos/albums',
+    title: 'Álbuns | Deja Fotos',
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+      moduleGuard('fotos'),
+    ],
+    loadComponent: workspacePage,
+  },
+  {
     path: 'analytics',
     redirectTo: 'operation/indicators',
     pathMatch: 'full',

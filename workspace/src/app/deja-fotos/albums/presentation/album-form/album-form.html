@@ -1,0 +1,113 @@
+<section
+  class="album-form"
+  aria-labelledby="album-form-title"
+>
+  <header>
+    <div>
+      <span>Gestão de álbuns</span>
+
+      <h2 id="album-form-title">
+        {{ album() ? 'Editar álbum' : 'Novo álbum' }}
+      </h2>
+    </div>
+
+    <button
+      type="button"
+      class="album-form__close"
+      aria-label="Fechar formulário"
+      (click)="cancel()"
+      [disabled]="saving()"
+    >
+      ×
+    </button>
+  </header>
+
+  <div class="album-form__grid">
+    <label>
+      <span>Ambiente</span>
+
+      <select
+        [ngModel]="environmentId()"
+        (ngModelChange)="environmentId.set($event)"
+        [disabled]="saving()"
+      >
+        <option value="">
+          Selecione o ambiente
+        </option>
+
+        @for (environment of environments(); track environment.id) {
+          <option [value]="environment.id">
+            {{ environment.name }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Nome</span>
+
+      <input
+        type="text"
+        maxlength="150"
+        placeholder="Nome do álbum"
+        [ngModel]="name()"
+        (ngModelChange)="name.set($event)"
+        [disabled]="saving()"
+      />
+    </label>
+
+    <label class="album-form__description">
+      <span>Descrição</span>
+
+      <textarea
+        rows="5"
+        maxlength="5000"
+        placeholder="Descrição opcional do álbum"
+        [ngModel]="description()"
+        (ngModelChange)="description.set($event)"
+        [disabled]="saving()"
+      ></textarea>
+
+      <small>
+        {{ description().length }} de 5.000 caracteres
+      </small>
+    </label>
+
+    <label class="album-form__active">
+      <input
+        type="checkbox"
+        [ngModel]="active()"
+        (ngModelChange)="active.set($event)"
+        [disabled]="saving()"
+      />
+
+      <span>Álbum ativo</span>
+    </label>
+  </div>
+
+  @if (validationMessage()) {
+    <p class="album-form__validation">
+      {{ validationMessage() }}
+    </p>
+  }
+
+  <footer>
+    <button
+      type="button"
+      class="secondary-button"
+      (click)="cancel()"
+      [disabled]="saving()"
+    >
+      Cancelar
+    </button>
+
+    <button
+      type="button"
+      class="primary-button"
+      (click)="submit()"
+      [disabled]="saving()"
+    >
+      {{ saving() ? 'Salvando...' : 'Salvar álbum' }}
+    </button>
+  </footer>
+</section>

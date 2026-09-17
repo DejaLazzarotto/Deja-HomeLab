@@ -41,6 +41,12 @@ export class WorkspaceBootstrapService {
   private readonly runtime =
     WorkspaceComposition.create();
 
+  /**
+   * Evita o registro duplicado da infraestrutura
+   * quando uma nova rota recria o WorkspacePage.
+   */
+  private configured = false;
+
   constructor(
     private readonly rendererProvider: AngularWorkspaceRendererProvider,
   ) {}
@@ -55,13 +61,19 @@ export class WorkspaceBootstrapService {
   }
 
   /**
-   * Registra toda a infraestrutura Angular.
+   * Registra toda a infraestrutura Angular uma única vez.
    */
   configure(): void {
+
+    if (this.configured) {
+      return;
+    }
 
     this.rendererProvider.register(
       this.runtime,
     );
+
+    this.configured = true;
 
   }
 

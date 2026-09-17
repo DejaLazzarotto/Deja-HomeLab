@@ -70,6 +70,9 @@ import { WorkspaceDashboardOverviewWidgetComponent } from '../components/workspa
 import { WorkspaceManagementReportWidgetComponent } from '../components/workspace-management-report-widget/workspace-management-report-widget';
 
 import { WorkspaceDashboardChamadosWidgetComponent } from '../components/workspace-dashboard-chamados-widget/workspace-dashboard-chamados-widget';
+import { WorkspaceMediaManagementWidgetComponent } from '../components/workspace-media-management-widget/workspace-media-management-widget';
+
+import { WorkspaceAlbumManagementWidgetComponent } from '../components/workspace-album-management-widget/workspace-album-management-widget';
 
 /**
  * Composition Root oficial do Workspace.
@@ -100,6 +103,9 @@ export class WorkspaceComposition {
   private static readonly QUEUE_DASHBOARD_ID = 'deja.workspace.dashboard.chamados.queue';
 
   private static readonly CLIENTS_DASHBOARD_ID = 'deja.workspace.dashboard.chamados.clients';
+  private static readonly FOTOS_MEDIA_DASHBOARD_ID = 'deja.workspace.dashboard.fotos.media';
+
+  private static readonly FOTOS_ALBUMS_DASHBOARD_ID = 'deja.workspace.dashboard.fotos.albums';
 
   private static readonly ACTIVITY_DASHBOARD_ID = 'deja.workspace.dashboard.activity';
 
@@ -129,6 +135,9 @@ export class WorkspaceComposition {
   private static readonly QUEUE_NAVIGATION_ID = 'deja.workspace.navigation.chamados.queue';
 
   private static readonly CLIENTS_NAVIGATION_ID = 'deja.workspace.navigation.chamados.clients';
+  private static readonly FOTOS_MEDIA_NAVIGATION_ID = 'deja.workspace.navigation.fotos.media';
+
+  private static readonly FOTOS_ALBUMS_NAVIGATION_ID = 'deja.workspace.navigation.fotos.albums';
 
   private static readonly ACTIVITY_NAVIGATION_ID = 'deja.workspace.navigation.activity';
 
@@ -162,6 +171,9 @@ export class WorkspaceComposition {
   private static readonly QUEUE_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.queue-management';
 
   private static readonly CLIENT_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.client-management';
+  private static readonly MEDIA_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.fotos-media-management';
+
+  private static readonly ALBUM_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.fotos-album-management';
 
   private static readonly MANAGEMENT_REPORT_WIDGET_ID = 'deja.workspace.widget.management-report';
 
@@ -463,6 +475,35 @@ export class WorkspaceComposition {
         },
       },
 
+      {
+        id: this.FOTOS_MEDIA_NAVIGATION_ID,
+        ownerId: this.CORE_OWNER,
+        dashboardId: this.FOTOS_MEDIA_DASHBOARD_ID,
+        title: 'Mídias',
+        description: 'Curadoria e organização do acervo do Deja Fotos.',
+        icon: 'reports',
+        order: 10,
+        enabled: true,
+        metadata: {
+          section: 'fotos',
+          moduleKey: 'fotos',
+        },
+      },
+
+      {
+        id: this.FOTOS_ALBUMS_NAVIGATION_ID,
+        ownerId: this.CORE_OWNER,
+        dashboardId: this.FOTOS_ALBUMS_DASHBOARD_ID,
+        title: 'Álbuns',
+        description: 'Gestão dos álbuns do Deja Fotos.',
+        icon: 'applications',
+        order: 20,
+        enabled: true,
+        metadata: {
+          section: 'fotos',
+          moduleKey: 'fotos',
+        },
+      },
       {
         id: this.ACTIVITY_NAVIGATION_ID,
         ownerId: this.CORE_OWNER,
@@ -818,6 +859,61 @@ export class WorkspaceComposition {
       },
     };
 
+    const mediaManagementWidget: WorkspaceWidget = {
+      id: this.MEDIA_MANAGEMENT_WIDGET_ID,
+      owner: this.CORE_OWNER,
+      title: 'Album Admin',
+      description: 'Curadoria, consulta e organização das mídias do Deja Fotos.',
+      category: 'management',
+      widgetType: 'fotos-media-management',
+      supportedSurfaces: ['dashboard'],
+      capabilities: ['resizable'],
+      size: {
+        default: {
+          columns: 12,
+          rows: 18,
+        },
+        minimum: {
+          columns: 8,
+          rows: 10,
+        },
+      },
+      component: WorkspaceMediaManagementWidgetComponent,
+      priority: 40,
+      enabled: true,
+      tags: ['deja-fotos', 'media', 'management'],
+      metadata: {
+        moduleKey: 'fotos',
+      },
+    };
+
+    const albumManagementWidget: WorkspaceWidget = {
+      id: this.ALBUM_MANAGEMENT_WIDGET_ID,
+      owner: this.CORE_OWNER,
+      title: 'Álbuns',
+      description: 'Cadastro e organização dos álbuns do Deja Fotos.',
+      category: 'management',
+      widgetType: 'fotos-album-management',
+      supportedSurfaces: ['dashboard'],
+      capabilities: ['resizable'],
+      size: {
+        default: {
+          columns: 12,
+          rows: 12,
+        },
+        minimum: {
+          columns: 6,
+          rows: 8,
+        },
+      },
+      component: WorkspaceAlbumManagementWidgetComponent,
+      priority: 45,
+      enabled: true,
+      tags: ['deja-fotos', 'albums', 'management'],
+      metadata: {
+        moduleKey: 'fotos',
+      },
+    };
     const managementReportWidget: WorkspaceWidget = {
       id: this.MANAGEMENT_REPORT_WIDGET_ID,
       owner: this.CORE_OWNER,
@@ -871,6 +967,10 @@ export class WorkspaceComposition {
     registries.widgets.register(queueManagementWidget);
 
     registries.widgets.register(clientManagementWidget);
+
+    registries.widgets.register(mediaManagementWidget);
+
+    registries.widgets.register(albumManagementWidget);
 
     registries.widgets.register(managementReportWidget);
 
@@ -1213,6 +1313,67 @@ export class WorkspaceComposition {
         ],
       },
 
+      {
+        id: this.FOTOS_MEDIA_DASHBOARD_ID,
+        owner: this.CORE_OWNER,
+        title: 'Album Admin',
+        description: 'Curadoria e organização das mídias do Deja Fotos.',
+        route: '/fotos/media',
+        layoutId: initialLayout.id,
+        priority: 55,
+        enabled: true,
+        tags: ['deja-fotos', 'media', 'management'],
+        metadata: {
+          type: 'management',
+          section: 'media',
+          moduleKey: 'fotos',
+        },
+        widgets: [
+          {
+            id: 'deja.workspace.widget-instance.fotos-media-management',
+            widgetId: mediaManagementWidget.id,
+            regionId: mainRegion.id,
+            position: {
+              column: 1,
+              row: 1,
+              columnSpan: 12,
+              rowSpan: 18,
+            },
+            enabled: true,
+          },
+        ],
+      },
+
+      {
+        id: this.FOTOS_ALBUMS_DASHBOARD_ID,
+        owner: this.CORE_OWNER,
+        title: 'Álbuns',
+        description: 'Gestão dos álbuns do Deja Fotos.',
+        route: '/fotos/albums',
+        layoutId: initialLayout.id,
+        priority: 56,
+        enabled: true,
+        tags: ['deja-fotos', 'albums', 'management'],
+        metadata: {
+          type: 'management',
+          section: 'albums',
+          moduleKey: 'fotos',
+        },
+        widgets: [
+          {
+            id: 'deja.workspace.widget-instance.fotos-album-management',
+            widgetId: albumManagementWidget.id,
+            regionId: mainRegion.id,
+            position: {
+              column: 1,
+              row: 1,
+              columnSpan: 12,
+              rowSpan: 12,
+            },
+            enabled: true,
+          },
+        ],
+      },
       {
         id: this.ACTIVITY_DASHBOARD_ID,
         owner: this.CORE_OWNER,

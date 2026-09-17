@@ -1,0 +1,247 @@
+<section class="album-management">
+  <header class="album-management__header">
+    <div>
+      <span class="album-management__eyebrow">
+        Deja Fotos
+      </span>
+
+      <h1>Álbuns</h1>
+
+      <p>
+        Organize o acervo em álbuns vinculados aos ambientes autorizados.
+      </p>
+    </div>
+
+    @if (canEdit()) {
+      <button
+        type="button"
+        class="primary-button"
+        (click)="openCreate()"
+      >
+        Novo álbum
+      </button>
+    }
+  </header>
+
+  @if (errorMessage()) {
+    <div class="message message--error">
+      <span>{{ errorMessage() }}</span>
+
+      <button
+        type="button"
+        (click)="refresh()"
+      >
+        Tentar novamente
+      </button>
+    </div>
+  }
+
+  @if (operationMessage()) {
+    <div
+      class="message message--success"
+      role="status"
+    >
+      {{ operationMessage() }}
+    </div>
+  }
+
+  @if (operationError()) {
+    <div
+      class="message message--error"
+      role="alert"
+    >
+      {{ operationError() }}
+    </div>
+  }
+
+  @if (formVisible()) {
+    <deja-album-form
+      [album]="selectedAlbum()"
+      [environments]="environments()"
+      [defaultEnvironmentId]="defaultEnvironmentId()"
+      [saving]="saving()"
+      (submitted)="saveAlbum($event)"
+      (cancelled)="closeForm()"
+    />
+  }
+
+  <section
+    class="album-filters"
+    aria-labelledby="album-filters-title"
+  >
+    <header>
+      <h2 id="album-filters-title">
+        Consulta
+      </h2>
+
+      <button
+        type="button"
+        class="link-button"
+        (click)="clearFilters()"
+        [disabled]="loading()"
+      >
+        Limpar filtros
+      </button>
+    </header>
+
+    <div class="album-filters__grid">
+      <label>
+        <span>Buscar</span>
+
+        <input
+          type="search"
+          placeholder="Nome ou descrição"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+        />
+      </label>
+
+      <label>
+        <span>Ambiente</span>
+
+        <select
+          [ngModel]="environmentFilter()"
+          (ngModelChange)="environmentFilter.set($event)"
+        >
+          <option value="">Todos os ambientes</option>
+
+          @for (environment of environments(); track environment.id) {
+            <option [value]="environment.id">
+              {{ environment.name }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Situação</span>
+
+        <select
+          [ngModel]="activeFilter()"
+          (ngModelChange)="activeFilter.set($event)"
+        >
+          <option value="all">Ativos e inativos</option>
+          <option value="active">Somente ativos</option>
+          <option value="inactive">Somente inativos</option>
+        </select>
+      </label>
+
+      <button
+        type="button"
+        class="secondary-button"
+        (click)="applyFilters()"
+        [disabled]="loading()"
+      >
+        Aplicar filtros
+      </button>
+    </div>
+  </section>
+
+  <div class="album-results__header">
+    <div>
+      <h2>Álbuns cadastrados</h2>
+
+      <span>
+        {{ visibleAlbums().length }}
+        {{ visibleAlbums().length === 1 ? 'álbum' : 'álbuns' }}
+      </span>
+    </div>
+
+    <button
+      type="button"
+      class="link-button"
+      (click)="refresh()"
+      [disabled]="loading()"
+    >
+      Atualizar
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div
+      class="loading-state"
+      role="status"
+    >
+      <span aria-hidden="true"></span>
+      Carregando álbuns...
+    </div>
+  } @else if (visibleAlbums().length === 0) {
+    <div class="empty-state">
+      <strong>Nenhum álbum encontrado.</strong>
+      <span>Ajuste os filtros ou cadastre um novo álbum.</span>
+    </div>
+  } @else {
+    <div class="album-grid">
+      @for (album of visibleAlbums(); track album.id) {
+        <article
+          class="album-card"
+          [class.album-card--inactive]="!album.active"
+        >
+          <header>
+            <div>
+              <span
+                class="album-card__status"
+                [class.album-card__status--inactive]="!album.active"
+              >
+                {{ album.active ? 'Ativo' : 'Inativo' }}
+              </span>
+
+              <h3>{{ album.name }}</h3>
+            </div>
+
+            @if (canEdit()) {
+              <button
+                type="button"
+                class="link-button"
+                (click)="openEdit(album)"
+              >
+                Editar
+              </button>
+            }
+          </header>
+
+          <p class="album-card__description">
+            {{ album.description || 'Álbum sem descrição.' }}
+          </p>
+
+          <dl>
+            <div>
+              <dt>Ambiente</dt>
+              <dd [title]="album.environmentId">
+                {{ environmentName(album.environmentId) }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Atualizado</dt>
+              <dd>{{ formatDate(album.updatedAt) }}</dd>
+            </div>
+          </dl>
+
+          @if (canDelete()) {
+            <footer>
+              <button
+                type="button"
+                class="danger-button"
+                (click)="deleteAlbum(album)"
+                [disabled]="deletingAlbumId() === album.id"
+              >
+                {{
+                  deletingAlbumId() === album.id
+                    ? 'Excluindo...'
+                    : 'Excluir álbum'
+                }}
+              </button>
+            </footer>
+          }
+        </article>
+      }
+    </div>
+  }
+
+  @if (!canEdit()) {
+    <div class="read-only-note">
+      Seu perfil possui acesso de consulta aos álbuns.
+    </div>
+  }
+</section>
