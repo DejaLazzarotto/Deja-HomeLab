@@ -1,8 +1,10 @@
 <aside class="workspace-sidebar">
 
   <nav
+    #navigation
     class="workspace-sidebar__navigation"
-    aria-label="Navegação principal">
+    aria-label="Navegação principal"
+    (scroll)="rememberScrollPosition()">
 
     @for (
       section of navigationSections;

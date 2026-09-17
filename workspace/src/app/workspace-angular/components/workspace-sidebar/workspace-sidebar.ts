@@ -5,8 +5,11 @@
  */
 
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  ViewChild,
 } from '@angular/core';
 
 import {
@@ -59,6 +62,13 @@ interface NavigationSection {
   readonly items: readonly WorkspaceNavigation[];
 }
 
+/**
+ * Mantém a posição vertical do menu enquanto a aplicação
+ * permanece carregada. O estado sobrevive à recriação do
+ * componente causada pelas trocas de rota do Workspace.
+ */
+let navigationScrollTop = 0;
+
 @Component({
   selector: 'deja-workspace-sidebar',
   standalone: true,
@@ -66,7 +76,17 @@ interface NavigationSection {
   styleUrl: './workspace-sidebar.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class WorkspaceSidebarComponent {
+export class WorkspaceSidebarComponent
+  implements AfterViewInit {
+
+  @ViewChild(
+    'navigation',
+    {
+      static: true,
+    },
+  )
+  private readonly navigationElement!:
+    ElementRef<HTMLElement>;
 
   private readonly administrationNavigationId =
     'deja.workspace.navigation.administration';
@@ -167,9 +187,21 @@ export class WorkspaceSidebarComponent {
       .filter(section => section.items.length > 0);
   }
 
+  ngAfterViewInit(): void {
+    this.navigationElement.nativeElement.scrollTop =
+      navigationScrollTop;
+  }
+
+  rememberScrollPosition(): void {
+    navigationScrollTop =
+      this.navigationElement.nativeElement.scrollTop;
+  }
+
   async navigate(
     navigation: WorkspaceNavigation,
   ): Promise<void> {
+    this.rememberScrollPosition();
+
     await this.shell.navigate(
       navigation.id,
     );
