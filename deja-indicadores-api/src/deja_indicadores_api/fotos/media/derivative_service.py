@@ -13,6 +13,7 @@ from deja_indicadores_api.fotos.media.derivative_repository import (
 )
 from deja_indicadores_api.fotos.media.exceptions import (
     FotosMediaAlreadyProcessingError,
+    FotosMediaDerivativeNotFoundError,
 )
 from deja_indicadores_api.fotos.media.image_derivatives import (
     FotosImageDerivative,
@@ -142,10 +143,10 @@ class FotosMediaDerivativeService:
         self,
         media: FotosMediaModel,
     ) -> list[FotosMediaDerivativeModel]:
-        """Normaliza o v?deo e gera poster e preview."""
+        """Normaliza o vídeo e gera poster e preview."""
 
         if media.media_type != "video":
-            raise ValueError("A m?dia informada n?o ? um v?deo.")
+            raise ValueError("A mídia informada não é um vídeo.")
 
         original_path = self._resolve_original_path(media)
 
@@ -154,10 +155,10 @@ class FotosMediaDerivativeService:
         height = media.height
 
         if duration_seconds is None or duration_seconds <= 0:
-            raise ValueError("A m?dia n?o possui dura??o de v?deo v?lida.")
+            raise ValueError("A mídia não possui duração de vídeo válida.")
 
         if width is None or height is None or width <= 0 or height <= 0:
-            raise ValueError("A m?dia n?o possui dimens?es de v?deo v?lidas.")
+            raise ValueError("A mídia não possui dimensões de vídeo válidas.")
 
         self._claim_processing(media)
 
@@ -180,7 +181,7 @@ class FotosMediaDerivativeService:
 
             if duration_seconds is None or duration_seconds <= 0:
                 raise ValueError(
-                    "O v?deo normalizado n?o possui dura??o v?lida."
+                    "O vídeo normalizado não possui duração válida."
                 )
 
             if (
@@ -190,7 +191,7 @@ class FotosMediaDerivativeService:
                 or height <= 0
             ):
                 raise ValueError(
-                    "O v?deo normalizado n?o possui dimens?es v?lidas."
+                    "O vídeo normalizado não possui dimensões válidas."
                 )
 
             (
@@ -253,7 +254,7 @@ class FotosMediaDerivativeService:
         Path,
         Path | None,
     ]:
-        """Normaliza o v?deo e atualiza seus metadados em mem?ria."""
+        """Normaliza o vídeo e atualiza seus metadados em memória."""
 
         inspection = inspect_video(
             original_path,
@@ -305,7 +306,7 @@ class FotosMediaDerivativeService:
     def _remove_replaced_original(
         replaced_original_path: Path | None,
     ) -> None:
-        """Remove a fonte substitu?da ap?s persist?ncia bem-sucedida."""
+        """Remove a fonte substituída após persistência bem-sucedida."""
 
         if replaced_original_path is None:
             return
@@ -341,12 +342,18 @@ class FotosMediaDerivativeService:
         )
 
         if derivative is None:
-            raise FileNotFoundError("O derivado solicitado não foi encontrado.")
+            raise FotosMediaDerivativeNotFoundError(
+                media_id,
+                derivative_type,
+            )
 
         file_path = self._settings.uploads_dir / Path(derivative.storage_key)
 
         if not file_path.exists() or not file_path.is_file():
-            raise FileNotFoundError("O arquivo físico do derivado não foi encontrado.")
+            raise FotosMediaDerivativeNotFoundError(
+                media_id,
+                derivative_type,
+            )
 
         return file_path, derivative
 

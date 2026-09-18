@@ -5,6 +5,7 @@
  */
 
 import {
+  MediaOriginalDatePrecision,
   MediaOriginalDateSource,
   MediaProcessingStatus,
   MediaType,
@@ -37,9 +38,29 @@ export const MEDIA_ORIGINAL_DATE_SOURCE_LABELS:
 
 export function formatMediaDate(
   value: string | null,
+  precision: MediaOriginalDatePrecision | null,
 ): string {
   if (!value) {
     return 'Sem data';
+  }
+
+  if (precision === 'date') {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(
+      value,
+    );
+
+    if (!match) {
+      return 'Data inválida';
+    }
+
+    const [
+      ,
+      year,
+      month,
+      day,
+    ] = match;
+
+    return `${day}/${month}/${year} — horário desconhecido`;
   }
 
   const date = new Date(value);

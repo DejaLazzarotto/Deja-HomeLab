@@ -241,6 +241,16 @@
   white-space: nowrap;
 }
 
+.media-card__date-row {
+  align-items: flex-start;
+}
+
+.media-card__date-row dd {
+  max-width: 72%;
+  overflow: visible;
+  white-space: normal;
+}
+
 .media-card__error {
   margin: var(--workspace-spacing-sm) 0 0;
   padding: 0.55rem;

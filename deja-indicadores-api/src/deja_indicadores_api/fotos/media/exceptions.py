@@ -95,7 +95,7 @@ class FotosMediaEmptyFileError(ApplicationError):
 
 
 class FotosMediaDuplicateError(ResourceConflictError):
-    """Arquivo-fonte j? cadastrado no mesmo ambiente."""
+    """Arquivo-fonte já cadastrado no mesmo ambiente."""
 
     error_code = "fotos_media_duplicate"
 
@@ -104,14 +104,14 @@ class FotosMediaDuplicateError(ResourceConflictError):
         existing_media_id: str,
     ) -> None:
         super().__init__(
-            "A m?dia enviada j? est? cadastrada "
+            "A mídia enviada já está cadastrada "
             f"com o ID '{existing_media_id}'."
         )
 
 
 
 class FotosMediaStorageConflictError(ResourceConflictError):
-    """O destino calculado para o original j? est? ocupado."""
+    """O destino calculado para o original já está ocupado."""
 
     error_code = "fotos_media_storage_conflict"
 
@@ -120,8 +120,8 @@ class FotosMediaStorageConflictError(ResourceConflictError):
         media_id: str,
     ) -> None:
         super().__init__(
-            "O destino f?sico calculado para a m?dia "
-            f"'{media_id}' j? est? ocupado."
+            "O destino físico calculado para a mídia "
+            f"'{media_id}' já está ocupado."
         )
 
 
@@ -136,13 +136,13 @@ class FotosMediaStorageMoveError(ApplicationError):
         media_id: str,
     ) -> None:
         super().__init__(
-            "N?o foi poss?vel reorganizar o arquivo original "
-            f"da m?dia '{media_id}'."
+            "Não foi possível reorganizar o arquivo original "
+            f"da mídia '{media_id}'."
         )
 
 
 class FotosMediaOriginalDateMissingError(ResourceConflictError):
-    """A m?dia ainda n?o possui data original para confirma??o."""
+    """A mídia ainda não possui data original para confirmação."""
 
     error_code = "fotos_media_original_date_missing"
 
@@ -151,8 +151,24 @@ class FotosMediaOriginalDateMissingError(ResourceConflictError):
         media_id: str,
     ) -> None:
         super().__init__(
-            "A m?dia "
-            f"'{media_id}' ainda n?o possui data original para confirma??o."
+            "A mídia "
+            f"'{media_id}' ainda não possui data original para confirmação."
+        )
+
+
+class FotosMediaDerivativeNotFoundError(ResourceNotFoundError):
+    """Arquivo derivado de mídia não encontrado."""
+
+    error_code = "fotos_media_derivative_not_found"
+
+    def __init__(
+        self,
+        media_id: str,
+        derivative_type: str,
+    ) -> None:
+        super().__init__(
+            f"O derivado '{derivative_type}' da mídia "
+            f"'{media_id}' não foi encontrado."
         )
 
 

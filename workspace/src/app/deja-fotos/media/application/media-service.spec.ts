@@ -14,11 +14,89 @@ describe('MediaService', () => {
     repository = {
       list: vi.fn(),
       findById: vi.fn(),
+      upload: vi.fn(),
       bulkUpdate: vi.fn(),
       loadThumbnail: vi.fn(),
     };
 
     service = new MediaService(repository);
+  });
+
+  it('should reject an upload without environment', () => {
+    const file = new File(
+      [
+        'photo',
+      ],
+      'photo.jpg',
+      {
+        type: 'image/jpeg',
+      },
+    );
+
+    expect(() => service.upload({
+      environmentId: '   ',
+      albumId: null,
+      file,
+    })).toThrowError(
+      'Selecione o ambiente de destino.',
+    );
+
+    expect(repository.upload)
+      .not.toHaveBeenCalled();
+  });
+
+  it('should reject an unsupported upload format', () => {
+    const file = new File(
+      [
+        'document',
+      ],
+      'document.pdf',
+      {
+        type: 'application/pdf',
+      },
+    );
+
+    expect(() => service.upload({
+      environmentId: 'environment-1',
+      albumId: null,
+      file,
+    })).toThrowError(
+      'O formato do arquivo document.pdf não é aceito.',
+    );
+
+    expect(repository.upload)
+      .not.toHaveBeenCalled();
+  });
+
+  it('should normalize and delegate a valid upload', async () => {
+    vi.mocked(repository.upload)
+      .mockResolvedValue({} as never);
+
+    const file = new File(
+      [
+        'photo',
+      ],
+      'photo.jpg',
+      {
+        type: 'image/jpeg',
+      },
+    );
+
+    await service.upload({
+      environmentId: ' environment-1 ',
+      albumId: ' album-1 ',
+      file,
+    });
+
+    expect(repository.upload)
+      .toHaveBeenCalledOnce();
+
+    expect(repository.upload)
+      .toHaveBeenCalledWith({
+        environmentId: 'environment-1',
+        albumId: 'album-1',
+        file,
+      });
   });
 
   it('should reject an empty bulk selection', () => {
@@ -100,4 +178,30 @@ describe('MediaService', () => {
     expect(repository.bulkUpdate)
       .toHaveBeenCalledWith(operation);
   });
+
+  it.each([
+    'image',
+    'video',
+  ] as const)(
+    'should delegate thumbnail loading for %s media',
+    async mediaType => {
+      const thumbnail = new Blob([
+        mediaType,
+      ]);
+
+      vi.mocked(repository.loadThumbnail)
+        .mockResolvedValue(thumbnail);
+
+      await expect(
+        service.loadThumbnail('media-1', mediaType),
+      ).resolves.toBe(thumbnail);
+
+      expect(repository.loadThumbnail)
+        .toHaveBeenCalledWith(
+          'media-1',
+          mediaType,
+        );
+    },
+  );
+
 });

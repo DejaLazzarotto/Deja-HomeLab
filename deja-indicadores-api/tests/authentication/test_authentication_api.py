@@ -63,6 +63,15 @@ INITIAL_MODULES = (
         ),
         "display_order": 40,
     },
+    {
+        "key": "fotos",
+        "name": "Fotos",
+        "description": (
+            "Gestão de álbuns, mídias, pessoas e curadoria "
+            "com reconhecimento facial."
+        ),
+        "display_order": 50,
+    },
 )
 
 

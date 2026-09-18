@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -124,7 +125,50 @@ ALLOWED_FOTOS_CONTENT_TYPES = {
 
 UPLOAD_CHUNK_SIZE = 1024 * 1024
 
+FILENAME_DATE_PATTERN = re.compile(
+    r"(?<!\d)"
+    r"(?P<date>(?:19|20)\d{6})"
+    r"(?:[-_](?P<time>\d{6}))?"
+    r"(?!\d)"
+)
+
 logger = logging.getLogger(__name__)
+
+
+def infer_original_date_from_filename(
+    filename: str,
+) -> tuple[datetime, str] | None:
+    """Infere data e precisão a partir de nomes reconhecíveis."""
+
+    match = FILENAME_DATE_PATTERN.search(
+        Path(filename).stem
+    )
+
+    if match is None:
+        return None
+
+    date_part = match.group("date")
+    time_part = match.group("time")
+
+    try:
+        if time_part is not None:
+            return (
+                datetime.strptime(
+                    date_part + time_part,
+                    "%Y%m%d%H%M%S",
+                ),
+                "datetime",
+            )
+
+        return (
+            datetime.strptime(
+                date_part,
+                "%Y%m%d",
+            ),
+            "date",
+        )
+    except ValueError:
+        return None
 
 
 class FotosMediaService:
@@ -168,7 +212,7 @@ class FotosMediaService:
         page: int = 1,
         page_size: int = 50,
     ) -> tuple[list[FotosMediaModel], int]:
-        """Lista uma p?gina de m?dias dentro do escopo permitido."""
+        """Lista uma página de mídias dentro do escopo permitido."""
 
         self._require_roles(
             current_user,
@@ -355,6 +399,8 @@ class FotosMediaService:
         height: int | None = None
         duration_seconds: float | None = None
         original_date: datetime | None = None
+        original_date_source: str | None = None
+        original_date_precision: str | None = None
 
         try:
             with file_path.open("wb") as destination:
@@ -393,8 +439,23 @@ class FotosMediaService:
             )
 
             if existing_media is not None:
-                raise FotosMediaDuplicateError(
-                    existing_media.id,
+                if existing_media.deleted_at is None:
+                    raise FotosMediaDuplicateError(
+                        existing_media.id,
+                    )
+
+                if file_path.exists():
+                    file_path.unlink()
+
+                try:
+                    staging_directory.rmdir()
+                except OSError:
+                    pass
+
+                return self._restore_deleted_media(
+                    existing_media,
+                    album_id=album_id,
+                    original_name=original_name,
                 )
 
             managed_content_type = source_content_type
@@ -447,6 +508,23 @@ class FotosMediaService:
                 height = inspection.height
                 duration_seconds = inspection.duration_seconds
                 original_date = inspection.original_date
+
+            if original_date is not None:
+                original_date_source = "embedded_metadata"
+                original_date_precision = "datetime"
+            else:
+                inferred_date = (
+                    infer_original_date_from_filename(
+                        original_name,
+                    )
+                )
+
+                if inferred_date is not None:
+                    (
+                        original_date,
+                        original_date_precision,
+                    ) = inferred_date
+                    original_date_source = "filename"
 
             storage_key = build_original_storage_key(
                 organization_id=tenant.organization_id,
@@ -509,11 +587,8 @@ class FotosMediaService:
             processing_status="received",
             processing_error=None,
             original_date=original_date,
-            original_date_source=(
-                "embedded_metadata"
-                if original_date is not None
-                else None
-            ),
+            original_date_source=original_date_source,
+            original_date_precision=original_date_precision,
             original_date_verified=False,
             original_date_conflict=False,
             width=width,
@@ -530,6 +605,171 @@ class FotosMediaService:
         except Exception:
             if file_path.exists():
                 file_path.unlink()
+
+            raise
+
+    def _restore_deleted_media(
+        self,
+        media: FotosMediaModel,
+        *,
+        album_id: str | None,
+        original_name: str,
+    ) -> FotosMediaModel:
+        """Restaura uma mídia e aplica data inferida quando cabível."""
+
+        previous_album_id = media.album_id
+        previous_original_name = media.original_name
+        previous_processing_status = media.processing_status
+        previous_processing_error = media.processing_error
+        previous_deleted_at = media.deleted_at
+        previous_original_date = media.original_date
+        previous_original_date_source = (
+            media.original_date_source
+        )
+        previous_original_date_precision = (
+            media.original_date_precision
+        )
+        previous_storage_key = media.original_storage_key
+
+        current_path = (
+            self._settings.uploads_dir
+            / Path(media.original_storage_key)
+        )
+        target_path = current_path
+        moved_original = False
+
+        if media.original_date is None:
+            inferred_date = (
+                infer_original_date_from_filename(
+                    original_name,
+                )
+            )
+
+            if inferred_date is not None:
+                (
+                    inferred_value,
+                    inferred_precision,
+                ) = inferred_date
+
+                target_storage_key = (
+                    build_original_storage_key(
+                        organization_id=media.organization_id,
+                        tenant_id=media.tenant_id,
+                        environment_id=media.environment_id,
+                        media_id=media.id,
+                        file_extension=(
+                            media.file_extension
+                            or current_path.suffix
+                        ),
+                        original_date=inferred_value,
+                    )
+                )
+
+                target_path = (
+                    self._settings.uploads_dir
+                    / target_storage_key
+                )
+
+                if target_path != current_path:
+                    if (
+                        not current_path.exists()
+                        or not current_path.is_file()
+                    ):
+                        raise FotosMediaFileNotFoundError(
+                            media.id,
+                        )
+
+                    if (
+                        target_path.exists()
+                        or target_path.parent.exists()
+                    ):
+                        raise FotosMediaStorageConflictError(
+                            media.id,
+                        )
+
+                    try:
+                        target_path.parent.mkdir(
+                            parents=True,
+                            exist_ok=False,
+                        )
+                        current_path.replace(
+                            target_path,
+                        )
+                        moved_original = True
+                    except FileExistsError as error:
+                        raise FotosMediaStorageConflictError(
+                            media.id,
+                        ) from error
+                    except OSError as error:
+                        if target_path.parent.exists():
+                            try:
+                                target_path.parent.rmdir()
+                            except OSError:
+                                pass
+
+                        raise FotosMediaStorageMoveError(
+                            media.id,
+                        ) from error
+
+                    try:
+                        current_path.parent.rmdir()
+                    except OSError:
+                        pass
+
+                media.original_date = inferred_value
+                media.original_date_source = "filename"
+                media.original_date_precision = (
+                    inferred_precision
+                )
+                media.original_storage_key = (
+                    target_storage_key.as_posix()
+                )
+
+        media.deleted_at = None
+        media.album_id = album_id
+        media.original_name = original_name
+        media.processing_status = "received"
+        media.processing_error = None
+
+        try:
+            return self._repository.update(
+                media,
+            )
+        except Exception:
+            media.album_id = previous_album_id
+            media.original_name = previous_original_name
+            media.processing_status = (
+                previous_processing_status
+            )
+            media.processing_error = previous_processing_error
+            media.deleted_at = previous_deleted_at
+            media.original_date = previous_original_date
+            media.original_date_source = (
+                previous_original_date_source
+            )
+            media.original_date_precision = (
+                previous_original_date_precision
+            )
+            media.original_storage_key = previous_storage_key
+
+            if moved_original:
+                try:
+                    current_path.parent.mkdir(
+                        parents=True,
+                        exist_ok=True,
+                    )
+                    target_path.replace(
+                        current_path,
+                    )
+
+                    try:
+                        target_path.parent.rmdir()
+                    except OSError:
+                        pass
+                except OSError as error:
+                    raise FotosMediaStorageMoveError(
+                        media.id,
+                    ) from error
 
             raise
 
@@ -601,7 +841,7 @@ class FotosMediaService:
         payload: FotosMediaBulkUpdate,
         current_user: AuthenticatedUser,
     ) -> FotosMediaBulkResponse:
-        """Executa uma opera??o administrativa sobre v?rias m?dias."""
+        """Executa uma operação administrativa sobre várias mídias."""
 
         self._require_roles(
             current_user,
@@ -630,7 +870,7 @@ class FotosMediaService:
             except Exception:
                 self._repository.rollback()
                 logger.exception(
-                    "Falha inesperada na opera??o em lote da m?dia %s.",
+                    "Falha inesperada na operação em lote da mídia %s.",
                     media_id,
                 )
                 results.append(
@@ -639,7 +879,7 @@ class FotosMediaService:
                         success=False,
                         error_code="fotos_media_bulk_item_failed",
                         error_message=(
-                            "N?o foi poss?vel atualizar a m?dia."
+                            "Não foi possível atualizar a mídia."
                         ),
                     )
                 )
@@ -674,7 +914,7 @@ class FotosMediaService:
         payload: FotosMediaBulkUpdate,
         current_user: AuthenticatedUser,
     ) -> FotosMediaModel:
-        """Executa a opera??o solicitada sobre uma m?dia bloqueada."""
+        """Executa a operação solicitada sobre uma mídia bloqueada."""
 
         media = self._require_media_for_update(
             media_id,
@@ -722,7 +962,7 @@ class FotosMediaService:
             )
 
         raise ValueError(
-            "Opera??o em lote n?o suportada."
+            "Operação em lote não suportada."
         )
 
     def _set_original_date(
@@ -738,7 +978,7 @@ class FotosMediaService:
 
         if normalized_date is None:
             raise ValueError(
-                "A data original ? obrigat?ria."
+                "A data original é obrigatória."
             )
 
         current_storage_key = Path(
@@ -811,6 +1051,9 @@ class FotosMediaService:
         previous_original_date_source = (
             media.original_date_source
         )
+        previous_original_date_precision = (
+            media.original_date_precision
+        )
         previous_original_date_verified = (
             media.original_date_verified
         )
@@ -823,6 +1066,7 @@ class FotosMediaService:
 
         media.original_date = normalized_date
         media.original_date_source = "manual"
+        media.original_date_precision = "datetime"
         media.original_date_verified = True
         media.original_date_conflict = False
         media.original_storage_key = (
@@ -837,6 +1081,9 @@ class FotosMediaService:
             media.original_date = previous_original_date
             media.original_date_source = (
                 previous_original_date_source
+            )
+            media.original_date_precision = (
+                previous_original_date_precision
             )
             media.original_date_verified = (
                 previous_original_date_verified
@@ -891,7 +1138,7 @@ class FotosMediaService:
         self,
         media: FotosMediaModel,
     ) -> FotosMediaModel:
-        """Limpa o conflito sem alterar a confirma??o existente."""
+        """Limpa o conflito sem alterar a confirmação existente."""
 
         media.original_date_conflict = False
 
@@ -904,7 +1151,7 @@ class FotosMediaService:
         media: FotosMediaModel,
         album_id: str | None,
     ) -> FotosMediaModel:
-        """Associa a m?dia a um ?lbum ou remove sua associa??o."""
+        """Associa a mídia a um álbum ou remove sua associação."""
 
         if album_id is not None:
             album = self._require_album(
@@ -977,7 +1224,7 @@ class FotosMediaService:
         self,
         media_id: str,
     ) -> FotosMediaModel:
-        """Retorna e bloqueia uma m?dia ativa para atualiza??o."""
+        """Retorna e bloqueia uma mídia ativa para atualização."""
 
         media = self._repository.find_by_id_for_update(
             media_id,

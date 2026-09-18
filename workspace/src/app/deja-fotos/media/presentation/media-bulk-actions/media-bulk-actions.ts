@@ -88,7 +88,7 @@ export class MediaBulkActionsComponent {
 
     this.actionRequested.emit({
       operation: 'set_original_date',
-      originalDate: date.toISOString(),
+      originalDate: `${value}:00`,
     });
   }
 

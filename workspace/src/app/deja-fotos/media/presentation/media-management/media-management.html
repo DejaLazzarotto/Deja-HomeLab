@@ -48,6 +48,188 @@
     </div>
   }
 
+  @if (canUpload()) {
+    <section
+      class="upload"
+      aria-labelledby="media-upload-title"
+    >
+      <header class="upload__header">
+        <div>
+          <span class="upload__eyebrow">
+            Inclusão
+          </span>
+
+          <h2 id="media-upload-title">
+            Enviar mídias
+          </h2>
+
+          <p>
+            Selecione até 20 imagens ou vídeos. Cada arquivo pode ter no máximo 500 MB.
+          </p>
+        </div>
+      </header>
+
+      <div class="upload__grid">
+        <label>
+          <span>Ambiente de destino</span>
+
+          <select
+            [ngModel]="uploadEnvironmentId()"
+            (ngModelChange)="uploadEnvironmentId.set($event)"
+            [disabled]="uploadBusy()"
+          >
+            <option value="">Selecione o ambiente</option>
+
+            @for (environment of environments(); track environment.id) {
+              <option [value]="environment.id">
+                {{ environment.name }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label>
+          <span>Álbum de destino</span>
+
+          <select
+            [ngModel]="uploadAlbumId()"
+            (ngModelChange)="uploadAlbumId.set($event)"
+            [disabled]="uploadBusy() || loadingAlbums()"
+          >
+            <option value="">Sem álbum</option>
+
+            @for (album of activeAlbums(); track album.id) {
+              <option [value]="album.id">
+                {{ album.name }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="upload__file-picker">
+          <span>Arquivos</span>
+
+          <input
+            type="file"
+            multiple
+            accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.mp4,.mov,.mpeg,.mpg,image/jpeg,image/png,image/webp,image/gif,image/bmp,video/mp4,video/quicktime,video/mpeg"
+            (change)="selectUploadFiles($event)"
+            [disabled]="uploadBusy()"
+          />
+
+          <small>
+            JPEG, PNG, WebP, GIF, BMP, MP4, MOV e MPEG.
+          </small>
+        </label>
+      </div>
+
+      @if (uploadFiles().length > 0) {
+        <ul class="upload__files">
+          @for (
+            file of uploadFiles();
+            track $index;
+            let index = $index
+          ) {
+            <li>
+              <div>
+                <strong>{{ file.name }}</strong>
+                <span>{{ formatFileSize(file.size) }}</span>
+              </div>
+
+              <button
+                type="button"
+                class="link-button"
+                (click)="removeUploadFile(index)"
+                [disabled]="uploadBusy()"
+              >
+                Remover
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="upload__actions">
+        @if (uploadBusy()) {
+          <span
+            class="upload__progress"
+            role="status"
+          >
+            Enviando {{ uploadCompletedCount() }} de {{ uploadFiles().length }}...
+          </span>
+        }
+
+        <button
+          type="button"
+          class="link-button"
+          (click)="clearUploadFiles()"
+          [disabled]="uploadBusy() || uploadFiles().length === 0"
+        >
+          Limpar seleção
+        </button>
+
+        <button
+          type="button"
+          class="primary-button"
+          (click)="uploadSelectedFiles()"
+          [disabled]="uploadBusy() || uploadFiles().length === 0"
+        >
+          {{ uploadBusy() ? 'Enviando...' : 'Enviar arquivos' }}
+        </button>
+      </div>
+
+      @if (uploadMessage()) {
+        <div
+          class="message message--success"
+          role="status"
+        >
+          {{ uploadMessage() }}
+        </div>
+      }
+
+      @if (uploadError()) {
+        <div
+          class="message message--error"
+          role="alert"
+        >
+          {{ uploadError() }}
+        </div>
+      }
+
+      @if (uploadResult(); as result) {
+        <div class="upload__result">
+          <span>
+            {{ result.requestedCount }} selecionados
+          </span>
+
+          <span class="upload__result-success">
+            {{ result.succeededCount }} enviados
+          </span>
+
+          @if (result.failedCount > 0) {
+            <span class="upload__result-failure">
+              {{ result.failedCount }} falharam
+            </span>
+          }
+        </div>
+
+        @if (result.failures.length > 0) {
+          <ul class="upload__failures">
+            @for (
+              failure of result.failures;
+              track $index
+            ) {
+              <li>
+                <strong>{{ failure.fileName }}</strong>
+                <span>{{ failure.message }}</span>
+              </li>
+            }
+          </ul>
+        }
+      }
+    </section>
+  }
+
   <section
     class="filters"
     aria-labelledby="media-filters-title"

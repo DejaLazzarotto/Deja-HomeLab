@@ -36,6 +36,9 @@ from tests.fotos.albums.test_albums_api import (
     SECOND_ALBUM,
     create_album,
 )
+from tests.module_management.test_authenticated_modules_api import (
+    configure_organization_modules,
+)
 
 MEDIA_URL = "/api/fotos/media"
 
@@ -54,6 +57,15 @@ def media_context(
     """Cria o contexto institucional para os testes de mídias."""
 
     organization = create_organization(client)
+
+    configure_organization_modules(
+        client,
+        str(organization["id"]),
+        {
+            "fotos",
+        },
+    )
+
     tenant = create_tenant(
         client,
         str(organization["id"]),
@@ -177,6 +189,29 @@ def create_test_bmp(
 
     return buffer.getvalue()
 
+def create_test_webp(
+    *,
+    width: int = 16,
+    height: int = 12,
+) -> bytes:
+    """Cria uma imagem WebP real para os testes."""
+
+    buffer = BytesIO()
+
+    image = Image.new(
+        "RGB",
+        (width, height),
+        color="purple",
+    )
+
+    image.save(
+        buffer,
+        format="WEBP",
+    )
+
+    return buffer.getvalue()
+
+
 def create_test_mp4(
     *,
     width: int = 16,
@@ -226,7 +261,7 @@ def create_test_legacy_video(
     height: int = 12,
     duration_seconds: float = 1.0,
 ) -> bytes:
-    """Cria um v?deo legado real para os testes."""
+    """Cria um vídeo legado real para os testes."""
 
     with tempfile.TemporaryDirectory() as temporary_directory:
         output_path = (
@@ -311,7 +346,7 @@ def upload_video(
     content: bytes | None = None,
     content_type: str = "video/mp4",
 ):
-    """Envia um v?deo de teste."""
+    """Envia um vídeo de teste."""
 
     data = {
         "environment_id": environment_id,
@@ -434,7 +469,7 @@ def test_upload_media_stores_image_by_embedded_year_and_month(
     ],
     test_settings: Settings,
 ) -> None:
-    """Armazena imagem com data EXIF no diret?rio cronol?gico."""
+    """Armazena imagem com data EXIF no diretório cronológico."""
 
     (
         organization_id,
@@ -659,6 +694,80 @@ def test_upload_bmp_converts_managed_original_to_png(
         assert stored.format == "PNG"
         assert stored.size == (20, 15)
 
+def test_upload_webp_converts_managed_original_to_png(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Converte WebP para PNG preservando os metadados da fonte."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    content = create_test_webp(
+        width=20,
+        height=15,
+    )
+
+    response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="foto-web.webp",
+        content=content,
+        content_type="image/webp",
+    )
+
+    assert response.status_code == 201
+
+    body = response.json()
+
+    assert body["original_name"] == "foto-web.webp"
+    assert body["source_content_type"] == "image/webp"
+    assert body["source_file_extension"] == ".webp"
+    assert body["source_file_size"] == len(content)
+    assert body["content_type"] == "image/png"
+    assert body["file_extension"] == ".png"
+    assert body["was_converted"] is True
+    assert body["width"] == 20
+    assert body["height"] == 15
+    assert (
+        body["source_checksum_sha256"]
+        != body["checksum_sha256"]
+    )
+
+    original_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / "sem-data"
+        / body["id"]
+        / "original.png"
+    )
+
+    assert original_path.is_file()
+    assert original_path.read_bytes() != content
+
+    with Image.open(original_path) as stored:
+        assert stored.format == "PNG"
+        assert stored.size == (20, 15)
+
+
 def test_upload_video_extracts_metadata(
     client: TestClient,
     media_context: tuple[
@@ -769,7 +878,7 @@ def test_upload_legacy_video_converts_original_to_mp4(
     source_content_type: str,
     source_video_codec: str,
 ) -> None:
-    """Converte v?deo legado para MP4 durante o processamento."""
+    """Converte vídeo legado para MP4 durante o processamento."""
 
     (
         organization_id,
@@ -1126,6 +1235,83 @@ def test_get_video_poster(
         assert poster.size == (640, 360)
 
 
+def test_missing_video_poster_returns_not_found(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Retorna 404 quando o poster físico não existe."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    content = create_test_mp4(
+        width=640,
+        height=360,
+        duration_seconds=2.0,
+    )
+
+    upload_response = upload_video(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=content,
+    )
+
+    assert upload_response.status_code == 201
+
+    media_id = upload_response.json()["id"]
+
+    process_response = client.post(
+        f"{MEDIA_URL}/{media_id}/process",
+        headers=headers,
+    )
+
+    assert process_response.status_code == 200
+
+    base_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+    )
+
+    poster_path = (
+        base_path
+        / "derivatives"
+        / media_id
+        / "poster.webp"
+    )
+
+    assert poster_path.is_file()
+
+    poster_path.unlink()
+
+    response = client.get(
+        f"{MEDIA_URL}/{media_id}/poster",
+        headers=headers,
+    )
+
+    assert response.status_code == 404
+    assert (
+        response.json()["error"]
+        == "fotos_media_derivative_not_found"
+    )
+
+
 def test_upload_media_without_album(
     client: TestClient,
     media_context: tuple[
@@ -1222,7 +1408,7 @@ def test_list_media_paginates_results(
         Mapping[str, str],
     ],
 ) -> None:
-    """Retorna somente a p?gina solicitada e informa os totais."""
+    """Retorna somente a página solicitada e informa os totais."""
 
     _, _, environment_id, album_id, headers = media_context
 
@@ -1310,7 +1496,7 @@ def test_list_media_filters_by_original_date_and_curation_flags(
         Mapping[str, str],
     ],
 ) -> None:
-    """Filtra m?dias por data original e pelos estados de curadoria."""
+    """Filtra mídias por data original e pelos estados de curadoria."""
 
     _, _, environment_id, album_id, headers = media_context
 
@@ -1598,7 +1784,7 @@ def test_update_original_date_moves_original_and_preserves_derivatives(
     ],
     test_settings: Settings,
 ) -> None:
-    """Move o original e mant?m os derivados ap?s confirma??o manual."""
+    """Move o original e mantém os derivados após confirmação manual."""
 
     (
         organization_id,
@@ -1724,7 +1910,7 @@ def test_update_original_date_in_same_month_keeps_storage_path(
     ],
     test_settings: Settings,
 ) -> None:
-    """Atualiza a data sem mover o original quando o m?s n?o muda."""
+    """Atualiza a data sem mover o original quando o mês não muda."""
 
     (
         organization_id,
@@ -1816,7 +2002,7 @@ def test_update_original_date_rejects_occupied_destination(
     ],
     test_settings: Settings,
 ) -> None:
-    """N?o sobrescreve um destino f?sico j? ocupado."""
+    """Não sobrescreve um destino físico já ocupado."""
 
     (
         organization_id,
@@ -1892,6 +2078,131 @@ def test_update_original_date_rejects_occupied_destination(
     )
     assert old_path.read_bytes() == content
     assert occupied_path.read_bytes() == b"arquivo-preexistente"
+
+
+def test_media_role_permissions_match_reader_operator_and_manager(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Valida leitura, operação e curadoria conforme o papel."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        _administrator_headers,
+    ) = media_context
+
+    viewer = create_user(
+        client,
+        organization_id,
+        tenant_id=tenant_id,
+        environment_id=environment_id,
+        email="viewer.permissions.fotos.media@deja.com",
+        role="viewer",
+    )
+    viewer_headers = authorization_headers(
+        test_settings,
+        viewer,
+    )
+
+    list_response = client.get(
+        MEDIA_URL,
+        params={
+            "environment_id": environment_id,
+        },
+        headers=viewer_headers,
+    )
+
+    assert list_response.status_code == 200, list_response.json()
+
+    viewer_upload_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=viewer_headers,
+        file_name="viewer-sem-permissao.jpg",
+        content=create_test_jpeg(
+            width=29,
+            height=18,
+        ),
+    )
+
+    assert viewer_upload_response.status_code == 403
+
+    analyst = create_user(
+        client,
+        organization_id,
+        tenant_id=tenant_id,
+        environment_id=environment_id,
+        email="analyst.permissions.fotos.media@deja.com",
+        role="analyst",
+    )
+    analyst_headers = authorization_headers(
+        test_settings,
+        analyst,
+    )
+
+    analyst_upload_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=analyst_headers,
+        file_name="analyst-permitido.jpg",
+        content=create_test_jpeg(
+            width=31,
+            height=19,
+        ),
+    )
+
+    assert analyst_upload_response.status_code == 201
+
+    media_id = analyst_upload_response.json()["id"]
+
+    analyst_bulk_response = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={
+            "operation": "clear_original_date_conflict",
+            "media_ids": [media_id],
+        },
+        headers=analyst_headers,
+    )
+
+    assert analyst_bulk_response.status_code == 403
+
+    manager = create_user(
+        client,
+        organization_id,
+        tenant_id=tenant_id,
+        environment_id=environment_id,
+        email="manager.permissions.fotos.media@deja.com",
+        role="manager",
+    )
+    manager_headers = authorization_headers(
+        test_settings,
+        manager,
+    )
+
+    manager_bulk_response = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={
+            "operation": "clear_original_date_conflict",
+            "media_ids": [media_id],
+        },
+        headers=manager_headers,
+    )
+
+    assert manager_bulk_response.status_code == 200
+    assert manager_bulk_response.json()["succeeded_count"] == 1
+    assert manager_bulk_response.json()["failed_count"] == 0
 
 
 def test_update_original_date_rejects_analyst(
@@ -2225,7 +2536,7 @@ def test_bulk_verify_original_date_reports_missing_date(
         Mapping[str, str],
     ],
 ) -> None:
-    """Confirma datas existentes e relata individualmente a aus?ncia."""
+    """Confirma datas existentes e relata individualmente a ausência."""
 
     (
         _organization_id,
@@ -2417,7 +2728,7 @@ def test_bulk_set_album_handles_scope_and_removal(
         Mapping[str, str],
     ],
 ) -> None:
-    """Move entre ?lbuns, relata escopo inv?lido e remove associa??o."""
+    """Move entre álbuns, relata escopo inválido e remove associação."""
 
     (
         _organization_id,
@@ -2448,7 +2759,7 @@ def test_bulk_set_album_handles_scope_and_removal(
 
     other_organization = create_organization(
         client,
-        name="Organiza??o Externa",
+        name="Organização Externa",
     )
     other_tenant = create_tenant(
         client,
@@ -2464,7 +2775,7 @@ def test_bulk_set_album_handles_scope_and_removal(
         client,
         {
             **FIRST_ALBUM,
-            "name": "?lbum Externo",
+            "name": "álbum Externo",
         },
         str(other_environment["id"]),
         headers,
@@ -2716,6 +3027,141 @@ def test_delete_media_is_logical(
     assert get_response.json()["error"] == "fotos_media_not_found"
 
 
+def test_reupload_deleted_media_restores_record(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Restaura uma mídia excluída ao reenviar a mesma fonte."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    content = create_test_jpeg(
+        width=24,
+        height=18,
+    )
+
+    first_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=content,
+    )
+
+    assert first_response.status_code == 201
+
+    media_id = first_response.json()["id"]
+
+    original_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / "sem-data"
+        / media_id
+        / "original.jpg"
+    )
+
+    assert original_path.is_file()
+
+    delete_response = client.delete(
+        f"{MEDIA_URL}/{media_id}",
+        headers=headers,
+    )
+
+    assert delete_response.status_code == 204
+    assert original_path.is_file()
+
+    restore_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="IMG-20240131-WA0001.jpg",
+        content=content,
+    )
+
+    assert restore_response.status_code == 201
+
+    restored = restore_response.json()
+
+    assert restored["id"] == media_id
+    assert restored["album_id"] == album_id
+    assert (
+        restored["original_name"]
+        == "IMG-20240131-WA0001.jpg"
+    )
+    assert restored["deleted_at"] is None
+    assert restored["original_date"] == "2024-01-31T00:00:00"
+    assert restored["original_date_source"] == "filename"
+    assert restored["original_date_precision"] == "date"
+    assert restored["original_date_verified"] is False
+
+    inferred_original_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / "originals"
+        / "2024"
+        / "01"
+        / media_id
+        / "original.jpg"
+    )
+
+    assert not original_path.exists()
+    assert inferred_original_path.is_file()
+
+    get_response = client.get(
+        f"{MEDIA_URL}/{media_id}",
+        headers=headers,
+    )
+
+    assert get_response.status_code == 200
+
+    list_response = client.get(
+        MEDIA_URL,
+        params={
+            "environment_id": environment_id,
+        },
+        headers=headers,
+    )
+
+    assert list_response.status_code == 200
+    assert list_response.json()["total"] == 1
+    assert list_response.json()["items"][0]["id"] == media_id
+
+    staging_root = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+        / ".staging"
+    )
+
+    assert (
+        not staging_root.exists()
+        or not any(staging_root.iterdir())
+    )
+
+
 def test_upload_media_rejects_duplicate_source(
     client: TestClient,
     media_context: tuple[
@@ -2727,7 +3173,7 @@ def test_upload_media_rejects_duplicate_source(
     ],
     test_settings: Settings,
 ) -> None:
-    """Rejeita arquivo-fonte j? cadastrado no mesmo ambiente."""
+    """Rejeita arquivo-fonte já cadastrado no mesmo ambiente."""
 
     (
         organization_id,

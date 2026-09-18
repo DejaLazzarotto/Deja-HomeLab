@@ -18,7 +18,14 @@ import {
 import {
   Media,
   MediaPage,
+  MediaType,
 } from './media';
+
+export interface MediaUploadRequest {
+  readonly environmentId: string;
+  readonly albumId: string | null;
+  readonly file: File;
+}
 
 export interface MediaRepository {
   list(
@@ -29,11 +36,16 @@ export interface MediaRepository {
     id: string,
   ): Promise<Media | undefined>;
 
+  upload(
+    request: MediaUploadRequest,
+  ): Promise<Media>;
+
   bulkUpdate(
     operation: MediaBulkOperation,
   ): Promise<MediaBulkResult>;
 
   loadThumbnail(
     mediaId: string,
+    mediaType: MediaType,
   ): Promise<Blob>;
 }

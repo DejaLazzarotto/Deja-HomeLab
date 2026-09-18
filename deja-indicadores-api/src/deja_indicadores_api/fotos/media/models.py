@@ -169,6 +169,11 @@ class FotosMediaModel(Base):
         nullable=True,
     )
 
+    original_date_precision: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+
     original_date_verified: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,

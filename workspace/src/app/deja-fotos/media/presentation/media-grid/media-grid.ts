@@ -204,19 +204,22 @@ export class MediaGridComponent implements OnDestroy {
         && !currentFailures.has(media.id)
         && !this.pendingThumbnailIds.has(media.id)
       ) {
-        void this.loadThumbnail(media.id);
+        void this.loadThumbnail(media);
       }
     }
   }
 
   private async loadThumbnail(
-    mediaId: string,
+    media: Media,
   ): Promise<void> {
+    const mediaId = media.id;
+
     this.pendingThumbnailIds.add(mediaId);
 
     try {
       const thumbnail = await this.service().loadThumbnail(
         mediaId,
+        media.mediaType,
       );
 
       if (

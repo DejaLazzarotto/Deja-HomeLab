@@ -26,6 +26,11 @@ FotosMediaOriginalDateSource = Literal[
     "ai_suggested",
 ]
 
+FotosMediaOriginalDatePrecision = Literal[
+    "date",
+    "datetime",
+]
+
 FotosMediaBulkOperation = Literal[
     "set_original_date",
     "verify_original_date",
@@ -82,6 +87,7 @@ class FotosMediaResponse(BaseModel):
 
     original_date: datetime | None
     original_date_source: FotosMediaOriginalDateSource | None
+    original_date_precision: FotosMediaOriginalDatePrecision | None
     original_date_verified: bool
     original_date_conflict: bool
 

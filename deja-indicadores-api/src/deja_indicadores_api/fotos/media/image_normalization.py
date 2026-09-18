@@ -17,10 +17,6 @@ PRESERVED_IMAGE_FORMATS = {
         "image/png",
         ".png",
     ),
-    "WEBP": (
-        "image/webp",
-        ".webp",
-    ),
     "GIF": (
         "image/gif",
         ".gif",
@@ -29,6 +25,7 @@ PRESERVED_IMAGE_FORMATS = {
 
 CONVERTED_IMAGE_FORMATS = {
     "BMP",
+    "WEBP",
 }
 
 FILE_CHUNK_SIZE = 1024 * 1024

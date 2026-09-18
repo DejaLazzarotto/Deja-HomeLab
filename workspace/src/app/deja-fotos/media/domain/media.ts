@@ -26,6 +26,10 @@ export type MediaOriginalDateSource =
   | 'manual'
   | 'ai_suggested';
 
+export type MediaOriginalDatePrecision =
+  | 'date'
+  | 'datetime';
+
 export interface Media {
   readonly id: string;
 
@@ -54,6 +58,7 @@ export interface Media {
 
   readonly originalDate: string | null;
   readonly originalDateSource: MediaOriginalDateSource | null;
+  readonly originalDatePrecision: MediaOriginalDatePrecision | null;
   readonly originalDateVerified: boolean;
   readonly originalDateConflict: boolean;
 

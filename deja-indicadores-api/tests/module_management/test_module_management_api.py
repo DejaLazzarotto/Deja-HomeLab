@@ -241,6 +241,7 @@ def test_new_organization_has_all_modules_disabled(
         "measurements",
         "reports",
         "chamados",
+        "fotos",
     ]
     assert enabled_module_keys(body) == set()
 

@@ -1,3 +1,7 @@
+import type {
+  MediaType,
+} from '../domain/media';
+
 /*
  * Deja Fotos
  *
@@ -11,7 +15,24 @@ import {
   MediaFilters,
   MediaPage,
   MediaRepository,
+  MediaUploadRequest,
 } from '../domain';
+
+const MAX_UPLOAD_SIZE_BYTES =
+  500 * 1024 * 1024;
+
+const ALLOWED_UPLOAD_CONTENT_TYPES =
+  new Set([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+    'image/bmp',
+    'image/x-ms-bmp',
+    'video/mp4',
+    'video/quicktime',
+    'video/mpeg',
+  ]);
 
 export class MediaService {
   constructor(
@@ -30,6 +51,56 @@ export class MediaService {
     return this.repository.findById(id);
   }
 
+  upload(
+    request: MediaUploadRequest,
+  ): Promise<Media> {
+    const environmentId =
+      request.environmentId.trim();
+
+    if (!environmentId) {
+      throw new Error(
+        'Selecione o ambiente de destino.',
+      );
+    }
+
+    if (!request.file.name.trim()) {
+      throw new Error(
+        'O arquivo selecionado não possui nome.',
+      );
+    }
+
+    if (request.file.size === 0) {
+      throw new Error(
+        `O arquivo ${request.file.name} está vazio.`,
+      );
+    }
+
+    if (
+      request.file.size > MAX_UPLOAD_SIZE_BYTES
+    ) {
+      throw new Error(
+        `O arquivo ${request.file.name} excede o limite de 500 MB.`,
+      );
+    }
+
+    if (
+      !ALLOWED_UPLOAD_CONTENT_TYPES.has(
+        request.file.type,
+      )
+    ) {
+      throw new Error(
+        `O formato do arquivo ${request.file.name} não é aceito.`,
+      );
+    }
+
+    return this.repository.upload({
+      environmentId,
+      albumId:
+        request.albumId?.trim() || null,
+      file: request.file,
+    });
+  }
+
   bulkUpdate(
     operation: MediaBulkOperation,
   ): Promise<MediaBulkResult> {
@@ -40,12 +111,16 @@ export class MediaService {
 
   loadThumbnail(
     mediaId: string,
+    mediaType: MediaType,
   ): Promise<Blob> {
     if (!mediaId.trim()) {
       throw new Error('O identificador da mídia é obrigatório.');
     }
 
-    return this.repository.loadThumbnail(mediaId);
+    return this.repository.loadThumbnail(
+      mediaId,
+      mediaType,
+    );
   }
 
   private validateMediaIds(

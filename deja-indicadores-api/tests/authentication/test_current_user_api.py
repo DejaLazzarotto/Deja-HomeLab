@@ -113,6 +113,7 @@ def test_me_returns_authenticated_user_and_institutional_scope(
         "role": "analyst",
         "enabled_modules": [
             "chamados",
+            "fotos",
             "indicators",
             "measurements",
             "reports",

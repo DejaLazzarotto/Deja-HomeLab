@@ -1,3 +1,7 @@
+import type {
+  MediaType,
+} from '../domain/media';
+
 /*
  * Deja Fotos
  *
@@ -25,6 +29,7 @@ import {
   MediaFilters,
   MediaPage,
   MediaRepository,
+  MediaUploadRequest,
 } from '../domain';
 
 interface MediaResponse {
@@ -55,6 +60,7 @@ interface MediaResponse {
 
   readonly original_date: string | null;
   readonly original_date_source: Media['originalDateSource'];
+  readonly original_date_precision: Media['originalDatePrecision'];
   readonly original_date_verified: boolean;
   readonly original_date_conflict: boolean;
 
@@ -164,6 +170,39 @@ export class HttpMediaRepository implements MediaRepository {
     }
   }
 
+  async upload(
+    request: MediaUploadRequest,
+  ): Promise<Media> {
+    const formData = new FormData();
+
+    formData.append(
+      'environment_id',
+      request.environmentId,
+    );
+
+    if (request.albumId) {
+      formData.append(
+        'album_id',
+        request.albumId,
+      );
+    }
+
+    formData.append(
+      'file',
+      request.file,
+      request.file.name,
+    );
+
+    const response = await firstValueFrom(
+      this.http.post<MediaResponse>(
+        '/api/fotos/media',
+        formData,
+      ),
+    );
+
+    return this.mapMedia(response);
+  }
+
   async bulkUpdate(
     operation: MediaBulkOperation,
   ): Promise<MediaBulkResult> {
@@ -187,10 +226,17 @@ export class HttpMediaRepository implements MediaRepository {
 
   loadThumbnail(
     mediaId: string,
+    mediaType: MediaType,
   ): Promise<Blob> {
+    const derivativeType = (
+      mediaType === 'video'
+        ? 'poster'
+        : 'thumbnail'
+    );
+
     return firstValueFrom(
       this.http.get(
-        `/api/fotos/media/${mediaId}/thumbnail`,
+        `/api/fotos/media/${mediaId}/${derivativeType}`,
         {
           responseType: 'blob',
         },
@@ -383,6 +429,7 @@ export class HttpMediaRepository implements MediaRepository {
       processingError: response.processing_error,
       originalDate: response.original_date,
       originalDateSource: response.original_date_source,
+      originalDatePrecision: response.original_date_precision,
       originalDateVerified: response.original_date_verified,
       originalDateConflict: response.original_date_conflict,
       width: response.width,

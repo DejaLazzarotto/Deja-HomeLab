@@ -114,9 +114,16 @@
           </div>
 
           <dl>
-            <div>
+            <div class="media-card__date-row">
               <dt>Data original</dt>
-              <dd>{{ formatDate(media.originalDate) }}</dd>
+              <dd>
+                {{
+                  formatDate(
+                    media.originalDate,
+                    media.originalDatePrecision
+                  )
+                }}
+              </dd>
             </div>
 
             <div>

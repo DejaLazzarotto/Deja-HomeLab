@@ -77,6 +77,7 @@ interface EnvironmentResponse {
         [albumService]="albumsComposition.service"
         [environments]="environments()"
         [defaultEnvironmentId]="currentUser.environmentId"
+        [canUpload]="canUpload"
         [canCurate]="canCurate"
       />
     }
@@ -148,6 +149,14 @@ export class WorkspaceMediaManagementWidgetComponent
 
   protected readonly environmentError =
     signal<string | null>(null);
+
+  protected readonly canUpload = [
+    'platform_admin',
+    'organization_admin',
+    'tenant_admin',
+    'manager',
+    'analyst',
+  ].includes(this.currentUser?.role ?? '');
 
   protected readonly canCurate = [
     'platform_admin',

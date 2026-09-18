@@ -56,6 +56,7 @@ describe('HttpMediaRepository', () => {
     processing_error: null,
     original_date: '2024-03-10T15:00:00',
     original_date_source: 'manual' as const,
+    original_date_precision: 'datetime' as const,
     original_date_verified: true,
     original_date_conflict: false,
     width: 1920,
@@ -163,6 +164,7 @@ describe('HttpMediaRepository', () => {
           processingError: null,
           originalDate: '2024-03-10T15:00:00',
           originalDateSource: 'manual',
+          originalDatePrecision: 'datetime',
           originalDateVerified: true,
           originalDateConflict: false,
           width: 1920,
@@ -200,6 +202,65 @@ describe('HttpMediaRepository', () => {
     );
 
     await expect(resultPromise).resolves.toBeUndefined();
+  });
+
+  it('should upload media as multipart form data', async () => {
+    const file = new File(
+      [
+        'photo',
+      ],
+      'photo.jpg',
+      {
+        type: 'image/jpeg',
+      },
+    );
+
+    const resultPromise = repository.upload({
+      environmentId,
+      albumId,
+      file,
+    });
+
+    const request = httpTesting.expectOne(
+      '/api/fotos/media',
+    );
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toBeInstanceOf(FormData);
+
+    const formData =
+      request.request.body as FormData;
+
+    expect(
+      formData.get('environment_id'),
+    ).toBe(environmentId);
+
+    expect(
+      formData.get('album_id'),
+    ).toBe(albumId);
+
+    const uploadedFile =
+      formData.get('file');
+
+    expect(uploadedFile).toBeInstanceOf(File);
+
+    expect(
+      (uploadedFile as File).name,
+    ).toBe('photo.jpg');
+
+    expect(
+      (uploadedFile as File).type,
+    ).toBe('image/jpeg');
+
+    request.flush(mediaResponse);
+
+    await expect(resultPromise).resolves.toMatchObject({
+      id: mediaId,
+      environmentId,
+      albumId,
+      originalName: 'foto-teste.jpg',
+      mediaType: 'image',
+    });
   });
 
   it('should map a bulk operation and preserve partial failures', async () => {
@@ -281,7 +342,10 @@ describe('HttpMediaRepository', () => {
   });
 
   it('should load an authenticated thumbnail as blob', async () => {
-    const resultPromise = repository.loadThumbnail(mediaId);
+    const resultPromise = repository.loadThumbnail(
+      mediaId,
+      'image',
+    );
 
     const request = httpTesting.expectOne(
       `/api/fotos/media/${mediaId}/thumbnail`,
@@ -306,4 +370,35 @@ describe('HttpMediaRepository', () => {
     expect(result).toBeInstanceOf(Blob);
     expect(result.type).toBe('image/jpeg');
   });
+
+  it('should load a video poster as its thumbnail', async () => {
+    const resultPromise = repository.loadThumbnail(
+      mediaId,
+      'video',
+    );
+
+    const request = httpTesting.expectOne(
+      `/api/fotos/media/${mediaId}/poster`,
+    );
+
+    expect(request.request.method).toBe('GET');
+    expect(request.request.responseType).toBe('blob');
+
+    const poster = new Blob(
+      [
+        'poster',
+      ],
+      {
+        type: 'image/webp',
+      },
+    );
+
+    request.flush(poster);
+
+    const result = await resultPromise;
+
+    expect(result).toBeInstanceOf(Blob);
+    expect(result.type).toBe('image/webp');
+  });
+
 });

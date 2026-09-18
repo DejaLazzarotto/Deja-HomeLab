@@ -13,6 +13,7 @@ import {
 import {
   ChangeDetectionStrategy,
   Component,
+  OnDestroy,
   OnInit,
   computed,
   input,
@@ -69,6 +70,31 @@ type MediaDateStateFilter =
   | 'unverified'
   | 'conflict';
 
+interface MediaUploadFailure {
+  readonly fileName: string;
+  readonly message: string;
+}
+
+interface MediaUploadResult {
+  readonly requestedCount: number;
+  readonly succeededCount: number;
+  readonly failedCount: number;
+  readonly failures: readonly MediaUploadFailure[];
+}
+
+const MAX_UPLOAD_FILES = 20;
+
+const PROCESSING_REFRESH_INTERVAL_MS = 2_000;
+
+const PROCESSING_REFRESH_MAX_ATTEMPTS = 150;
+
+const PROCESSING_PENDING_STATUSES =
+  new Set<MediaProcessingStatus>([
+    'received',
+    'validating',
+    'processing',
+  ]);
+
 @Component({
   selector: 'deja-media-management',
   standalone: true,
@@ -81,7 +107,7 @@ type MediaDateStateFilter =
   styleUrl: './media-management.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MediaManagementComponent implements OnInit {
+export class MediaManagementComponent implements OnInit, OnDestroy {
   readonly mediaService = input.required<MediaService>();
 
   readonly albumService = input.required<AlbumService>();
@@ -91,6 +117,8 @@ export class MediaManagementComponent implements OnInit {
 
   readonly defaultEnvironmentId =
     input<string | null>(null);
+
+  readonly canUpload = input(false);
 
   readonly canCurate = input(false);
 
@@ -103,6 +131,26 @@ export class MediaManagementComponent implements OnInit {
   readonly loadingAlbums = signal(false);
 
   readonly bulkBusy = signal(false);
+
+  readonly uploadFiles =
+    signal<readonly File[]>([]);
+
+  readonly uploadEnvironmentId = signal('');
+
+  readonly uploadAlbumId = signal('');
+
+  readonly uploadBusy = signal(false);
+
+  readonly uploadCompletedCount = signal(0);
+
+  readonly uploadMessage =
+    signal<string | null>(null);
+
+  readonly uploadError =
+    signal<string | null>(null);
+
+  readonly uploadResult =
+    signal<MediaUploadResult | null>(null);
 
   readonly errorMessage = signal<string | null>(null);
 
@@ -180,6 +228,16 @@ export class MediaManagementComponent implements OnInit {
 
   private requestSequence = 0;
 
+  private readonly pendingProcessingIds =
+    new Set<string>();
+
+  private processingRefreshAttempts = 0;
+
+  private processingRefreshTimer:
+    ReturnType<typeof setTimeout> | null = null;
+
+  private destroyed = false;
+
   ngOnInit(): void {
     const defaultEnvironmentId =
       this.defaultEnvironmentId();
@@ -188,9 +246,24 @@ export class MediaManagementComponent implements OnInit {
       this.environmentFilter.set(
         defaultEnvironmentId,
       );
+
+      this.uploadEnvironmentId.set(
+        defaultEnvironmentId,
+      );
     }
 
     void this.loadInitialData();
+  }
+
+  ngOnDestroy(): void {
+    this.destroyed = true;
+
+    if (this.processingRefreshTimer !== null) {
+      clearTimeout(this.processingRefreshTimer);
+      this.processingRefreshTimer = null;
+    }
+
+    this.pendingProcessingIds.clear();
   }
 
   async refresh(): Promise<void> {
@@ -244,6 +317,191 @@ export class MediaManagementComponent implements OnInit {
     } finally {
       this.loadingAlbums.set(false);
     }
+  }
+
+  selectUploadFiles(
+    event: Event,
+  ): void {
+    const inputElement =
+      event.target as HTMLInputElement;
+
+    const files = Array.from(
+      inputElement.files ?? [],
+    );
+
+    inputElement.value = '';
+
+    this.clearUploadResult();
+
+    if (files.length > MAX_UPLOAD_FILES) {
+      this.uploadFiles.set([]);
+
+      this.uploadError.set(
+        `Selecione no máximo ${MAX_UPLOAD_FILES} arquivos por envio.`,
+      );
+
+      return;
+    }
+
+    this.uploadFiles.set(files);
+  }
+
+  removeUploadFile(
+    index: number,
+  ): void {
+    if (this.uploadBusy()) {
+      return;
+    }
+
+    this.uploadFiles.update(
+      files => files.filter(
+        (_, fileIndex) => fileIndex !== index,
+      ),
+    );
+
+    this.clearUploadResult();
+  }
+
+  clearUploadFiles(): void {
+    if (this.uploadBusy()) {
+      return;
+    }
+
+    this.uploadFiles.set([]);
+    this.clearUploadResult();
+  }
+
+  async uploadSelectedFiles(): Promise<void> {
+    if (
+      !this.canUpload()
+      || this.uploadBusy()
+    ) {
+      return;
+    }
+
+    const environmentId =
+      this.uploadEnvironmentId().trim();
+
+    const albumId =
+      this.uploadAlbumId().trim() || null;
+
+    const files = this.uploadFiles();
+
+    this.clearUploadResult();
+
+    if (!environmentId) {
+      this.uploadError.set(
+        'Selecione o ambiente de destino.',
+      );
+
+      return;
+    }
+
+    if (files.length === 0) {
+      this.uploadError.set(
+        'Selecione ao menos um arquivo.',
+      );
+
+      return;
+    }
+
+    this.uploadBusy.set(true);
+    this.uploadCompletedCount.set(0);
+
+    const failures: MediaUploadFailure[] = [];
+    const failedFiles: File[] = [];
+    const uploadedMediaIds: string[] = [];
+    let succeededCount = 0;
+
+    try {
+      for (const file of files) {
+        try {
+          const uploadedMedia =
+            await this.mediaService().upload({
+              environmentId,
+              albumId,
+              file,
+            });
+
+          uploadedMediaIds.push(uploadedMedia.id);
+          succeededCount += 1;
+        } catch (error: unknown) {
+          failedFiles.push(file);
+
+          failures.push({
+            fileName: file.name,
+            message: this.resolveErrorMessage(error),
+          });
+        } finally {
+          this.uploadCompletedCount.update(
+            value => value + 1,
+          );
+        }
+      }
+
+      const failedCount = failures.length;
+
+      this.uploadResult.set({
+        requestedCount: files.length,
+        succeededCount,
+        failedCount,
+        failures,
+      });
+
+      this.uploadFiles.set(failedFiles);
+
+      if (succeededCount > 0) {
+        this.uploadMessage.set(
+          `${succeededCount} ${
+            succeededCount === 1
+              ? 'arquivo enviado'
+              : 'arquivos enviados'
+          } com sucesso.`,
+        );
+
+        this.environmentFilter.set(environmentId);
+        this.albumFilter.set(albumId ?? '');
+        this.page.set(1);
+        this.clearSelection();
+
+        await Promise.all([
+          this.refresh(),
+          this.loadAlbums(),
+        ]);
+
+        this.startProcessingRefresh(
+          uploadedMediaIds,
+        );
+      }
+
+      if (failedCount > 0) {
+        this.uploadError.set(
+          `${failedCount} ${
+            failedCount === 1
+              ? 'arquivo não pôde'
+              : 'arquivos não puderam'
+          } ser enviado.`,
+        );
+      }
+    } finally {
+      this.uploadBusy.set(false);
+    }
+  }
+
+  formatFileSize(
+    size: number,
+  ): string {
+    if (size < 1024) {
+      return `${size} B`;
+    }
+
+    if (size < 1024 * 1024) {
+      return `${(size / 1024).toFixed(1)} KB`;
+    }
+
+    return `${
+      (size / (1024 * 1024)).toFixed(1)
+    } MB`;
   }
 
   applyFilters(): void {
@@ -463,6 +721,103 @@ export class MediaManagementComponent implements OnInit {
     }
   }
 
+  private startProcessingRefresh(
+    mediaIds: readonly string[],
+  ): void {
+    for (const mediaId of mediaIds) {
+      this.pendingProcessingIds.add(mediaId);
+    }
+
+    this.processingRefreshAttempts = 0;
+
+    if (this.processingRefreshTimer !== null) {
+      clearTimeout(this.processingRefreshTimer);
+      this.processingRefreshTimer = null;
+    }
+
+    this.scheduleProcessingRefresh();
+  }
+
+  private scheduleProcessingRefresh(): void {
+    if (
+      this.destroyed
+      || this.processingRefreshTimer !== null
+      || this.pendingProcessingIds.size === 0
+      || (
+        this.processingRefreshAttempts
+        >= PROCESSING_REFRESH_MAX_ATTEMPTS
+      )
+    ) {
+      return;
+    }
+
+    this.processingRefreshTimer = setTimeout(
+      () => {
+        this.processingRefreshTimer = null;
+
+        void this.refreshProcessingMedia();
+      },
+      PROCESSING_REFRESH_INTERVAL_MS,
+    );
+  }
+
+  private async refreshProcessingMedia(): Promise<void> {
+    if (
+      this.destroyed
+      || this.pendingProcessingIds.size === 0
+    ) {
+      return;
+    }
+
+    this.processingRefreshAttempts += 1;
+
+    const mediaIds = [
+      ...this.pendingProcessingIds,
+    ];
+
+    const refreshedMedia = await Promise.all(
+      mediaIds.map(async mediaId => {
+        try {
+          return await this.mediaService().findById(
+            mediaId,
+          );
+        } catch {
+          return undefined;
+        }
+      }),
+    );
+
+    if (this.destroyed) {
+      return;
+    }
+
+    const refreshedById = new Map<string, Media>();
+
+    for (const media of refreshedMedia) {
+      if (!media) {
+        continue;
+      }
+
+      refreshedById.set(media.id, media);
+
+      if (
+        !PROCESSING_PENDING_STATUSES.has(
+          media.processingStatus,
+        )
+      ) {
+        this.pendingProcessingIds.delete(media.id);
+      }
+    }
+
+    if (refreshedById.size > 0) {
+      this.items.update(items => items.map(
+        media => refreshedById.get(media.id) ?? media,
+      ));
+    }
+
+    this.scheduleProcessingRefresh();
+  }
+
   private async loadInitialData(): Promise<void> {
     await Promise.all([
       this.refresh(),
@@ -571,13 +926,25 @@ export class MediaManagementComponent implements OnInit {
       return undefined;
     }
 
-    const date = new Date(
-      `${value}T${endOfDay ? '23:59:59.999' : '00:00:00.000'}`,
-    );
+    const boundary =
+      `${value}T${
+        endOfDay
+          ? '23:59:59.999'
+          : '00:00:00.000'
+      }`;
+
+    const date = new Date(boundary);
 
     return Number.isNaN(date.getTime())
       ? undefined
-      : date.toISOString();
+      : boundary;
+  }
+
+  private clearUploadResult(): void {
+    this.uploadCompletedCount.set(0);
+    this.uploadMessage.set(null);
+    this.uploadError.set(null);
+    this.uploadResult.set(null);
   }
 
   private clearOperationState(): void {
@@ -603,6 +970,15 @@ export class MediaManagementComponent implements OnInit {
 
     if (error.status === 0) {
       return 'Não foi possível acessar a API.';
+    }
+
+    const detail = error.error?.detail;
+
+    if (
+      typeof detail === 'string'
+      && detail.trim()
+    ) {
+      return detail;
     }
 
     if (error.status === 403) {
