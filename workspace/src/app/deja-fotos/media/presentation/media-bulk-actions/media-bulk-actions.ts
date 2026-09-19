@@ -56,12 +56,38 @@ export class MediaBulkActionsComponent {
   readonly actionRequested =
     output<MediaBulkActionRequest>();
 
+  readonly clearSelectionRequested =
+    output<void>();
+
   protected readonly originalDate = signal('');
 
   protected readonly albumSelection = signal('');
 
+  protected readonly dateEditorVisible = signal(false);
+
+  protected readonly albumEditorVisible = signal(false);
+
   protected readonly validationMessage =
     signal<string | null>(null);
+
+  protected toggleDateEditor(): void {
+    this.dateEditorVisible.update(visible => !visible);
+    this.albumEditorVisible.set(false);
+    this.validationMessage.set(null);
+  }
+
+  protected toggleAlbumEditor(): void {
+    this.albumEditorVisible.update(visible => !visible);
+    this.dateEditorVisible.set(false);
+    this.validationMessage.set(null);
+  }
+
+  protected clearSelection(): void {
+    this.dateEditorVisible.set(false);
+    this.albumEditorVisible.set(false);
+    this.validationMessage.set(null);
+    this.clearSelectionRequested.emit();
+  }
 
   protected applyOriginalDate(): void {
     const value = this.originalDate();
@@ -85,6 +111,7 @@ export class MediaBulkActionsComponent {
     }
 
     this.validationMessage.set(null);
+    this.dateEditorVisible.set(false);
 
     this.actionRequested.emit({
       operation: 'set_original_date',
@@ -120,6 +147,7 @@ export class MediaBulkActionsComponent {
     }
 
     this.validationMessage.set(null);
+    this.albumEditorVisible.set(false);
 
     this.actionRequested.emit({
       operation: 'set_album',

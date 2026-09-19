@@ -3,112 +3,206 @@
   aria-labelledby="bulk-actions-title"
 >
   <header class="bulk-actions__header">
-    <div>
-      <span class="bulk-actions__eyebrow">
-        Curadoria
-      </span>
+    <span class="bulk-actions__icon" aria-hidden="true">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="1.8"
+      >
+        <path d="m12 3 9 5-9 5-9-5z" />
+        <path d="m3 12 9 5 9-5" />
+        <path d="m3 16 9 5 9-5" />
+      </svg>
+    </span>
 
+    <div>
       <h2 id="bulk-actions-title">
         Ações em lote
       </h2>
-    </div>
 
-    <span class="bulk-actions__count">
-      {{ selectedCount() }}
-      {{ selectedCount() === 1 ? 'selecionada' : 'selecionadas' }}
-    </span>
+      <span class="bulk-actions__count">
+        {{ selectedCount() }}
+        {{ selectedCount() === 1 ? 'selecionada' : 'selecionadas' }}
+      </span>
+    </div>
   </header>
 
-  <div class="bulk-actions__grid">
-    <div class="bulk-action">
-      <label for="bulk-original-date">
-        Corrigir data original
-      </label>
-
-      <div class="bulk-action__controls">
-        <input
-          id="bulk-original-date"
-          type="datetime-local"
-          [ngModel]="originalDate()"
-          (ngModelChange)="originalDate.set($event)"
-          [disabled]="busy()"
-        />
-
-        <button
-          type="button"
-          (click)="applyOriginalDate()"
-          [disabled]="selectedCount() === 0 || busy()"
-        >
-          Aplicar data
-        </button>
-      </div>
-    </div>
-
-    <div class="bulk-action">
-      <span class="bulk-action__label">
-        Confirmar datas existentes
-      </span>
-
-      <button
-        type="button"
-        (click)="verifyOriginalDate()"
-        [disabled]="selectedCount() === 0 || busy()"
+  <div class="bulk-actions__commands">
+    <button
+      type="button"
+      (click)="toggleDateEditor()"
+      [class.bulk-command--active]="dateEditorVisible()"
+      [disabled]="selectedCount() === 0 || busy()"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="1.8"
+        aria-hidden="true"
       >
-        Confirmar datas
-      </button>
-    </div>
+        <rect x="3" y="5" width="18" height="16" rx="2" />
+        <path d="M8 3v4M16 3v4M3 10h18" />
+        <path d="m9 16 2 2 4-5" />
+      </svg>
 
-    <div class="bulk-action">
-      <span class="bulk-action__label">
-        Limpar conflitos sinalizados
-      </span>
+      Corrigir data
+    </button>
 
-      <button
-        type="button"
-        (click)="clearOriginalDateConflict()"
-        [disabled]="selectedCount() === 0 || busy()"
+    <button
+      type="button"
+      (click)="verifyOriginalDate()"
+      [disabled]="selectedCount() === 0 || busy()"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="1.8"
+        aria-hidden="true"
       >
-        Limpar conflitos
-      </button>
-    </div>
+        <rect x="3" y="5" width="18" height="16" rx="2" />
+        <path d="M8 3v4M16 3v4M3 10h18" />
+        <path d="m9 16 2 2 4-5" />
+      </svg>
 
-    <div class="bulk-action">
-      <label for="bulk-album">
-        Movimentar para álbum
-      </label>
+      Confirmar datas
+    </button>
 
-      <div class="bulk-action__controls">
-        <select
-          id="bulk-album"
-          [ngModel]="albumSelection()"
-          (ngModelChange)="albumSelection.set($event)"
-          [disabled]="busy()"
-        >
-          <option value="">
-            Selecione uma opção
-          </option>
+    <button
+      type="button"
+      (click)="clearOriginalDateConflict()"
+      [disabled]="selectedCount() === 0 || busy()"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="1.8"
+        aria-hidden="true"
+      >
+        <path d="M12 3 2.8 20h18.4z" />
+        <path d="m9.5 14 5-5M9.5 9l5 5" />
+      </svg>
 
-          <option value="__without_album__">
-            Remover do álbum
-          </option>
+      Limpar conflitos
+    </button>
 
-          @for (album of albums(); track album.id) {
-            <option [value]="album.id">
-              {{ album.name }}
-            </option>
-          }
-        </select>
+    <button
+      type="button"
+      (click)="toggleAlbumEditor()"
+      [class.bulk-command--active]="albumEditorVisible()"
+      [disabled]="selectedCount() === 0 || busy()"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="1.8"
+        aria-hidden="true"
+      >
+        <path d="M3 6h6l2 2h10v11H3z" />
+        <path d="m10 13 2 2 4-4" />
+      </svg>
 
-        <button
-          type="button"
-          (click)="setAlbum()"
-          [disabled]="selectedCount() === 0 || busy()"
-        >
-          Aplicar álbum
-        </button>
-      </div>
-    </div>
+      Mover para álbum
+    </button>
+
+    <button
+      type="button"
+      class="bulk-command bulk-command--clear"
+      (click)="clearSelection()"
+      [disabled]="selectedCount() === 0 || busy()"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="1.8"
+        aria-hidden="true"
+      >
+        <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13" />
+      </svg>
+
+      Limpar seleção
+    </button>
   </div>
+
+  @if (dateEditorVisible()) {
+    <div class="bulk-actions__editor">
+      <label for="bulk-original-date">
+        Nova data original
+      </label>
+
+      <input
+        id="bulk-original-date"
+        type="datetime-local"
+        [ngModel]="originalDate()"
+        (ngModelChange)="originalDate.set($event)"
+        [disabled]="busy()"
+      />
+
+      <button
+        type="button"
+        class="bulk-actions__apply"
+        (click)="applyOriginalDate()"
+        [disabled]="selectedCount() === 0 || busy()"
+      >
+        Aplicar data
+      </button>
+    </div>
+  }
+
+  @if (albumEditorVisible()) {
+    <div class="bulk-actions__editor">
+      <label for="bulk-album">
+        Álbum de destino
+      </label>
+
+      <select
+        id="bulk-album"
+        [ngModel]="albumSelection()"
+        (ngModelChange)="albumSelection.set($event)"
+        [disabled]="busy()"
+      >
+        <option value="">
+          Selecione uma opção
+        </option>
+
+        <option value="__without_album__">
+          Remover do álbum
+        </option>
+
+        @for (album of albums(); track album.id) {
+          <option [value]="album.id">
+            {{ album.name }}
+          </option>
+        }
+      </select>
+
+      <button
+        type="button"
+        class="bulk-actions__apply"
+        (click)="setAlbum()"
+        [disabled]="selectedCount() === 0 || busy()"
+      >
+        Aplicar álbum
+      </button>
+    </div>
+  }
 
   @if (validationMessage()) {
     <p class="bulk-actions__validation">

@@ -74,6 +74,8 @@ import { WorkspaceMediaManagementWidgetComponent } from '../components/workspace
 
 import { WorkspaceAlbumManagementWidgetComponent } from '../components/workspace-album-management-widget/workspace-album-management-widget';
 
+import { WorkspaceCurationManagementWidgetComponent } from '../components/workspace-curation-management-widget/workspace-curation-management-widget';
+
 /**
  * Composition Root oficial do Workspace.
  */
@@ -107,6 +109,8 @@ export class WorkspaceComposition {
 
   private static readonly FOTOS_ALBUMS_DASHBOARD_ID = 'deja.workspace.dashboard.fotos.albums';
 
+  private static readonly FOTOS_CURATION_DASHBOARD_ID = 'deja.workspace.dashboard.fotos.curation';
+
   private static readonly ACTIVITY_DASHBOARD_ID = 'deja.workspace.dashboard.activity';
 
   private static readonly TIMELINE_DASHBOARD_ID = 'deja.workspace.dashboard.timeline';
@@ -138,6 +142,8 @@ export class WorkspaceComposition {
   private static readonly FOTOS_MEDIA_NAVIGATION_ID = 'deja.workspace.navigation.fotos.media';
 
   private static readonly FOTOS_ALBUMS_NAVIGATION_ID = 'deja.workspace.navigation.fotos.albums';
+
+  private static readonly FOTOS_CURATION_NAVIGATION_ID = 'deja.workspace.navigation.fotos.curation';
 
   private static readonly ACTIVITY_NAVIGATION_ID = 'deja.workspace.navigation.activity';
 
@@ -174,6 +180,8 @@ export class WorkspaceComposition {
   private static readonly MEDIA_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.fotos-media-management';
 
   private static readonly ALBUM_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.fotos-album-management';
+
+  private static readonly CURATION_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.fotos-curation-management';
 
   private static readonly MANAGEMENT_REPORT_WIDGET_ID = 'deja.workspace.widget.management-report';
 
@@ -482,7 +490,7 @@ export class WorkspaceComposition {
         title: 'Mídias',
         description: 'Curadoria e organização do acervo do Deja Fotos.',
         icon: 'reports',
-        order: 10,
+        order: 20,
         enabled: true,
         metadata: {
           section: 'fotos',
@@ -497,13 +505,29 @@ export class WorkspaceComposition {
         title: 'Álbuns',
         description: 'Gestão dos álbuns do Deja Fotos.',
         icon: 'applications',
-        order: 20,
+        order: 10,
         enabled: true,
         metadata: {
           section: 'fotos',
           moduleKey: 'fotos',
         },
       },
+
+      {
+        id: this.FOTOS_CURATION_NAVIGATION_ID,
+        ownerId: this.CORE_OWNER,
+        dashboardId: this.FOTOS_CURATION_DASHBOARD_ID,
+        title: 'Curadoria',
+        description: 'Revisão e ensino do reconhecimento facial.',
+        icon: 'users',
+        order: 30,
+        enabled: true,
+        metadata: {
+          section: 'fotos',
+          moduleKey: 'fotos',
+        },
+      },
+
       {
         id: this.ACTIVITY_NAVIGATION_ID,
         ownerId: this.CORE_OWNER,
@@ -862,7 +886,7 @@ export class WorkspaceComposition {
     const mediaManagementWidget: WorkspaceWidget = {
       id: this.MEDIA_MANAGEMENT_WIDGET_ID,
       owner: this.CORE_OWNER,
-      title: 'Album Admin',
+      title: 'Mídias',
       description: 'Curadoria, consulta e organização das mídias do Deja Fotos.',
       category: 'management',
       widgetType: 'fotos-media-management',
@@ -884,6 +908,7 @@ export class WorkspaceComposition {
       tags: ['deja-fotos', 'media', 'management'],
       metadata: {
         moduleKey: 'fotos',
+        hideChrome: true,
       },
     };
 
@@ -915,6 +940,35 @@ export class WorkspaceComposition {
         hideChrome: true,
       },
     };
+    const curationManagementWidget: WorkspaceWidget = {
+      id: this.CURATION_MANAGEMENT_WIDGET_ID,
+      owner: this.CORE_OWNER,
+      title: 'Curadoria',
+      description: 'Revisão e ensino do reconhecimento facial.',
+      category: 'management',
+      widgetType: 'fotos-curation-management',
+      supportedSurfaces: ['dashboard'],
+      capabilities: ['resizable'],
+      size: {
+        default: {
+          columns: 12,
+          rows: 16,
+        },
+        minimum: {
+          columns: 8,
+          rows: 10,
+        },
+      },
+      component: WorkspaceCurationManagementWidgetComponent,
+      priority: 46,
+      enabled: true,
+      tags: ['deja-fotos', 'curation', 'management'],
+      metadata: {
+        moduleKey: 'fotos',
+        hideChrome: true,
+      },
+    };
+
     const managementReportWidget: WorkspaceWidget = {
       id: this.MANAGEMENT_REPORT_WIDGET_ID,
       owner: this.CORE_OWNER,
@@ -972,6 +1026,8 @@ export class WorkspaceComposition {
     registries.widgets.register(mediaManagementWidget);
 
     registries.widgets.register(albumManagementWidget);
+
+    registries.widgets.register(curationManagementWidget);
 
     registries.widgets.register(managementReportWidget);
 
@@ -1317,7 +1373,7 @@ export class WorkspaceComposition {
       {
         id: this.FOTOS_MEDIA_DASHBOARD_ID,
         owner: this.CORE_OWNER,
-        title: 'Album Admin',
+        title: 'Mídias',
         description: 'Curadoria e organização das mídias do Deja Fotos.',
         route: '/fotos/media',
         layoutId: initialLayout.id,
@@ -1328,6 +1384,7 @@ export class WorkspaceComposition {
           type: 'management',
           section: 'media',
           moduleKey: 'fotos',
+          hideChrome: true,
         },
         widgets: [
           {
@@ -1376,6 +1433,38 @@ export class WorkspaceComposition {
           },
         ],
       },
+      {
+        id: this.FOTOS_CURATION_DASHBOARD_ID,
+        owner: this.CORE_OWNER,
+        title: 'Curadoria',
+        description: 'Revise identificações e ensine o reconhecimento facial.',
+        route: '/fotos/curadoria',
+        layoutId: initialLayout.id,
+        priority: 57,
+        enabled: true,
+        tags: ['deja-fotos', 'curation', 'management'],
+        metadata: {
+          type: 'management',
+          section: 'curation',
+          moduleKey: 'fotos',
+          hideChrome: true,
+        },
+        widgets: [
+          {
+            id: 'deja.workspace.widget-instance.fotos-curation-management',
+            widgetId: curationManagementWidget.id,
+            regionId: mainRegion.id,
+            position: {
+              column: 1,
+              row: 1,
+              columnSpan: 12,
+              rowSpan: 16,
+            },
+            enabled: true,
+          },
+        ],
+      },
+
       {
         id: this.ACTIVITY_DASHBOARD_ID,
         owner: this.CORE_OWNER,

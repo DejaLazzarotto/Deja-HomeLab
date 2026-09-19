@@ -191,6 +191,16 @@ export const routes: Routes = [
     loadComponent: workspacePage,
   },
   {
+    path: 'fotos/curadoria',
+    title: 'Curadoria | Deja Fotos',
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+      moduleGuard('fotos'),
+    ],
+    loadComponent: workspacePage,
+  },
+  {
     path: 'analytics',
     redirectTo: 'operation/indicators',
     pathMatch: 'full',

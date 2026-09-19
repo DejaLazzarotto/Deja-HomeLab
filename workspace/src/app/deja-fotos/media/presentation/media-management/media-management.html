@@ -1,23 +1,49 @@
 <section class="media-management">
   <header class="media-management__header">
-    <div>
-      <span class="media-management__eyebrow">
-        Deja Fotos
+    <div class="heading-with-icon">
+      <span class="section-icon section-icon--primary" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.8"
+        >
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <circle cx="9" cy="10" r="2" />
+          <path d="m5 18 5-5 3 3 2-2 4 4" />
+        </svg>
       </span>
 
-      <h1>Mídias</h1>
+      <div>
+        <h1>Mídias</h1>
 
-      <p>
-        Envie, processe e organize os arquivos do acervo.
-      </p>
+        <p>
+          Envie, processe e organize os arquivos do acervo.
+        </p>
+      </div>
     </div>
 
     <button
       type="button"
-      class="secondary-button"
+      class="secondary-button button-with-icon"
       (click)="refresh()"
       [disabled]="loading()"
     >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="1.8"
+        aria-hidden="true"
+      >
+        <path d="M20 6v5h-5M4 18v-5h5" />
+        <path d="M18 9a7 7 0 0 0-12-2M6 15a7 7 0 0 0 12 2" />
+      </svg>
+
       Atualizar
     </button>
   </header>
@@ -54,18 +80,30 @@
       aria-labelledby="media-upload-title"
     >
       <header class="upload__header">
-        <div>
-          <span class="upload__eyebrow">
-            Inclusão
+        <div class="heading-with-icon">
+          <span class="section-icon" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.8"
+            >
+              <path d="M12 16V4M7 9l5-5 5 5" />
+              <path d="M5 14v5h14v-5" />
+            </svg>
           </span>
 
-          <h2 id="media-upload-title">
-            Enviar mídias
-          </h2>
+          <div>
+            <h2 id="media-upload-title">
+              Enviar mídias
+            </h2>
 
-          <p>
-            Selecione até 20 imagens ou vídeos. Cada arquivo pode ter no máximo 500 MB.
-          </p>
+            <p>
+              Selecione até 20 imagens ou vídeos. Cada arquivo pode ter no máximo 500 MB.
+            </p>
+          </div>
         </div>
       </header>
 
@@ -118,6 +156,21 @@
               (change)="selectUploadFiles($event)"
               [disabled]="uploadBusy()"
             />
+
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.8"
+              aria-hidden="true"
+            >
+              <path d="M12 16V4M7 9l5-5 5 5" />
+              <path d="M5 14v5h14v-5" />
+            </svg>
 
             <strong>Arraste imagens ou vídeos aqui</strong>
 
@@ -179,6 +232,21 @@
           (click)="uploadSelectedFiles()"
           [disabled]="uploadBusy() || uploadFiles().length === 0"
         >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.8"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v8M8 12h8" />
+          </svg>
+
           {{ uploadBusy() ? 'Enviando...' : 'Enviar arquivos' }}
         </button>
       </div>
@@ -240,9 +308,18 @@
     aria-labelledby="media-filters-title"
   >
     <header class="filters__header">
-      <div>
-        <span class="filters__eyebrow">
-          Consulta
+      <div class="heading-with-icon">
+        <span class="section-icon" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.8"
+          >
+            <path d="M4 5h16l-6 7v5l-4 2v-7z" />
+          </svg>
         </span>
 
         <h2 id="media-filters-title">
@@ -433,6 +510,21 @@
         (click)="applyFilters()"
         [disabled]="loading()"
       >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.8"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="m16 16 4 4" />
+        </svg>
+
         Aplicar filtros
       </button>
     </div>
@@ -444,6 +536,7 @@
       [albums]="activeAlbums()"
       [busy]="bulkBusy()"
       (actionRequested)="executeBulkAction($event)"
+      (clearSelectionRequested)="clearSelection()"
     />
   } @else {
     <div class="read-only-note">
@@ -511,20 +604,27 @@
     aria-labelledby="media-results-title"
   >
     <header class="media-results__header">
-      <div>
-        <h2 id="media-results-title">Mídias</h2>
-        <span>{{ paginationLabel() }}</span>
-      </div>
+      <div class="heading-with-icon">
+        <span class="section-icon" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.8"
+          >
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <circle cx="9" cy="10" r="2" />
+            <path d="m5 18 5-5 3 3 2-2 4 4" />
+          </svg>
+        </span>
 
-      @if (selectedIds().size > 0) {
-        <button
-          type="button"
-          class="link-button"
-          (click)="clearSelection()"
-        >
-          Limpar seleção
-        </button>
-      }
+        <div>
+          <h2 id="media-results-title">Mídias</h2>
+          <span>{{ paginationLabel() }}</span>
+        </div>
+      </div>
     </header>
 
   @if (loading()) {

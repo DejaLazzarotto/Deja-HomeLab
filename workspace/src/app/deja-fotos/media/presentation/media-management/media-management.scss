@@ -63,19 +63,6 @@
   border-radius: var(--workspace-radius-md);
 }
 
-.upload input:focus,
-.upload select:focus,
-.filters input:focus,
-.filters select:focus,
-.page-size select:focus {
-  border-color: var(--workspace-color-primary);
-  outline: 2px solid color-mix(
-    in srgb,
-    var(--workspace-color-primary) 18%,
-    transparent
-  );
-}
-
 .upload__files,
 .upload__failures,
 .bulk-result ul {
@@ -401,12 +388,6 @@ button:disabled {
   padding: 0 0 0.2rem;
 }
 
-.media-management__eyebrow,
-.upload__eyebrow,
-.filters__eyebrow {
-  display: none;
-}
-
 .media-management__header h1 {
   margin: 0;
   font-size: clamp(1.6rem, 3vw, 2rem);
@@ -653,4 +634,49 @@ button:disabled {
   .filters__actions {
     padding: 0 1rem 0.75rem;
   }
+}
+
+
+/* Ícones da referência aprovada */
+
+.heading-with-icon {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.section-icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  color: var(--workspace-color-primary);
+}
+
+.section-icon--primary {
+  width: 2.75rem;
+  height: 2.75rem;
+  color: #fff;
+  background: linear-gradient(145deg, #2563eb, #60a5fa);
+  border-radius: var(--workspace-radius-md);
+}
+
+.section-icon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.section-icon--primary svg {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
+.button-with-icon,
+.primary-button {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+  justify-content: center;
 }
