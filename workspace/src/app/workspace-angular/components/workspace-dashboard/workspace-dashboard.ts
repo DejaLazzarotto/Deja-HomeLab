@@ -204,6 +204,22 @@ implements OnInit, OnDestroy {
 
 
   /**
+   * Indica se o Dashboard deve apresentar somente seu conteúdo,
+   * sem os cabeçalhos e molduras institucionais intermediárias.
+   */
+  protected get chromeHidden(): boolean {
+
+    return (
+      this.resolvedDashboard
+        .dashboard
+        .metadata?.['hideChrome']
+      === true
+    );
+
+  }
+
+
+  /**
    * Verifica se o Dashboard possui Layout e regiões resolvidas.
    *
    * Dashboards sem Layout ou sem regiões permanecem utilizando

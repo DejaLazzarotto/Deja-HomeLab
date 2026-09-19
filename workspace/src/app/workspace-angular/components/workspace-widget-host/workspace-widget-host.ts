@@ -145,6 +145,20 @@ WorkspaceWidgetRenderController {
   }
 
   /**
+   * Indica se o Widget deve apresentar apenas seu conteúdo,
+   * sem cabeçalho, fundo, borda ou preenchimento do host.
+   */
+  protected get chromeHidden(): boolean {
+
+    return (
+      this.resolvedWidget
+        ?.metadata?.['hideChrome']
+      === true
+    );
+
+  }
+
+  /**
    * Inicializa a renderização após a criação da View.
    */
   ngAfterViewInit(): void {

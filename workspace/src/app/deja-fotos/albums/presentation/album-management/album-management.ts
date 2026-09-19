@@ -96,7 +96,27 @@ export class AlbumManagementComponent implements OnInit {
   readonly selectedAlbum =
     signal<Album | null>(null);
 
+  readonly selectedDashboardAlbumId = signal('');
+
   readonly formVisible = signal(false);
+
+  readonly organizerVisible = signal(false);
+
+  readonly activeAlbums = computed(() => (
+    this.albums().filter(album => album.active)
+  ));
+
+  readonly selectedDashboardAlbum = computed(() => {
+    const albumId = this.selectedDashboardAlbumId();
+
+    if (!albumId) {
+      return null;
+    }
+
+    return this.albums().find(
+      album => album.id === albumId,
+    ) ?? null;
+  });
 
   readonly visibleAlbums = computed(() => {
     const search = this.searchTerm()
@@ -151,6 +171,18 @@ export class AlbumManagementComponent implements OnInit {
 
       if (requestSequence === this.requestSequence) {
         this.albums.set(albums);
+
+        const selectedAlbumId =
+          this.selectedDashboardAlbumId();
+
+        if (
+          selectedAlbumId
+          && !albums.some(
+            album => album.id === selectedAlbumId,
+          )
+        ) {
+          this.selectedDashboardAlbumId.set('');
+        }
       }
     } catch {
       if (requestSequence === this.requestSequence) {
@@ -163,6 +195,20 @@ export class AlbumManagementComponent implements OnInit {
         this.loading.set(false);
       }
     }
+  }
+
+  selectDashboardAlbum(
+    albumId: string,
+  ): void {
+    this.selectedDashboardAlbumId.set(albumId);
+    this.organizerVisible.set(false);
+  }
+
+  toggleOrganizer(): void {
+    this.closeForm();
+    this.organizerVisible.update(
+      visible => !visible,
+    );
   }
 
   applyFilters(): void {
@@ -290,6 +336,13 @@ export class AlbumManagementComponent implements OnInit {
       ) {
         this.selectedAlbum.set(null);
         this.formVisible.set(false);
+      }
+
+      if (
+        this.selectedDashboardAlbumId()
+        === album.id
+      ) {
+        this.selectedDashboardAlbumId.set('');
       }
 
       this.operationMessage.set(

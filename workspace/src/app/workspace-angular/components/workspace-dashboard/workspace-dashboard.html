@@ -1,4 +1,7 @@
-<section class="workspace-dashboard">
+<section
+  class="workspace-dashboard"
+  [class.workspace-dashboard--chromeless]="chromeHidden"
+>
   <header class="workspace-dashboard__header">
     <h1 class="workspace-dashboard__title">
       {{ resolvedDashboard.dashboard.title }}

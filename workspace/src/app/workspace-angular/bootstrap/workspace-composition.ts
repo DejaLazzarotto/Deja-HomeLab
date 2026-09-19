@@ -912,6 +912,7 @@ export class WorkspaceComposition {
       tags: ['deja-fotos', 'albums', 'management'],
       metadata: {
         moduleKey: 'fotos',
+        hideChrome: true,
       },
     };
     const managementReportWidget: WorkspaceWidget = {
@@ -1358,6 +1359,7 @@ export class WorkspaceComposition {
           type: 'management',
           section: 'albums',
           moduleKey: 'fotos',
+          hideChrome: true,
         },
         widgets: [
           {
