@@ -44,6 +44,11 @@ import {
 export class MediaGridComponent implements OnDestroy {
   readonly items = input<readonly Media[]>([]);
 
+  readonly albumNames =
+    input<ReadonlyMap<string, string>>(
+      new Map<string, string>(),
+    );
+
   readonly service = input.required<MediaService>();
 
   readonly selectedIds = input<ReadonlySet<string>>(
@@ -100,6 +105,17 @@ export class MediaGridComponent implements OnDestroy {
     ) {
       URL.revokeObjectURL(objectUrl);
     }
+  }
+
+  protected albumName(
+    albumId: string | null | undefined,
+  ): string {
+    if (!albumId) {
+      return 'Sem álbum';
+    }
+
+    return this.albumNames().get(albumId)
+      ?? 'Álbum não identificado';
   }
 
   protected thumbnailUrl(

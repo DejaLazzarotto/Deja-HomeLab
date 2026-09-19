@@ -5,10 +5,10 @@
         Deja Fotos
       </span>
 
-      <h1>Album Admin</h1>
+      <h1>Mídias</h1>
 
       <p>
-        Consulte, organize e confirme as informações do acervo de mídias.
+        Envie, processe e organize os arquivos do acervo.
       </p>
     </div>
 
@@ -109,17 +109,22 @@
         <label class="upload__file-picker">
           <span>Arquivos</span>
 
-          <input
-            type="file"
-            multiple
-            accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.mp4,.mov,.mpeg,.mpg,image/jpeg,image/png,image/webp,image/gif,image/bmp,video/mp4,video/quicktime,video/mpeg"
-            (change)="selectUploadFiles($event)"
-            [disabled]="uploadBusy()"
-          />
+          <span class="upload__dropzone">
+            <input
+              type="file"
+              multiple
+              aria-label="Selecionar imagens ou vídeos"
+              accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.mp4,.mov,.mpeg,.mpg,image/jpeg,image/png,image/webp,image/gif,image/bmp,video/mp4,video/quicktime,video/mpeg"
+              (change)="selectUploadFiles($event)"
+              [disabled]="uploadBusy()"
+            />
 
-          <small>
-            JPEG, PNG, WebP, GIF, BMP, MP4, MOV e MPEG.
-          </small>
+            <strong>Arraste imagens ou vídeos aqui</strong>
+
+            <small>
+              JPEG, PNG, WebP, GIF, BMP, MP4, MOV e MPEG · até 500 MB
+            </small>
+          </span>
         </label>
       </div>
 
@@ -501,22 +506,26 @@
     </section>
   }
 
-  <div class="media-results__header">
-    <div>
-      <h2>Mídias</h2>
-      <span>{{ paginationLabel() }}</span>
-    </div>
+  <section
+    class="media-results"
+    aria-labelledby="media-results-title"
+  >
+    <header class="media-results__header">
+      <div>
+        <h2 id="media-results-title">Mídias</h2>
+        <span>{{ paginationLabel() }}</span>
+      </div>
 
-    @if (selectedIds().size > 0) {
-      <button
-        type="button"
-        class="link-button"
-        (click)="clearSelection()"
-      >
-        Limpar seleção
-      </button>
-    }
-  </div>
+      @if (selectedIds().size > 0) {
+        <button
+          type="button"
+          class="link-button"
+          (click)="clearSelection()"
+        >
+          Limpar seleção
+        </button>
+      }
+    </header>
 
   @if (loading()) {
     <div
@@ -529,6 +538,7 @@
   } @else {
     <deja-media-grid
       [items]="items()"
+      [albumNames]="albumNames()"
       [service]="mediaService()"
       [selectedIds]="selectedIds()"
       (selectionChange)="toggleMediaSelection($event)"
@@ -562,4 +572,5 @@
       </button>
     </nav>
   }
+  </section>
 </section>

@@ -80,11 +80,11 @@
         </div>
 
         <div class="media-card__content">
-          <h3 [title]="media.originalName">
-            {{ media.originalName }}
-          </h3>
+          <header class="media-card__header">
+            <h3 [title]="media.originalName">
+              {{ media.originalName }}
+            </h3>
 
-          <div class="media-card__badges">
             <span
               class="status-badge"
               [class.status-badge--ready]="media.processingStatus === 'ready'"
@@ -93,29 +93,11 @@
             >
               {{ statusLabels[media.processingStatus] }}
             </span>
-
-            @if (media.originalDateVerified) {
-              <span class="status-badge status-badge--verified">
-                Data confirmada
-              </span>
-            }
-
-            @if (media.originalDateConflict) {
-              <span class="status-badge status-badge--conflict">
-                Conflito de data
-              </span>
-            }
-
-            @if (media.wasConverted) {
-              <span class="status-badge">
-                Convertida
-              </span>
-            }
-          </div>
+          </header>
 
           <dl>
-            <div class="media-card__date-row">
-              <dt>Data original</dt>
+            <div>
+              <dt>Data</dt>
               <dd>
                 {{
                   formatDate(
@@ -127,38 +109,43 @@
             </div>
 
             <div>
-              <dt>Origem da data</dt>
-              <dd>
-                @if (media.originalDateSource) {
-                  {{ dateSourceLabels[media.originalDateSource] }}
-                } @else {
-                  Não identificada
-                }
-              </dd>
-            </div>
-
-            <div>
               <dt>Álbum</dt>
-              <dd>{{ media.albumId ? 'Associada' : 'Sem álbum' }}</dd>
+              <dd [title]="albumName(media.albumId)">
+                {{ albumName(media.albumId) }}
+              </dd>
             </div>
 
             <div>
               <dt>Arquivo</dt>
               <dd>{{ formatFileSize(media.fileSize) }}</dd>
             </div>
-
-            @if (media.width && media.height) {
-              <div>
-                <dt>Dimensões</dt>
-                <dd>{{ media.width }} × {{ media.height }}</dd>
-              </div>
-            }
-
-            <div>
-              <dt>Visualizações</dt>
-              <dd>{{ media.viewCount }}</dd>
-            </div>
           </dl>
+
+          @if (
+            media.originalDateVerified
+            || media.originalDateConflict
+            || media.wasConverted
+          ) {
+            <div class="media-card__badges">
+              @if (media.originalDateVerified) {
+                <span class="status-badge status-badge--verified">
+                  Data confirmada
+                </span>
+              }
+
+              @if (media.originalDateConflict) {
+                <span class="status-badge status-badge--conflict">
+                  Conflito de data
+                </span>
+              }
+
+              @if (media.wasConverted) {
+                <span class="status-badge">
+                  Convertida
+                </span>
+              }
+            </div>
+          }
 
           @if (media.processingError) {
             <p class="media-card__error">

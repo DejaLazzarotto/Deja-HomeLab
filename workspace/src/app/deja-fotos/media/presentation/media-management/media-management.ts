@@ -207,6 +207,14 @@ export class MediaManagementComponent implements OnInit, OnDestroy {
     () => this.albums().filter(album => album.active),
   );
 
+  readonly albumNames = computed(
+    () => new Map(
+      this.albums().map(
+        album => [album.id, album.name] as const,
+      ),
+    ),
+  );
+
   readonly paginationLabel = computed(() => {
     const total = this.total();
 
