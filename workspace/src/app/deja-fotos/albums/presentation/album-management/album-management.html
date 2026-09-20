@@ -76,7 +76,7 @@
       </span>
 
       <div>
-        <strong>0</strong>
+        <strong>{{ photoCount() }}</strong>
         <span>Fotos</span>
       </div>
     </article>
@@ -90,7 +90,7 @@
       </span>
 
       <div>
-        <strong>0</strong>
+        <strong>{{ videoCount() }}</strong>
         <span>Vídeos</span>
       </div>
     </article>
@@ -157,24 +157,6 @@
     </label>
 
     <div class="dashboard-controls__actions">
-      <button
-        type="button"
-        class="secondary-button"
-        (click)="toggleOrganizer()"
-        [attr.aria-pressed]="organizerVisible()"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M3 6h6l2 2h10v11H3z" />
-          <path d="M8 12h8M8 15h6" />
-        </svg>
-
-        {{
-          organizerVisible()
-            ? 'Voltar ao álbum'
-            : 'Organizar álbuns'
-        }}
-      </button>
-
       @if (canEdit()) {
         <button
           type="button"
@@ -192,183 +174,10 @@
     </div>
   </section>
 
-  @if (organizerVisible()) {
-    <section
-      class="album-organizer"
-      aria-labelledby="album-organizer-title"
-    >
-      <header class="album-organizer__header">
-        <div>
-          <span>Administração</span>
-          <h2 id="album-organizer-title">
-            Organizar álbuns
-          </h2>
-        </div>
-
-        <button
-          type="button"
-          class="link-button"
-          (click)="refresh()"
-          [disabled]="loading()"
-        >
-          Atualizar
-        </button>
-      </header>
-
-      <div class="album-filters">
-        <label>
-          <span>Buscar</span>
-
-          <input
-            type="search"
-            placeholder="Nome ou descrição"
-            [ngModel]="searchTerm()"
-            (ngModelChange)="searchTerm.set($event)"
-          />
-        </label>
-
-        <label>
-          <span>Ambiente</span>
-
-          <select
-            [ngModel]="environmentFilter()"
-            (ngModelChange)="environmentFilter.set($event)"
-          >
-            <option value="">Todos os ambientes</option>
-
-            @for (environment of environments(); track environment.id) {
-              <option [value]="environment.id">
-                {{ environment.name }}
-              </option>
-            }
-          </select>
-        </label>
-
-        <label>
-          <span>Situação</span>
-
-          <select
-            [ngModel]="activeFilter()"
-            (ngModelChange)="activeFilter.set($event)"
-          >
-            <option value="all">Ativos e inativos</option>
-            <option value="active">Somente ativos</option>
-            <option value="inactive">Somente inativos</option>
-          </select>
-        </label>
-
-        <button
-          type="button"
-          class="secondary-button"
-          (click)="applyFilters()"
-          [disabled]="loading()"
-        >
-          Aplicar filtros
-        </button>
-
-        <button
-          type="button"
-          class="link-button"
-          (click)="clearFilters()"
-          [disabled]="loading()"
-        >
-          Limpar filtros
-        </button>
-      </div>
-
-      <div class="album-results__header">
-        <h3>Álbuns cadastrados</h3>
-
-        <span>
-          {{ visibleAlbums().length }}
-          {{ visibleAlbums().length === 1 ? 'álbum' : 'álbuns' }}
-        </span>
-      </div>
-
-      @if (loading()) {
-        <div class="loading-state" role="status">
-          <span aria-hidden="true"></span>
-          Carregando álbuns...
-        </div>
-      } @else if (visibleAlbums().length === 0) {
-        <div class="empty-state">
-          <strong>Nenhum álbum encontrado.</strong>
-          <span>Ajuste os filtros ou cadastre um novo álbum.</span>
-        </div>
-      } @else {
-        <div class="album-grid">
-          @for (album of visibleAlbums(); track album.id) {
-            <article
-              class="album-card"
-              [class.album-card--inactive]="!album.active"
-            >
-              <header>
-                <div>
-                  <span
-                    class="album-card__status"
-                    [class.album-card__status--inactive]="!album.active"
-                  >
-                    {{ album.active ? 'Ativo' : 'Inativo' }}
-                  </span>
-
-                  <h3>{{ album.name }}</h3>
-                </div>
-
-                @if (canEdit()) {
-                  <button
-                    type="button"
-                    class="link-button"
-                    (click)="openEdit(album)"
-                  >
-                    Editar
-                  </button>
-                }
-              </header>
-
-              <p>
-                {{ album.description || 'Álbum sem descrição.' }}
-              </p>
-
-              <dl>
-                <div>
-                  <dt>Ambiente</dt>
-                  <dd [title]="album.environmentId">
-                    {{ environmentName(album.environmentId) }}
-                  </dd>
-                </div>
-
-                <div>
-                  <dt>Atualizado</dt>
-                  <dd>{{ formatDate(album.updatedAt) }}</dd>
-                </div>
-              </dl>
-
-              @if (canDelete()) {
-                <footer>
-                  <button
-                    type="button"
-                    class="danger-button"
-                    (click)="deleteAlbum(album)"
-                    [disabled]="deletingAlbumId() === album.id"
-                  >
-                    {{
-                      deletingAlbumId() === album.id
-                        ? 'Excluindo...'
-                        : 'Excluir álbum'
-                    }}
-                  </button>
-                </footer>
-              }
-            </article>
-          }
-        </div>
-      }
-    </section>
-  } @else {
-    <section
-      class="album-timeline"
-      aria-live="polite"
-    >
+  <section
+    class="album-timeline"
+    aria-live="polite"
+  >
       @if (loading()) {
         <div class="loading-state" role="status">
           <span aria-hidden="true"></span>
@@ -392,13 +201,164 @@
           </div>
         </header>
 
-        <div class="timeline-empty">
-          <strong>Nenhuma mídia vinculada a este álbum.</strong>
+        @if (albumMediaLoading()) {
+          <div class="loading-state" role="status">
+            <span aria-hidden="true"></span>
+            Carregando mídias do álbum...
+          </div>
+        } @else if (albumMediaError()) {
+          <div class="timeline-empty">
+            <strong>{{ albumMediaError() }}</strong>
 
-          <span>
-            As mídias de teste permanecem sem associação.
-          </span>
-        </div>
+            <button
+              type="button"
+              class="secondary-button"
+              (click)="retryAlbumMedia()"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        } @else if (albumMediaTotal() === 0) {
+          <div class="timeline-empty">
+            <strong>Nenhuma mídia vinculada a este álbum.</strong>
+
+            <span>
+              Use Mídias para mover fotos e vídeos para este álbum.
+            </span>
+          </div>
+        } @else {
+          <div class="album-timeline__periods">
+            @for (
+              period of albumMediaPeriods();
+              track period.key
+            ) {
+              <section class="album-period">
+                <button
+                  type="button"
+                  class="album-period__header"
+                  (click)="togglePeriod(period.key)"
+                  [attr.aria-expanded]="periodExpanded(period.key)"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    [class.album-period__chevron--expanded]="periodExpanded(period.key)"
+                  >
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+
+                  <span class="album-period__title">
+                    {{ period.label }}
+                  </span>
+
+                  <span class="album-period__count">
+                    {{ period.items.length }}
+                    {{ period.items.length === 1 ? 'mídia' : 'mídias' }}
+                  </span>
+                </button>
+
+                @if (periodExpanded(period.key)) {
+                  <div class="album-media-grid">
+                    @for (
+                      media of period.items;
+                      track media.id
+                    ) {
+                      <article class="album-media-card">
+                        <div class="album-media-card__preview">
+                          @if (thumbnailUrl(media.id); as thumbnail) {
+                            <img
+                              [src]="thumbnail"
+                              [alt]="'Miniatura de ' + media.originalName"
+                              loading="lazy"
+                            />
+                          } @else if (
+                            thumbnailFailures().has(media.id)
+                          ) {
+                            <div class="album-media-card__placeholder">
+                              <span aria-hidden="true">!</span>
+                              <small>Miniatura indisponível</small>
+                            </div>
+                          } @else {
+                            <div class="album-media-card__placeholder">
+                              <span
+                                class="album-media-card__spinner"
+                                aria-hidden="true"
+                              ></span>
+
+                              <small>Carregando</small>
+                            </div>
+                          }
+
+                          <span class="album-media-card__type">
+                            {{
+                              media.mediaType === 'video'
+                                ? 'Vídeo'
+                                : 'Imagem'
+                            }}
+                          </span>
+
+                          @if (
+                            formatMediaDuration(media.durationSeconds);
+                            as duration
+                          ) {
+                            <span class="album-media-card__duration">
+                              {{ duration }}
+                            </span>
+                          }
+                        </div>
+
+                        <footer>
+                          <span>
+                            {{
+                              formatMediaDate(
+                                media.originalDate,
+                                media.originalDatePrecision
+                              )
+                            }}
+                          </span>
+
+                          <span
+                            class="album-media-card__views"
+                            [title]="media.viewCount + ' visualizações'"
+                          >
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M2.5 12s3.5-5 9.5-5 9.5 5 9.5 5-3.5 5-9.5 5-9.5-5-9.5-5Z" />
+                              <circle cx="12" cy="12" r="2.5" />
+                            </svg>
+
+                            {{ media.viewCount }}
+                          </span>
+                        </footer>
+                      </article>
+                    }
+                  </div>
+                }
+              </section>
+            }
+          </div>
+
+          @if (albumMediaHasMore()) {
+            <div class="album-timeline__load-more">
+              <button
+                type="button"
+                class="secondary-button"
+                (click)="loadMoreAlbumMedia()"
+                [disabled]="albumMediaLoadingMore()"
+              >
+                {{
+                  albumMediaLoadingMore()
+                    ? 'Carregando...'
+                    : 'Carregar mais mídias'
+                }}
+              </button>
+
+              <span>
+                {{ albumMedia().length }} de
+                {{ albumMediaTotal() }} mídias carregadas
+              </span>
+            </div>
+          }
+        }
       } @else {
         <div class="dashboard-empty">
           <span aria-hidden="true">
@@ -423,8 +383,7 @@
           }
         </div>
       }
-    </section>
-  }
+  </section>
 
   @if (!canEdit()) {
     <div class="read-only-note">

@@ -134,7 +134,6 @@ def create_test_jpeg(
     return buffer.getvalue()
 
 
-
 def create_test_gif(
     *,
     width: int = 16,
@@ -188,6 +187,7 @@ def create_test_bmp(
     )
 
     return buffer.getvalue()
+
 
 def create_test_webp(
     *,
@@ -264,10 +264,7 @@ def create_test_legacy_video(
     """Cria um vídeo legado real para os testes."""
 
     with tempfile.TemporaryDirectory() as temporary_directory:
-        output_path = (
-            Path(temporary_directory)
-            / f"video{file_extension}"
-        )
+        output_path = Path(temporary_directory) / f"video{file_extension}"
 
         command = [
             "ffmpeg",
@@ -276,10 +273,7 @@ def create_test_legacy_video(
             "-f",
             "lavfi",
             "-i",
-            (
-                f"color=c=black:s={width}x{height}:"
-                f"d={duration_seconds}"
-            ),
+            (f"color=c=black:s={width}x{height}:d={duration_seconds}"),
             "-c:v",
             video_codec,
             "-pix_fmt",
@@ -425,10 +419,7 @@ def test_upload_media_derives_scope_and_stores_original(
     assert body["file_extension"] == ".jpg"
     assert body["file_size"] == len(content)
     assert len(body["checksum_sha256"]) == 64
-    assert (
-        body["source_checksum_sha256"]
-        == body["checksum_sha256"]
-    )
+    assert body["source_checksum_sha256"] == body["checksum_sha256"]
     assert body["was_converted"] is False
     assert body["processing_status"] == "received"
     assert body["width"] == 16
@@ -455,7 +446,6 @@ def test_upload_media_derives_scope_and_stores_original(
 
     assert original_path.is_file()
     assert original_path.read_bytes() == content
-
 
 
 def test_upload_media_stores_image_by_embedded_year_and_month(
@@ -587,10 +577,7 @@ def test_upload_gif_preserves_animated_original(
     assert body["content_type"] == "image/gif"
     assert body["file_extension"] == ".gif"
     assert body["file_size"] == len(content)
-    assert (
-        body["source_checksum_sha256"]
-        == body["checksum_sha256"]
-    )
+    assert body["source_checksum_sha256"] == body["checksum_sha256"]
     assert body["was_converted"] is False
     assert body["original_date"] is None
 
@@ -666,10 +653,7 @@ def test_upload_bmp_converts_managed_original_to_png(
     assert body["file_extension"] == ".png"
     assert body["file_size"] > 0
     assert len(body["checksum_sha256"]) == 64
-    assert (
-        body["source_checksum_sha256"]
-        != body["checksum_sha256"]
-    )
+    assert body["source_checksum_sha256"] != body["checksum_sha256"]
     assert body["was_converted"] is True
     assert body["width"] == 20
     assert body["height"] == 15
@@ -693,6 +677,7 @@ def test_upload_bmp_converts_managed_original_to_png(
     with Image.open(original_path) as stored:
         assert stored.format == "PNG"
         assert stored.size == (20, 15)
+
 
 def test_upload_webp_converts_managed_original_to_png(
     client: TestClient,
@@ -743,10 +728,7 @@ def test_upload_webp_converts_managed_original_to_png(
     assert body["was_converted"] is True
     assert body["width"] == 20
     assert body["height"] == 15
-    assert (
-        body["source_checksum_sha256"]
-        != body["checksum_sha256"]
-    )
+    assert body["source_checksum_sha256"] != body["checksum_sha256"]
 
     original_path = (
         test_settings.uploads_dir
@@ -928,9 +910,7 @@ def test_upload_legacy_video_converts_original_to_mp4(
     assert body["source_content_type"] == source_content_type
     assert body["source_file_extension"] == source_extension
     assert body["source_file_size"] == len(content)
-    assert body["source_checksum_sha256"] == (
-        created["source_checksum_sha256"]
-    )
+    assert body["source_checksum_sha256"] == (created["source_checksum_sha256"])
 
     assert body["content_type"] == "video/mp4"
     assert body["file_extension"] == ".mp4"
@@ -938,10 +918,7 @@ def test_upload_legacy_video_converts_original_to_mp4(
     assert body["was_converted"] is True
     assert body["width"] == 20
     assert body["height"] == 16
-    assert (
-        body["checksum_sha256"]
-        != body["source_checksum_sha256"]
-    )
+    assert body["checksum_sha256"] != body["source_checksum_sha256"]
 
     media_directory = (
         test_settings.uploads_dir
@@ -954,14 +931,8 @@ def test_upload_legacy_video_converts_original_to_mp4(
         / body["id"]
     )
 
-    source_path = (
-        media_directory
-        / f"original{source_extension}"
-    )
-    normalized_path = (
-        media_directory
-        / "normalized.mp4"
-    )
+    source_path = media_directory / f"original{source_extension}"
+    normalized_path = media_directory / "normalized.mp4"
 
     assert not source_path.exists()
     assert normalized_path.is_file()
@@ -974,9 +945,7 @@ def test_upload_legacy_video_converts_original_to_mp4(
 
     assert download_response.status_code == 200
     assert download_response.headers["content-type"] == "video/mp4"
-    assert "video-legado.mp4" in (
-        download_response.headers["content-disposition"]
-    )
+    assert "video-legado.mp4" in (download_response.headers["content-disposition"])
     assert download_response.content == normalized_path.read_bytes()
 
 
@@ -1034,9 +1003,9 @@ def test_process_image_creates_thumbnail_and_preview(
 
     original_path = base_path / "originals" / "sem-data" / created["id"] / "original.jpg"
 
-    thumbnail_path = base_path / "derivatives" / created["id"] / "thumbnail.webp"
+    thumbnail_path = base_path / "derivatives" / "sem-data" / created["id"] / "thumbnail.webp"
 
-    preview_path = base_path / "derivatives" / created["id"] / "preview.webp"
+    preview_path = base_path / "derivatives" / "sem-data" / created["id"] / "preview.webp"
 
     assert original_path.is_file()
     assert original_path.read_bytes() == content
@@ -1108,7 +1077,7 @@ def test_process_video_creates_poster(
 
     original_path = base_path / "originals" / "sem-data" / created["id"] / "original.mp4"
 
-    poster_path = base_path / "derivatives" / created["id"] / "poster.webp"
+    poster_path = base_path / "derivatives" / "sem-data" / created["id"] / "poster.webp"
 
     assert original_path.is_file()
     assert original_path.read_bytes() == content
@@ -1281,20 +1250,9 @@ def test_missing_video_poster_returns_not_found(
 
     assert process_response.status_code == 200
 
-    base_path = (
-        test_settings.uploads_dir
-        / "fotos"
-        / organization_id
-        / tenant_id
-        / environment_id
-    )
+    base_path = test_settings.uploads_dir / "fotos" / organization_id / tenant_id / environment_id
 
-    poster_path = (
-        base_path
-        / "derivatives"
-        / media_id
-        / "poster.webp"
-    )
+    poster_path = base_path / "derivatives" / "sem-data" / media_id / "poster.webp"
 
     assert poster_path.is_file()
 
@@ -1306,10 +1264,7 @@ def test_missing_video_poster_returns_not_found(
     )
 
     assert response.status_code == 404
-    assert (
-        response.json()["error"]
-        == "fotos_media_derivative_not_found"
-    )
+    assert response.json()["error"] == "fotos_media_derivative_not_found"
 
 
 def test_upload_media_without_album(
@@ -1435,9 +1390,7 @@ def test_list_media_paginates_results(
 
         assert response.status_code == 201
 
-        created_ids.append(
-            response.json()["id"]
-        )
+        created_ids.append(response.json()["id"])
 
     first_page_response = client.get(
         MEDIA_URL,
@@ -1600,10 +1553,7 @@ def test_list_media_filters_by_original_date_and_curation_flags(
     )
 
     assert year_month_response.status_code == 200
-    assert [
-        item["id"]
-        for item in year_month_response.json()["items"]
-    ] == [february_id]
+    assert [item["id"] for item in year_month_response.json()["items"]] == [february_id]
 
     interval_response = client.get(
         MEDIA_URL,
@@ -1616,10 +1566,7 @@ def test_list_media_filters_by_original_date_and_curation_flags(
     )
 
     assert interval_response.status_code == 200
-    assert [
-        item["id"]
-        for item in interval_response.json()["items"]
-    ] == [february_id]
+    assert [item["id"] for item in interval_response.json()["items"]] == [february_id]
 
     without_date_filter_response = client.get(
         MEDIA_URL,
@@ -1631,10 +1578,7 @@ def test_list_media_filters_by_original_date_and_curation_flags(
     )
 
     assert without_date_filter_response.status_code == 200
-    assert {
-        item["id"]
-        for item in without_date_filter_response.json()["items"]
-    } == {
+    assert {item["id"] for item in without_date_filter_response.json()["items"]} == {
         without_date_id,
         converted_id,
     }
@@ -1649,10 +1593,7 @@ def test_list_media_filters_by_original_date_and_curation_flags(
     )
 
     assert verified_response.status_code == 200
-    assert [
-        item["id"]
-        for item in verified_response.json()["items"]
-    ] == [january_id]
+    assert [item["id"] for item in verified_response.json()["items"]] == [january_id]
 
     conflict_response = client.get(
         MEDIA_URL,
@@ -1664,10 +1605,7 @@ def test_list_media_filters_by_original_date_and_curation_flags(
     )
 
     assert conflict_response.status_code == 200
-    assert [
-        item["id"]
-        for item in conflict_response.json()["items"]
-    ] == [february_id]
+    assert [item["id"] for item in conflict_response.json()["items"]] == [february_id]
 
     converted_filter_response = client.get(
         MEDIA_URL,
@@ -1679,10 +1617,7 @@ def test_list_media_filters_by_original_date_and_curation_flags(
     )
 
     assert converted_filter_response.status_code == 200
-    assert [
-        item["id"]
-        for item in converted_filter_response.json()["items"]
-    ] == [converted_id]
+    assert [item["id"] for item in converted_filter_response.json()["items"]] == [converted_id]
 
 
 def test_get_media_by_id(
@@ -1893,9 +1828,7 @@ def test_update_original_date_moves_original_and_preserves_derivatives(
         )
 
         assert media is not None
-        assert media.original_storage_key.endswith(
-            f"/2020/05/{media_id}/original.jpg"
-        )
+        assert media.original_storage_key.endswith(f"/2020/05/{media_id}/original.jpg")
 
 
 def test_update_original_date_in_same_month_keeps_storage_path(
@@ -2059,9 +1992,7 @@ def test_update_original_date_rejects_occupied_destination(
         parents=True,
         exist_ok=False,
     )
-    occupied_path.write_bytes(
-        b"arquivo-preexistente"
-    )
+    occupied_path.write_bytes(b"arquivo-preexistente")
 
     response = client.patch(
         f"{MEDIA_URL}/{media_id}/original-date",
@@ -2072,10 +2003,7 @@ def test_update_original_date_rejects_occupied_destination(
     )
 
     assert response.status_code == 409
-    assert (
-        response.json()["error"]
-        == "fotos_media_storage_conflict"
-    )
+    assert response.json()["error"] == "fotos_media_storage_conflict"
     assert old_path.read_bytes() == content
     assert occupied_path.read_bytes() == b"arquivo-preexistente"
 
@@ -2254,10 +2182,7 @@ def test_update_original_date_rejects_analyst(
     )
 
     response = client.patch(
-        (
-            f"{MEDIA_URL}/"
-            f"{create_response.json()['id']}/original-date"
-        ),
+        (f"{MEDIA_URL}/{create_response.json()['id']}/original-date"),
         json={
             "original_date": "2022-07-10T12:00:00",
         },
@@ -2311,9 +2236,17 @@ def test_bulk_set_original_date_moves_originals(
         )
 
         assert create_response.status_code == 201
-        media_ids.append(
-            create_response.json()["id"]
+
+        media_id = create_response.json()["id"]
+        media_ids.append(media_id)
+
+        process_response = client.post(
+            f"{MEDIA_URL}/{media_id}/process",
+            headers=headers,
         )
+
+        assert process_response.status_code == 200
+        assert process_response.json()["processing_status"] == "ready"
 
     response = client.patch(
         f"{MEDIA_URL}/bulk",
@@ -2333,29 +2266,13 @@ def test_bulk_set_original_date_moves_originals(
     assert result["requested_count"] == 2
     assert result["succeeded_count"] == 2
     assert result["failed_count"] == 0
-    assert [
-        item["media_id"]
-        for item in result["results"]
-    ] == media_ids
+    assert [item["media_id"] for item in result["results"]] == media_ids
+    assert all(item["success"] for item in result["results"])
     assert all(
-        item["success"]
-        for item in result["results"]
+        item["media"]["original_date"] == "2024-03-10T15:00:00" for item in result["results"]
     )
-    assert all(
-        item["media"]["original_date"]
-        == "2024-03-10T15:00:00"
-        for item in result["results"]
-    )
-    assert all(
-        item["media"]["original_date_source"]
-        == "manual"
-        for item in result["results"]
-    )
-    assert all(
-        item["media"]["original_date_verified"]
-        is True
-        for item in result["results"]
-    )
+    assert all(item["media"]["original_date_source"] == "manual" for item in result["results"])
+    assert all(item["media"]["original_date_verified"] is True for item in result["results"])
 
     for media_id, content in zip(
         media_ids,
@@ -2386,8 +2303,41 @@ def test_bulk_set_original_date_moves_originals(
             / "original.jpg"
         )
 
+        old_derivatives_path = (
+            test_settings.uploads_dir
+            / "fotos"
+            / organization_id
+            / tenant_id
+            / environment_id
+            / "derivatives"
+            / "sem-data"
+            / media_id
+        )
+        new_derivatives_path = (
+            test_settings.uploads_dir
+            / "fotos"
+            / organization_id
+            / tenant_id
+            / environment_id
+            / "derivatives"
+            / "2024"
+            / "03"
+            / media_id
+        )
+
         assert not old_path.exists()
         assert new_path.read_bytes() == content
+        assert not old_derivatives_path.exists()
+        assert (new_derivatives_path / "thumbnail.webp").is_file()
+        assert (new_derivatives_path / "preview.webp").is_file()
+
+        thumbnail_response = client.get(
+            f"{MEDIA_URL}/{media_id}/thumbnail",
+            headers=headers,
+        )
+
+        assert thumbnail_response.status_code == 200
+        assert thumbnail_response.headers["content-type"] == "image/webp"
 
 
 def test_bulk_set_original_date_continues_after_storage_conflict(
@@ -2483,9 +2433,7 @@ def test_bulk_set_original_date_continues_after_storage_conflict(
         parents=True,
         exist_ok=False,
     )
-    occupied_path.write_bytes(
-        b"destino-ocupado"
-    )
+    occupied_path.write_bytes(b"destino-ocupado")
 
     response = client.patch(
         f"{MEDIA_URL}/bulk",
@@ -2513,10 +2461,7 @@ def test_bulk_set_original_date_continues_after_storage_conflict(
 
     assert first_result["media_id"] == first_id
     assert first_result["success"] is False
-    assert (
-        first_result["error_code"]
-        == "fotos_media_storage_conflict"
-    )
+    assert first_result["error_code"] == "fotos_media_storage_conflict"
     assert second_result["media_id"] == second_id
     assert second_result["success"] is True
 
@@ -2619,19 +2564,10 @@ def test_bulk_verify_original_date_reports_missing_date(
     assert result["succeeded_count"] == 1
     assert result["failed_count"] == 1
     assert result["results"][0]["success"] is True
-    assert (
-        result["results"][0]["media"]["original_date_verified"]
-        is True
-    )
-    assert (
-        result["results"][0]["media"]["original_date_conflict"]
-        is False
-    )
+    assert result["results"][0]["media"]["original_date_verified"] is True
+    assert result["results"][0]["media"]["original_date_conflict"] is False
     assert result["results"][1]["success"] is False
-    assert (
-        result["results"][1]["error_code"]
-        == "fotos_media_original_date_missing"
-    )
+    assert result["results"][1]["error_code"] == "fotos_media_original_date_missing"
 
     with test_session_factory() as session:
         undated = session.get(
@@ -2708,14 +2644,8 @@ def test_bulk_clear_original_date_conflict_preserves_verification(
 
     assert result["succeeded_count"] == 1
     assert result["failed_count"] == 0
-    assert (
-        result["results"][0]["media"]["original_date_verified"]
-        is False
-    )
-    assert (
-        result["results"][0]["media"]["original_date_conflict"]
-        is False
-    )
+    assert result["results"][0]["media"]["original_date_verified"] is False
+    assert result["results"][0]["media"]["original_date_conflict"] is False
 
 
 def test_bulk_set_album_handles_scope_and_removal(
@@ -2817,15 +2747,9 @@ def test_bulk_set_album_handles_scope_and_removal(
 
     assert result["succeeded_count"] == 1
     assert result["failed_count"] == 1
-    assert (
-        result["results"][0]["media"]["album_id"]
-        == second_album["id"]
-    )
+    assert result["results"][0]["media"]["album_id"] == second_album["id"]
     assert result["results"][1]["success"] is False
-    assert (
-        result["results"][1]["error_code"]
-        == "fotos_media_album_scope_mismatch"
-    )
+    assert result["results"][1]["error_code"] == "fotos_media_album_scope_mismatch"
 
     remove_response = client.patch(
         f"{MEDIA_URL}/bulk",
@@ -2838,10 +2762,7 @@ def test_bulk_set_album_handles_scope_and_removal(
     )
 
     assert remove_response.status_code == 200
-    assert (
-        remove_response.json()["results"][0]["media"]["album_id"]
-        is None
-    )
+    assert remove_response.json()["results"][0]["media"]["album_id"] is None
 
     external_get = client.get(
         f"{MEDIA_URL}/{external_id}",
@@ -2892,10 +2813,7 @@ def test_bulk_rejects_invalid_selection_contract(
         f"{MEDIA_URL}/bulk",
         json={
             "operation": "clear_original_date_conflict",
-            "media_ids": [
-                str(uuid4())
-                for _ in range(101)
-            ],
+            "media_ids": [str(uuid4()) for _ in range(101)],
         },
         headers=headers,
     )
@@ -3102,10 +3020,7 @@ def test_reupload_deleted_media_restores_record(
 
     assert restored["id"] == media_id
     assert restored["album_id"] == album_id
-    assert (
-        restored["original_name"]
-        == "IMG-20240131-WA0001.jpg"
-    )
+    assert restored["original_name"] == "IMG-20240131-WA0001.jpg"
     assert restored["deleted_at"] is None
     assert restored["original_date"] == "2024-01-31T00:00:00"
     assert restored["original_date_source"] == "filename"
@@ -3156,10 +3071,7 @@ def test_reupload_deleted_media_restores_record(
         / ".staging"
     )
 
-    assert (
-        not staging_root.exists()
-        or not any(staging_root.iterdir())
-    )
+    assert not staging_root.exists() or not any(staging_root.iterdir())
 
 
 def test_upload_media_rejects_duplicate_source(
@@ -3210,10 +3122,7 @@ def test_upload_media_rejects_duplicate_source(
     )
 
     assert duplicate_response.status_code == 409
-    assert (
-        duplicate_response.json()["error"]
-        == "fotos_media_duplicate"
-    )
+    assert duplicate_response.json()["error"] == "fotos_media_duplicate"
     assert first["id"] in duplicate_response.json()["message"]
 
     list_response = client.get(
@@ -3237,10 +3146,7 @@ def test_upload_media_rejects_duplicate_source(
         / ".staging"
     )
 
-    assert (
-        not staging_root.exists()
-        or not any(staging_root.iterdir())
-    )
+    assert not staging_root.exists() or not any(staging_root.iterdir())
 
 
 @pytest.mark.parametrize(
@@ -3455,6 +3361,7 @@ def test_process_video_creates_and_returns_preview(
         / tenant_id
         / environment_id
         / "derivatives"
+        / "sem-data"
         / created["id"]
         / "preview.mp4"
     )
@@ -3676,10 +3583,7 @@ def test_process_ready_media_recovers_missing_derivative_file(
     assert before_response.status_code == 200
 
     before = before_response.json()
-    before_ids = {
-        derivative["derivative_type"]: derivative["id"]
-        for derivative in before
-    }
+    before_ids = {derivative["derivative_type"]: derivative["id"] for derivative in before}
 
     thumbnail_path = (
         test_settings.uploads_dir
@@ -3688,6 +3592,7 @@ def test_process_ready_media_recovers_missing_derivative_file(
         / tenant_id
         / environment_id
         / "derivatives"
+        / "sem-data"
         / media_id
         / "thumbnail.webp"
     )
@@ -3723,10 +3628,7 @@ def test_process_ready_media_recovers_missing_derivative_file(
     assert after_response.status_code == 200
 
     after = after_response.json()
-    after_ids = {
-        derivative["derivative_type"]: derivative["id"]
-        for derivative in after
-    }
+    after_ids = {derivative["derivative_type"]: derivative["id"] for derivative in after}
 
     assert len(after) == 2
     assert after_ids == before_ids
@@ -3777,10 +3679,7 @@ def test_process_ready_video_recovers_corrupted_preview(
     assert before_response.status_code == 200
 
     before = before_response.json()
-    before_ids = {
-        derivative["derivative_type"]: derivative["id"]
-        for derivative in before
-    }
+    before_ids = {derivative["derivative_type"]: derivative["id"] for derivative in before}
 
     preview_path = (
         test_settings.uploads_dir
@@ -3789,6 +3688,7 @@ def test_process_ready_video_recovers_corrupted_preview(
         / tenant_id
         / environment_id
         / "derivatives"
+        / "sem-data"
         / media_id
         / "preview.mp4"
     )
@@ -3799,9 +3699,7 @@ def test_process_ready_video_recovers_corrupted_preview(
 
     assert preview_size > 0
 
-    preview_path.write_bytes(
-        b"\x00" * preview_size
-    )
+    preview_path.write_bytes(b"\x00" * preview_size)
 
     assert preview_path.stat().st_size == preview_size
 
@@ -3845,10 +3743,7 @@ def test_process_ready_video_recovers_corrupted_preview(
     assert after_response.status_code == 200
 
     after = after_response.json()
-    after_ids = {
-        derivative["derivative_type"]: derivative["id"]
-        for derivative in after
-    }
+    after_ids = {derivative["derivative_type"]: derivative["id"] for derivative in after}
 
     assert len(after) == 2
     assert after_ids == before_ids
@@ -3900,9 +3795,7 @@ def test_process_ready_media_replaces_orphan_file(
 
     before = before_response.json()
     preview_before = next(
-        derivative
-        for derivative in before
-        if derivative["derivative_type"] == "preview"
+        derivative for derivative in before if derivative["derivative_type"] == "preview"
     )
 
     preview_path = (
@@ -3912,6 +3805,7 @@ def test_process_ready_media_replaces_orphan_file(
         / tenant_id
         / environment_id
         / "derivatives"
+        / "sem-data"
         / media_id
         / "preview.webp"
     )
@@ -3929,9 +3823,7 @@ def test_process_ready_media_replaces_orphan_file(
         session.delete(derivative)
         session.commit()
 
-    preview_path.write_bytes(
-        b"orphan-derivative"
-    )
+    preview_path.write_bytes(b"orphan-derivative")
 
     response = client.post(
         f"{MEDIA_URL}/{media_id}/process",
@@ -3957,9 +3849,7 @@ def test_process_ready_media_replaces_orphan_file(
 
     after = after_response.json()
     preview_after = next(
-        derivative
-        for derivative in after
-        if derivative["derivative_type"] == "preview"
+        derivative for derivative in after if derivative["derivative_type"] == "preview"
     )
 
     assert len(after) == 2
@@ -4011,10 +3901,7 @@ def test_processing_failure_preserves_recovered_derivative(
     assert before_response.status_code == 200
 
     before = before_response.json()
-    before_ids = {
-        derivative["derivative_type"]: derivative["id"]
-        for derivative in before
-    }
+    before_ids = {derivative["derivative_type"]: derivative["id"] for derivative in before}
 
     derivatives_path = (
         test_settings.uploads_dir
@@ -4023,6 +3910,7 @@ def test_processing_failure_preserves_recovered_derivative(
         / tenant_id
         / environment_id
         / "derivatives"
+        / "sem-data"
         / media_id
     )
     thumbnail_path = derivatives_path / "thumbnail.webp"
@@ -4034,9 +3922,7 @@ def test_processing_failure_preserves_recovered_derivative(
     thumbnail_path.unlink()
     preview_path.unlink()
 
-    original_generate = (
-        derivative_service_module.generate_image_derivative
-    )
+    original_generate = derivative_service_module.generate_image_derivative
 
     def generate_with_preview_failure(
         source_path: Path,
@@ -4045,9 +3931,7 @@ def test_processing_failure_preserves_recovered_derivative(
         derivative_type: str,
     ):
         if derivative_type == "preview":
-            raise FotosImageDerivativeError(
-                "Falha simulada no preview."
-            )
+            raise FotosImageDerivativeError("Falha simulada no preview.")
 
         return original_generate(
             source_path,
@@ -4082,10 +3966,7 @@ def test_processing_failure_preserves_recovered_derivative(
     assert after_response.status_code == 200
 
     after = after_response.json()
-    after_ids = {
-        derivative["derivative_type"]: derivative["id"]
-        for derivative in after
-    }
+    after_ids = {derivative["derivative_type"]: derivative["id"] for derivative in after}
 
     assert len(after) == 2
     assert after_ids == before_ids
@@ -4097,10 +3978,7 @@ def test_processing_failure_preserves_recovered_derivative(
 
     assert media_response.status_code == 200
     assert media_response.json()["processing_status"] == "failed"
-    assert (
-        media_response.json()["processing_error"]
-        == "Falha simulada no preview."
-    )
+    assert media_response.json()["processing_error"] == "Falha simulada no preview."
 
 
 def test_process_failed_media_retries_successfully(
@@ -4223,10 +4101,7 @@ def test_process_stale_processing_media_recovers(
 
     media_id = upload_response.json()["id"]
     stale_at = datetime.now(UTC).replace(tzinfo=None) - timedelta(
-        minutes=(
-            test_settings.fotos_media_processing_timeout_minutes
-            + 1
-        ),
+        minutes=(test_settings.fotos_media_processing_timeout_minutes + 1),
     )
 
     set_media_processing_state(

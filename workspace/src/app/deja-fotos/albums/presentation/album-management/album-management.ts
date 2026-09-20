@@ -11,6 +11,7 @@ import {
 import {
   ChangeDetectionStrategy,
   Component,
+  OnDestroy,
   OnInit,
   computed,
   input,
@@ -26,12 +27,18 @@ import {
 } from '../../../fotos-environment-option';
 
 import {
+  Media,
+  MediaService,
+  formatMediaDate,
+  formatMediaDuration,
+} from '../../../media';
+
+import {
   AlbumService,
 } from '../../application';
 
 import {
   Album,
-  AlbumFilters,
   AlbumInput,
 } from '../../domain';
 
@@ -39,10 +46,14 @@ import {
   AlbumFormComponent,
 } from '../album-form/album-form';
 
-type AlbumActiveFilter =
-  | 'all'
-  | 'active'
-  | 'inactive';
+interface AlbumMediaPeriod {
+  readonly key: string;
+  readonly label: string;
+  readonly sortValue: number;
+  readonly items: readonly Media[];
+}
+
+const ALBUM_MEDIA_PAGE_SIZE = 100;
 
 @Component({
   selector: 'deja-album-management',
@@ -55,8 +66,12 @@ type AlbumActiveFilter =
   styleUrl: './album-management.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AlbumManagementComponent implements OnInit {
+export class AlbumManagementComponent
+  implements OnDestroy, OnInit {
   readonly service = input.required<AlbumService>();
+
+  readonly mediaService =
+    input.required<MediaService>();
 
   readonly environments =
     input<readonly FotosEnvironmentOption[]>([]);
@@ -69,6 +84,10 @@ export class AlbumManagementComponent implements OnInit {
   readonly canDelete = input(false);
 
   readonly albums = signal<readonly Album[]>([]);
+
+  readonly photoCount = signal(0);
+
+  readonly videoCount = signal(0);
 
   readonly loading = signal(false);
 
@@ -86,12 +105,6 @@ export class AlbumManagementComponent implements OnInit {
   readonly operationError =
     signal<string | null>(null);
 
-  readonly searchTerm = signal('');
-
-  readonly environmentFilter = signal('');
-
-  readonly activeFilter =
-    signal<AlbumActiveFilter>('all');
 
   readonly selectedAlbum =
     signal<Album | null>(null);
@@ -100,7 +113,39 @@ export class AlbumManagementComponent implements OnInit {
 
   readonly formVisible = signal(false);
 
-  readonly organizerVisible = signal(false);
+  readonly albumMedia = signal<readonly Media[]>([]);
+
+  readonly albumMediaTotal = signal(0);
+
+  readonly albumMediaPage = signal(0);
+
+  readonly albumMediaLoading = signal(false);
+
+  readonly albumMediaLoadingMore = signal(false);
+
+  readonly albumMediaError =
+    signal<string | null>(null);
+
+  readonly expandedPeriodKeys =
+    signal<ReadonlySet<string>>(
+      new Set<string>(),
+    );
+
+  protected readonly thumbnailUrls =
+    signal<ReadonlyMap<string, string>>(
+      new Map<string, string>(),
+    );
+
+  protected readonly thumbnailFailures =
+    signal<ReadonlySet<string>>(
+      new Set<string>(),
+    );
+
+  protected readonly formatMediaDate =
+    formatMediaDate;
+
+  protected readonly formatMediaDuration =
+    formatMediaDuration;
 
   readonly activeAlbums = computed(() => (
     this.albums().filter(album => album.active)
@@ -118,41 +163,31 @@ export class AlbumManagementComponent implements OnInit {
     ) ?? null;
   });
 
-  readonly visibleAlbums = computed(() => {
-    const search = this.searchTerm()
-      .trim()
-      .toLocaleLowerCase('pt-BR');
+  readonly albumMediaPeriods = computed(() => (
+    this.buildMediaPeriods(this.albumMedia())
+  ));
 
-    if (!search) {
-      return this.albums();
-    }
+  readonly albumMediaHasMore = computed(() => (
+    this.albumMedia().length < this.albumMediaTotal()
+  ));
 
-    return this.albums().filter(album => (
-      album.name
-        .toLocaleLowerCase('pt-BR')
-        .includes(search)
-      || (
-        album.description
-          ?.toLocaleLowerCase('pt-BR')
-          .includes(search)
-        ?? false
-      )
-    ));
-  });
+  private readonly pendingThumbnailIds =
+    new Set<string>();
 
   private requestSequence = 0;
 
+  private mediaRequestSequence = 0;
+
+  private destroyed = false;
+
   ngOnInit(): void {
-    const defaultEnvironmentId =
-      this.defaultEnvironmentId();
-
-    if (defaultEnvironmentId) {
-      this.environmentFilter.set(
-        defaultEnvironmentId,
-      );
-    }
-
     void this.refresh();
+    void this.loadMediaSummary();
+  }
+
+  ngOnDestroy(): void {
+    this.destroyed = true;
+    this.clearThumbnailUrls();
   }
 
   async refresh(): Promise<void> {
@@ -165,9 +200,7 @@ export class AlbumManagementComponent implements OnInit {
     this.errorMessage.set(null);
 
     try {
-      const albums = await this.service().list(
-        this.createFilters(),
-      );
+      const albums = await this.service().list({});
 
       if (requestSequence === this.requestSequence) {
         this.albums.set(albums);
@@ -201,30 +234,55 @@ export class AlbumManagementComponent implements OnInit {
     albumId: string,
   ): void {
     this.selectedDashboardAlbumId.set(albumId);
-    this.organizerVisible.set(false);
+    this.resetAlbumMedia();
+
+    if (albumId) {
+      void this.loadSelectedAlbumMedia(true);
+    }
   }
 
-  toggleOrganizer(): void {
-    this.closeForm();
-    this.organizerVisible.update(
-      visible => !visible,
-    );
+  async loadMoreAlbumMedia(): Promise<void> {
+    if (
+      !this.albumMediaHasMore()
+      || this.albumMediaLoading()
+      || this.albumMediaLoadingMore()
+    ) {
+      return;
+    }
+
+    await this.loadSelectedAlbumMedia(false);
   }
 
-  applyFilters(): void {
-    this.closeForm();
-
-    void this.refresh();
+  retryAlbumMedia(): void {
+    void this.loadSelectedAlbumMedia(true);
   }
 
-  clearFilters(): void {
-    this.searchTerm.set('');
-    this.environmentFilter.set(
-      this.defaultEnvironmentId() ?? '',
-    );
-    this.activeFilter.set('all');
+  togglePeriod(
+    periodKey: string,
+  ): void {
+    this.expandedPeriodKeys.update(current => {
+      const next = new Set(current);
 
-    this.applyFilters();
+      if (next.has(periodKey)) {
+        next.delete(periodKey);
+      } else {
+        next.add(periodKey);
+      }
+
+      return next;
+    });
+  }
+
+  periodExpanded(
+    periodKey: string,
+  ): boolean {
+    return this.expandedPeriodKeys().has(periodKey);
+  }
+
+  protected thumbnailUrl(
+    mediaId: string,
+  ): string | undefined {
+    return this.thumbnailUrls().get(mediaId);
   }
 
   openCreate(): void {
@@ -385,17 +443,324 @@ export class AlbumManagementComponent implements OnInit {
     ).format(date);
   }
 
-  private createFilters(): AlbumFilters {
-    const activeFilter = this.activeFilter();
 
-    return {
-      environmentId:
-        this.environmentFilter() || undefined,
-      active:
-        activeFilter === 'all'
-          ? undefined
-          : activeFilter === 'active',
-    };
+  private async loadMediaSummary(): Promise<void> {
+    try {
+      const [
+        photos,
+        videos,
+      ] = await Promise.all([
+        this.mediaService().list({
+          mediaType: 'image',
+          page: 1,
+          pageSize: 1,
+        }),
+        this.mediaService().list({
+          mediaType: 'video',
+          page: 1,
+          pageSize: 1,
+        }),
+      ]);
+
+      if (!this.destroyed) {
+        this.photoCount.set(photos.total);
+        this.videoCount.set(videos.total);
+      }
+    } catch {
+      if (!this.destroyed) {
+        this.photoCount.set(0);
+        this.videoCount.set(0);
+      }
+    }
+  }
+
+  private async loadSelectedAlbumMedia(
+    reset: boolean,
+  ): Promise<void> {
+    const albumId = this.selectedDashboardAlbumId();
+    const album = this.selectedDashboardAlbum();
+
+    if (!albumId || !album) {
+      this.resetAlbumMedia();
+
+      return;
+    }
+
+    const requestSequence =
+      this.mediaRequestSequence + 1;
+
+    this.mediaRequestSequence = requestSequence;
+
+    const page = reset
+      ? 1
+      : this.albumMediaPage() + 1;
+
+    if (reset) {
+      this.albumMediaLoading.set(true);
+      this.albumMediaLoadingMore.set(false);
+      this.albumMediaError.set(null);
+      this.albumMedia.set([]);
+      this.albumMediaTotal.set(0);
+      this.albumMediaPage.set(0);
+      this.expandedPeriodKeys.set(
+        new Set<string>(),
+      );
+      this.clearThumbnailUrls();
+    } else {
+      this.albumMediaLoadingMore.set(true);
+      this.albumMediaError.set(null);
+    }
+
+    try {
+      const result = await this.mediaService().list({
+        environmentId: album.environmentId,
+        albumId,
+        page,
+        pageSize: ALBUM_MEDIA_PAGE_SIZE,
+      });
+
+      if (
+        requestSequence !== this.mediaRequestSequence
+        || albumId !== this.selectedDashboardAlbumId()
+      ) {
+        return;
+      }
+
+      const nextItems = reset
+        ? result.items
+        : [
+            ...this.albumMedia(),
+            ...result.items,
+          ];
+
+      this.albumMedia.set(nextItems);
+      this.albumMediaTotal.set(result.total);
+      this.albumMediaPage.set(result.page);
+      this.synchronizeThumbnails(nextItems);
+
+      if (reset) {
+        const firstPeriod =
+          this.buildMediaPeriods(nextItems)[0];
+
+        this.expandedPeriodKeys.set(
+          new Set(
+            firstPeriod
+              ? [firstPeriod.key]
+              : [],
+          ),
+        );
+      }
+    } catch {
+      if (
+        requestSequence === this.mediaRequestSequence
+        && albumId === this.selectedDashboardAlbumId()
+      ) {
+        this.albumMediaError.set(
+          'Não foi possível carregar as mídias deste álbum.',
+        );
+      }
+    } finally {
+      if (requestSequence === this.mediaRequestSequence) {
+        this.albumMediaLoading.set(false);
+        this.albumMediaLoadingMore.set(false);
+      }
+    }
+  }
+
+  private resetAlbumMedia(): void {
+    this.mediaRequestSequence += 1;
+    this.albumMedia.set([]);
+    this.albumMediaTotal.set(0);
+    this.albumMediaPage.set(0);
+    this.albumMediaLoading.set(false);
+    this.albumMediaLoadingMore.set(false);
+    this.albumMediaError.set(null);
+    this.expandedPeriodKeys.set(
+      new Set<string>(),
+    );
+    this.clearThumbnailUrls();
+  }
+
+  private buildMediaPeriods(
+    items: readonly Media[],
+  ): readonly AlbumMediaPeriod[] {
+    const periods = new Map<
+      string,
+      {
+        label: string;
+        sortValue: number;
+        items: Media[];
+      }
+    >();
+
+    for (const media of items) {
+      const dateMatch = media.originalDate?.match(
+        /^(\d{4})-(\d{2})/,
+      );
+
+      let key = 'without-date';
+      let label = 'Sem data';
+      let sortValue = Number.NEGATIVE_INFINITY;
+
+      if (dateMatch) {
+        const year = Number(dateMatch[1]);
+        const month = Number(dateMatch[2]);
+
+        key = `${year}-${String(month).padStart(2, '0')}`;
+        sortValue = year * 100 + month;
+
+        const formattedLabel =
+          new Intl.DateTimeFormat(
+            'pt-BR',
+            {
+              month: 'long',
+              year: 'numeric',
+            },
+          ).format(
+            new Date(year, month - 1, 1),
+          );
+
+        label = formattedLabel.charAt(0)
+          .toLocaleUpperCase('pt-BR')
+          + formattedLabel.slice(1);
+      }
+
+      const period = periods.get(key);
+
+      if (period) {
+        period.items.push(media);
+      } else {
+        periods.set(
+          key,
+          {
+            label,
+            sortValue,
+            items: [media],
+          },
+        );
+      }
+    }
+
+    return Array.from(
+      periods,
+      ([key, period]) => ({
+        key,
+        label: period.label,
+        sortValue: period.sortValue,
+        items: period.items,
+      }),
+    ).sort(
+      (left, right) => (
+        right.sortValue - left.sortValue
+      ),
+    );
+  }
+
+  private synchronizeThumbnails(
+    items: readonly Media[],
+  ): void {
+    const visibleIds = new Set(
+      items.map(item => item.id),
+    );
+
+    const currentUrls = new Map(
+      this.thumbnailUrls(),
+    );
+
+    let urlsChanged = false;
+
+    for (
+      const [mediaId, objectUrl]
+      of currentUrls.entries()
+    ) {
+      if (!visibleIds.has(mediaId)) {
+        URL.revokeObjectURL(objectUrl);
+        currentUrls.delete(mediaId);
+        urlsChanged = true;
+      }
+    }
+
+    if (urlsChanged) {
+      this.thumbnailUrls.set(currentUrls);
+    }
+
+    for (const media of items) {
+      if (
+        media.processingStatus === 'ready'
+        && !currentUrls.has(media.id)
+        && !this.thumbnailFailures().has(media.id)
+        && !this.pendingThumbnailIds.has(media.id)
+      ) {
+        void this.loadThumbnail(media);
+      }
+    }
+  }
+
+  private async loadThumbnail(
+    media: Media,
+  ): Promise<void> {
+    this.pendingThumbnailIds.add(media.id);
+
+    try {
+      const thumbnail =
+        await this.mediaService().loadThumbnail(
+          media.id,
+          media.mediaType,
+        );
+
+      if (
+        this.destroyed
+        || !this.albumMedia().some(
+          item => item.id === media.id,
+        )
+      ) {
+        return;
+      }
+
+      const objectUrl = URL.createObjectURL(thumbnail);
+
+      this.thumbnailUrls.update(current => {
+        const next = new Map(current);
+        const previousUrl = next.get(media.id);
+
+        if (previousUrl) {
+          URL.revokeObjectURL(previousUrl);
+        }
+
+        next.set(media.id, objectUrl);
+
+        return next;
+      });
+    } catch {
+      if (!this.destroyed) {
+        this.thumbnailFailures.update(current => {
+          const next = new Set(current);
+
+          next.add(media.id);
+
+          return next;
+        });
+      }
+    } finally {
+      this.pendingThumbnailIds.delete(media.id);
+    }
+  }
+
+  private clearThumbnailUrls(): void {
+    for (
+      const objectUrl
+      of this.thumbnailUrls().values()
+    ) {
+      URL.revokeObjectURL(objectUrl);
+    }
+
+    this.thumbnailUrls.set(
+      new Map<string, string>(),
+    );
+    this.thumbnailFailures.set(
+      new Set<string>(),
+    );
+    this.pendingThumbnailIds.clear();
   }
 
   private clearOperationMessages(): void {

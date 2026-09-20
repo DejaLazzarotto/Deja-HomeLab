@@ -25,6 +25,9 @@ from deja_indicadores_api.fotos.media.models import (
 from deja_indicadores_api.fotos.media.repository import (
     FotosMediaRepository,
 )
+from deja_indicadores_api.fotos.media.storage import (
+    build_derivative_storage_key,
+)
 from deja_indicadores_api.fotos.media.video_derivatives import (
     FotosVideoDerivative,
     generate_video_poster,
@@ -180,19 +183,10 @@ class FotosMediaDerivativeService:
             height = media.height
 
             if duration_seconds is None or duration_seconds <= 0:
-                raise ValueError(
-                    "O vídeo normalizado não possui duração válida."
-                )
+                raise ValueError("O vídeo normalizado não possui duração válida.")
 
-            if (
-                width is None
-                or height is None
-                or width <= 0
-                or height <= 0
-            ):
-                raise ValueError(
-                    "O vídeo normalizado não possui dimensões válidas."
-                )
+            if width is None or height is None or width <= 0 or height <= 0:
+                raise ValueError("O vídeo normalizado não possui dimensões válidas.")
 
             (
                 poster,
@@ -230,9 +224,7 @@ class FotosMediaDerivativeService:
             media.processing_error = str(exc)
 
             self._media_repository.update(media)
-            self._remove_replaced_original(
-                replaced_original_path
-            )
+            self._remove_replaced_original(replaced_original_path)
 
             raise
 
@@ -240,9 +232,7 @@ class FotosMediaDerivativeService:
         media.processing_error = None
 
         self._media_repository.update(media)
-        self._remove_replaced_original(
-            replaced_original_path
-        )
+        self._remove_replaced_original(replaced_original_path)
 
         return derivatives
 
@@ -258,33 +248,22 @@ class FotosMediaDerivativeService:
 
         inspection = inspect_video(
             original_path,
-            ffprobe_executable=(
-                self._settings.ffprobe_executable
-            ),
+            ffprobe_executable=(self._settings.ffprobe_executable),
         )
 
         normalized = normalize_video(
             original_path,
             source_extension=media.file_extension,
             inspection=inspection,
-            ffmpeg_executable=(
-                self._settings.ffmpeg_executable
-            ),
-            ffprobe_executable=(
-                self._settings.ffprobe_executable
-            ),
-            timeout_seconds=(
-                self._settings
-                .fotos_media_video_conversion_timeout_seconds
-            ),
+            ffmpeg_executable=(self._settings.ffmpeg_executable),
+            ffprobe_executable=(self._settings.ffprobe_executable),
+            timeout_seconds=(self._settings.fotos_media_video_conversion_timeout_seconds),
         )
 
         if not normalized.was_converted:
             return original_path, None
 
-        normalized_storage_key = Path(
-            media.original_storage_key
-        ).with_name(
+        normalized_storage_key = Path(media.original_storage_key).with_name(
             normalized.file_path.name
         )
 
@@ -293,9 +272,7 @@ class FotosMediaDerivativeService:
         media.file_size = normalized.file_size
         media.checksum_sha256 = normalized.checksum_sha256
         media.was_converted = True
-        media.original_storage_key = (
-            normalized_storage_key.as_posix()
-        )
+        media.original_storage_key = normalized_storage_key.as_posix()
         media.width = normalized.width
         media.height = normalized.height
         media.duration_seconds = normalized.duration_seconds
@@ -376,9 +353,7 @@ class FotosMediaDerivativeService:
     ) -> bool:
         """Valida o arquivo físico e os metadados de um derivado."""
 
-        file_path = self._settings.uploads_dir / Path(
-            derivative.storage_key
-        )
+        file_path = self._settings.uploads_dir / Path(derivative.storage_key)
 
         try:
             if not file_path.is_file():
@@ -408,8 +383,7 @@ class FotosMediaDerivativeService:
                 )
 
                 return (
-                    inspection.width == derivative.width
-                    and inspection.height == derivative.height
+                    inspection.width == derivative.width and inspection.height == derivative.height
                 )
 
         except (
@@ -441,9 +415,7 @@ class FotosMediaDerivativeService:
         derivative.height = generated.height
 
         try:
-            persisted = self._derivative_repository.update(
-                derivative
-            )
+            persisted = self._derivative_repository.update(derivative)
         except Exception:
             destination_path.unlink(
                 missing_ok=True,
@@ -470,10 +442,7 @@ class FotosMediaDerivativeService:
             derivative_type,
         )
 
-        if (
-            existing is not None
-            and self._is_derivative_file_valid(existing)
-        ):
+        if existing is not None and self._is_derivative_file_valid(existing):
             return existing, False
 
         if existing is not None:
@@ -536,10 +505,7 @@ class FotosMediaDerivativeService:
             derivative_type,
         )
 
-        if (
-            existing is not None
-            and self._is_derivative_file_valid(existing)
-        ):
+        if existing is not None and self._is_derivative_file_valid(existing):
             return existing, False
 
         if existing is not None:
@@ -604,10 +570,7 @@ class FotosMediaDerivativeService:
             derivative_type,
         )
 
-        if (
-            existing is not None
-            and self._is_derivative_file_valid(existing)
-        ):
+        if existing is not None and self._is_derivative_file_valid(existing):
             return existing, False
 
         if existing is not None:
@@ -661,14 +624,14 @@ class FotosMediaDerivativeService:
     ) -> Path:
         """Monta a chave de armazenamento de um derivado."""
 
-        return (
-            Path("fotos")
-            / media.organization_id
-            / media.tenant_id
-            / media.environment_id
-            / "derivatives"
-            / media.id
-            / f"{derivative_type}{file_extension}"
+        return build_derivative_storage_key(
+            organization_id=media.organization_id,
+            tenant_id=media.tenant_id,
+            environment_id=media.environment_id,
+            media_id=media.id,
+            derivative_type=derivative_type,
+            file_extension=file_extension,
+            original_date=media.original_date,
         )
 
     def _persist_derivative(

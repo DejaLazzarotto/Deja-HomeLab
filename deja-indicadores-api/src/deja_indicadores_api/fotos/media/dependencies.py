@@ -66,6 +66,7 @@ def get_fotos_media_service(
     return FotosMediaService(
         FotosMediaRepository(session),
         FotosAlbumRepository(session),
+        FotosMediaDerivativeRepository(session),
         TenantRepository(session),
         EnvironmentRepository(session),
         AuthorizationService(),

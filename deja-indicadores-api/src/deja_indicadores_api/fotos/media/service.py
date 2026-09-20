@@ -21,6 +21,12 @@ from deja_indicadores_api.fotos.albums.models import (
 from deja_indicadores_api.fotos.albums.repository import (
     FotosAlbumRepository,
 )
+from deja_indicadores_api.fotos.media.derivative_models import (
+    FotosMediaDerivativeModel,
+)
+from deja_indicadores_api.fotos.media.derivative_repository import (
+    FotosMediaDerivativeRepository,
+)
 from deja_indicadores_api.fotos.media.exceptions import (
     FotosMediaAlbumNotFoundError,
     FotosMediaAlbumScopeMismatchError,
@@ -59,6 +65,7 @@ from deja_indicadores_api.fotos.media.schemas import (
     FotosMediaBulkVerifyOriginalDate,
 )
 from deja_indicadores_api.fotos.media.storage import (
+    build_derivative_storage_key,
     build_original_storage_key,
 )
 from deja_indicadores_api.fotos.media.video_inspection import (
@@ -140,9 +147,7 @@ def infer_original_date_from_filename(
 ) -> tuple[datetime, str] | None:
     """Infere data e precisão a partir de nomes reconhecíveis."""
 
-    match = FILENAME_DATE_PATTERN.search(
-        Path(filename).stem
-    )
+    match = FILENAME_DATE_PATTERN.search(Path(filename).stem)
 
     if match is None:
         return None
@@ -178,6 +183,7 @@ class FotosMediaService:
         self,
         repository: FotosMediaRepository,
         album_repository: FotosAlbumRepository,
+        derivative_repository: FotosMediaDerivativeRepository,
         tenant_repository: TenantRepository,
         environment_repository: EnvironmentRepository,
         authorization_service: AuthorizationService,
@@ -185,6 +191,7 @@ class FotosMediaService:
     ) -> None:
         self._repository = repository
         self._album_repository = album_repository
+        self._derivative_repository = derivative_repository
         self._tenant_repository = tenant_repository
         self._environment_repository = environment_repository
         self._authorization_service = authorization_service
@@ -241,15 +248,11 @@ class FotosMediaService:
                 environment_id=effective_environment_id,
             )
 
-        normalized_original_date_from = (
-            self._normalize_datetime(
-                original_date_from,
-            )
+        normalized_original_date_from = self._normalize_datetime(
+            original_date_from,
         )
-        normalized_original_date_to = (
-            self._normalize_datetime(
-                original_date_to,
-            )
+        normalized_original_date_to = self._normalize_datetime(
+            original_date_to,
         )
 
         return self._repository.list(
@@ -338,31 +341,20 @@ class FotosMediaService:
                 environment_id=environment.id,
             )
 
-        source_content_type = (
-            file.content_type
-            or "application/octet-stream"
-        )
+        source_content_type = file.content_type or "application/octet-stream"
 
-        media_type = ALLOWED_FOTOS_CONTENT_TYPES.get(
-            source_content_type
-        )
+        media_type = ALLOWED_FOTOS_CONTENT_TYPES.get(source_content_type)
 
         if media_type is None:
             raise FotosMediaInvalidTypeError(
                 source_content_type,
             )
 
-        original_name = Path(
-            file.filename or "arquivo"
-        ).name
+        original_name = Path(file.filename or "arquivo").name
 
-        source_extension = Path(
-            original_name
-        ).suffix.lower()
+        source_extension = Path(original_name).suffix.lower()
 
-        media_id = str(
-            uuid4()
-        )
+        media_id = str(uuid4())
 
         staging_key = (
             Path("fotos")
@@ -374,10 +366,7 @@ class FotosMediaService:
             / f"source{source_extension}"
         )
 
-        file_path = (
-            self._settings.uploads_dir
-            / staging_key
-        )
+        file_path = self._settings.uploads_dir / staging_key
 
         staging_directory = file_path.parent
 
@@ -386,11 +375,7 @@ class FotosMediaService:
             exist_ok=True,
         )
 
-        max_size_bytes = (
-            self._settings.fotos_media_max_size_mb
-            * 1024
-            * 1024
-        )
+        max_size_bytes = self._settings.fotos_media_max_size_mb * 1024 * 1024
 
         digest = sha256()
         total_size = 0
@@ -405,9 +390,7 @@ class FotosMediaService:
         try:
             with file_path.open("wb") as destination:
                 while True:
-                    chunk = await file.read(
-                        UPLOAD_CHUNK_SIZE
-                    )
+                    chunk = await file.read(UPLOAD_CHUNK_SIZE)
 
                     if not chunk:
                         break
@@ -419,23 +402,17 @@ class FotosMediaService:
                             self._settings.fotos_media_max_size_mb,
                         )
 
-                    digest.update(
-                        chunk
-                    )
-                    destination.write(
-                        chunk
-                    )
+                    digest.update(chunk)
+                    destination.write(chunk)
 
             if total_size == 0:
                 raise FotosMediaEmptyFileError()
 
             source_checksum = digest.hexdigest()
 
-            existing_media = (
-                self._repository.find_by_source_checksum(
-                    source_checksum,
-                    environment_id=environment.id,
-                )
+            existing_media = self._repository.find_by_source_checksum(
+                source_checksum,
+                environment_id=environment.id,
             )
 
             if existing_media is not None:
@@ -495,9 +472,7 @@ class FotosMediaService:
                 try:
                     inspection = inspect_video(
                         file_path,
-                        ffprobe_executable=(
-                            self._settings.ffprobe_executable
-                        ),
+                        ffprobe_executable=(self._settings.ffprobe_executable),
                     )
                 except FotosVideoInspectionError as exc:
                     raise FotosMediaInvalidContentError(
@@ -513,10 +488,8 @@ class FotosMediaService:
                 original_date_source = "embedded_metadata"
                 original_date_precision = "datetime"
             else:
-                inferred_date = (
-                    infer_original_date_from_filename(
-                        original_name,
-                    )
+                inferred_date = infer_original_date_from_filename(
+                    original_name,
                 )
 
                 if inferred_date is not None:
@@ -535,10 +508,7 @@ class FotosMediaService:
                 original_date=original_date,
             )
 
-            destination_path = (
-                self._settings.uploads_dir
-                / storage_key
-            )
+            destination_path = self._settings.uploads_dir / storage_key
 
             destination_path.parent.mkdir(
                 parents=True,
@@ -623,26 +593,17 @@ class FotosMediaService:
         previous_processing_error = media.processing_error
         previous_deleted_at = media.deleted_at
         previous_original_date = media.original_date
-        previous_original_date_source = (
-            media.original_date_source
-        )
-        previous_original_date_precision = (
-            media.original_date_precision
-        )
+        previous_original_date_source = media.original_date_source
+        previous_original_date_precision = media.original_date_precision
         previous_storage_key = media.original_storage_key
 
-        current_path = (
-            self._settings.uploads_dir
-            / Path(media.original_storage_key)
-        )
+        current_path = self._settings.uploads_dir / Path(media.original_storage_key)
         target_path = current_path
         moved_original = False
 
         if media.original_date is None:
-            inferred_date = (
-                infer_original_date_from_filename(
-                    original_name,
-                )
+            inferred_date = infer_original_date_from_filename(
+                original_name,
             )
 
             if inferred_date is not None:
@@ -651,38 +612,24 @@ class FotosMediaService:
                     inferred_precision,
                 ) = inferred_date
 
-                target_storage_key = (
-                    build_original_storage_key(
-                        organization_id=media.organization_id,
-                        tenant_id=media.tenant_id,
-                        environment_id=media.environment_id,
-                        media_id=media.id,
-                        file_extension=(
-                            media.file_extension
-                            or current_path.suffix
-                        ),
-                        original_date=inferred_value,
-                    )
+                target_storage_key = build_original_storage_key(
+                    organization_id=media.organization_id,
+                    tenant_id=media.tenant_id,
+                    environment_id=media.environment_id,
+                    media_id=media.id,
+                    file_extension=(media.file_extension or current_path.suffix),
+                    original_date=inferred_value,
                 )
 
-                target_path = (
-                    self._settings.uploads_dir
-                    / target_storage_key
-                )
+                target_path = self._settings.uploads_dir / target_storage_key
 
                 if target_path != current_path:
-                    if (
-                        not current_path.exists()
-                        or not current_path.is_file()
-                    ):
+                    if not current_path.exists() or not current_path.is_file():
                         raise FotosMediaFileNotFoundError(
                             media.id,
                         )
 
-                    if (
-                        target_path.exists()
-                        or target_path.parent.exists()
-                    ):
+                    if target_path.exists() or target_path.parent.exists():
                         raise FotosMediaStorageConflictError(
                             media.id,
                         )
@@ -718,12 +665,8 @@ class FotosMediaService:
 
                 media.original_date = inferred_value
                 media.original_date_source = "filename"
-                media.original_date_precision = (
-                    inferred_precision
-                )
-                media.original_storage_key = (
-                    target_storage_key.as_posix()
-                )
+                media.original_date_precision = inferred_precision
+                media.original_storage_key = target_storage_key.as_posix()
 
         media.deleted_at = None
         media.album_id = album_id
@@ -738,18 +681,12 @@ class FotosMediaService:
         except Exception:
             media.album_id = previous_album_id
             media.original_name = previous_original_name
-            media.processing_status = (
-                previous_processing_status
-            )
+            media.processing_status = previous_processing_status
             media.processing_error = previous_processing_error
             media.deleted_at = previous_deleted_at
             media.original_date = previous_original_date
-            media.original_date_source = (
-                previous_original_date_source
-            )
-            media.original_date_precision = (
-                previous_original_date_precision
-            )
+            media.original_date_source = previous_original_date_source
+            media.original_date_precision = previous_original_date_precision
             media.original_storage_key = previous_storage_key
 
             if moved_original:
@@ -788,15 +725,9 @@ class FotosMediaService:
             current_user,
         )
 
-        file_path = (
-            self._settings.uploads_dir
-            / Path(media.original_storage_key)
-        )
+        file_path = self._settings.uploads_dir / Path(media.original_storage_key)
 
-        if (
-            not file_path.exists()
-            or not file_path.is_file()
-        ):
+        if not file_path.exists() or not file_path.is_file():
             raise FotosMediaFileNotFoundError(
                 media.id,
             )
@@ -878,9 +809,7 @@ class FotosMediaService:
                         media_id=media_id,
                         success=False,
                         error_code="fotos_media_bulk_item_failed",
-                        error_message=(
-                            "Não foi possível atualizar a mídia."
-                        ),
+                        error_message=("Não foi possível atualizar a mídia."),
                     )
                 )
             else:
@@ -892,19 +821,13 @@ class FotosMediaService:
                     )
                 )
 
-        succeeded_count = sum(
-            result.success
-            for result in results
-        )
+        succeeded_count = sum(result.success for result in results)
 
         return FotosMediaBulkResponse(
             operation=payload.operation,
             requested_count=len(payload.media_ids),
             succeeded_count=succeeded_count,
-            failed_count=(
-                len(payload.media_ids)
-                - succeeded_count
-            ),
+            failed_count=(len(payload.media_ids) - succeeded_count),
             results=results,
         )
 
@@ -961,38 +884,26 @@ class FotosMediaService:
                 payload.album_id,
             )
 
-        raise ValueError(
-            "Operação em lote não suportada."
-        )
+        raise ValueError("Operação em lote não suportada.")
 
     def _set_original_date(
         self,
         media: FotosMediaModel,
         original_date: datetime,
     ) -> FotosMediaModel:
-        """Aplica a data manual e reorganiza o original gerenciado."""
+        """Aplica a data manual e reorganiza todos os arquivos da mídia."""
 
         normalized_date = self._normalize_datetime(
             original_date,
         )
 
         if normalized_date is None:
-            raise ValueError(
-                "A data original é obrigatória."
-            )
+            raise ValueError("A data original é obrigatória.")
 
-        current_storage_key = Path(
-            media.original_storage_key
-        )
-        current_path = (
-            self._settings.uploads_dir
-            / current_storage_key
-        )
+        current_storage_key = Path(media.original_storage_key)
+        current_path = self._settings.uploads_dir / current_storage_key
 
-        if (
-            not current_path.exists()
-            or not current_path.is_file()
-        ):
+        if not current_path.exists() or not current_path.is_file():
             raise FotosMediaFileNotFoundError(
                 media.id,
             )
@@ -1005,21 +916,71 @@ class FotosMediaService:
             file_extension=media.file_extension or "",
             original_date=normalized_date,
         )
-        target_path = (
-            self._settings.uploads_dir
-            / target_storage_key
+        target_path = self._settings.uploads_dir / target_storage_key
+
+        derivatives = self._derivative_repository.list_by_media_id(
+            media.id,
         )
+        derivative_targets: list[
+            tuple[
+                FotosMediaDerivativeModel,
+                str,
+                Path,
+                Path,
+                Path,
+            ]
+        ] = []
+
+        for derivative in derivatives:
+            derivative_current_key = Path(derivative.storage_key)
+            derivative_current_path = self._settings.uploads_dir / derivative_current_key
+            derivative_target_key = build_derivative_storage_key(
+                organization_id=media.organization_id,
+                tenant_id=media.tenant_id,
+                environment_id=media.environment_id,
+                media_id=media.id,
+                derivative_type=(derivative.derivative_type),
+                file_extension=(derivative_current_key.suffix),
+                original_date=normalized_date,
+            )
+            derivative_target_path = self._settings.uploads_dir / derivative_target_key
+
+            derivative_targets.append(
+                (
+                    derivative,
+                    derivative.storage_key,
+                    derivative_current_path,
+                    derivative_target_path,
+                    derivative_target_key,
+                )
+            )
 
         if target_path != current_path:
+            if target_path.exists() or target_path.parent.exists():
+                raise FotosMediaStorageConflictError(
+                    media.id,
+                )
+
+        for (
+            _,
+            _,
+            derivative_current_path,
+            derivative_target_path,
+            _,
+        ) in derivative_targets:
             if (
-                target_path.exists()
-                or target_path.parent.exists()
+                derivative_target_path != derivative_current_path
+                and derivative_target_path.exists()
             ):
                 raise FotosMediaStorageConflictError(
                     media.id,
                 )
 
-            try:
+        original_moved = False
+        moved_derivatives: list[tuple[Path, Path]] = []
+
+        try:
+            if target_path != current_path:
                 target_path.parent.mkdir(
                     parents=True,
                     exist_ok=False,
@@ -1027,51 +988,79 @@ class FotosMediaService:
                 current_path.replace(
                     target_path,
                 )
-            except FileExistsError as error:
-                raise FotosMediaStorageConflictError(
-                    media.id,
-                ) from error
-            except OSError as error:
-                if target_path.parent.exists():
-                    try:
-                        target_path.parent.rmdir()
-                    except OSError:
-                        pass
+                original_moved = True
 
-                raise FotosMediaStorageMoveError(
-                    media.id,
-                ) from error
+            for (
+                _,
+                _,
+                derivative_current_path,
+                derivative_target_path,
+                _,
+            ) in derivative_targets:
+                if (
+                    derivative_target_path == derivative_current_path
+                    or not derivative_current_path.is_file()
+                ):
+                    continue
 
-            try:
-                current_path.parent.rmdir()
-            except OSError:
-                pass
+                derivative_target_path.parent.mkdir(
+                    parents=True,
+                    exist_ok=True,
+                )
+                derivative_current_path.replace(
+                    derivative_target_path,
+                )
+                moved_derivatives.append(
+                    (
+                        derivative_current_path,
+                        derivative_target_path,
+                    )
+                )
+        except FileExistsError as error:
+            self._rollback_storage_moves(
+                current_path=current_path,
+                target_path=target_path,
+                original_moved=original_moved,
+                moved_derivatives=moved_derivatives,
+            )
+
+            raise FotosMediaStorageConflictError(
+                media.id,
+            ) from error
+        except OSError as error:
+            self._rollback_storage_moves(
+                current_path=current_path,
+                target_path=target_path,
+                original_moved=original_moved,
+                moved_derivatives=moved_derivatives,
+            )
+
+            raise FotosMediaStorageMoveError(
+                media.id,
+            ) from error
 
         previous_original_date = media.original_date
-        previous_original_date_source = (
-            media.original_date_source
-        )
-        previous_original_date_precision = (
-            media.original_date_precision
-        )
-        previous_original_date_verified = (
-            media.original_date_verified
-        )
-        previous_original_date_conflict = (
-            media.original_date_conflict
-        )
-        previous_storage_key = (
-            media.original_storage_key
-        )
+        previous_original_date_source = media.original_date_source
+        previous_original_date_precision = media.original_date_precision
+        previous_original_date_verified = media.original_date_verified
+        previous_original_date_conflict = media.original_date_conflict
+        previous_storage_key = media.original_storage_key
 
         media.original_date = normalized_date
         media.original_date_source = "manual"
         media.original_date_precision = "datetime"
         media.original_date_verified = True
         media.original_date_conflict = False
-        media.original_storage_key = (
-            target_storage_key.as_posix()
-        )
+        media.original_storage_key = target_storage_key.as_posix()
+
+        for (
+            derivative,
+            _,
+            _,
+            _,
+            derivative_target_key,
+        ) in derivative_targets:
+            derivative.storage_key = derivative_target_key.as_posix()
 
         try:
             return self._repository.update(
@@ -1079,42 +1068,97 @@ class FotosMediaService:
             )
         except Exception:
             media.original_date = previous_original_date
-            media.original_date_source = (
-                previous_original_date_source
-            )
-            media.original_date_precision = (
-                previous_original_date_precision
-            )
-            media.original_date_verified = (
-                previous_original_date_verified
-            )
-            media.original_date_conflict = (
-                previous_original_date_conflict
-            )
-            media.original_storage_key = (
-                previous_storage_key
-            )
+            media.original_date_source = previous_original_date_source
+            media.original_date_precision = previous_original_date_precision
+            media.original_date_verified = previous_original_date_verified
+            media.original_date_conflict = previous_original_date_conflict
+            media.original_storage_key = previous_storage_key
 
-            if target_path != current_path:
-                try:
-                    current_path.parent.mkdir(
-                        parents=True,
-                        exist_ok=True,
-                    )
-                    target_path.replace(
-                        current_path,
-                    )
+            for (
+                derivative,
+                previous_derivative_key,
+                _,
+                _,
+                _,
+            ) in derivative_targets:
+                derivative.storage_key = previous_derivative_key
 
-                    try:
-                        target_path.parent.rmdir()
-                    except OSError:
-                        pass
-                except OSError as error:
-                    raise FotosMediaStorageMoveError(
-                        media.id,
-                    ) from error
+            try:
+                self._rollback_storage_moves(
+                    current_path=current_path,
+                    target_path=target_path,
+                    original_moved=original_moved,
+                    moved_derivatives=moved_derivatives,
+                )
+            except OSError as error:
+                raise FotosMediaStorageMoveError(
+                    media.id,
+                ) from error
 
             raise
+
+        finally:
+            self._remove_empty_storage_parents(
+                current_path.parent,
+            )
+
+            for (
+                derivative_current_path,
+                _,
+            ) in moved_derivatives:
+                self._remove_empty_storage_parents(
+                    derivative_current_path.parent,
+                )
+
+    def _rollback_storage_moves(
+        self,
+        *,
+        current_path: Path,
+        target_path: Path,
+        original_moved: bool,
+        moved_derivatives: list[tuple[Path, Path]],
+    ) -> None:
+        """Desfaz movimentações físicas ainda não consolidadas."""
+
+        for (
+            derivative_current_path,
+            derivative_target_path,
+        ) in reversed(moved_derivatives):
+            if not derivative_target_path.exists():
+                continue
+
+            derivative_current_path.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+            derivative_target_path.replace(
+                derivative_current_path,
+            )
+
+        if original_moved and target_path.exists():
+            current_path.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+            target_path.replace(
+                current_path,
+            )
+
+    @staticmethod
+    def _remove_empty_storage_parents(
+        directory: Path,
+    ) -> None:
+        """Remove somente diretórios vazios abaixo da raiz de uploads."""
+
+        current = directory
+
+        for _ in range(3):
+            try:
+                current.rmdir()
+            except OSError:
+                break
+
+            current = current.parent
 
     def _verify_original_date(
         self,
@@ -1193,11 +1237,7 @@ class FotosMediaService:
             environment_id=media.environment_id,
         )
 
-        media.deleted_at = datetime.now(
-            UTC
-        ).replace(
-            tzinfo=None
-        )
+        media.deleted_at = datetime.now(UTC).replace(tzinfo=None)
 
         self._repository.update(
             media,
@@ -1260,10 +1300,8 @@ class FotosMediaService:
     ) -> EnvironmentModel:
         """Retorna um ambiente existente."""
 
-        environment = (
-            self._environment_repository.find_by_id(
-                environment_id,
-            )
+        environment = self._environment_repository.find_by_id(
+            environment_id,
         )
 
         if environment is None:
@@ -1300,26 +1338,17 @@ class FotosMediaService:
     ) -> None:
         """Valida se o álbum pertence ao escopo esperado."""
 
-        if (
-            organization_id is not None
-            and album.organization_id != organization_id
-        ):
+        if organization_id is not None and album.organization_id != organization_id:
             raise FotosMediaAlbumScopeMismatchError(
                 album.id,
             )
 
-        if (
-            tenant_id is not None
-            and album.tenant_id != tenant_id
-        ):
+        if tenant_id is not None and album.tenant_id != tenant_id:
             raise FotosMediaAlbumScopeMismatchError(
                 album.id,
             )
 
-        if (
-            environment_id is not None
-            and album.environment_id != environment_id
-        ):
+        if environment_id is not None and album.environment_id != environment_id:
             raise FotosMediaAlbumScopeMismatchError(
                 album.id,
             )
@@ -1330,17 +1359,10 @@ class FotosMediaService:
     ) -> datetime | None:
         """Normaliza uma data com timezone para UTC sem timezone."""
 
-        if (
-            value is None
-            or value.tzinfo is None
-        ):
+        if value is None or value.tzinfo is None:
             return value
 
-        return (
-            value
-            .astimezone(UTC)
-            .replace(tzinfo=None)
-        )
+        return value.astimezone(UTC).replace(tzinfo=None)
 
     def _require_roles(
         self,
