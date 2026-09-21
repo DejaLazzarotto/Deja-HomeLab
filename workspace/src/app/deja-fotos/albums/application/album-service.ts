@@ -8,6 +8,7 @@ import {
   Album,
   AlbumFilters,
   AlbumInput,
+  AlbumPeriod,
   AlbumRepository,
   AlbumValidator,
 } from '../domain';
@@ -29,6 +30,29 @@ export class AlbumService {
     id: string,
   ): Promise<Album | undefined> {
     return this.repository.findById(id);
+  }
+
+  listPeriods(
+    albumId: string,
+  ): Promise<readonly AlbumPeriod[]> {
+    return this.repository.listPeriods(albumId);
+  }
+
+  updatePeriodDescription(
+    albumId: string,
+    year: number,
+    month: number,
+    description: string | null,
+  ): Promise<AlbumPeriod> {
+    return this.repository.updatePeriodDescription(
+      albumId,
+      year,
+      month,
+      {
+        description:
+          description?.trim() || null,
+      },
+    );
   }
 
   create(

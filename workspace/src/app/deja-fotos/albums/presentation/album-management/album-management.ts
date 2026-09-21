@@ -40,6 +40,7 @@ import {
 import {
   Album,
   AlbumInput,
+  AlbumPeriod,
 } from '../../domain';
 
 import {
@@ -49,8 +50,22 @@ import {
 interface AlbumMediaPeriod {
   readonly key: string;
   readonly label: string;
-  readonly sortValue: number;
+  readonly year: number | null;
+  readonly month: number | null;
+  readonly mediaCount: number;
+  readonly description: string | null;
+  readonly descriptionDraft: string;
+  readonly editingDescription: boolean;
+  readonly savingDescription: boolean;
+  readonly descriptionMessage: string | null;
+  readonly descriptionError: string | null;
   readonly items: readonly Media[];
+  readonly page: number;
+  readonly total: number;
+  readonly loaded: boolean;
+  readonly loading: boolean;
+  readonly loadingMore: boolean;
+  readonly error: string | null;
 }
 
 const ALBUM_MEDIA_PAGE_SIZE = 100;
@@ -105,7 +120,6 @@ export class AlbumManagementComponent
   readonly operationError =
     signal<string | null>(null);
 
-
   readonly selectedAlbum =
     signal<Album | null>(null);
 
@@ -113,15 +127,10 @@ export class AlbumManagementComponent
 
   readonly formVisible = signal(false);
 
-  readonly albumMedia = signal<readonly Media[]>([]);
-
-  readonly albumMediaTotal = signal(0);
-
-  readonly albumMediaPage = signal(0);
+  readonly albumMediaPeriods =
+    signal<readonly AlbumMediaPeriod[]>([]);
 
   readonly albumMediaLoading = signal(false);
-
-  readonly albumMediaLoadingMore = signal(false);
 
   readonly albumMediaError =
     signal<string | null>(null);
@@ -163,20 +172,43 @@ export class AlbumManagementComponent
     ) ?? null;
   });
 
-  readonly albumMediaPeriods = computed(() => (
-    this.buildMediaPeriods(this.albumMedia())
+  readonly albumMedia = computed(() => (
+    this.albumMediaPeriods().flatMap(
+      period => period.items,
+    )
+  ));
+
+  readonly albumMediaTotal = computed(() => (
+    this.albumMediaPeriods().reduce(
+      (total, period) => total + period.mediaCount,
+      0,
+    )
+  ));
+
+  readonly albumMediaLoadingMore = computed(() => (
+    this.albumMediaPeriods().some(
+      period => period.loadingMore,
+    )
   ));
 
   readonly albumMediaHasMore = computed(() => (
-    this.albumMedia().length < this.albumMediaTotal()
+    this.albumMediaPeriods().some(
+      period => (
+        period.loaded
+        && period.items.length < period.total
+      ),
+    )
   ));
 
   private readonly pendingThumbnailIds =
     new Set<string>();
 
+  private readonly periodRequestSequences =
+    new Map<string, number>();
+
   private requestSequence = 0;
 
-  private mediaRequestSequence = 0;
+  private periodsRequestSequence = 0;
 
   private destroyed = false;
 
@@ -187,6 +219,8 @@ export class AlbumManagementComponent
 
   ngOnDestroy(): void {
     this.destroyed = true;
+    this.periodsRequestSequence += 1;
+    this.periodRequestSequences.clear();
     this.clearThumbnailUrls();
   }
 
@@ -215,6 +249,7 @@ export class AlbumManagementComponent
           )
         ) {
           this.selectedDashboardAlbumId.set('');
+          this.resetAlbumMedia();
         }
       }
     } catch {
@@ -237,33 +272,24 @@ export class AlbumManagementComponent
     this.resetAlbumMedia();
 
     if (albumId) {
-      void this.loadSelectedAlbumMedia(true);
+      void this.loadSelectedAlbumPeriods();
     }
-  }
-
-  async loadMoreAlbumMedia(): Promise<void> {
-    if (
-      !this.albumMediaHasMore()
-      || this.albumMediaLoading()
-      || this.albumMediaLoadingMore()
-    ) {
-      return;
-    }
-
-    await this.loadSelectedAlbumMedia(false);
   }
 
   retryAlbumMedia(): void {
-    void this.loadSelectedAlbumMedia(true);
+    void this.loadSelectedAlbumPeriods();
   }
 
   togglePeriod(
     periodKey: string,
   ): void {
+    const expanded =
+      this.expandedPeriodKeys().has(periodKey);
+
     this.expandedPeriodKeys.update(current => {
       const next = new Set(current);
 
-      if (next.has(periodKey)) {
+      if (expanded) {
         next.delete(periodKey);
       } else {
         next.add(periodKey);
@@ -271,12 +297,198 @@ export class AlbumManagementComponent
 
       return next;
     });
+
+    if (!expanded) {
+      const period = this.findPeriod(periodKey);
+
+      if (
+        period
+        && !period.loaded
+        && !period.loading
+      ) {
+        void this.loadPeriodMedia(
+          periodKey,
+          true,
+        );
+      }
+    }
   }
 
   periodExpanded(
     periodKey: string,
   ): boolean {
     return this.expandedPeriodKeys().has(periodKey);
+  }
+
+  periodHasMore(
+    period: AlbumMediaPeriod,
+  ): boolean {
+    return (
+      period.loaded
+      && period.items.length < period.total
+    );
+  }
+
+  retryPeriod(
+    periodKey: string,
+  ): void {
+    void this.loadPeriodMedia(
+      periodKey,
+      true,
+    );
+  }
+
+  loadMorePeriod(
+    periodKey: string,
+  ): void {
+    void this.loadPeriodMedia(
+      periodKey,
+      false,
+    );
+  }
+
+  async loadMoreAlbumMedia(): Promise<void> {
+    const period = this.albumMediaPeriods().find(
+      candidate => (
+        this.periodExpanded(candidate.key)
+        && this.periodHasMore(candidate)
+      ),
+    );
+
+    if (period) {
+      await this.loadPeriodMedia(
+        period.key,
+        false,
+      );
+    }
+  }
+
+  beginPeriodDescriptionEdit(
+    periodKey: string,
+  ): void {
+    if (!this.canEdit()) {
+      return;
+    }
+
+    this.updatePeriod(
+      periodKey,
+      period => ({
+        ...period,
+        descriptionDraft:
+          period.description ?? '',
+        editingDescription: true,
+        descriptionMessage: null,
+        descriptionError: null,
+      }),
+    );
+  }
+
+  cancelPeriodDescriptionEdit(
+    periodKey: string,
+  ): void {
+    this.updatePeriod(
+      periodKey,
+      period => ({
+        ...period,
+        descriptionDraft:
+          period.description ?? '',
+        editingDescription: false,
+        descriptionMessage: null,
+        descriptionError: null,
+      }),
+    );
+  }
+
+  updatePeriodDescriptionDraft(
+    periodKey: string,
+    descriptionDraft: string,
+  ): void {
+    this.updatePeriod(
+      periodKey,
+      period => ({
+        ...period,
+        descriptionDraft,
+        descriptionMessage: null,
+        descriptionError: null,
+      }),
+    );
+  }
+
+  async savePeriodDescription(
+    periodKey: string,
+  ): Promise<void> {
+    const album = this.selectedDashboardAlbum();
+    const period = this.findPeriod(periodKey);
+
+    if (
+      !this.canEdit()
+      || !album
+      || !period
+      || period.year === null
+      || period.month === null
+      || period.savingDescription
+    ) {
+      return;
+    }
+
+    this.updatePeriod(
+      periodKey,
+      current => ({
+        ...current,
+        savingDescription: true,
+        descriptionMessage: null,
+        descriptionError: null,
+      }),
+    );
+
+    try {
+      const updated =
+        await this.service().updatePeriodDescription(
+          album.id,
+          period.year,
+          period.month,
+          period.descriptionDraft,
+        );
+
+      if (
+        album.id
+        !== this.selectedDashboardAlbumId()
+      ) {
+        return;
+      }
+
+      this.updatePeriod(
+        periodKey,
+        current => ({
+          ...current,
+          description: updated.description,
+          descriptionDraft:
+            updated.description ?? '',
+          editingDescription: false,
+          savingDescription: false,
+          descriptionMessage: null,
+          descriptionError: null,
+        }),
+      );
+    } catch (error: unknown) {
+      if (
+        album.id
+        === this.selectedDashboardAlbumId()
+      ) {
+        this.updatePeriod(
+          periodKey,
+          current => ({
+            ...current,
+            savingDescription: false,
+            descriptionMessage: null,
+            descriptionError:
+              this.resolvePeriodDescriptionError(
+                error,
+              ),
+          }),
+        );
+      }
+    }
   }
 
   protected thumbnailUrl(
@@ -401,6 +613,7 @@ export class AlbumManagementComponent
         === album.id
       ) {
         this.selectedDashboardAlbumId.set('');
+        this.resetAlbumMedia();
       }
 
       this.operationMessage.set(
@@ -443,7 +656,6 @@ export class AlbumManagementComponent
     ).format(date);
   }
 
-
   private async loadMediaSummary(): Promise<void> {
     try {
       const [
@@ -474,186 +686,298 @@ export class AlbumManagementComponent
     }
   }
 
-  private async loadSelectedAlbumMedia(
-    reset: boolean,
-  ): Promise<void> {
+  private async loadSelectedAlbumPeriods(): Promise<void> {
     const albumId = this.selectedDashboardAlbumId();
-    const album = this.selectedDashboardAlbum();
 
-    if (!albumId || !album) {
+    if (!albumId || !this.selectedDashboardAlbum()) {
       this.resetAlbumMedia();
 
       return;
     }
 
     const requestSequence =
-      this.mediaRequestSequence + 1;
+      this.periodsRequestSequence + 1;
 
-    this.mediaRequestSequence = requestSequence;
+    this.periodsRequestSequence = requestSequence;
+
+    this.albumMediaLoading.set(true);
+    this.albumMediaError.set(null);
+    this.albumMediaPeriods.set([]);
+    this.expandedPeriodKeys.set(
+      new Set<string>(),
+    );
+    this.periodRequestSequences.clear();
+    this.clearThumbnailUrls();
+
+    try {
+      const periods =
+        await this.service().listPeriods(albumId);
+
+      if (
+        requestSequence
+        !== this.periodsRequestSequence
+        || albumId
+        !== this.selectedDashboardAlbumId()
+      ) {
+        return;
+      }
+
+      this.albumMediaPeriods.set(
+        periods.map(
+          period => this.createMediaPeriod(period),
+        ),
+      );
+    } catch {
+      if (
+        requestSequence
+        === this.periodsRequestSequence
+        && albumId
+        === this.selectedDashboardAlbumId()
+      ) {
+        this.albumMediaError.set(
+          'Não foi possível carregar os períodos deste álbum.',
+        );
+      }
+    } finally {
+      if (
+        requestSequence
+        === this.periodsRequestSequence
+      ) {
+        this.albumMediaLoading.set(false);
+      }
+    }
+  }
+
+  private async loadPeriodMedia(
+    periodKey: string,
+    reset: boolean,
+  ): Promise<void> {
+    const album = this.selectedDashboardAlbum();
+    const period = this.findPeriod(periodKey);
+
+    if (
+      !album
+      || !period
+      || period.loading
+      || period.loadingMore
+      || (
+        !reset
+        && !this.periodHasMore(period)
+      )
+    ) {
+      return;
+    }
+
+    const requestSequence =
+      (
+        this.periodRequestSequences.get(periodKey)
+        ?? 0
+      ) + 1;
+
+    this.periodRequestSequences.set(
+      periodKey,
+      requestSequence,
+    );
 
     const page = reset
       ? 1
-      : this.albumMediaPage() + 1;
+      : period.page + 1;
 
-    if (reset) {
-      this.albumMediaLoading.set(true);
-      this.albumMediaLoadingMore.set(false);
-      this.albumMediaError.set(null);
-      this.albumMedia.set([]);
-      this.albumMediaTotal.set(0);
-      this.albumMediaPage.set(0);
-      this.expandedPeriodKeys.set(
-        new Set<string>(),
-      );
-      this.clearThumbnailUrls();
-    } else {
-      this.albumMediaLoadingMore.set(true);
-      this.albumMediaError.set(null);
-    }
+    this.updatePeriod(
+      periodKey,
+      current => ({
+        ...current,
+        items: reset
+          ? []
+          : current.items,
+        page: reset
+          ? 0
+          : current.page,
+        loaded: reset
+          ? false
+          : current.loaded,
+        loading: reset,
+        loadingMore: !reset,
+        error: null,
+      }),
+    );
 
     try {
       const result = await this.mediaService().list({
         environmentId: album.environmentId,
-        albumId,
+        albumId: album.id,
+        originalYear:
+          period.year ?? undefined,
+        originalMonth:
+          period.month ?? undefined,
+        withoutOriginalDate:
+          period.year === null,
         page,
         pageSize: ALBUM_MEDIA_PAGE_SIZE,
       });
 
       if (
-        requestSequence !== this.mediaRequestSequence
-        || albumId !== this.selectedDashboardAlbumId()
+        this.periodRequestSequences.get(periodKey)
+        !== requestSequence
+        || album.id
+        !== this.selectedDashboardAlbumId()
       ) {
         return;
       }
 
-      const nextItems = reset
-        ? result.items
-        : [
-            ...this.albumMedia(),
-            ...result.items,
-          ];
+      this.updatePeriod(
+        periodKey,
+        current => ({
+          ...current,
+          items: reset
+            ? result.items
+            : [
+                ...current.items,
+                ...result.items,
+              ],
+          page: result.page,
+          total: result.total,
+          loaded: true,
+          loading: false,
+          loadingMore: false,
+          error: null,
+        }),
+      );
 
-      this.albumMedia.set(nextItems);
-      this.albumMediaTotal.set(result.total);
-      this.albumMediaPage.set(result.page);
-      this.synchronizeThumbnails(nextItems);
-
-      if (reset) {
-        const firstPeriod =
-          this.buildMediaPeriods(nextItems)[0];
-
-        this.expandedPeriodKeys.set(
-          new Set(
-            firstPeriod
-              ? [firstPeriod.key]
-              : [],
-          ),
-        );
-      }
+      this.synchronizeThumbnails(
+        this.albumMedia(),
+      );
     } catch {
       if (
-        requestSequence === this.mediaRequestSequence
-        && albumId === this.selectedDashboardAlbumId()
+        this.periodRequestSequences.get(periodKey)
+        === requestSequence
+        && album.id
+        === this.selectedDashboardAlbumId()
       ) {
-        this.albumMediaError.set(
-          'Não foi possível carregar as mídias deste álbum.',
+        this.updatePeriod(
+          periodKey,
+          current => ({
+            ...current,
+            loaded: false,
+            loading: false,
+            loadingMore: false,
+            error:
+              'Não foi possível carregar as mídias deste período.',
+          }),
         );
-      }
-    } finally {
-      if (requestSequence === this.mediaRequestSequence) {
-        this.albumMediaLoading.set(false);
-        this.albumMediaLoadingMore.set(false);
       }
     }
   }
 
+  private createMediaPeriod(
+    period: AlbumPeriod,
+  ): AlbumMediaPeriod {
+    return {
+      key: this.periodKey(period),
+      label: this.periodLabel(period),
+      year: period.year,
+      month: period.month,
+      mediaCount: period.mediaCount,
+      description: period.description,
+      descriptionDraft:
+        period.description ?? '',
+      editingDescription: false,
+      savingDescription: false,
+      descriptionMessage: null,
+      descriptionError: null,
+      items: [],
+      page: 0,
+      total: period.mediaCount,
+      loaded: false,
+      loading: false,
+      loadingMore: false,
+      error: null,
+    };
+  }
+
+  private periodKey(
+    period: AlbumPeriod,
+  ): string {
+    if (
+      period.year === null
+      || period.month === null
+    ) {
+      return 'without-date';
+    }
+
+    return (
+      `${period.year}-`
+      + String(period.month).padStart(2, '0')
+    );
+  }
+
+  private periodLabel(
+    period: AlbumPeriod,
+  ): string {
+    if (
+      period.year === null
+      || period.month === null
+    ) {
+      return 'Sem data';
+    }
+
+    const formattedLabel =
+      new Intl.DateTimeFormat(
+        'pt-BR',
+        {
+          month: 'long',
+          year: 'numeric',
+        },
+      ).format(
+        new Date(
+          period.year,
+          period.month - 1,
+          1,
+        ),
+      );
+
+    return (
+      formattedLabel.charAt(0)
+        .toLocaleUpperCase('pt-BR')
+      + formattedLabel.slice(1)
+    );
+  }
+
+  private findPeriod(
+    periodKey: string,
+  ): AlbumMediaPeriod | undefined {
+    return this.albumMediaPeriods().find(
+      period => period.key === periodKey,
+    );
+  }
+
+  private updatePeriod(
+    periodKey: string,
+    update: (
+      period: AlbumMediaPeriod,
+    ) => AlbumMediaPeriod,
+  ): void {
+    this.albumMediaPeriods.update(
+      periods => periods.map(
+        period => (
+          period.key === periodKey
+            ? update(period)
+            : period
+        ),
+      ),
+    );
+  }
+
   private resetAlbumMedia(): void {
-    this.mediaRequestSequence += 1;
-    this.albumMedia.set([]);
-    this.albumMediaTotal.set(0);
-    this.albumMediaPage.set(0);
+    this.periodsRequestSequence += 1;
+    this.periodRequestSequences.clear();
+    this.albumMediaPeriods.set([]);
     this.albumMediaLoading.set(false);
-    this.albumMediaLoadingMore.set(false);
     this.albumMediaError.set(null);
     this.expandedPeriodKeys.set(
       new Set<string>(),
     );
     this.clearThumbnailUrls();
-  }
-
-  private buildMediaPeriods(
-    items: readonly Media[],
-  ): readonly AlbumMediaPeriod[] {
-    const periods = new Map<
-      string,
-      {
-        label: string;
-        sortValue: number;
-        items: Media[];
-      }
-    >();
-
-    for (const media of items) {
-      const dateMatch = media.originalDate?.match(
-        /^(\d{4})-(\d{2})/,
-      );
-
-      let key = 'without-date';
-      let label = 'Sem data';
-      let sortValue = Number.NEGATIVE_INFINITY;
-
-      if (dateMatch) {
-        const year = Number(dateMatch[1]);
-        const month = Number(dateMatch[2]);
-
-        key = `${year}-${String(month).padStart(2, '0')}`;
-        sortValue = year * 100 + month;
-
-        const formattedLabel =
-          new Intl.DateTimeFormat(
-            'pt-BR',
-            {
-              month: 'long',
-              year: 'numeric',
-            },
-          ).format(
-            new Date(year, month - 1, 1),
-          );
-
-        label = formattedLabel.charAt(0)
-          .toLocaleUpperCase('pt-BR')
-          + formattedLabel.slice(1);
-      }
-
-      const period = periods.get(key);
-
-      if (period) {
-        period.items.push(media);
-      } else {
-        periods.set(
-          key,
-          {
-            label,
-            sortValue,
-            items: [media],
-          },
-        );
-      }
-    }
-
-    return Array.from(
-      periods,
-      ([key, period]) => ({
-        key,
-        label: period.label,
-        sortValue: period.sortValue,
-        items: period.items,
-      }),
-    ).sort(
-      (left, right) => (
-        right.sortValue - left.sortValue
-      ),
-    );
   }
 
   private synchronizeThumbnails(
@@ -766,6 +1090,22 @@ export class AlbumManagementComponent
   private clearOperationMessages(): void {
     this.operationMessage.set(null);
     this.operationError.set(null);
+  }
+
+  private resolvePeriodDescriptionError(
+    error: unknown,
+  ): string {
+    if (
+      error instanceof HttpErrorResponse
+      && error.status === 404
+    ) {
+      return (
+        'Este período não existe mais. '
+        + 'Atualize a linha do tempo.'
+      );
+    }
+
+    return 'Não foi possível salvar a descrição mensal.';
   }
 
   private resolveErrorMessage(

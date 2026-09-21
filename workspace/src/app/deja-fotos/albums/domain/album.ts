@@ -32,3 +32,14 @@ export interface AlbumFilters {
   readonly environmentId?: string;
   readonly active?: boolean;
 }
+
+export interface AlbumPeriod {
+  readonly year: number | null;
+  readonly month: number | null;
+  readonly mediaCount: number;
+  readonly description: string | null;
+}
+
+export interface AlbumPeriodDescriptionInput {
+  readonly description: string | null;
+}

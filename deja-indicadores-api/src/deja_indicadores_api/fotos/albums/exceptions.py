@@ -18,6 +18,24 @@ class FotosAlbumNotFoundError(ResourceNotFoundError):
         )
 
 
+class FotosAlbumPeriodNotFoundError(ResourceNotFoundError):
+    """O álbum não possui mídias no período informado."""
+
+    error_code = "fotos_album_period_not_found"
+
+    def __init__(
+        self,
+        album_id: str,
+        year: int,
+        month: int,
+    ) -> None:
+        super().__init__(
+            "O álbum com ID "
+            f"'{album_id}' não possui mídias no período "
+            f"{month:02d}/{year:04d}."
+        )
+
+
 class FotosAlbumAlreadyExistsError(ResourceConflictError):
     """Já existe um álbum com o mesmo nome no mesmo escopo."""
 

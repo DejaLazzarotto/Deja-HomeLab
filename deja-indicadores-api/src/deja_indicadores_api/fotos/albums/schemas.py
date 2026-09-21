@@ -71,3 +71,49 @@ class FotosAlbumResponse(FotosAlbumBase):
 
     created_at: datetime
     updated_at: datetime
+
+
+class FotosAlbumPeriodResponse(BaseModel):
+    """Período real existente na linha do tempo de um álbum."""
+
+    year: int | None = Field(
+        default=None,
+        ge=1,
+        le=9999,
+    )
+
+    month: int | None = Field(
+        default=None,
+        ge=1,
+        le=12,
+    )
+
+    media_count: int = Field(
+        ge=1,
+    )
+
+    description: str | None = None
+
+
+class FotosAlbumPeriodDescriptionUpdate(BaseModel):
+    """Descrição editável de um mês específico do álbum."""
+
+    description: str | None = Field(
+        default=None,
+        max_length=5000,
+    )
+
+    @field_validator("description", mode="before")
+    @classmethod
+    def normalize_description(
+        cls,
+        value: str | None,
+    ) -> str | None:
+        """Normaliza a descrição mensal e aceita sua remoção."""
+
+        if value is None:
+            return None
+
+        normalized = value.strip()
+
+        return normalized or None

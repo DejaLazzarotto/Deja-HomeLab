@@ -8,6 +8,8 @@ import {
   Album,
   AlbumFilters,
   AlbumInput,
+  AlbumPeriod,
+  AlbumPeriodDescriptionInput,
 } from './album';
 
 export interface AlbumRepository {
@@ -18,6 +20,17 @@ export interface AlbumRepository {
   findById(
     id: string,
   ): Promise<Album | undefined>;
+
+  listPeriods(
+    albumId: string,
+  ): Promise<readonly AlbumPeriod[]>;
+
+  updatePeriodDescription(
+    albumId: string,
+    year: number,
+    month: number,
+    input: AlbumPeriodDescriptionInput,
+  ): Promise<AlbumPeriod>;
 
   create(
     input: AlbumInput,

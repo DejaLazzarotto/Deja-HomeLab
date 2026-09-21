@@ -137,6 +137,85 @@ describe('HttpAlbumRepository', () => {
     await expect(resultPromise).resolves.toBeUndefined();
   });
 
+  it('should list and map all album periods', async () => {
+    const resultPromise =
+      repository.listPeriods(albumId);
+
+    const request = httpTesting.expectOne(
+      `/api/fotos/albums/${albumId}/periods`,
+    );
+
+    expect(request.request.method).toBe('GET');
+
+    request.flush([
+      {
+        year: 2024,
+        month: 3,
+        media_count: 25,
+        description: 'Encontro da família.',
+      },
+      {
+        year: null,
+        month: null,
+        media_count: 2,
+        description: null,
+      },
+    ]);
+
+    await expect(resultPromise).resolves.toEqual([
+      {
+        year: 2024,
+        month: 3,
+        mediaCount: 25,
+        description: 'Encontro da família.',
+      },
+      {
+        year: null,
+        month: null,
+        mediaCount: 2,
+        description: null,
+      },
+    ]);
+  });
+
+  it('should update an album period description', async () => {
+    const resultPromise =
+      repository.updatePeriodDescription(
+        albumId,
+        2024,
+        3,
+        {
+          description: 'Descrição atualizada.',
+        },
+      );
+
+    const request = httpTesting.expectOne(
+      (
+        `/api/fotos/albums/${albumId}`
+        + '/periods/2024/3'
+      ),
+    );
+
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({
+      description: 'Descrição atualizada.',
+    });
+
+    request.flush({
+      year: 2024,
+      month: 3,
+      media_count: 25,
+      description: 'Descrição atualizada.',
+    });
+
+    await expect(resultPromise).resolves.toEqual({
+      year: 2024,
+      month: 3,
+      mediaCount: 25,
+      description: 'Descrição atualizada.',
+    });
+  });
+
   it('should create an album using the API contract', async () => {
     const resultPromise = repository.create(input);
 

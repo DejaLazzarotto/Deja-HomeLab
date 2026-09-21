@@ -178,86 +178,207 @@
     class="album-timeline"
     aria-live="polite"
   >
-      @if (loading()) {
+    @if (loading()) {
+      <div class="loading-state" role="status">
+        <span aria-hidden="true"></span>
+        Carregando álbuns...
+      </div>
+    } @else if (selectedDashboardAlbum(); as album) {
+      <header class="album-timeline__header">
+        <span aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 5.5h5l1.4 2H20v11H4z" />
+            <path d="m6.5 16 3.1-3.4 2.3 2.4 1.8-2 3.8 4" />
+          </svg>
+        </span>
+
+        <div>
+          <h2>{{ album.name }}</h2>
+
+          <p>
+            {{ album.description || 'Álbum sem descrição.' }}
+          </p>
+        </div>
+      </header>
+
+      @if (albumMediaLoading()) {
         <div class="loading-state" role="status">
           <span aria-hidden="true"></span>
-          Carregando álbuns...
+          Carregando períodos do álbum...
         </div>
-      } @else if (selectedDashboardAlbum(); as album) {
-        <header class="album-timeline__header">
-          <span aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M4 5.5h5l1.4 2H20v11H4z" />
-              <path d="m6.5 16 3.1-3.4 2.3 2.4 1.8-2 3.8 4" />
-            </svg>
+      } @else if (albumMediaError()) {
+        <div class="timeline-empty">
+          <strong>{{ albumMediaError() }}</strong>
+
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="retryAlbumMedia()"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      } @else if (albumMediaPeriods().length === 0) {
+        <div class="timeline-empty">
+          <strong>Nenhuma mídia vinculada a este álbum.</strong>
+
+          <span>
+            Use Mídias para mover fotos e vídeos para este álbum.
           </span>
-
-          <div>
-            <h2>{{ album.name }}</h2>
-
-            <p>
-              {{ album.description || 'Álbum sem descrição.' }}
-            </p>
-          </div>
-        </header>
-
-        @if (albumMediaLoading()) {
-          <div class="loading-state" role="status">
-            <span aria-hidden="true"></span>
-            Carregando mídias do álbum...
-          </div>
-        } @else if (albumMediaError()) {
-          <div class="timeline-empty">
-            <strong>{{ albumMediaError() }}</strong>
-
-            <button
-              type="button"
-              class="secondary-button"
-              (click)="retryAlbumMedia()"
-            >
-              Tentar novamente
-            </button>
-          </div>
-        } @else if (albumMediaTotal() === 0) {
-          <div class="timeline-empty">
-            <strong>Nenhuma mídia vinculada a este álbum.</strong>
-
-            <span>
-              Use Mídias para mover fotos e vídeos para este álbum.
-            </span>
-          </div>
-        } @else {
-          <div class="album-timeline__periods">
-            @for (
-              period of albumMediaPeriods();
-              track period.key
-            ) {
-              <section class="album-period">
-                <button
-                  type="button"
-                  class="album-period__header"
-                  (click)="togglePeriod(period.key)"
-                  [attr.aria-expanded]="periodExpanded(period.key)"
+        </div>
+      } @else {
+        <div class="album-timeline__periods">
+          @for (
+            period of albumMediaPeriods();
+            track period.key
+          ) {
+            <section class="album-period">
+              <button
+                type="button"
+                class="album-period__header"
+                (click)="togglePeriod(period.key)"
+                [attr.aria-expanded]="periodExpanded(period.key)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  [class.album-period__chevron--expanded]="periodExpanded(period.key)"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                    [class.album-period__chevron--expanded]="periodExpanded(period.key)"
-                  >
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
 
-                  <span class="album-period__title">
-                    {{ period.label }}
-                  </span>
+                <span class="album-period__title">
+                  {{ period.label }}
+                </span>
 
-                  <span class="album-period__count">
-                    {{ period.items.length }}
-                    {{ period.items.length === 1 ? 'mídia' : 'mídias' }}
-                  </span>
-                </button>
+                <span class="album-period__count">
+                  {{ period.mediaCount }}
+                  {{ period.mediaCount === 1 ? 'mídia' : 'mídias' }}
+                </span>
+              </button>
 
-                @if (periodExpanded(period.key)) {
+              @if (periodExpanded(period.key)) {
+                @if (
+                  period.year !== null
+                  && period.month !== null
+                ) {
+                  <div class="album-period__description">
+                    @if (period.editingDescription) {
+                      <label>
+                        <span>Descrição do mês</span>
+
+                        <textarea
+                          rows="3"
+                          maxlength="5000"
+                          [ngModel]="period.descriptionDraft"
+                          (ngModelChange)="updatePeriodDescriptionDraft(
+                            period.key,
+                            $event
+                          )"
+                          [disabled]="period.savingDescription"
+                          placeholder="Descreva os acontecimentos deste mês."
+                        ></textarea>
+                      </label>
+
+                      <div class="album-period__description-actions">
+                        <button
+                          type="button"
+                          class="primary-button"
+                          (click)="savePeriodDescription(period.key)"
+                          [disabled]="period.savingDescription"
+                        >
+                          {{
+                            period.savingDescription
+                              ? 'Salvando...'
+                              : 'Salvar descrição'
+                          }}
+                        </button>
+
+                        <button
+                          type="button"
+                          class="secondary-button"
+                          (click)="cancelPeriodDescriptionEdit(period.key)"
+                          [disabled]="period.savingDescription"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    } @else {
+                      <div class="album-period__description-content">
+                        <p>
+                          {{
+                            period.description
+                              || 'Nenhuma descrição cadastrada para este mês.'
+                          }}
+                        </p>
+
+                        @if (canEdit()) {
+                          <button
+                            type="button"
+                            class="primary-button"
+                            (click)="beginPeriodDescriptionEdit(period.key)"
+                          >
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M4 20h4L19 9l-4-4L4 16v4Z" />
+                              <path d="m13.5 6.5 4 4" />
+                            </svg>
+
+                            {{
+                              period.description
+                                ? 'Editar descrição'
+                                : 'Adicionar descrição'
+                            }}
+                          </button>
+                        }
+                      </div>
+                    }
+
+                    @if (period.descriptionError) {
+                      <p
+                        class="album-period__description-error"
+                        role="alert"
+                      >
+                        {{ period.descriptionError }}
+                      </p>
+                    }
+                  </div>
+                }
+
+                @if (period.loading) {
+                  <div class="loading-state" role="status">
+                    <span aria-hidden="true"></span>
+                    Carregando mídias deste período...
+                  </div>
+                } @else if (period.error) {
+                  <div class="timeline-empty">
+                    <strong>{{ period.error }}</strong>
+
+                    <button
+                      type="button"
+                      class="secondary-button"
+                      (click)="retryPeriod(period.key)"
+                    >
+                      Tentar novamente
+                    </button>
+                  </div>
+                } @else if (
+                  period.loaded
+                  && period.items.length === 0
+                ) {
+                  <div class="timeline-empty">
+                    <strong>
+                      Nenhuma mídia disponível neste período.
+                    </strong>
+
+                    <button
+                      type="button"
+                      class="secondary-button"
+                      (click)="retryPeriod(period.key)"
+                    >
+                      Atualizar período
+                    </button>
+                  </div>
+                } @else if (period.loaded) {
                   <div class="album-media-grid">
                     @for (
                       media of period.items;
@@ -332,57 +453,58 @@
                       </article>
                     }
                   </div>
+
+                  @if (periodHasMore(period)) {
+                    <div class="album-timeline__load-more">
+                      <button
+                        type="button"
+                        class="secondary-button"
+                        (click)="loadMorePeriod(period.key)"
+                        [disabled]="period.loadingMore"
+                      >
+                        {{
+                          period.loadingMore
+                            ? 'Carregando...'
+                            : 'Carregar mais mídias deste período'
+                        }}
+                      </button>
+
+                      <span>
+                        {{ period.items.length }} de
+                        {{ period.total }} mídias carregadas
+                      </span>
+                    </div>
+                  }
                 }
-              </section>
-            }
-          </div>
-
-          @if (albumMediaHasMore()) {
-            <div class="album-timeline__load-more">
-              <button
-                type="button"
-                class="secondary-button"
-                (click)="loadMoreAlbumMedia()"
-                [disabled]="albumMediaLoadingMore()"
-              >
-                {{
-                  albumMediaLoadingMore()
-                    ? 'Carregando...'
-                    : 'Carregar mais mídias'
-                }}
-              </button>
-
-              <span>
-                {{ albumMedia().length }} de
-                {{ albumMediaTotal() }} mídias carregadas
-              </span>
-            </div>
-          }
-        }
-      } @else {
-        <div class="dashboard-empty">
-          <span aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M4 5.5h5l1.4 2H20v11H4z" />
-              <path d="m6.5 16 3.1-3.4 2.3 2.4 1.8-2 3.8 4" />
-            </svg>
-          </span>
-
-          @if (activeAlbums().length === 0) {
-            <strong>Nenhum álbum disponível.</strong>
-
-            <p>
-              Cadastre um álbum para iniciar a organização do acervo.
-            </p>
-          } @else {
-            <strong>Escolha um álbum.</strong>
-
-            <p>
-              Selecione um álbum acima para visualizar seu conteúdo.
-            </p>
+              }
+            </section>
           }
         </div>
       }
+    } @else {
+      <div class="dashboard-empty">
+        <span aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 5.5h5l1.4 2H20v11H4z" />
+            <path d="m6.5 16 3.1-3.4 2.3 2.4 1.8-2 3.8 4" />
+          </svg>
+        </span>
+
+        @if (activeAlbums().length === 0) {
+          <strong>Nenhum álbum disponível.</strong>
+
+          <p>
+            Cadastre um álbum para iniciar a organização do acervo.
+          </p>
+        } @else {
+          <strong>Escolha um álbum.</strong>
+
+          <p>
+            Selecione um álbum acima para visualizar seu conteúdo.
+          </p>
+        }
+      </div>
+    }
   </section>
 
   @if (!canEdit()) {

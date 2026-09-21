@@ -20,6 +20,8 @@ import {
   Album,
   AlbumFilters,
   AlbumInput,
+  AlbumPeriod,
+  AlbumPeriodDescriptionInput,
   AlbumRepository,
 } from '../domain';
 
@@ -43,6 +45,17 @@ interface AlbumRequest {
   readonly name: string;
   readonly description: string | null;
   readonly active: boolean;
+}
+
+interface AlbumPeriodResponse {
+  readonly year: number | null;
+  readonly month: number | null;
+  readonly media_count: number;
+  readonly description: string | null;
+}
+
+interface AlbumPeriodDescriptionRequest {
+  readonly description: string | null;
 }
 
 export class HttpAlbumRepository implements AlbumRepository {
@@ -86,6 +99,45 @@ export class HttpAlbumRepository implements AlbumRepository {
 
       throw error;
     }
+  }
+
+  async listPeriods(
+    albumId: string,
+  ): Promise<readonly AlbumPeriod[]> {
+    const response = await firstValueFrom(
+      this.http.get<
+        readonly AlbumPeriodResponse[]
+      >(
+        `/api/fotos/albums/${albumId}/periods`,
+      ),
+    );
+
+    return response.map(
+      period => this.mapPeriod(period),
+    );
+  }
+
+  async updatePeriodDescription(
+    albumId: string,
+    year: number,
+    month: number,
+    input: AlbumPeriodDescriptionInput,
+  ): Promise<AlbumPeriod> {
+    const request: AlbumPeriodDescriptionRequest = {
+      description: input.description,
+    };
+
+    const response = await firstValueFrom(
+      this.http.put<AlbumPeriodResponse>(
+        (
+          `/api/fotos/albums/${albumId}`
+          + `/periods/${year}/${month}`
+        ),
+        request,
+      ),
+    );
+
+    return this.mapPeriod(response);
   }
 
   async create(
@@ -185,6 +237,17 @@ export class HttpAlbumRepository implements AlbumRepository {
       active: response.active,
       createdAt: response.created_at,
       updatedAt: response.updated_at,
+    };
+  }
+
+  private mapPeriod(
+    response: AlbumPeriodResponse,
+  ): AlbumPeriod {
+    return {
+      year: response.year,
+      month: response.month,
+      mediaCount: response.media_count,
+      description: response.description,
     };
   }
 }

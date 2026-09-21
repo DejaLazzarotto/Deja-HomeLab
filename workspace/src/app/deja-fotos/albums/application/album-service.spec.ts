@@ -17,6 +17,8 @@ describe('AlbumService', () => {
     repository = {
       list: vi.fn(),
       findById: vi.fn(),
+      listPeriods: vi.fn(),
+      updatePeriodDescription: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -87,6 +89,60 @@ describe('AlbumService', () => {
           name: 'Família',
           description: null,
           active: true,
+        },
+      );
+  });
+
+  it('should normalize a monthly description', async () => {
+    vi.mocked(repository.updatePeriodDescription)
+      .mockResolvedValue({
+        year: 2024,
+        month: 3,
+        mediaCount: 12,
+        description: 'Encontro da família.',
+      });
+
+    await service.updatePeriodDescription(
+      '44444444-4444-4444-4444-444444444444',
+      2024,
+      3,
+      ' Encontro da família. ',
+    );
+
+    expect(repository.updatePeriodDescription)
+      .toHaveBeenCalledWith(
+        '44444444-4444-4444-4444-444444444444',
+        2024,
+        3,
+        {
+          description: 'Encontro da família.',
+        },
+      );
+  });
+
+  it('should normalize an empty monthly description to null', async () => {
+    vi.mocked(repository.updatePeriodDescription)
+      .mockResolvedValue({
+        year: 2024,
+        month: 3,
+        mediaCount: 12,
+        description: null,
+      });
+
+    await service.updatePeriodDescription(
+      '44444444-4444-4444-4444-444444444444',
+      2024,
+      3,
+      '   ',
+    );
+
+    expect(repository.updatePeriodDescription)
+      .toHaveBeenCalledWith(
+        '44444444-4444-4444-4444-444444444444',
+        2024,
+        3,
+        {
+          description: null,
         },
       );
   });

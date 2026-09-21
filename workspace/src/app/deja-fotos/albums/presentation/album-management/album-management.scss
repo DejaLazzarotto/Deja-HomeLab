@@ -423,6 +423,27 @@ button:disabled {
   font-size: 0.74rem;
 }
 
+.album-period__description {
+  padding: 0 1.25rem 1rem 3.75rem;
+}
+
+.album-period__description textarea {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.album-period__description-content,
+.album-period__description-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.album-period__description-content p,
+.album-period__description-error {
+  margin: 0;
+}
+
 .album-media-grid {
   display: grid;
   grid-template-columns: repeat(

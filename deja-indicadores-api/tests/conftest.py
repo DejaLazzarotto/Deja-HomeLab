@@ -29,6 +29,7 @@ from deja_indicadores_api.core.database import (
 )
 from deja_indicadores_api.fotos.albums.models import (
     FotosAlbumModel,
+    FotosAlbumPeriodDescriptionModel,
 )
 from deja_indicadores_api.fotos.media.dependencies import (
     get_fotos_media_session_factory,
@@ -133,6 +134,7 @@ def clear_database(
         session.execute(delete(ChamadosClientModel))
         session.execute(delete(FotosMediaDerivativeModel))
         session.execute(delete(FotosMediaModel))
+        session.execute(delete(FotosAlbumPeriodDescriptionModel))
         session.execute(delete(FotosAlbumModel))
         session.execute(delete(UserModel))
         session.execute(delete(EnvironmentModel))

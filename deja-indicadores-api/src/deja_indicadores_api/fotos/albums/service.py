@@ -10,15 +10,20 @@ from deja_indicadores_api.fotos.albums.exceptions import (
     FotosAlbumAlreadyExistsError,
     FotosAlbumHasMediaError,
     FotosAlbumNotFoundError,
+    FotosAlbumPeriodNotFoundError,
 )
 from deja_indicadores_api.fotos.albums.models import (
     FotosAlbumModel,
+    FotosAlbumPeriodDescriptionModel,
 )
 from deja_indicadores_api.fotos.albums.repository import (
+    FotosAlbumPeriodRow,
     FotosAlbumRepository,
 )
 from deja_indicadores_api.fotos.albums.schemas import (
     FotosAlbumCreate,
+    FotosAlbumPeriodDescriptionUpdate,
+    FotosAlbumPeriodResponse,
     FotosAlbumUpdate,
 )
 from deja_indicadores_api.fotos.media.repository import (
@@ -148,6 +153,49 @@ class FotosAlbumService:
 
         return album
 
+    def list_periods(
+        self,
+        album_id: str,
+        current_user: AuthenticatedUser,
+    ) -> list[FotosAlbumPeriodResponse]:
+        """Lista os períodos reais de um álbum autorizado."""
+
+        self._require_roles(
+            current_user,
+            FOTOS_ALBUM_READER_ROLES,
+        )
+
+        album = self._find_by_id(
+            album_id,
+        )
+
+        environment, tenant = self._resolve_album_scope(
+            album,
+        )
+
+        self._require_album_scope(
+            current_user,
+            environment,
+            tenant,
+        )
+
+        return [
+            FotosAlbumPeriodResponse(
+                year=year,
+                month=month,
+                media_count=media_count,
+                description=description,
+            )
+            for (
+                year,
+                month,
+                media_count,
+                description,
+            ) in self._repository.list_periods(
+                album.id,
+            )
+        ]
+
     def create(
         self,
         input_data: FotosAlbumCreate,
@@ -271,6 +319,84 @@ class FotosAlbumService:
             album,
         )
 
+    def update_period_description(
+        self,
+        album_id: str,
+        year: int,
+        month: int,
+        input_data: FotosAlbumPeriodDescriptionUpdate,
+        current_user: AuthenticatedUser,
+    ) -> FotosAlbumPeriodResponse:
+        """Salva ou remove a descrição de um período real do álbum."""
+
+        self._require_roles(
+            current_user,
+            FOTOS_ALBUM_OPERATOR_ROLES,
+        )
+
+        album = self._find_by_id(
+            album_id,
+        )
+
+        environment, tenant = self._resolve_album_scope(
+            album,
+        )
+
+        self._require_album_scope(
+            current_user,
+            environment,
+            tenant,
+        )
+
+        period = self._find_period(
+            album.id,
+            year,
+            month,
+        )
+
+        period_description = (
+            self._repository.find_period_description(
+                album_id=album.id,
+                year=year,
+                month=month,
+            )
+        )
+
+        if input_data.description is None:
+            if period_description is not None:
+                self._repository.delete_period_description(
+                    period_description,
+                )
+        else:
+            if period_description is None:
+                period_description = (
+                    FotosAlbumPeriodDescriptionModel(
+                        id=str(uuid4()),
+                        organization_id=album.organization_id,
+                        tenant_id=album.tenant_id,
+                        environment_id=album.environment_id,
+                        album_id=album.id,
+                        original_year=year,
+                        original_month=month,
+                        description=input_data.description,
+                    )
+                )
+            else:
+                period_description.description = (
+                    input_data.description
+                )
+
+            self._repository.save_period_description(
+                period_description,
+            )
+
+        return FotosAlbumPeriodResponse(
+            year=year,
+            month=month,
+            media_count=period[2],
+            description=input_data.description,
+        )
+
     def delete(
         self,
         album_id: str,
@@ -322,6 +448,27 @@ class FotosAlbumService:
             )
 
         return album
+
+    def _find_period(
+        self,
+        album_id: str,
+        year: int,
+        month: int,
+    ) -> FotosAlbumPeriodRow:
+        for period in self._repository.list_periods(
+            album_id,
+        ):
+            if (
+                period[0] == year
+                and period[1] == month
+            ):
+                return period
+
+        raise FotosAlbumPeriodNotFoundError(
+            album_id,
+            year,
+            month,
+        )
 
     def _require_environment(
         self,

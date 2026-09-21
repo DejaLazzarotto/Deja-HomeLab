@@ -9,6 +9,8 @@ from deja_indicadores_api.fotos.albums.dependencies import (
 )
 from deja_indicadores_api.fotos.albums.schemas import (
     FotosAlbumCreate,
+    FotosAlbumPeriodDescriptionUpdate,
+    FotosAlbumPeriodResponse,
     FotosAlbumResponse,
     FotosAlbumUpdate,
 )
@@ -30,6 +32,24 @@ FotosAlbumId = Annotated[
         min_length=36,
         max_length=36,
         description="Identificador UUID do álbum.",
+    ),
+]
+
+FotosAlbumPeriodYear = Annotated[
+    int,
+    Path(
+        ge=1,
+        le=9999,
+        description="Ano original das mídias.",
+    ),
+]
+
+FotosAlbumPeriodMonth = Annotated[
+    int,
+    Path(
+        ge=1,
+        le=12,
+        description="Mês original das mídias.",
     ),
 ]
 
@@ -128,6 +148,46 @@ def list_albums(
         tenant_id=tenant_id,
         environment_id=environment_id,
         active=active,
+    )
+
+
+@router.get(
+    "/{album_id}/periods",
+    response_model=list[FotosAlbumPeriodResponse],
+)
+def list_album_periods(
+    album_id: FotosAlbumId,
+    service: FotosAlbumServiceDependency,
+    current_user: FotosAlbumReader,
+) -> list[FotosAlbumPeriodResponse]:
+    """Lista os períodos reais existentes em um álbum."""
+
+    return service.list_periods(
+        album_id,
+        current_user,
+    )
+
+
+@router.put(
+    "/{album_id}/periods/{year}/{month}",
+    response_model=FotosAlbumPeriodResponse,
+)
+def update_album_period_description(
+    album_id: FotosAlbumId,
+    year: FotosAlbumPeriodYear,
+    month: FotosAlbumPeriodMonth,
+    input_data: FotosAlbumPeriodDescriptionUpdate,
+    service: FotosAlbumServiceDependency,
+    current_user: FotosAlbumOperator,
+) -> FotosAlbumPeriodResponse:
+    """Salva ou remove a descrição mensal de um álbum."""
+
+    return service.update_period_description(
+        album_id,
+        year,
+        month,
+        input_data,
+        current_user,
     )
 
 
