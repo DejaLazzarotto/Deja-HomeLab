@@ -28,6 +28,9 @@ import {
 
 import {
   Media,
+  MediaBulkActionRequest,
+  MediaBulkActionsComponent,
+  MediaBulkResult,
   MediaService,
   formatMediaDate,
   formatMediaDuration,
@@ -76,6 +79,7 @@ const ALBUM_MEDIA_PAGE_SIZE = 100;
   imports: [
     FormsModule,
     AlbumFormComponent,
+    MediaBulkActionsComponent,
   ],
   templateUrl: './album-management.html',
   styleUrl: './album-management.scss',
@@ -96,6 +100,8 @@ export class AlbumManagementComponent
 
   readonly canEdit = input(false);
 
+  readonly canOrganize = input(false);
+
   readonly canDelete = input(false);
 
   readonly albums = signal<readonly Album[]>([]);
@@ -107,6 +113,16 @@ export class AlbumManagementComponent
   readonly loading = signal(false);
 
   readonly saving = signal(false);
+
+  readonly bulkBusy = signal(false);
+
+  readonly bulkResult =
+    signal<MediaBulkResult | null>(null);
+
+  readonly selectedMediaIds =
+    signal<ReadonlySet<string>>(
+      new Set<string>(),
+    );
 
   readonly deletingAlbumId =
     signal<string | null>(null);
@@ -159,6 +175,25 @@ export class AlbumManagementComponent
   readonly activeAlbums = computed(() => (
     this.albums().filter(album => album.active)
   ));
+
+  readonly destinationAlbums = computed(() => {
+    const selectedAlbum =
+      this.selectedDashboardAlbum();
+
+    if (!selectedAlbum) {
+      return [];
+    }
+
+    return this.activeAlbums().filter(album => (
+      album.id !== selectedAlbum.id
+      && album.organizationId
+        === selectedAlbum.organizationId
+      && album.tenantId
+        === selectedAlbum.tenantId
+      && album.environmentId
+        === selectedAlbum.environmentId
+    ));
+  });
 
   readonly selectedDashboardAlbum = computed(() => {
     const albumId = this.selectedDashboardAlbumId();
@@ -268,7 +303,13 @@ export class AlbumManagementComponent
   selectDashboardAlbum(
     albumId: string,
   ): void {
+    if (this.bulkBusy()) {
+      return;
+    }
+
     this.selectedDashboardAlbumId.set(albumId);
+    this.clearSelection();
+    this.clearOperationMessages();
     this.resetAlbumMedia();
 
     if (albumId) {
@@ -360,6 +401,213 @@ export class AlbumManagementComponent
         period.key,
         false,
       );
+    }
+  }
+
+  mediaSelected(
+    mediaId: string,
+  ): boolean {
+    return this.selectedMediaIds().has(mediaId);
+  }
+
+  allLoadedPeriodMediaSelected(
+    period: AlbumMediaPeriod,
+  ): boolean {
+    return (
+      period.items.length > 0
+      && period.items.every(
+        media => this.mediaSelected(media.id),
+      )
+    );
+  }
+
+  toggleMediaSelection(
+    mediaId: string,
+    selected: boolean,
+  ): void {
+    if (
+      !this.canOrganize()
+      || this.bulkBusy()
+    ) {
+      return;
+    }
+
+    const next =
+      new Set(this.selectedMediaIds());
+
+    if (selected) {
+      if (
+        next.size >= 100
+        && !next.has(mediaId)
+      ) {
+        this.operationError.set(
+          'Selecione no máximo 100 mídias por operação.',
+        );
+
+        return;
+      }
+
+      next.add(mediaId);
+    } else {
+      next.delete(mediaId);
+    }
+
+    this.selectedMediaIds.set(next);
+    this.bulkResult.set(null);
+    this.operationMessage.set(null);
+    this.operationError.set(null);
+  }
+
+  toggleLoadedPeriodSelection(
+    periodKey: string,
+    selected: boolean,
+  ): void {
+    if (
+      !this.canOrganize()
+      || this.bulkBusy()
+    ) {
+      return;
+    }
+
+    const period = this.findPeriod(periodKey);
+
+    if (!period) {
+      return;
+    }
+
+    const next =
+      new Set(this.selectedMediaIds());
+
+    if (selected) {
+      for (const media of period.items) {
+        if (next.size >= 100) {
+          this.operationError.set(
+            'A seleção foi limitada a 100 mídias.',
+          );
+
+          break;
+        }
+
+        next.add(media.id);
+      }
+    } else {
+      for (const media of period.items) {
+        next.delete(media.id);
+      }
+    }
+
+    this.selectedMediaIds.set(next);
+    this.bulkResult.set(null);
+    this.operationMessage.set(null);
+  }
+
+  clearSelection(): void {
+    this.selectedMediaIds.set(
+      new Set<string>(),
+    );
+    this.bulkResult.set(null);
+  }
+
+  async executeAlbumBulkAction(
+    action: MediaBulkActionRequest,
+  ): Promise<void> {
+    if (
+      action.operation !== 'set_album'
+      || !this.canOrganize()
+      || this.bulkBusy()
+    ) {
+      return;
+    }
+
+    const mediaIds = [
+      ...this.selectedMediaIds(),
+    ];
+
+    if (mediaIds.length === 0) {
+      this.operationError.set(
+        'Selecione ao menos uma mídia.',
+      );
+
+      return;
+    }
+
+    if (
+      action.albumId === null
+      && !window.confirm(
+        `Retirar ${
+          mediaIds.length
+        } ${
+          mediaIds.length === 1
+            ? 'mídia'
+            : 'mídias'
+        } deste álbum?`,
+      )
+    ) {
+      return;
+    }
+
+    this.bulkBusy.set(true);
+    this.operationMessage.set(null);
+    this.operationError.set(null);
+    this.bulkResult.set(null);
+
+    try {
+      const result =
+        await this.mediaService().bulkUpdate({
+          operation: 'set_album',
+          mediaIds,
+          albumId: action.albumId,
+        });
+
+      this.bulkResult.set(result);
+
+      if (result.failedCount === 0) {
+        this.operationMessage.set(
+          action.albumId === null
+            ? `${
+                result.succeededCount
+              } ${
+                result.succeededCount === 1
+                  ? 'mídia retirada'
+                  : 'mídias retiradas'
+              } do álbum.`
+            : `${
+                result.succeededCount
+              } ${
+                result.succeededCount === 1
+                  ? 'mídia movida'
+                  : 'mídias movidas'
+              } com sucesso.`,
+        );
+
+        this.selectedMediaIds.set(
+          new Set<string>(),
+        );
+      } else {
+        this.operationError.set(
+          `${result.failedCount} ${
+            result.failedCount === 1
+              ? 'mídia não pôde'
+              : 'mídias não puderam'
+          } ser organizada.`,
+        );
+
+        this.selectedMediaIds.set(
+          new Set(
+            result.results
+              .filter(item => !item.success)
+              .map(item => item.mediaId),
+          ),
+        );
+      }
+
+      await this.reloadAlbumTimelinePreservingExpansion();
+    } catch (error: unknown) {
+      this.operationError.set(
+        this.resolveErrorMessage(error),
+      );
+    } finally {
+      this.bulkBusy.set(false);
     }
   }
 
@@ -684,6 +932,38 @@ export class AlbumManagementComponent
         this.videoCount.set(0);
       }
     }
+  }
+
+  private async reloadAlbumTimelinePreservingExpansion():
+    Promise<void> {
+    const expandedKeys = [
+      ...this.expandedPeriodKeys(),
+    ];
+
+    await this.loadSelectedAlbumPeriods();
+
+    const availableKeys = new Set(
+      this.albumMediaPeriods().map(
+        period => period.key,
+      ),
+    );
+
+    const restoredKeys = expandedKeys.filter(
+      periodKey => availableKeys.has(periodKey),
+    );
+
+    this.expandedPeriodKeys.set(
+      new Set(restoredKeys),
+    );
+
+    await Promise.all(
+      restoredKeys.map(
+        periodKey => this.loadPeriodMedia(
+          periodKey,
+          true,
+        ),
+      ),
+    );
   }
 
   private async loadSelectedAlbumPeriods(): Promise<void> {

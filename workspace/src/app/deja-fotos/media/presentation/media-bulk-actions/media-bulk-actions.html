@@ -20,7 +20,11 @@
 
     <div>
       <h2 id="bulk-actions-title">
-        Ações em lote
+        {{
+          mode() === 'album_organization'
+            ? 'Organizar mídias'
+            : 'Ações em lote'
+        }}
       </h2>
 
       <span class="bulk-actions__count">
@@ -31,9 +35,10 @@
   </header>
 
   <div class="bulk-actions__commands">
-    <button
-      type="button"
-      (click)="toggleDateEditor()"
+    @if (mode() === 'curation') {
+      <button
+        type="button"
+        (click)="toggleDateEditor()"
       [class.bulk-command--active]="dateEditorVisible()"
       [disabled]="selectedCount() === 0 || busy()"
     >
@@ -94,8 +99,9 @@
         <path d="m9.5 14 5-5M9.5 9l5 5" />
       </svg>
 
-      Limpar conflitos
-    </button>
+        Limpar conflitos
+      </button>
+    }
 
     <button
       type="button"
@@ -141,7 +147,10 @@
     </button>
   </div>
 
-  @if (dateEditorVisible()) {
+  @if (
+    mode() === 'curation'
+    && dateEditorVisible()
+  ) {
     <div class="bulk-actions__editor">
       <label for="bulk-original-date">
         Nova data original

@@ -136,7 +136,7 @@
       <select
         [ngModel]="selectedDashboardAlbumId()"
         (ngModelChange)="selectDashboardAlbum($event)"
-        [disabled]="loading()"
+        [disabled]="loading() || bulkBusy()"
       >
         <option value="">Selecione um álbum</option>
 
@@ -200,6 +200,50 @@
           </p>
         </div>
       </header>
+
+      @if (canOrganize()) {
+        <deja-media-bulk-actions
+          mode="album_organization"
+          [selectedCount]="selectedMediaIds().size"
+          [albums]="destinationAlbums()"
+          [busy]="bulkBusy()"
+          (actionRequested)="executeAlbumBulkAction($event)"
+          (clearSelectionRequested)="clearSelection()"
+        />
+      }
+
+      @if (bulkResult(); as result) {
+        <section class="bulk-result">
+          <header>
+            <strong>Resultado da organização</strong>
+
+            <span>
+              {{ result.succeededCount }} concluídas de
+              {{ result.requestedCount }}
+            </span>
+          </header>
+
+          @if (result.failedCount > 0) {
+            <ul>
+              @for (item of result.results; track item.mediaId) {
+                @if (!item.success) {
+                  <li>
+                    <code>{{ item.mediaId }}</code>
+
+                    <span>
+                      {{
+                        item.errorMessage
+                          || item.errorCode
+                          || 'Falha não identificada.'
+                      }}
+                    </span>
+                  </li>
+                }
+              }
+            </ul>
+          }
+        </section>
+      }
 
       @if (albumMediaLoading()) {
         <div class="loading-state" role="status">
@@ -344,6 +388,34 @@
                   </div>
                 }
 
+                @if (
+                  canOrganize()
+                  && period.loaded
+                  && period.items.length > 0
+                ) {
+                  <div class="album-period__selection-tools">
+                    <label>
+                      <input
+                        type="checkbox"
+                        [checked]="allLoadedPeriodMediaSelected(period)"
+                        (change)="toggleLoadedPeriodSelection(
+                          period.key,
+                          $any($event.target).checked
+                        )"
+                        [disabled]="loading() || bulkBusy()"
+                      />
+
+                      Selecionar as
+                      {{ period.items.length }}
+                      mídias carregadas
+                    </label>
+
+                    <span>
+                      Limite de 100 mídias por operação
+                    </span>
+                  </div>
+                }
+
                 @if (period.loading) {
                   <div class="loading-state" role="status">
                     <span aria-hidden="true"></span>
@@ -384,8 +456,28 @@
                       media of period.items;
                       track media.id
                     ) {
-                      <article class="album-media-card">
+                      <article
+                        class="album-media-card"
+                        [class.album-media-card--selected]="mediaSelected(media.id)"
+                      >
                         <div class="album-media-card__preview">
+                          @if (canOrganize()) {
+                            <label class="album-media-card__selection">
+                              <input
+                                type="checkbox"
+                                [checked]="mediaSelected(media.id)"
+                                (change)="toggleMediaSelection(
+                                  media.id,
+                                  $any($event.target).checked
+                                )"
+                                [disabled]="loading() || bulkBusy()"
+                                [attr.aria-label]="
+                                  'Selecionar ' + media.originalName
+                                "
+                              />
+                            </label>
+                          }
+
                           @if (thumbnailUrl(media.id); as thumbnail) {
                             <img
                               [src]="thumbnail"

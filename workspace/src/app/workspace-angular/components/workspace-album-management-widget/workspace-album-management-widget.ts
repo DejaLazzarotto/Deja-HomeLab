@@ -78,6 +78,7 @@ interface EnvironmentResponse {
         [environments]="environments()"
         [defaultEnvironmentId]="currentUser.environmentId"
         [canEdit]="canEdit"
+        [canOrganize]="canOrganize"
         [canDelete]="canDelete"
       />
     }
@@ -156,6 +157,13 @@ export class WorkspaceAlbumManagementWidgetComponent
     'tenant_admin',
     'manager',
     'analyst',
+  ].includes(this.currentUser?.role ?? '');
+
+  protected readonly canOrganize = [
+    'platform_admin',
+    'organization_admin',
+    'tenant_admin',
+    'manager',
   ].includes(this.currentUser?.role ?? '');
 
   protected readonly canDelete = [

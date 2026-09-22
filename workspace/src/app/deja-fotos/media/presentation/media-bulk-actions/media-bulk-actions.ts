@@ -20,6 +20,10 @@ import {
   Album,
 } from '../../../albums';
 
+export type MediaBulkActionsMode =
+  | 'curation'
+  | 'album_organization';
+
 export type MediaBulkActionRequest =
   | {
       readonly operation: 'set_original_date';
@@ -47,6 +51,9 @@ export type MediaBulkActionRequest =
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MediaBulkActionsComponent {
+  readonly mode =
+    input<MediaBulkActionsMode>('curation');
+
   readonly selectedCount = input(0);
 
   readonly albums = input<readonly Album[]>([]);

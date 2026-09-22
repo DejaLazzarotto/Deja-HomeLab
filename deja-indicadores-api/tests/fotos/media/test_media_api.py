@@ -2793,6 +2793,17 @@ def test_bulk_rejects_invalid_selection_contract(
         headers,
     ) = media_context
 
+    empty_response = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={
+            "operation": "clear_original_date_conflict",
+            "media_ids": [],
+        },
+        headers=headers,
+    )
+
+    assert empty_response.status_code == 422
+
     repeated_id = str(uuid4())
 
     duplicate_response = client.patch(
