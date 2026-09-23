@@ -37,6 +37,12 @@ import {
 } from '../../../media';
 
 import {
+  Person,
+  PersonPanelComponent,
+  PersonService,
+} from '../../../people';
+
+import {
   AlbumService,
 } from '../../application';
 
@@ -80,6 +86,7 @@ const ALBUM_MEDIA_PAGE_SIZE = 100;
     FormsModule,
     AlbumFormComponent,
     MediaBulkActionsComponent,
+    PersonPanelComponent,
   ],
   templateUrl: './album-management.html',
   styleUrl: './album-management.scss',
@@ -91,6 +98,9 @@ export class AlbumManagementComponent
 
   readonly mediaService =
     input.required<MediaService>();
+
+  readonly personService =
+    input.required<PersonService>();
 
   readonly environments =
     input<readonly FotosEnvironmentOption[]>([]);
@@ -105,6 +115,20 @@ export class AlbumManagementComponent
   readonly canDelete = input(false);
 
   readonly albums = signal<readonly Album[]>([]);
+
+  readonly people = signal<readonly Person[]>([]);
+
+  readonly peopleTotal = signal(0);
+
+  readonly peoplePage = signal(0);
+
+  readonly peopleLoading = signal(false);
+
+  readonly peopleError = signal<string | null>(null);
+
+  readonly selectedPerson = signal<Person | null>(null);
+
+  readonly creatingPerson = signal(false);
 
   readonly photoCount = signal(0);
 
@@ -250,6 +274,7 @@ export class AlbumManagementComponent
   ngOnInit(): void {
     void this.refresh();
     void this.loadMediaSummary();
+    void this.loadPeople(true);
   }
 
   ngOnDestroy(): void {
@@ -300,6 +325,123 @@ export class AlbumManagementComponent
     }
   }
 
+  async loadPeople(reset = false): Promise<void> {
+    if (
+      this.peopleLoading()
+      || (
+        !reset
+        && this.peoplePage() > 0
+        && this.people().length >= this.peopleTotal()
+      )
+    ) {
+      return;
+    }
+
+    this.peopleLoading.set(true);
+    this.peopleError.set(null);
+
+    try {
+      const page = reset
+        ? 1
+        : this.peoplePage() + 1;
+
+      const result = await this.personService().list({
+        page,
+        pageSize: 50,
+      });
+
+      if (this.destroyed) {
+        return;
+      }
+
+      this.people.update(current => (
+        reset
+          ? result.items
+          : [
+              ...current,
+              ...result.items.filter(
+                person => !current.some(
+                  item => item.id === person.id,
+                ),
+              ),
+            ]
+      ));
+      this.peoplePage.set(result.page);
+      this.peopleTotal.set(result.total);
+    } catch {
+      this.peopleError.set(
+        'Não foi possível carregar pessoas.',
+      );
+    } finally {
+      this.peopleLoading.set(false);
+    }
+  }
+
+  selectDashboardPerson(personId: string): void {
+    this.creatingPerson.set(false);
+    this.selectedPerson.set(
+      this.people().find(
+        person => person.id === personId,
+      ) ?? null,
+    );
+
+    if (personId) {
+      this.selectedDashboardAlbumId.set('');
+      this.clearSelection();
+      this.resetAlbumMedia();
+    }
+  }
+
+  openPersonCreate(): void {
+    if (!this.canEdit()) {
+      return;
+    }
+
+    this.formVisible.set(false);
+    this.selectedDashboardAlbumId.set('');
+    this.selectedPerson.set(null);
+    this.clearSelection();
+    this.resetAlbumMedia();
+    this.creatingPerson.set(true);
+  }
+
+  closePersonCreate(): void {
+    this.creatingPerson.set(false);
+  }
+
+  onPersonSaved(person: Person): void {
+    const wasCreating = this.creatingPerson();
+    this.creatingPerson.set(false);
+    this.selectedPerson.set(person);
+    this.people.update(current => {
+      const withoutPerson = current.filter(
+        item => item.id !== person.id,
+      );
+
+      return [...withoutPerson, person].sort(
+        (left, right) => left.name.localeCompare(
+          right.name,
+          'pt-BR',
+        ),
+      );
+    });
+
+    if (wasCreating) {
+      this.peopleTotal.update(total => total + 1);
+    }
+  }
+
+  onPersonDeleted(personId: string): void {
+    this.selectedPerson.set(null);
+    this.people.update(current => current.filter(
+      person => person.id !== personId,
+    ));
+    this.peopleTotal.update(total => Math.max(
+      0,
+      total - 1,
+    ));
+  }
+
   selectDashboardAlbum(
     albumId: string,
   ): void {
@@ -307,6 +449,8 @@ export class AlbumManagementComponent
       return;
     }
 
+    this.selectedPerson.set(null);
+    this.creatingPerson.set(false);
     this.selectedDashboardAlbumId.set(albumId);
     this.clearSelection();
     this.clearOperationMessages();
@@ -750,6 +894,8 @@ export class AlbumManagementComponent
       return;
     }
 
+    this.selectedPerson.set(null);
+    this.creatingPerson.set(false);
     this.selectedAlbum.set(null);
     this.clearOperationMessages();
     this.formVisible.set(true);

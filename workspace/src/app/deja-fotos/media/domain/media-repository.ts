@@ -32,6 +32,12 @@ export interface MediaRepository {
     filters?: MediaFilters,
   ): Promise<MediaPage>;
 
+  listByPerson(
+    personId: string,
+    page: number,
+    pageSize: number,
+  ): Promise<MediaPage>;
+
   findById(
     id: string,
   ): Promise<Media | undefined>;

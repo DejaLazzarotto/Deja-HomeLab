@@ -147,6 +147,31 @@ export class HttpMediaRepository implements MediaRepository {
     };
   }
 
+  async listByPerson(
+    personId: string,
+    page: number,
+    pageSize: number,
+  ): Promise<MediaPage> {
+    const response = await firstValueFrom(
+      this.http.get<MediaPageResponse>(
+        `/api/fotos/people/${personId}/media`,
+        {
+          params: new HttpParams()
+            .set("page", String(page))
+            .set("page_size", String(pageSize)),
+        },
+      ),
+    );
+
+    return {
+      items: response.items.map(item => this.mapMedia(item)),
+      page: response.page,
+      pageSize: response.page_size,
+      total: response.total,
+      totalPages: response.total_pages,
+    };
+  }
+
   async findById(
     id: string,
   ): Promise<Media | undefined> {

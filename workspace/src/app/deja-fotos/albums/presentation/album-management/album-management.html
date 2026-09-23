@@ -120,7 +120,7 @@
       </span>
 
       <div>
-        <strong>0</strong>
+        <strong>{{ peopleTotal() }}</strong>
         <span>Pessoas</span>
       </div>
     </article>
@@ -151,10 +151,45 @@
     <label>
       <span>Escolha uma pessoa</span>
 
-      <select disabled>
-        <option>Nenhuma pessoa disponível</option>
+      <select
+        [ngModel]="selectedPerson()?.id ?? ''"
+        (ngModelChange)="selectDashboardPerson($event)"
+        [disabled]="peopleLoading() && people().length === 0"
+      >
+        <option value="">Selecione uma pessoa</option>
+
+        @for (person of people(); track person.id) {
+          <option [value]="person.id">
+            {{ person.name }}
+          </option>
+        }
       </select>
     </label>
+
+    @if (people().length < peopleTotal()) {
+      <button
+        type="button"
+        class="secondary-button"
+        (click)="loadPeople()"
+        [disabled]="peopleLoading()"
+      >
+        {{
+          peopleLoading()
+            ? 'Carregando...'
+            : 'Carregar mais pessoas'
+        }}
+      </button>
+    }
+
+    @if (peopleError()) {
+      <button
+        type="button"
+        class="secondary-button"
+        (click)="loadPeople(true)"
+      >
+        Tentar carregar pessoas
+      </button>
+    }
 
     <div class="dashboard-controls__actions">
       @if (canEdit()) {
@@ -170,10 +205,36 @@
 
           Novo álbum
         </button>
+
+        <button
+          type="button"
+          class="primary-button"
+          (click)="openPersonCreate()"
+        >
+          Nova pessoa
+        </button>
       }
     </div>
   </section>
 
+  @if (selectedPerson() || creatingPerson()) {
+    <deja-person-panel
+      [service]="personService()"
+      [mediaService]="mediaService()"
+      [person]="selectedPerson()"
+      [creating]="creatingPerson()"
+      [environments]="environments()"
+      [defaultEnvironmentId]="defaultEnvironmentId()"
+      [canEdit]="canEdit()"
+      [canOrganize]="canOrganize()"
+      [canDelete]="canDelete()"
+      (saved)="onPersonSaved($event)"
+      (deleted)="onPersonDeleted($event)"
+      (cancelled)="closePersonCreate()"
+    />
+  }
+
+  @if (!selectedPerson() && !creatingPerson()) {
   <section
     class="album-timeline"
     aria-live="polite"
@@ -598,6 +659,7 @@
       </div>
     }
   </section>
+  }
 
   @if (!canEdit()) {
     <div class="read-only-note">

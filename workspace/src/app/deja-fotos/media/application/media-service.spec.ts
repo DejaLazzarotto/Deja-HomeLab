@@ -13,6 +13,7 @@ describe('MediaService', () => {
   beforeEach(() => {
     repository = {
       list: vi.fn(),
+      listByPerson: vi.fn(),
       findById: vi.fn(),
       upload: vi.fn(),
       bulkUpdate: vi.fn(),

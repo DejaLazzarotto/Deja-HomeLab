@@ -1,0 +1,1 @@
+"""Pessoas e vínculos manuais do módulo Deja Fotos."""

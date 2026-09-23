@@ -28,6 +28,7 @@ import {
   AlbumsComposition,
   FotosEnvironmentOption,
   MediaComposition,
+  PeopleComposition,
 } from '../../../deja-fotos';
 
 import {
@@ -75,6 +76,7 @@ interface EnvironmentResponse {
       <deja-album-management
         [service]="composition.service"
         [mediaService]="mediaComposition.service"
+        [personService]="peopleComposition.service"
         [environments]="environments()"
         [defaultEnvironmentId]="currentUser.environmentId"
         [canEdit]="canEdit"
@@ -141,6 +143,9 @@ export class WorkspaceAlbumManagementWidgetComponent
 
   protected readonly mediaComposition =
     new MediaComposition(this.http);
+
+  protected readonly peopleComposition =
+    new PeopleComposition(this.http);
 
   protected readonly environments =
     signal<readonly FotosEnvironmentOption[]>([]);

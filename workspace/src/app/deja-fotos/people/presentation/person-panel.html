@@ -1,0 +1,404 @@
+<section class="person-panel" aria-label="Pessoa selecionada">
+  @if (error()) {
+    <p class="person-panel__error" role="alert">
+      {{ error() }}
+    </p>
+  }
+
+  @if (message()) {
+    <p class="person-panel__success" role="status">
+      {{ message() }}
+    </p>
+  }
+
+  @if (creating() || editing()) {
+    <div class="person-panel__form">
+      <header>
+        <h2>
+          {{
+            creating()
+              ? 'Nova pessoa'
+              : 'Editar pessoa'
+          }}
+        </h2>
+        <p>Cadastre o perfil para organizar suas mídias.</p>
+      </header>
+
+      <div class="person-panel__fields">
+        <label>
+          <span>Ambiente</span>
+          <select
+            [ngModel]="environmentId()"
+            (ngModelChange)="environmentId.set($event)"
+            [disabled]="!creating() || saving()"
+          >
+            <option value="">Selecione um ambiente</option>
+            @for (
+              environment of environments();
+              track environment.id
+            ) {
+              <option [value]="environment.id">
+                {{ environment.name }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label>
+          <span>Nome</span>
+          <input
+            type="text"
+            maxlength="150"
+            [ngModel]="name()"
+            (ngModelChange)="name.set($event)"
+            [disabled]="saving()"
+          />
+        </label>
+
+        <label class="person-panel__wide">
+          <span>Observações</span>
+          <textarea
+            rows="3"
+            maxlength="5000"
+            [ngModel]="description()"
+            (ngModelChange)="description.set($event)"
+            [disabled]="saving()"
+          ></textarea>
+        </label>
+
+        <label class="person-panel__active">
+          <input
+            type="checkbox"
+            [ngModel]="active()"
+            (ngModelChange)="active.set($event)"
+            [disabled]="saving()"
+          />
+          Pessoa ativa
+        </label>
+      </div>
+
+      <div class="person-panel__actions">
+        <button
+          type="button"
+          class="person-panel__primary"
+          (click)="save()"
+          [disabled]="saving()"
+        >
+          {{ saving() ? 'Salvando...' : 'Salvar pessoa' }}
+        </button>
+
+        <button
+          type="button"
+          class="person-panel__secondary"
+          (click)="cancelEdit()"
+          [disabled]="saving()"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (person(); as current) {
+    <header class="person-panel__header">
+      <div class="person-panel__identity">
+        <div class="person-panel__avatar">
+          @if (avatarUrl(); as avatar) {
+            <img
+              [src]="avatar"
+              [alt]="'Avatar de ' + current.name"
+            />
+          } @else {
+            <span aria-hidden="true">
+              {{ current.name.charAt(0).toUpperCase() }}
+            </span>
+          }
+        </div>
+
+        <div>
+          <h2>{{ current.name }}</h2>
+          <p>
+            {{
+              current.description
+                || 'Sem observações cadastradas.'
+            }}
+          </p>
+          @if (!current.active) {
+            <small>Inativa</small>
+          }
+        </div>
+      </div>
+
+      <div class="person-panel__actions">
+        @if (canEdit()) {
+          <button
+            type="button"
+            class="person-panel__secondary"
+            (click)="startEdit()"
+            [disabled]="busy() || editing()"
+          >
+            Editar pessoa
+          </button>
+        }
+
+        @if (canDelete()) {
+          <button
+            type="button"
+            class="person-panel__danger"
+            (click)="deletePerson()"
+            [disabled]="busy()"
+          >
+            Excluir pessoa
+          </button>
+        }
+      </div>
+    </header>
+
+    @if (canEdit()) {
+      <div class="person-panel__avatar-actions">
+        <label>
+          <span>Alterar avatar</span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            (change)="uploadAvatar(
+              $any($event.target).files?.[0] ?? null
+            )"
+            [disabled]="busy()"
+          />
+        </label>
+
+        @if (current.avatarContentType) {
+          <button
+            type="button"
+            class="person-panel__secondary"
+            (click)="removeAvatar()"
+            [disabled]="busy()"
+          >
+            Remover avatar
+          </button>
+        }
+      </div>
+    }
+
+    <section class="person-panel__gallery">
+      <header class="person-panel__gallery-header">
+        <div>
+          <h3>Mídias de {{ current.name }}</h3>
+          <p>
+            {{ total() }}
+            {{ total() === 1 ? 'mídia vinculada' : 'mídias vinculadas' }}
+          </p>
+        </div>
+
+        @if (canOrganize()) {
+          <button
+            type="button"
+            class="person-panel__primary"
+            (click)="openPicker()"
+            [disabled]="busy()"
+          >
+            Vincular mídias
+          </button>
+        }
+      </header>
+
+      @if (loading() && page() === 0) {
+        <p class="person-panel__empty">
+          Carregando mídias...
+        </p>
+      } @else if (
+        !loading()
+        && total() === 0
+      ) {
+        <p class="person-panel__empty">
+          Nenhuma mídia vinculada a esta pessoa.
+        </p>
+      }
+
+      @if (items().length > 0) {
+        <div class="person-panel__grid">
+          @for (media of items(); track media.id) {
+            <article class="person-panel__card">
+              <div class="person-panel__preview">
+                @if (thumbnailUrl(media.id); as url) {
+                  <img
+                    [src]="url"
+                    [alt]="'Miniatura de ' + media.originalName"
+                    loading="lazy"
+                  />
+                } @else {
+                  <span>
+                    {{
+                      thumbnailFailures().has(media.id)
+                        ? 'Miniatura indisponível'
+                        : 'Carregando miniatura'
+                    }}
+                  </span>
+                }
+
+                @if (media.mediaType === 'video') {
+                  <small>Vídeo</small>
+                }
+              </div>
+
+              <div class="person-panel__card-body">
+                <span>
+                  {{
+                    formatMediaDate(
+                      media.originalDate,
+                      media.originalDatePrecision
+                    )
+                  }}
+                </span>
+
+                @if (canOrganize()) {
+                  <button
+                    type="button"
+                    class="person-panel__text-button"
+                    (click)="unlink(media.id)"
+                    [disabled]="busy()"
+                  >
+                    Desvincular
+                  </button>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      }
+
+      @if (items().length < total()) {
+        <div class="person-panel__more">
+          <button
+            type="button"
+            class="person-panel__secondary"
+            (click)="loadMore()"
+            [disabled]="loading()"
+          >
+            {{
+              loading()
+                ? 'Carregando...'
+                : 'Carregar mais mídias'
+            }}
+          </button>
+          <span>
+            {{ items().length }} de {{ total() }}
+          </span>
+        </div>
+      }
+    </section>
+
+    @if (pickerOpen()) {
+      <section
+        class="person-panel__picker"
+        aria-label="Mídias disponíveis para vínculo"
+      >
+        <header class="person-panel__gallery-header">
+          <div>
+            <h3>Vincular mídias</h3>
+            <p>
+              Mídias do mesmo ambiente, carregadas por página.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="person-panel__secondary"
+            (click)="closePicker()"
+          >
+            Fechar
+          </button>
+        </header>
+
+        @if (
+          pickerLoading()
+          && pickerPage() === 0
+        ) {
+          <p class="person-panel__empty">
+            Carregando mídias...
+          </p>
+        } @else if (
+          !pickerLoading()
+          && pickerTotal() === 0
+        ) {
+          <p class="person-panel__empty">
+            Não há mídias neste ambiente.
+          </p>
+        }
+
+        <div class="person-panel__grid">
+          @for (media of pickerItems(); track media.id) {
+            <article class="person-panel__card">
+              <div class="person-panel__preview">
+                @if (thumbnailUrl(media.id); as url) {
+                  <img
+                    [src]="url"
+                    [alt]="'Miniatura de ' + media.originalName"
+                    loading="lazy"
+                  />
+                } @else {
+                  <span>
+                    {{
+                      thumbnailFailures().has(media.id)
+                        ? 'Miniatura indisponível'
+                        : 'Carregando miniatura'
+                    }}
+                  </span>
+                }
+              </div>
+
+              <div class="person-panel__card-body">
+                <span>
+                  {{
+                    formatMediaDate(
+                      media.originalDate,
+                      media.originalDatePrecision
+                    )
+                  }}
+                </span>
+
+                <button
+                  type="button"
+                  class="person-panel__text-button"
+                  (click)="link(media.id)"
+                  [disabled]="busy() || isLinked(media.id)"
+                >
+                  {{
+                    isLinked(media.id)
+                      ? 'Vinculada'
+                      : 'Vincular'
+                  }}
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+
+        @if (
+          pickerItems().length
+          < pickerTotal()
+        ) {
+          <div class="person-panel__more">
+            <button
+              type="button"
+              class="person-panel__secondary"
+              (click)="loadMorePicker()"
+              [disabled]="pickerLoading()"
+            >
+              {{
+                pickerLoading()
+                  ? 'Carregando...'
+                  : 'Carregar mais mídias'
+              }}
+            </button>
+            <span>
+              {{ pickerItems().length }} de
+              {{ pickerTotal() }}
+            </span>
+          </div>
+        }
+      </section>
+    }
+  }
+</section>

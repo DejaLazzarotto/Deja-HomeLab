@@ -45,6 +45,18 @@ export class MediaService {
     return this.repository.list(filters);
   }
 
+  listByPerson(
+    personId: string,
+    page: number,
+    pageSize: number,
+  ): Promise<MediaPage> {
+    return this.repository.listByPerson(
+      personId,
+      page,
+      pageSize,
+    );
+  }
+
   findById(
     id: string,
   ): Promise<Media | undefined> {
