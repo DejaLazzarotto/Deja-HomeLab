@@ -109,13 +109,11 @@ class FotosPersonService:
     ) -> tuple[list[FotosPersonModel], int]:
         self._require_roles(current_user, PERSON_READER_ROLES)
 
-        organization_id, tenant_id, environment_id = (
-            self._authorization_service.resolve_list_scope(
-                current_user,
-                organization_id=organization_id,
-                tenant_id=tenant_id,
-                environment_id=environment_id,
-            )
+        organization_id, tenant_id, environment_id = self._authorization_service.resolve_list_scope(
+            current_user,
+            organization_id=organization_id,
+            tenant_id=tenant_id,
+            environment_id=environment_id,
         )
 
         return self._repository.list(
@@ -139,14 +137,9 @@ class FotosPersonService:
         if person is None:
             raise FotosPersonNotFoundError(person_id)
 
-        environment, tenant = self._resolve_scope(
-            person.environment_id
-        )
+        environment, tenant = self._resolve_scope(person.environment_id)
 
-        if (
-            person.organization_id != tenant.organization_id
-            or person.tenant_id != tenant.id
-        ):
+        if person.organization_id != tenant.organization_id or person.tenant_id != tenant.id:
             raise FotosPersonNotFoundError(person_id)
 
         self._authorization_service.require_scope(
@@ -164,9 +157,7 @@ class FotosPersonService:
         current_user: AuthenticatedUser,
     ) -> FotosPersonModel:
         self._require_roles(current_user, PERSON_EDITOR_ROLES)
-        environment, tenant = self._resolve_scope(
-            payload.environment_id
-        )
+        environment, tenant = self._resolve_scope(payload.environment_id)
         self._require_scope(current_user, environment, tenant)
 
         existing = self._repository.find_by_scope_and_name(
@@ -224,6 +215,7 @@ class FotosPersonService:
     ) -> None:
         self._require_roles(current_user, PERSON_MANAGER_ROLES)
         person = self.find_by_id(person_id, current_user)
+        self._repository.clear_faces_for_person(person.id)
         self._repository.delete(person)
 
     def list_media(
@@ -287,21 +279,22 @@ class FotosPersonService:
         if link is None:
             raise FotosPersonMediaLinkNotFoundError()
 
+        if self._repository.has_confirmed_face(person_id, media_id):
+            raise ResourceConflictError(
+                "Remova ou corrija os rostos confirmados antes de desvincular a mídia."
+            )
+
         self._repository.delete_link(link)
 
     def _resolve_scope(
         self,
         environment_id: str,
     ) -> tuple[EnvironmentModel, TenantModel]:
-        environment = self._environment_repository.find_by_id(
-            environment_id
-        )
+        environment = self._environment_repository.find_by_id(environment_id)
         if environment is None:
             raise EnvironmentNotFoundError(environment_id)
 
-        tenant = self._tenant_repository.find_by_id(
-            environment.tenant_id
-        )
+        tenant = self._tenant_repository.find_by_id(environment.tenant_id)
         if tenant is None:
             raise TenantNotFoundError(environment.tenant_id)
 

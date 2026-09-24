@@ -1,8 +1,9 @@
 """Persistência de pessoas e seus vínculos com mídias."""
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
+from deja_indicadores_api.fotos.curation.models import FotosFaceModel, FotosFaceReferenceModel
 from deja_indicadores_api.fotos.media.models import (
     FotosMediaModel,
 )
@@ -32,31 +33,18 @@ class FotosPersonRepository:
         conditions = []
 
         if organization_id is not None:
-            conditions.append(
-                FotosPersonModel.organization_id == organization_id
-            )
+            conditions.append(FotosPersonModel.organization_id == organization_id)
         if tenant_id is not None:
-            conditions.append(
-                FotosPersonModel.tenant_id == tenant_id
-            )
+            conditions.append(FotosPersonModel.tenant_id == tenant_id)
         if environment_id is not None:
-            conditions.append(
-                FotosPersonModel.environment_id == environment_id
-            )
+            conditions.append(FotosPersonModel.environment_id == environment_id)
         if active is not None:
             conditions.append(FotosPersonModel.active == active)
         if name:
-            conditions.append(
-                FotosPersonModel.name.ilike(f"%{name}%")
-            )
+            conditions.append(FotosPersonModel.name.ilike(f"%{name}%"))
 
         total = int(
-            self._session.scalar(
-                select(func.count(FotosPersonModel.id)).where(
-                    *conditions
-                )
-            )
-            or 0
+            self._session.scalar(select(func.count(FotosPersonModel.id)).where(*conditions)) or 0
         )
 
         statement = (
@@ -125,16 +113,12 @@ class FotosPersonRepository:
     ) -> tuple[list[FotosMediaModel], int]:
         conditions = (
             FotosPersonMediaModel.person_id == person.id,
-            FotosPersonMediaModel.organization_id
-            == person.organization_id,
+            FotosPersonMediaModel.organization_id == person.organization_id,
             FotosPersonMediaModel.tenant_id == person.tenant_id,
-            FotosPersonMediaModel.environment_id
-            == person.environment_id,
-            FotosMediaModel.organization_id
-            == person.organization_id,
+            FotosPersonMediaModel.environment_id == person.environment_id,
+            FotosMediaModel.organization_id == person.organization_id,
             FotosMediaModel.tenant_id == person.tenant_id,
-            FotosMediaModel.environment_id
-            == person.environment_id,
+            FotosMediaModel.environment_id == person.environment_id,
             FotosMediaModel.deleted_at.is_(None),
         )
 
@@ -143,8 +127,7 @@ class FotosPersonRepository:
                 select(func.count(FotosMediaModel.id))
                 .join(
                     FotosPersonMediaModel,
-                    FotosPersonMediaModel.media_id
-                    == FotosMediaModel.id,
+                    FotosPersonMediaModel.media_id == FotosMediaModel.id,
                 )
                 .where(*conditions)
             )
@@ -155,8 +138,7 @@ class FotosPersonRepository:
             select(FotosMediaModel)
             .join(
                 FotosPersonMediaModel,
-                FotosPersonMediaModel.media_id
-                == FotosMediaModel.id,
+                FotosPersonMediaModel.media_id == FotosMediaModel.id,
             )
             .where(*conditions)
             .order_by(
@@ -193,3 +175,38 @@ class FotosPersonRepository:
     ) -> None:
         self._session.delete(link)
         self._session.commit()
+
+    def has_confirmed_face(self, person_id: str, media_id: str) -> bool:
+        return (
+            self._session.scalar(
+                select(FotosFaceModel.id)
+                .where(
+                    FotosFaceModel.person_id == person_id,
+                    FotosFaceModel.media_id == media_id,
+                    FotosFaceModel.status == "confirmed",
+                )
+                .limit(1)
+            )
+            is not None
+        )
+
+    def reference_keys_for_person(self, person_id: str) -> list[str]:
+        return list(
+            self._session.scalars(
+                select(FotosFaceReferenceModel.storage_key).where(
+                    FotosFaceReferenceModel.person_id == person_id
+                )
+            ).all()
+        )
+
+    def clear_faces_for_person(self, person_id: str) -> None:
+        self._session.execute(
+            delete(FotosFaceReferenceModel).where(
+                FotosFaceReferenceModel.person_id == person_id
+            )
+        )
+        self._session.execute(
+            update(FotosFaceModel)
+            .where(FotosFaceModel.person_id == person_id)
+            .values(person_id=None, status="unknown", confidence=None)
+        )

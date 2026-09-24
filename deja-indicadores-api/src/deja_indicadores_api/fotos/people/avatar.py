@@ -168,8 +168,11 @@ class FotosPersonAvatarService:
     ) -> None:
         person = self._person_service.find_by_id(person_id, current_user)
         previous_key = person.avatar_storage_key
+        reference_keys = self._repository.reference_keys_for_person(person_id)
         self._person_service.delete(person_id, current_user)
         self._remove_previous(previous_key)
+        for key in reference_keys:
+            self._remove_previous(key)
 
     def _remove_previous(
         self,

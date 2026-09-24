@@ -1,388 +1,256 @@
 <section class="curation-management">
   <header class="curation-management__header">
-    <span
-      class="curation-management__title-icon"
-      aria-hidden="true"
-    >
-      <svg viewBox="0 0 24 24">
-        <circle cx="8" cy="8" r="3" />
-        <circle cx="16" cy="8" r="3" />
-        <path d="M3 20v-2a5 5 0 0 1 5-5" />
-        <path d="M21 20v-2a5 5 0 0 0-5-5" />
-        <path d="M9 20v-2.5a3 3 0 0 1 6 0V20" />
-      </svg>
-    </span>
-
     <div>
       <h1>Curadoria</h1>
-
-      <p>
-        Revise identificações e ensine o reconhecimento facial.
-      </p>
+      <p>Revise identificações, marque rostos manualmente e ensine o reconhecimento facial.</p>
     </div>
   </header>
 
-  <section
-    class="summary-grid"
-    aria-label="Resumo da curadoria"
-  >
-    <article class="summary-card summary-card--pending">
-      <span class="summary-card__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 7v5l3 2" />
-        </svg>
-      </span>
-
-      <div>
-        <strong>0</strong>
-        <span>Pendentes</span>
-      </div>
-    </article>
-
-    <article class="summary-card summary-card--people">
-      <span class="summary-card__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <circle cx="9" cy="8" r="3" />
-          <circle cx="17" cy="9" r="2.3" />
-          <path d="M3.5 20v-2.2A4.8 4.8 0 0 1 8.3 13h1.4a4.8 4.8 0 0 1 4.8 4.8V20" />
-          <path d="M15 14h1.7a3.8 3.8 0 0 1 3.8 3.8V20" />
-        </svg>
-      </span>
-
-      <div>
-        <strong>0</strong>
-        <span>Pessoas</span>
-      </div>
-    </article>
-
-    <article class="summary-card summary-card--conflicts">
-      <span class="summary-card__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M12 3 2.8 20h18.4z" />
-          <path d="M12 9v4" />
-          <path d="M12 17h.01" />
-        </svg>
-      </span>
-
-      <div>
-        <strong>0</strong>
-        <span>Conflitos</span>
-      </div>
-    </article>
-
-    <article class="summary-card summary-card--unknown">
-      <span class="summary-card__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M9.7 9a2.5 2.5 0 0 1 4.8 1c0 2-2.5 2.2-2.5 4" />
-          <path d="M12 17h.01" />
-        </svg>
-      </span>
-
-      <div>
-        <strong>0</strong>
-        <span>Sem identificação</span>
-      </div>
-    </article>
+  <section class="summary-grid" aria-label="Resumo da curadoria">
+    <article class="summary-card"><strong>{{ summary().pending }}</strong><span>Sugestões pendentes</span></article>
+    <article class="summary-card"><strong>{{ peopleTotal() }}</strong><span>Pessoas cadastradas</span></article>
+    <article class="summary-card"><strong>{{ summary().unknown }}</strong><span>Sem identificação</span></article>
+    <article class="summary-card"><strong>{{ mediaTotal() }}</strong><span>Mídias no filtro</span></article>
   </section>
 
-  <section
-    class="curation-filters"
-    aria-label="Filtros da curadoria"
-  >
-    <label>
-      <span>Situação</span>
-
-      <select
-        [ngModel]="situationFilter()"
-        (ngModelChange)="situationFilter.set($event)"
-      >
-        <option value="all">Todas</option>
-        <option value="pending">Pendentes</option>
-        <option value="conflict">Conflitos</option>
+  <section class="curation-filters" aria-label="Filtros da curadoria">
+    <label>Ambiente
+      <select [ngModel]="environmentId()" (ngModelChange)="changeEnvironment($event)">
+        @for (environment of environments(); track environment.id) {
+          <option [value]="environment.id">{{ environment.name }}</option>
+        }
+      </select>
+    </label>
+    <label>Situação
+      <select [ngModel]="situationFilter()" (ngModelChange)="situationFilter.set($event)">
+        <option value="all">Todas as mídias</option>
+        <option value="suggested">Sugestões pendentes</option>
         <option value="unknown">Sem identificação</option>
+        <option value="confirmed">Confirmadas</option>
       </select>
     </label>
-
-    <label>
-      <span>Pessoa</span>
-
-      <select
-        [ngModel]="personFilter()"
-        (ngModelChange)="personFilter.set($event)"
-      >
+    <label>Pessoa
+      <select [ngModel]="personFilter()" (ngModelChange)="personFilter.set($event); loadReferences()">
         <option value="">Todas</option>
+        @for (person of people(); track person.id) {
+          <option [value]="person.id">{{ person.name }}</option>
+        }
       </select>
     </label>
-
-    <label>
-      <span>Álbum</span>
-
-      <select
-        [ngModel]="albumFilter()"
-        (ngModelChange)="albumFilter.set($event)"
-      >
+    <label>Álbum
+      <select [ngModel]="albumFilter()" (ngModelChange)="albumFilter.set($event)">
         <option value="">Todos</option>
+        @for (album of albums(); track album.id) {
+          <option [value]="album.id">{{ album.name }}</option>
+        }
       </select>
     </label>
-
-    <label>
-      <span>Período</span>
-
-      <select
-        [ngModel]="periodFilter()"
-        (ngModelChange)="periodFilter.set($event)"
-      >
-        <option value="">Todos os períodos</option>
+    <label>Ano
+      <input type="number" min="1900" max="2200" placeholder="Todos"
+        [ngModel]="yearFilter()" (ngModelChange)="yearFilter.set($event)" />
+    </label>
+    <label>Mês
+      <select [ngModel]="monthFilter()" (ngModelChange)="monthFilter.set($event)">
+        <option value="">Todos</option>
+        @for (month of [1,2,3,4,5,6,7,8,9,10,11,12]; track month) {
+          <option [value]="month">{{ month }}</option>
+        }
       </select>
     </label>
-
-    <button
-      type="button"
-      class="primary-button"
-      (click)="applyFilters()"
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 5h16l-6 7v5l-4 2v-7z" />
-      </svg>
-
-      Aplicar filtros
-    </button>
+    <button type="button" class="primary-button" (click)="applyFilters()">Aplicar filtros</button>
   </section>
-
-  @if (filterMessage()) {
-    <p class="filter-message" role="status">
-      {{ filterMessage() }}
-    </p>
+  @if (people().length < peopleTotal()) {
+    <button type="button" class="text-button" (click)="loadPeople(true)">Carregar mais pessoas</button>
   }
+  @if (error()) { <p class="notice notice--error" role="alert">{{ error() }}</p> }
+  @if (message()) { <p class="notice" role="status">{{ message() }}</p> }
 
-  <nav
-    class="curation-tabs"
-    aria-label="Áreas da curadoria"
-    role="tablist"
-  >
-    <button
-      type="button"
-      role="tab"
-      [class.curation-tabs__button--active]="activeTab() === 'recognition'"
-      [attr.aria-selected]="activeTab() === 'recognition'"
-      (click)="selectTab('recognition')"
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3" />
-        <path d="M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
-        <circle cx="12" cy="11" r="3" />
-        <path d="M7.5 18a4.8 4.8 0 0 1 9 0" />
-      </svg>
-
-      Reconhecimento facial
-    </button>
-
-    <button
-      type="button"
-      role="tab"
-      [class.curation-tabs__button--active]="activeTab() === 'people'"
-      [attr.aria-selected]="activeTab() === 'people'"
-      (click)="selectTab('people')"
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="9" cy="8" r="3" />
-        <circle cx="17" cy="9" r="2.3" />
-        <path d="M3.5 20v-2.2A4.8 4.8 0 0 1 8.3 13h1.4a4.8 4.8 0 0 1 4.8 4.8V20" />
-        <path d="M15 14h1.7a3.8 3.8 0 0 1 3.8 3.8V20" />
-      </svg>
-
-      Pessoas
-    </button>
-
-    <button
-      type="button"
-      role="tab"
-      [class.curation-tabs__button--active]="activeTab() === 'avatars'"
-      [attr.aria-selected]="activeTab() === 'avatars'"
-      (click)="selectTab('avatars')"
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="8" r="4" />
-        <path d="M5 21a7 7 0 0 1 14 0" />
-      </svg>
-
-      Avatares
-    </button>
+  <nav class="curation-tabs" aria-label="Áreas da curadoria">
+    <button type="button" [class.active]="activeTab() === 'recognition'"
+      (click)="selectTab('recognition')">Reconhecimento facial</button>
+    <button type="button" [class.active]="activeTab() === 'people'"
+      (click)="selectTab('people')">Pessoas e referências</button>
+    <button type="button" [class.active]="activeTab() === 'avatars'"
+      (click)="selectTab('avatars')">Avatares</button>
   </nav>
 
   @switch (activeTab()) {
     @case ('recognition') {
-      <section
-        class="recognition-grid"
-        aria-label="Revisão de reconhecimento facial"
-      >
+      <section class="recognition-grid" aria-label="Revisão de reconhecimento facial">
         <article class="review-panel">
           <header class="panel-header">
-            <span aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <rect x="3" y="4" width="18" height="16" rx="2" />
-                <circle cx="9" cy="10" r="2" />
-                <path d="m5 18 5-5 3 3 2-2 4 4" />
-              </svg>
-            </span>
-
             <h2>Revisão de reconhecimento</h2>
+            @if (selectedMedia() && canManage()) {
+              <button type="button" (click)="detect()" [disabled]="busy()">Analisar rostos</button>
+            }
           </header>
-
-          <div class="panel-empty panel-empty--review">
-            <span aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3" />
-                <path d="M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
-                <circle cx="12" cy="11" r="3" />
-                <path d="M7.5 18a4.8 4.8 0 0 1 9 0" />
-              </svg>
-            </span>
-
-            <strong>Nenhuma mídia aguardando revisão.</strong>
-
-            <p>
-              As mídias aparecerão aqui quando o reconhecimento facial estiver disponível.
+          @if (selectedMedia(); as item) {
+            <p class="media-caption">{{ item.original_name }}
+              @if (item.media_type === 'video') { · Marcações sobre o pôster do vídeo }
             </p>
-          </div>
+            @if (imageUrl()) {
+              <div class="image-stage" [class.drawing]="drawing()"
+                (pointerdown)="pointerDown($event)" (pointermove)="pointerMove($event)"
+                (pointerup)="pointerUp($event)" (pointercancel)="pointerUp($event)">
+                <img [src]="imageUrl()" [alt]="item.original_name" draggable="false" />
+                @for (face of faces(); track face.id) {
+                  <button type="button" class="face-box"
+                    [class.selected]="selectedFaceId() === face.id"
+                    [style.left.%]="face.x * 100" [style.top.%]="face.y * 100"
+                    [style.width.%]="face.width * 100" [style.height.%]="face.height * 100"
+                    [attr.aria-label]="'Selecionar rosto de ' + personName(face.person_id)"
+                    (pointerdown)="$event.stopPropagation()"
+                    (click)="selectFace(face); $event.stopPropagation()"></button>
+                }
+                @if (draft(); as box) {
+                  <div class="face-box face-box--draft"
+                    [style.left.%]="box.x * 100" [style.top.%]="box.y * 100"
+                    [style.width.%]="box.width * 100" [style.height.%]="box.height * 100"></div>
+                }
+              </div>
+            } @else {
+              <p>Carregando imagem de revisão...</p>
+            }
+            @if (canManage()) {
+              <div class="marking-actions">
+                <button type="button" (click)="drawing.set(!drawing()); draft.set(null)">
+                  {{ drawing() ? 'Cancelar desenho' : 'Desenhar rosto manualmente' }}
+                </button>
+                @if (draft()) {
+                  <label>Identificar como
+                    <select [ngModel]="chosenPersonId()" (ngModelChange)="chosenPersonId.set($event)">
+                      <option value="">Sem identificação</option>
+                      @for (person of people(); track person.id) {
+                        <option [value]="person.id">{{ person.name }}</option>
+                      }
+                    </select>
+                  </label>
+                  <button type="button" [disabled]="busy()" (click)="saveDrawing()">Salvar marcação</button>
+                }
+              </div>
+            }
+          } @else {
+            <p class="panel-empty">
+              {{ loading() ? 'Carregando mídias...' : 'Nenhuma mídia disponível para revisão neste filtro.' }}
+            </p>
+          }
         </article>
-
         <article class="faces-panel">
-          <header class="panel-header">
-            <span aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3" />
-                <circle cx="12" cy="11" r="3" />
-                <path d="M7.5 18a4.8 4.8 0 0 1 9 0" />
-              </svg>
-            </span>
-
-            <h2>Rostos detectados</h2>
-          </header>
-
-          <div class="panel-empty">
-            <span aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="9" r="4" />
-                <path d="M5 21a7 7 0 0 1 14 0" />
-              </svg>
-            </span>
-
-            <strong>Nenhum rosto detectado.</strong>
-
-            <p>
-              Sugestões e pessoas desconhecidas serão apresentadas neste painel.
-            </p>
-          </div>
-
-          <div
-            class="face-actions"
-            aria-label="Ações disponíveis para rostos detectados"
-          >
-            <button type="button" disabled>
-              Confirmar
-            </button>
-
-            <button type="button" disabled>
-              Corrigir nome
-            </button>
-
-            <button type="button" disabled>
-              Identificar pessoa
-            </button>
-
-            <button type="button" disabled>
-              Ignorar
-            </button>
-          </div>
-
-          <footer class="marking-actions">
-            <button type="button" disabled>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3" />
-                <path d="M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
-              </svg>
-
-              Desenhar rosto manualmente
-            </button>
-
-            <button
-              type="button"
-              class="marking-actions__remove"
-              disabled
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13" />
-              </svg>
-
-              Remover marcação
-            </button>
-          </footer>
+          <header class="panel-header"><h2>Rostos na mídia</h2><small>{{ faceTotal() }}</small></header>
+          @if (faces().length) {
+            <div class="faces-list">
+              @for (face of faces(); track face.id) {
+                <button type="button" [class.selected]="selectedFaceId() === face.id"
+                  (click)="selectFace(face)">
+                  <strong>{{ personName(face.person_id) }}</strong>
+                  <span>{{ face.status === 'suggested' ? 'Sugestão' :
+                    face.status === 'confirmed' ? 'Confirmado' :
+                    face.status === 'rejected' ? 'Sugestão rejeitada' : 'Não identificado' }}</span>
+                </button>
+              }
+            </div>
+            @if (faces().length < faceTotal()) {
+              <button type="button" class="text-button" (click)="loadMoreFaces()">Carregar mais rostos</button>
+            }
+          } @else {
+            <p class="panel-empty">Nenhum rosto marcado. Analise a mídia ou desenhe um quadrado no rosto.</p>
+          }
+          @if (selectedFace(); as face) {
+            <div class="face-actions">
+              <label>Pessoa
+                <select [ngModel]="chosenPersonId()" (ngModelChange)="chosenPersonId.set($event)">
+                  <option value="">Escolha uma pessoa</option>
+                  @for (person of people(); track person.id) {
+                    <option [value]="person.id">{{ person.name }}</option>
+                  }
+                </select>
+              </label>
+              @if (canManage()) {
+                <button type="button" class="text-button" [disabled]="busy()"
+                  (click)="creatingPerson.set(!creatingPerson()); newPersonName.set('')">
+                  {{ creatingPerson() ? 'Cancelar cadastro' : 'Cadastrar nova pessoa' }}
+                </button>
+                @if (creatingPerson()) {
+                  <form class="person-create" (submit)="$event.preventDefault(); createPerson()">
+                    <label>Nome da nova pessoa
+                      <input type="text" maxlength="150" autocomplete="off" required
+                        [ngModel]="newPersonName()" (ngModelChange)="newPersonName.set($event)"
+                        name="newPersonName" />
+                    </label>
+                    <button type="submit" [disabled]="busy() || !newPersonName().trim()">
+                      Salvar pessoa
+                    </button>
+                  </form>
+                }
+                <button type="button" [disabled]="busy() || !chosenPersonId()"
+                  (click)="confirm()">Confirmar ou corrigir</button>
+                <button type="button" [disabled]="busy() || face.status !== 'suggested'"
+                  (click)="reject()">Rejeitar sugestão</button>
+                <button type="button" [disabled]="busy() || face.status !== 'confirmed'"
+                  (click)="teach()">Ensinar IA</button>
+                <button type="button" [disabled]="busy()" (click)="removeFace()">Remover marcação</button>
+              }
+            </div>
+          }
         </article>
       </section>
-
       <section class="upcoming-panel">
-        <header class="panel-header panel-header--between">
-          <div>
-            <span aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M8 6h13M8 12h13M8 18h13" />
-                <circle cx="4" cy="6" r="1" />
-                <circle cx="4" cy="12" r="1" />
-                <circle cx="4" cy="18" r="1" />
-              </svg>
-            </span>
-
-            <h2>Próximas mídias para revisar</h2>
-          </div>
-
-          <small>0 pendentes</small>
-        </header>
-
-        <div class="upcoming-empty">
-          <strong>Nenhuma mídia na fila de revisão.</strong>
-
-          <span>
-            Novas mídias aparecerão aqui quando houver resultados para conferir.
-          </span>
+        <header class="panel-header"><h2>Mídias para revisar</h2>
+          <small>{{ mediaTotal() }} no filtro</small></header>
+        <div class="media-list">
+          @for (item of media(); track item.id) {
+            <button type="button" [class.selected]="selectedMedia()?.id === item.id"
+              (click)="selectMedia(item)">
+              {{ item.original_name }} @if (item.media_type === 'video') { <span>Vídeo</span> }
+            </button>
+          } @empty { <p>Nenhuma mídia neste filtro.</p> }
+        </div>
+        <div class="pagination">
+          <button type="button" [disabled]="mediaPage() <= 1 || loading()"
+            (click)="applyFilters(mediaPage() - 1)">Anterior</button>
+          <span>Página {{ mediaPage() }} · {{ mediaTotal() }} mídias</span>
+          <button type="button" [disabled]="mediaPage() * 24 >= mediaTotal() || loading()"
+            (click)="applyFilters(mediaPage() + 1)">Próxima</button>
         </div>
       </section>
     }
-
     @case ('people') {
-      <section class="section-empty">
-        <span aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <circle cx="9" cy="8" r="3" />
-            <circle cx="17" cy="9" r="2.3" />
-            <path d="M3.5 20v-2.2A4.8 4.8 0 0 1 8.3 13h1.4a4.8 4.8 0 0 1 4.8 4.8V20" />
-          </svg>
-        </span>
-
-        <strong>Nenhuma pessoa cadastrada.</strong>
-
-        <p>
-          O cadastro e a edição de pessoas serão disponibilizados em uma próxima etapa.
-        </p>
+      <section class="upcoming-panel">
+        <h2>Pessoas e referências faciais</h2>
+        <p>Cadastre pessoas em Rostos na mídia ou no Dashboard de Álbuns.
+          A foto de perfil fica no Dashboard; as referências abaixo são exclusivas do reconhecimento facial.</p>
+        @if (!personFilter()) {
+          <p>Escolha uma pessoa no filtro para consultar suas referências.</p>
+        } @else {
+          <p>{{ personName(personFilter()) }} · {{ referenceTotal() }} referência(s)</p>
+          <div class="reference-list">
+            @for (reference of references(); track reference.id) {
+              <div>
+                @if (referenceUrls().get(reference.id); as url) {
+                  <img [src]="url" alt="Referência facial de {{ personName(reference.person_id) }}" />
+                }
+                <span>Referência de rosto confirmado</span>
+                @if (canManage()) {
+                  <button type="button" [disabled]="busy()"
+                    (click)="removeReference(reference.id)">Remover</button>
+                }
+              </div>
+            } @empty { <p>Essa pessoa ainda não tem referências faciais.</p> }
+          </div>
+          @if (references().length < referenceTotal()) {
+            <button type="button" (click)="loadReferences(referencePage() + 1)">
+              Carregar mais referências
+            </button>
+          }
+        }
       </section>
     }
-
     @case ('avatars') {
-      <section class="section-empty">
-        <span aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <circle cx="12" cy="8" r="4" />
-            <path d="M5 21a7 7 0 0 1 14 0" />
-          </svg>
-        </span>
-
-        <strong>Nenhum avatar cadastrado.</strong>
-
-        <p>
-          A gestão de fotos de perfil será disponibilizada em uma próxima etapa.
-        </p>
+      <section class="upcoming-panel">
+        <h2>Avatares</h2>
+        <p>Os avatares são fotos de perfil gerenciadas no Dashboard de Álbuns.
+          Eles não são usados como referência automática para reconhecimento facial.</p>
+        <p>{{ peopleTotal() }} pessoa(s) cadastrada(s) neste ambiente.</p>
       </section>
     }
   }
