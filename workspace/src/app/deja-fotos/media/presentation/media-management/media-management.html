@@ -641,8 +641,11 @@
       [albumNames]="albumNames()"
       [service]="mediaService()"
       [selectedIds]="selectedIds()"
+      [canDelete]="canCurate()"
+      [deletingId]="deletingId()"
       (selectionChange)="toggleMediaSelection($event)"
       (pageSelectionChange)="togglePageSelection($event)"
+      (deleteRequested)="deleteMedia($event)"
     />
   }
 

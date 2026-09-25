@@ -46,6 +46,10 @@ export interface MediaRepository {
     request: MediaUploadRequest,
   ): Promise<Media>;
 
+  delete(
+    mediaId: string,
+  ): Promise<void>;
+
   bulkUpdate(
     operation: MediaBulkOperation,
   ): Promise<MediaBulkResult>;

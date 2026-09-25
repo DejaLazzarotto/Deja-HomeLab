@@ -121,6 +121,14 @@ export class MediaService {
     return this.repository.bulkUpdate(operation);
   }
 
+  delete(mediaId: string): Promise<void> {
+    if (!mediaId.trim()) {
+      throw new Error('O identificador da mídia é obrigatório.');
+    }
+
+    return this.repository.delete(mediaId);
+  }
+
   loadThumbnail(
     mediaId: string,
     mediaType: MediaType,

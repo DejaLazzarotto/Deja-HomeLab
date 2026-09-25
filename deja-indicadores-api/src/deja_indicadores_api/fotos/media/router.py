@@ -456,7 +456,7 @@ def delete_media(
     service: FotosMediaServiceDependency,
     current_user: FotosMediaOperator,
 ) -> None:
-    """Realiza exclusão lógica de uma mídia."""
+    """Exclui a mídia e seus arquivos sem remover pessoas ou outras mídias."""
 
     service.delete(
         media_id,

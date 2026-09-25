@@ -141,6 +141,17 @@ class FotosMediaStorageMoveError(ApplicationError):
         )
 
 
+class FotosMediaDeletionConflictError(ResourceConflictError):
+    """Uma mídia em processamento não pode ser removida."""
+
+    error_code = "fotos_media_deletion_processing"
+
+    def __init__(self, media_id: str) -> None:
+        super().__init__(
+            f"Aguarde o processamento da mídia '{media_id}' antes de excluí-la."
+        )
+
+
 class FotosMediaOriginalDateMissingError(ResourceConflictError):
     """A mídia ainda não possui data original para confirmação."""
 

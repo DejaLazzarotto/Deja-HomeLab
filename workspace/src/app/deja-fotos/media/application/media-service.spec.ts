@@ -16,6 +16,7 @@ describe('MediaService', () => {
       listByPerson: vi.fn(),
       findById: vi.fn(),
       upload: vi.fn(),
+      delete: vi.fn(),
       bulkUpdate: vi.fn(),
       loadThumbnail: vi.fn(),
     };

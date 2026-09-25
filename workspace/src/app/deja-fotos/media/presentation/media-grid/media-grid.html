@@ -152,6 +152,18 @@
               {{ media.processingError }}
             </p>
           }
+
+          @if (canDelete()) {
+            <button
+              type="button"
+              class="media-card__delete"
+              [disabled]="deletingId() !== null || media.processingStatus === 'processing'"
+              (click)="deleteRequested.emit(media)"
+              [attr.aria-label]="'Excluir ' + media.originalName"
+            >
+              {{ deletingId() === media.id ? 'Excluindo...' : 'Excluir mídia' }}
+            </button>
+          }
         </div>
       </article>
     }

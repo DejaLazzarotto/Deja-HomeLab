@@ -165,6 +165,27 @@
   padding: var(--workspace-spacing-md);
 }
 
+.media-card__delete {
+  margin-top: var(--workspace-spacing-sm);
+  padding: 0;
+  color: var(--workspace-color-danger);
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.media-card__delete:hover {
+  text-decoration: underline;
+}
+
+.media-card__delete:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
 .media-card h3 {
   margin: 0 0 var(--workspace-spacing-sm);
   overflow: hidden;

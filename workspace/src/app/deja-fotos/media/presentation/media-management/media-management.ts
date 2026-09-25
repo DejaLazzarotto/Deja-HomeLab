@@ -132,6 +132,8 @@ export class MediaManagementComponent implements OnInit, OnDestroy {
 
   readonly bulkBusy = signal(false);
 
+  readonly deletingId = signal<string | null>(null);
+
   readonly uploadFiles =
     signal<readonly File[]>([]);
 
@@ -645,6 +647,40 @@ export class MediaManagementComponent implements OnInit, OnDestroy {
     this.selectedIds.set(
       new Set<string>(),
     );
+  }
+
+  async deleteMedia(media: Media): Promise<void> {
+    if (!this.canCurate() || this.deletingId()) {
+      return;
+    }
+
+    if (!window.confirm(
+      `Excluir permanentemente "${media.originalName}"? O arquivo e seus derivados serão removidos. Outras fotos e pessoas continuarão cadastradas.`,
+    )) {
+      return;
+    }
+
+    this.deletingId.set(media.id);
+    this.operationMessage.set(null);
+    this.operationError.set(null);
+    try {
+      await this.mediaService().delete(media.id);
+      this.pendingProcessingIds.delete(media.id);
+      this.selectedIds.update(ids => {
+        const next = new Set(ids);
+        next.delete(media.id);
+        return next;
+      });
+      if (this.items().length === 1 && this.page() > 1) {
+        this.page.update(value => value - 1);
+      }
+      await this.refresh();
+      this.operationMessage.set('Mídia excluída com sucesso.');
+    } catch (error: unknown) {
+      this.operationError.set(this.resolveErrorMessage(error));
+    } finally {
+      this.deletingId.set(null);
+    }
   }
 
   async executeBulkAction(

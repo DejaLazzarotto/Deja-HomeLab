@@ -51,6 +51,12 @@ export class MediaGridComponent implements OnDestroy {
 
   readonly service = input.required<MediaService>();
 
+  readonly canDelete = input(false);
+
+  readonly deletingId = input<string | null>(null);
+
+  readonly deleteRequested = output<Media>();
+
   readonly selectedIds = input<ReadonlySet<string>>(
     new Set<string>(),
   );

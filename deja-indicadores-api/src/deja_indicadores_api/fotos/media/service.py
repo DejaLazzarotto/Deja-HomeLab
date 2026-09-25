@@ -1,5 +1,6 @@
 import logging
 import re
+import shutil
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -30,6 +31,7 @@ from deja_indicadores_api.fotos.media.derivative_repository import (
 from deja_indicadores_api.fotos.media.exceptions import (
     FotosMediaAlbumNotFoundError,
     FotosMediaAlbumScopeMismatchError,
+    FotosMediaDeletionConflictError,
     FotosMediaDuplicateError,
     FotosMediaEmptyFileError,
     FotosMediaFileNotFoundError,
@@ -1219,7 +1221,7 @@ class FotosMediaService:
         media_id: str,
         current_user: AuthenticatedUser,
     ) -> None:
-        """Realiza exclusão lógica de uma mídia."""
+        """Remove uma mídia e seus arquivos, preservando pessoas e outras mídias."""
 
         self._require_roles(
             current_user,
@@ -1237,11 +1239,62 @@ class FotosMediaService:
             environment_id=media.environment_id,
         )
 
-        media.deleted_at = datetime.now(UTC).replace(tzinfo=None)
+        locked = self._repository.find_by_id_for_update(media.id)
+        if locked is None:
+            raise FotosMediaNotFoundError(media_id)
+        if locked.processing_status == "processing":
+            self._repository.rollback()
+            raise FotosMediaDeletionConflictError(media_id)
 
-        self._repository.update(
-            media,
+        keys = [locked.original_storage_key]
+        keys.extend(
+            item.storage_key
+            for item in self._derivative_repository.list_by_media_id(media_id)
         )
+        keys.extend(self._repository.reference_keys_for_media(media_id))
+        root = self._settings.uploads_dir.resolve()
+        scope = root / "fotos" / locked.organization_id / locked.tenant_id / locked.environment_id
+        paths = []
+        for key in keys:
+            path = root / Path(key)
+            if (
+                not path.is_relative_to(scope)
+                or not path.is_file()
+                or path.is_symlink()
+                or path.resolve() != path
+            ):
+                self._repository.rollback()
+                raise FotosMediaFileNotFoundError(media_id)
+            paths.append(path)
+        if len(paths) != len(set(paths)):
+            self._repository.rollback()
+            raise FotosMediaStorageConflictError(media_id)
+
+        stage = root / f".fotos-delete-{uuid4().hex}"
+        moved: list[tuple[Path, Path]] = []
+        committed = False
+        try:
+            stage.mkdir()
+            for path in paths:
+                target = stage / path.relative_to(root)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                path.rename(target)
+                moved.append((path, target))
+            self._repository.delete_permanently(locked)
+            committed = True
+        finally:
+            if not committed:
+                self._repository.rollback()
+                for path, target in reversed(moved):
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    target.rename(path)
+                if stage.exists():
+                    shutil.rmtree(stage)
+        try:
+            shutil.rmtree(stage)
+        except OSError:
+            logger.exception("Mídia excluída do banco, mas arquivos retidos em %s", stage)
+            raise FotosMediaStorageMoveError(media_id) from None
 
     def _require_media(
         self,

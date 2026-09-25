@@ -12,6 +12,10 @@ from PIL import Image
 from sqlalchemy.orm import Session, sessionmaker
 
 from deja_indicadores_api.core.config import Settings
+from deja_indicadores_api.fotos.curation.models import (
+    FotosFaceModel,
+    FotosFaceReferenceModel,
+)
 from deja_indicadores_api.fotos.media import (
     derivative_service as derivative_service_module,
 )
@@ -22,6 +26,7 @@ from deja_indicadores_api.fotos.media.image_derivatives import (
     FotosImageDerivativeError,
 )
 from deja_indicadores_api.fotos.media.models import FotosMediaModel
+from deja_indicadores_api.fotos.people.models import FotosPersonMediaModel, FotosPersonModel
 from tests.authentication.test_authentication_api import (
     create_environment,
     create_organization,
@@ -2894,7 +2899,7 @@ def test_bulk_rejects_analyst(
     assert response.status_code == 403
 
 
-def test_delete_media_is_logical(
+def test_delete_media_removes_record_and_original(
     client: TestClient,
     media_context: tuple[
         str,
@@ -2905,7 +2910,7 @@ def test_delete_media_is_logical(
     ],
     test_settings: Settings,
 ) -> None:
-    """Exclusão remove a mídia da consulta sem apagar o original."""
+    """Exclusão remove o registro e o arquivo físico escolhido."""
 
     (
         organization_id,
@@ -2945,7 +2950,7 @@ def test_delete_media_is_logical(
 
     assert response.status_code == 204
     assert response.content == b""
-    assert original_path.is_file()
+    assert not original_path.exists()
 
     get_response = client.get(
         f"{MEDIA_URL}/{created['id']}",
@@ -2956,7 +2961,7 @@ def test_delete_media_is_logical(
     assert get_response.json()["error"] == "fotos_media_not_found"
 
 
-def test_reupload_deleted_media_restores_record(
+def test_reupload_deleted_media_creates_new_record(
     client: TestClient,
     media_context: tuple[
         str,
@@ -2967,7 +2972,7 @@ def test_reupload_deleted_media_restores_record(
     ],
     test_settings: Settings,
 ) -> None:
-    """Restaura uma mídia excluída ao reenviar a mesma fonte."""
+    """O mesmo arquivo pode ser reenviado após exclusão permanente."""
 
     (
         organization_id,
@@ -3014,7 +3019,7 @@ def test_reupload_deleted_media_restores_record(
     )
 
     assert delete_response.status_code == 204
-    assert original_path.is_file()
+    assert not original_path.exists()
 
     restore_response = upload_image(
         client,
@@ -3029,7 +3034,7 @@ def test_reupload_deleted_media_restores_record(
 
     restored = restore_response.json()
 
-    assert restored["id"] == media_id
+    assert restored["id"] != media_id
     assert restored["album_id"] == album_id
     assert restored["original_name"] == "IMG-20240131-WA0001.jpg"
     assert restored["deleted_at"] is None
@@ -3047,7 +3052,7 @@ def test_reupload_deleted_media_restores_record(
         / "originals"
         / "2024"
         / "01"
-        / media_id
+        / restored["id"]
         / "original.jpg"
     )
 
@@ -3059,7 +3064,7 @@ def test_reupload_deleted_media_restores_record(
         headers=headers,
     )
 
-    assert get_response.status_code == 200
+    assert get_response.status_code == 404
 
     list_response = client.get(
         MEDIA_URL,
@@ -3071,7 +3076,7 @@ def test_reupload_deleted_media_restores_record(
 
     assert list_response.status_code == 200
     assert list_response.json()["total"] == 1
-    assert list_response.json()["items"][0]["id"] == media_id
+    assert list_response.json()["items"][0]["id"] == restored["id"]
 
     staging_root = (
         test_settings.uploads_dir
@@ -3083,6 +3088,94 @@ def test_reupload_deleted_media_restores_record(
     )
 
     assert not staging_root.exists() or not any(staging_root.iterdir())
+
+
+def test_delete_one_photo_preserves_person_and_other_photo(
+    client: TestClient,
+    media_context: tuple[str, str, str, str, Mapping[str, str]],
+    test_settings: Settings,
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """A exclusão não remove dados faciais de outra foto da mesma pessoa."""
+
+    organization_id, tenant_id, environment_id, album_id, headers = media_context
+    first = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=create_test_jpeg(width=24, height=18),
+    ).json()
+    second = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=create_test_jpeg(width=25, height=18),
+    ).json()
+    scope = {
+        "organization_id": organization_id,
+        "tenant_id": tenant_id,
+        "environment_id": environment_id,
+    }
+    person_id = str(uuid4())
+    avatar_key = (
+        f"fotos/{organization_id}/{tenant_id}/{environment_id}/people/{person_id}"
+        "/avatars/avatar.webp"
+    )
+    keys = [avatar_key]
+    first_keys = []
+    second_keys = []
+    with test_session_factory() as session:
+        session.add(FotosPersonModel(
+            id=person_id, name="Pessoa preservada",
+            avatar_storage_key=avatar_key, **scope,
+        ))
+        session.flush()
+        for media, owned in ((first, first_keys), (second, second_keys)):
+            face_id = str(uuid4())
+            reference_key = (
+                f"fotos/{organization_id}/{tenant_id}/{environment_id}"
+                f"/face-references/{person_id}/{face_id}.webp"
+            )
+            session.add(FotosFaceModel(
+                id=face_id, media_id=media["id"], person_id=person_id,
+                x=0.1, y=0.1, width=0.5, height=0.5,
+                origin="manual", status="confirmed", **scope,
+            ))
+            session.flush()
+            session.add(FotosFaceReferenceModel(
+                id=str(uuid4()), face_id=face_id, person_id=person_id,
+                storage_key=reference_key, **scope,
+            ))
+            session.add(FotosPersonMediaModel(person_id=person_id, media_id=media["id"], **scope))
+            keys.append(reference_key)
+            owned.append(reference_key)
+            derivatives = session.query(FotosMediaDerivativeModel).filter_by(
+                media_id=media["id"],
+            ).all()
+            assert derivatives
+            owned.extend(item.storage_key for item in derivatives)
+        session.commit()
+    for key in keys:
+        path = test_settings.uploads_dir / key
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"avatar-or-reference")
+
+    response = client.delete(f"{MEDIA_URL}/{first['id']}", headers=headers)
+    assert response.status_code == 204
+    with test_session_factory() as session:
+        assert session.get(FotosMediaModel, first["id"]) is None
+        assert session.get(FotosMediaModel, second["id"]) is not None
+        assert session.get(FotosPersonModel, person_id) is not None
+        assert session.query(FotosFaceModel).filter_by(media_id=first["id"]).count() == 0
+        assert session.query(FotosFaceModel).filter_by(media_id=second["id"]).count() == 1
+        assert session.query(FotosPersonMediaModel).filter_by(person_id=person_id).count() == 1
+        assert session.query(FotosFaceReferenceModel).filter_by(person_id=person_id).count() == 1
+    assert all(not (test_settings.uploads_dir / key).exists() for key in first_keys)
+    assert all((test_settings.uploads_dir / key).is_file() for key in second_keys)
+    assert (test_settings.uploads_dir / avatar_key).is_file()
+    assert client.get(f"{MEDIA_URL}/{second['id']}", headers=headers).status_code == 200
 
 
 def test_upload_media_rejects_duplicate_source(

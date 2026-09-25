@@ -228,6 +228,12 @@ export class HttpMediaRepository implements MediaRepository {
     return this.mapMedia(response);
   }
 
+  async delete(mediaId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(`/api/fotos/media/${mediaId}`),
+    );
+  }
+
   async bulkUpdate(
     operation: MediaBulkOperation,
   ): Promise<MediaBulkResult> {

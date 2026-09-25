@@ -3,6 +3,10 @@ from datetime import datetime
 from sqlalchemy import exists, extract, func, or_, select, update
 from sqlalchemy.orm import Session
 
+from deja_indicadores_api.fotos.curation.models import (
+    FotosFaceModel,
+    FotosFaceReferenceModel,
+)
 from deja_indicadores_api.fotos.media.models import (
     FotosMediaModel,
 )
@@ -316,6 +320,22 @@ class FotosMediaRepository:
         """Desfaz a transa??o atual e libera seus bloqueios."""
 
         self._session.rollback()
+
+    def reference_keys_for_media(self, media_id: str) -> list[str]:
+        """Obtém somente as referências dos rostos desta mídia."""
+
+        statement = (
+            select(FotosFaceReferenceModel.storage_key)
+            .join(FotosFaceModel, FotosFaceModel.id == FotosFaceReferenceModel.face_id)
+            .where(FotosFaceModel.media_id == media_id)
+        )
+        return list(self._session.scalars(statement))
+
+    def delete_permanently(self, media: FotosMediaModel) -> None:
+        """Remove a mídia; chaves estrangeiras em cascata removem apenas seus filhos."""
+
+        self._session.delete(media)
+        self._session.commit()
 
     def try_start_processing(
         self,

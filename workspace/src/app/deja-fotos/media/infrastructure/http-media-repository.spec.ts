@@ -89,6 +89,14 @@ describe('HttpMediaRepository', () => {
     httpTesting.verify();
   });
 
+  it('deletes only the requested media', async () => {
+    const result = repository.delete(mediaId);
+    const request = httpTesting.expectOne(`/api/fotos/media/${mediaId}`);
+    expect(request.request.method).toBe('DELETE');
+    request.flush(null);
+    await expect(result).resolves.toBeUndefined();
+  });
+
   it('should list and map a paginated media response with filters', async () => {
     const resultPromise = repository.list({
       organizationId,
