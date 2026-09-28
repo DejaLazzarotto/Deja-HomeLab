@@ -40,6 +40,7 @@ export interface Media {
   readonly albumId: string | null;
 
   readonly originalName: string;
+  readonly description: string | null;
 
   readonly sourceContentType: string;
   readonly sourceFileExtension: string | null;

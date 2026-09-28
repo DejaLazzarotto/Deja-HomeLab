@@ -437,6 +437,64 @@
   border-radius: 0;
 }
 
+.media-card__description {
+  display: grid;
+  gap: 0.4rem;
+  padding-top: 0.15rem;
+  border-top: 1px solid var(--workspace-color-border);
+  font-size: 0.68rem;
+}
+
+.media-card__description strong {
+  font-size: 0.68rem;
+}
+
+.media-card__description p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.media-card__description-empty,
+.media-card__description small {
+  color: var(--workspace-color-text-muted);
+}
+
+.media-card__description textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 4.5rem;
+  padding: 0.45rem;
+  resize: vertical;
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-sm);
+  font: inherit;
+}
+
+.media-card__description-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.media-card__description-actions button,
+.media-card__description-edit {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--workspace-color-border);
+  border-radius: var(--workspace-radius-sm);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.media-card__description-actions button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.media-card__description-error {
+  color: var(--workspace-color-danger);
+}
 @media (min-width: 88rem) {
   .media-grid {
     grid-template-columns: repeat(

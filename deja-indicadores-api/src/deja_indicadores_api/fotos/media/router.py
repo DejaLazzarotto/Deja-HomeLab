@@ -34,6 +34,7 @@ from deja_indicadores_api.fotos.media.schemas import (
     FotosMediaBulkResponse,
     FotosMediaBulkUpdate,
     FotosMediaDerivativeResponse,
+    FotosMediaDescriptionUpdate,
     FotosMediaListResponse,
     FotosMediaOriginalDateUpdate,
     FotosMediaProcessingStatus,
@@ -262,6 +263,24 @@ def update_media_original_date(
         current_user,
     )
 
+
+@router.patch(
+    "/{media_id}/description",
+    response_model=FotosMediaResponse,
+)
+def update_media_description(
+    media_id: MediaId,
+    payload: FotosMediaDescriptionUpdate,
+    service: FotosMediaServiceDependency,
+    current_user: FotosMediaOperator,
+) -> FotosMediaResponse:
+    """Atualiza a descrição de uma mídia de vídeo."""
+
+    return service.update_description(
+        media_id,
+        payload.description,
+        current_user,
+    )
 
 @router.post(
     "",

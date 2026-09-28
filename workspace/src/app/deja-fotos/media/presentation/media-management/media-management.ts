@@ -649,6 +649,15 @@ export class MediaManagementComponent implements OnInit, OnDestroy {
     );
   }
 
+  updateMedia(updatedMedia: Media): void {
+    this.items.update(items => items.map(
+      media => (
+        media.id === updatedMedia.id
+          ? updatedMedia
+          : media
+      ),
+    ));
+  }
   async deleteMedia(media: Media): Promise<void> {
     if (!this.canCurate() || this.deletingId()) {
       return;

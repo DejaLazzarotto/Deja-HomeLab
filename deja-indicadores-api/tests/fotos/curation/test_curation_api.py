@@ -1,6 +1,7 @@
 """Contratos de marcação, revisão, escopo e referências faciais."""
 
 from io import BytesIO
+from uuid import uuid4
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -8,11 +9,11 @@ from PIL import Image
 
 from deja_indicadores_api.core.config import Settings
 from deja_indicadores_api.fotos.curation import engine
-from deja_indicadores_api.fotos.curation.models import FotosFaceModel
+from deja_indicadores_api.fotos.curation.models import FotosFaceModel, FotosFaceReferenceModel
 from deja_indicadores_api.fotos.curation.service import same_face_box
 from tests.authentication.test_authentication_api import create_environment, create_user
 from tests.authentication.test_user_authorization_api import authorization_headers
-from tests.fotos.media.test_media_api import upload_image
+from tests.fotos.media.test_media_api import upload_image, upload_video
 from tests.fotos.people.test_people_api import create_person
 
 CURATION = "/api/fotos/curation"
@@ -44,6 +45,84 @@ def ready_image(
     processed = client.post(f"/api/fotos/media/{media_id}/process", headers=headers)
     assert processed.status_code == 200, processed.text
     return media_id
+
+
+def ready_video(client: TestClient, env: str, headers: dict) -> str:
+    upload = upload_video(
+        client, environment_id=env, album_id=None, headers=headers,
+    )
+    assert upload.status_code == 201, upload.text
+    media_id = upload.json()["id"]
+    processed = client.post(f"/api/fotos/media/{media_id}/process", headers=headers)
+    assert processed.status_code == 200, processed.text
+    return media_id
+
+
+def test_video_rejects_facial_detection(
+    client: TestClient,
+    media_context: tuple,
+) -> None:
+    _, _, environment, _, headers = media_context
+    media_id = ready_video(client, environment, headers)
+
+    response = client.post(
+        f"{CURATION}/media/{media_id}/detect",
+        headers=headers,
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"] == "fotos_face_invalid"
+
+
+def test_video_rejects_manual_face_marking(
+    client: TestClient,
+    media_context: tuple,
+) -> None:
+    _, _, environment, _, headers = media_context
+    media_id = ready_video(client, environment, headers)
+
+    response = client.post(
+        f"{CURATION}/media/{media_id}/faces",
+        json={"x": 0.1, "y": 0.1, "width": 0.5, "height": 0.5},
+        headers=headers,
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"] == "fotos_face_invalid"
+
+
+def test_video_rejects_teaching_legacy_face(
+    client: TestClient,
+    media_context: tuple,
+    test_session_factory,
+) -> None:
+    organization, tenant, environment, _, headers = media_context
+    person = create_person(client, environment, headers, name="Pessoa do vídeo")
+    media_id = ready_video(client, environment, headers)
+
+    face = FotosFaceModel(
+        id=str(uuid4()),
+        media_id=media_id,
+        organization_id=organization,
+        tenant_id=tenant,
+        environment_id=environment,
+        x=0.1,
+        y=0.1,
+        width=0.5,
+        height=0.5,
+        origin="manual",
+        status="confirmed",
+        person_id=person["id"],
+    )
+
+    with test_session_factory() as session:
+        session.add(face)
+        session.commit()
+
+    response = client.post(f"{CURATION}/faces/{face.id}/teach", headers=headers)
+
+    assert response.status_code == 409
+    assert response.json()["error"] == "fotos_face_invalid"
 
 
 def test_real_engine_rejects_a_nonface_reference(tmp_path: Path) -> None:

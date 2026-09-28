@@ -210,3 +210,17 @@ class FotosMediaAlreadyProcessingError(ResourceConflictError):
         super().__init__(
             f"A mídia com ID '{media_id}' já está sendo processada."
         )
+
+
+class FotosMediaDescriptionNotSupportedError(ResourceConflictError):
+    """Descrição editável é suportada apenas para vídeos."""
+
+    error_code = "fotos_media_description_not_supported"
+
+    def __init__(
+        self,
+        media_id: str,
+    ) -> None:
+        super().__init__(
+            f"A mídia com ID '{media_id}' não é um vídeo e não aceita descrição."
+        )

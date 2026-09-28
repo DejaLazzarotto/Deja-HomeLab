@@ -50,6 +50,7 @@ function createMedia(
     environmentId: 'environment-1',
     albumId: 'album-source',
     originalName: 'photo.jpg',
+    description: null,
     sourceContentType: 'image/jpeg',
     sourceFileExtension: 'jpg',
     sourceFileSize: 100,

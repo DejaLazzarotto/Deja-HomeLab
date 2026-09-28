@@ -14,13 +14,13 @@
 .summary-card span, .panel-header small { color: var(--workspace-color-text-secondary, #64748b); }
 .curation-filters { display: flex; flex-wrap: wrap; gap: .8rem; align-items: end; }
 label { display: grid; gap: .35rem; font-size: .82rem; font-weight: 650; }
-select, input { width: 100%; min-width: 8rem; max-width: 16rem; min-height: 2.4rem; padding: .4rem .55rem;
+select, input, textarea { width: 100%; min-width: 8rem; max-width: 16rem; min-height: 2.4rem; padding: .4rem .55rem;
   border: 1px solid var(--workspace-color-border, #cbd5e1); border-radius: 7px;
   background: var(--workspace-color-surface, #fff); color: inherit; font: inherit; }
 button { cursor: pointer; font: inherit; border: 1px solid var(--workspace-color-border, #cbd5e1);
   border-radius: 8px; padding: .5rem .8rem; background: var(--workspace-color-surface, #fff); color: inherit; }
 button:disabled { cursor: default; opacity: .55; }
-button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--workspace-color-primary, #2057a6); outline-offset: 2px; }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--workspace-color-primary, #2057a6); outline-offset: 2px; }
 .primary-button, .curation-tabs .active { background: var(--workspace-color-primary, #2057a6); color: #fff; border-color: transparent; }
 .text-button { justify-self: start; border: 0; color: var(--workspace-color-primary, #2057a6); }
 .notice { padding: .7rem 1rem; margin: 0; border-radius: 8px; background: color-mix(in srgb, #248b56 18%, var(--workspace-color-surface)); }
@@ -56,3 +56,9 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 
 .person-create { display: grid; gap: .65rem; padding: .8rem; border: 1px solid var(--workspace-color-border); border-radius: 8px; background: var(--workspace-color-surface-soft); }
 .person-create input { max-width: none; }
+
+.media-description-panel { display: grid; gap: .9rem; align-content: start; }
+.media-description-field { width: 100%; }
+.media-description-field textarea { width: 100%; max-width: none; min-height: 9rem; resize: vertical; }
+.media-description-field small { color: var(--workspace-color-text-secondary, #64748b); font-weight: 400; }
+.media-description-panel .primary-button { justify-self: start; }

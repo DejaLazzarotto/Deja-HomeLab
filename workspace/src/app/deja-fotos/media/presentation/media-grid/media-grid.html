@@ -131,6 +131,86 @@
             </div>
           </dl>
 
+          @if (media.mediaType === 'video') {
+            <section class="media-card__description">
+              <strong>Descrição</strong>
+
+              @if (editingDescriptionId() === media.id) {
+                <textarea
+                  maxlength="5000"
+                  rows="4"
+                  [ngModel]="descriptionDraft()"
+                  (ngModelChange)="descriptionDraft.set($event)"
+                  [disabled]="descriptionSavingId() === media.id"
+                  placeholder="Adicione uma descrição para este vídeo"
+                ></textarea>
+
+                <small>
+                  {{ descriptionDraft().length }} de 5.000 caracteres
+                </small>
+
+                @if (descriptionError()) {
+                  <p class="media-card__description-error">
+                    {{ descriptionError() }}
+                  </p>
+                }
+
+                <div class="media-card__description-actions">
+                  <button
+                    type="button"
+                    [disabled]="descriptionSavingId() === media.id"
+                    (click)="saveDescription(media)"
+                  >
+                    {{
+                      descriptionSavingId() === media.id
+                        ? 'Salvando...'
+                        : 'Salvar'
+                    }}
+                  </button>
+
+                  @if (media.description) {
+                    <button
+                      type="button"
+                      [disabled]="descriptionSavingId() === media.id"
+                      (click)="clearDescription(media)"
+                    >
+                      Limpar
+                    </button>
+                  }
+
+                  <button
+                    type="button"
+                    [disabled]="descriptionSavingId() === media.id"
+                    (click)="cancelDescriptionEdit()"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              } @else {
+                @if (media.description) {
+                  <p>{{ media.description }}</p>
+                } @else {
+                  <p class="media-card__description-empty">
+                    Sem descrição.
+                  </p>
+                }
+
+                @if (canEditDescription()) {
+                  <button
+                    type="button"
+                    class="media-card__description-edit"
+                    (click)="editDescription(media)"
+                  >
+                    {{
+                      media.description
+                        ? 'Editar descrição'
+                        : 'Adicionar descrição'
+                    }}
+                  </button>
+                }
+              }
+            </section>
+          }
           @if (
             media.originalDateVerified
             || media.originalDateConflict

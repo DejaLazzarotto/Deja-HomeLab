@@ -97,6 +97,34 @@ describe('CurationManagementComponent', () => {
     expect(component.draft()?.height).toBeCloseTo(0.6);
   });
 
+  it('does not load facial curation for video media', async () => {
+    const media = {
+      id: 'video-1',
+      original_name: 'video.mp4',
+      media_type: 'video' as const,
+      original_date: null,
+    };
+    const createUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:poster');
+
+    const selecting = component.selectMedia(media);
+    const request = http.expectOne('/api/fotos/media/video-1/poster');
+    expect(request.request.method).toBe('GET');
+    request.flush(new Blob(['poster'], { type: 'image/webp' }));
+
+    const descriptionRequest = http.expectOne('/api/fotos/media/video-1');
+    expect(descriptionRequest.request.method).toBe('GET');
+    descriptionRequest.flush({ ...media, description: 'Vídeo de teste' });
+
+    await selecting;
+
+    expect(component.faces()).toEqual([]);
+    expect(component.faceTotal()).toBe(0);
+    expect(component.imageUrl()).toBe('blob:poster');
+    expect(component.mediaDescription()).toBe('Vídeo de teste');
+    http.expectNone('/api/fotos/curation/media/video-1/faces');
+    createUrl.mockRestore();
+  });
+
   it('refreshes an existing unidentified face after analysing again', async () => {
     fixture.componentRef.setInput('canManage', true);
     fixture.detectChanges();

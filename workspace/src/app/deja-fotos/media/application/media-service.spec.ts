@@ -17,6 +17,7 @@ describe('MediaService', () => {
       findById: vi.fn(),
       upload: vi.fn(),
       delete: vi.fn(),
+      updateDescription: vi.fn(),
       bulkUpdate: vi.fn(),
       loadThumbnail: vi.fn(),
     };
@@ -181,6 +182,49 @@ describe('MediaService', () => {
       .toHaveBeenCalledWith(operation);
   });
 
+  it('should normalize and delegate a media description update', async () => {
+    vi.mocked(repository.updateDescription)
+      .mockResolvedValue({} as never);
+
+    await service.updateDescription(
+      'media-1',
+      '  Vídeo do casamento  ',
+    );
+
+    expect(repository.updateDescription)
+      .toHaveBeenCalledWith(
+        'media-1',
+        'Vídeo do casamento',
+      );
+  });
+
+  it('should normalize an empty media description to null', async () => {
+    vi.mocked(repository.updateDescription)
+      .mockResolvedValue({} as never);
+
+    await service.updateDescription(
+      'media-1',
+      '   ',
+    );
+
+    expect(repository.updateDescription)
+      .toHaveBeenCalledWith(
+        'media-1',
+        null,
+      );
+  });
+
+  it('should reject a media description longer than 5000 characters', () => {
+    expect(() => service.updateDescription(
+      'media-1',
+      'a'.repeat(5001),
+    )).toThrowError(
+      'A descrição deve ter no máximo 5.000 caracteres.',
+    );
+
+    expect(repository.updateDescription)
+      .not.toHaveBeenCalled();
+  });
   it.each([
     'image',
     'video',

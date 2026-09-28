@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Text,
     UniqueConstraint,
     func,
 )
@@ -86,6 +87,10 @@ class FotosMediaModel(Base):
         nullable=False,
     )
 
+    description: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
     source_content_type: Mapped[str] = mapped_column(
         String(255),
         nullable=False,

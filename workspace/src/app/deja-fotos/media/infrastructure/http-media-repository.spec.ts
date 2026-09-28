@@ -42,6 +42,7 @@ describe('HttpMediaRepository', () => {
     environment_id: environmentId,
     album_id: albumId,
     original_name: 'foto-teste.jpg',
+    description: 'Descrição de teste',
     source_content_type: 'image/jpeg',
     source_file_extension: '.jpg',
     source_file_size: 2048,
@@ -158,6 +159,7 @@ describe('HttpMediaRepository', () => {
           environmentId,
           albumId,
           originalName: 'foto-teste.jpg',
+          description: 'Descrição de teste',
           sourceContentType: 'image/jpeg',
           sourceFileExtension: '.jpg',
           sourceFileSize: 2048,
@@ -268,6 +270,34 @@ describe('HttpMediaRepository', () => {
       albumId,
       originalName: 'foto-teste.jpg',
       mediaType: 'image',
+    });
+  });
+
+  it('should update and map a media description', async () => {
+    const resultPromise = repository.updateDescription(
+      mediaId,
+      'Vídeo do casamento',
+    );
+
+    const request = httpTesting.expectOne(
+      `/api/fotos/media/${mediaId}/description`,
+    );
+
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({
+      description: 'Vídeo do casamento',
+    });
+
+    request.flush({
+      ...mediaResponse,
+      media_type: 'video',
+      description: 'Vídeo do casamento',
+    });
+
+    await expect(resultPromise).resolves.toMatchObject({
+      id: mediaId,
+      mediaType: 'video',
+      description: 'Vídeo do casamento',
     });
   });
 

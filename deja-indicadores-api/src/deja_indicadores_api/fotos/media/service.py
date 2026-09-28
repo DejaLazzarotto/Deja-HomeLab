@@ -32,6 +32,7 @@ from deja_indicadores_api.fotos.media.exceptions import (
     FotosMediaAlbumNotFoundError,
     FotosMediaAlbumScopeMismatchError,
     FotosMediaDeletionConflictError,
+    FotosMediaDescriptionNotSupportedError,
     FotosMediaDuplicateError,
     FotosMediaEmptyFileError,
     FotosMediaFileNotFoundError,
@@ -764,6 +765,45 @@ class FotosMediaService:
             return self._set_original_date(
                 media,
                 original_date,
+            )
+        except Exception:
+            self._repository.rollback()
+            raise
+
+    def update_description(
+        self,
+        media_id: str,
+        description: str | None,
+        current_user: AuthenticatedUser,
+    ) -> FotosMediaModel:
+        """Atualiza a descrição editável de uma mídia de vídeo."""
+
+        self._require_roles(
+            current_user,
+            FOTOS_MEDIA_OPERATOR_ROLES,
+        )
+
+        media = self._require_media_for_update(
+            media_id,
+        )
+
+        try:
+            self._authorization_service.require_scope(
+                current_user,
+                organization_id=media.organization_id,
+                tenant_id=media.tenant_id,
+                environment_id=media.environment_id,
+            )
+
+            if media.media_type != "video":
+                raise FotosMediaDescriptionNotSupportedError(
+                    media.id,
+                )
+
+            media.description = description
+
+            return self._repository.update(
+                media,
             )
         except Exception:
             self._repository.rollback()

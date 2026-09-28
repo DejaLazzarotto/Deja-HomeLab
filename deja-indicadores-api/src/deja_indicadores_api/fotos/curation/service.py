@@ -115,6 +115,10 @@ class FotosCurationService:
             raise FaceNotFound("Rosto não encontrado.")
         return face, media
 
+    def _require_image_media(self, media: FotosMediaModel) -> None:
+        if media.media_type != "image":
+            raise FaceInvalid("A curadoria facial é suportada apenas para fotos.")
+
     def _image(self, media: FotosMediaModel) -> Path:
         kind = "poster" if media.media_type == "video" else "preview"
         path, _ = self.derivatives.get_derivative_file(media.id, kind)
@@ -221,6 +225,7 @@ class FotosCurationService:
         media = self._media(media_id, user)
         if media.processing_status != "ready":
             raise FaceInvalid("A mídia precisa estar pronta para marcação.")
+        self._require_image_media(media)
         self._image(media)
         if data.person_id:
             self._person(data.person_id, media, user)
@@ -307,6 +312,7 @@ class FotosCurationService:
     def teach(self, face_id: str, user: AuthenticatedUser) -> FotosFaceReferenceModel:
         self._manager(user)
         face, media = self._face(face_id, user)
+        self._require_image_media(media)
         if face.status != "confirmed" or not face.person_id:
             raise FaceInvalid("Confirme a pessoa antes de ensinar a IA.")
         existing = self.repo.reference_for_face(face.id)
@@ -382,6 +388,7 @@ class FotosCurationService:
         media = self._media(media_id, user)
         if media.processing_status != "ready":
             raise FaceInvalid("A mídia precisa estar pronta para análise.")
+        self._require_image_media(media)
         path = self._image(media)
         try:
             boxes = engine.detect(path, self.settings.fotos_face_models_dir)

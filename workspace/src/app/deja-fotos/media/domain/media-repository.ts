@@ -50,6 +50,10 @@ export interface MediaRepository {
     mediaId: string,
   ): Promise<void>;
 
+  updateDescription(
+    mediaId: string,
+    description: string | null,
+  ): Promise<Media>;
   bulkUpdate(
     operation: MediaBulkOperation,
   ): Promise<MediaBulkResult>;

@@ -642,9 +642,11 @@
       [service]="mediaService()"
       [selectedIds]="selectedIds()"
       [canDelete]="canCurate()"
+      [canEditDescription]="canCurate()"
       [deletingId]="deletingId()"
       (selectionChange)="toggleMediaSelection($event)"
       (pageSelectionChange)="togglePageSelection($event)"
+      (mediaUpdated)="updateMedia($event)"
       (deleteRequested)="deleteMedia($event)"
     />
   }

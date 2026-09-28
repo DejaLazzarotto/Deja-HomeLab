@@ -47,6 +47,21 @@ FotosMediaIdentifier = Annotated[
 ]
 
 
+class FotosMediaDescriptionUpdate(BaseModel):
+    """Descrição editável de uma mídia de vídeo."""
+
+    description: str | None = Field(default=None, max_length=5000)
+
+    @field_validator("description", mode="before")
+    @classmethod
+    def normalize_description(cls, value):
+        if value is None:
+            return None
+
+        normalized = value.strip()
+        return normalized or None
+
+
 class FotosMediaOriginalDateUpdate(BaseModel):
     """Correção manual da data original de uma mídia."""
 
@@ -69,6 +84,8 @@ class FotosMediaResponse(BaseModel):
     album_id: str | None
 
     original_name: str
+
+    description: str | None
 
     source_content_type: str
     source_file_extension: str | None

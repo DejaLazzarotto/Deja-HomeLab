@@ -16,6 +16,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 import {
   Media,
@@ -38,7 +39,7 @@ import { MediaViewerComponent } from '../media-viewer/media-viewer';
 @Component({
   selector: 'deja-media-grid',
   standalone: true,
-  imports: [MediaViewerComponent],
+  imports: [FormsModule, MediaViewerComponent],
   templateUrl: './media-grid.html',
   styleUrl: './media-grid.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -55,9 +56,13 @@ export class MediaGridComponent implements OnDestroy {
 
   readonly canDelete = input(false);
 
+  readonly canEditDescription = input(false);
+
   readonly deletingId = input<string | null>(null);
 
   readonly deleteRequested = output<Media>();
+
+  readonly mediaUpdated = output<Media>();
 
   readonly selectedIds = input<ReadonlySet<string>>(
     new Set<string>(),
@@ -71,6 +76,16 @@ export class MediaGridComponent implements OnDestroy {
   readonly pageSelectionChange = output<boolean>();
 
   readonly viewingMedia = signal<Media | null>(null);
+  readonly editingDescriptionId =
+    signal<string | null>(null);
+
+  readonly descriptionDraft = signal('');
+
+  readonly descriptionSavingId =
+    signal<string | null>(null);
+
+  readonly descriptionError =
+    signal<string | null>(null);
 
   protected readonly thumbnailUrls =
     signal<ReadonlyMap<string, string>>(
@@ -178,6 +193,80 @@ export class MediaGridComponent implements OnDestroy {
     this.pageSelectionChange.emit(checkbox.checked);
   }
 
+  protected editDescription(media: Media): void {
+    if (
+      media.mediaType !== 'video'
+      || !this.canEditDescription()
+      || this.descriptionSavingId()
+    ) {
+      return;
+    }
+
+    this.editingDescriptionId.set(media.id);
+    this.descriptionDraft.set(media.description ?? '');
+    this.descriptionError.set(null);
+  }
+
+  protected cancelDescriptionEdit(): void {
+    if (this.descriptionSavingId()) {
+      return;
+    }
+
+    this.editingDescriptionId.set(null);
+    this.descriptionDraft.set('');
+    this.descriptionError.set(null);
+  }
+
+  protected async saveDescription(
+    media: Media,
+  ): Promise<void> {
+    await this.persistDescription(
+      media,
+      this.descriptionDraft(),
+    );
+  }
+
+  protected async clearDescription(
+    media: Media,
+  ): Promise<void> {
+    await this.persistDescription(media, null);
+  }
+
+  private async persistDescription(
+    media: Media,
+    description: string | null,
+  ): Promise<void> {
+    if (
+      media.mediaType !== 'video'
+      || !this.canEditDescription()
+      || this.descriptionSavingId()
+    ) {
+      return;
+    }
+
+    this.descriptionSavingId.set(media.id);
+    this.descriptionError.set(null);
+
+    try {
+      const updatedMedia =
+        await this.service().updateDescription(
+          media.id,
+          description,
+        );
+
+      this.mediaUpdated.emit(updatedMedia);
+      this.editingDescriptionId.set(null);
+      this.descriptionDraft.set('');
+    } catch (error: unknown) {
+      this.descriptionError.set(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível salvar a descrição.',
+      );
+    } finally {
+      this.descriptionSavingId.set(null);
+    }
+  }
   private synchronizeThumbnails(
     items: readonly Media[],
   ): void {

@@ -65,6 +65,7 @@
   @if (error()) { <p class="notice notice--error" role="alert">{{ error() }}</p> }
   @if (message()) { <p class="notice" role="status">{{ message() }}</p> }
 
+  @if (selectedMedia()?.media_type !== 'video') {
   <nav class="curation-tabs" aria-label="Áreas da curadoria">
     <button type="button" [class.active]="activeTab() === 'recognition'"
       (click)="selectTab('recognition')">Reconhecimento facial</button>
@@ -73,21 +74,26 @@
     <button type="button" [class.active]="activeTab() === 'avatars'"
       (click)="selectTab('avatars')">Avatares</button>
   </nav>
+  }
 
   @switch (activeTab()) {
     @case ('recognition') {
       <section class="recognition-grid" aria-label="Revisão de reconhecimento facial">
         <article class="review-panel">
           <header class="panel-header">
-            <h2>Revisão de reconhecimento</h2>
-            @if (selectedMedia() && canManage()) {
+            <h2>
+              {{
+                selectedMedia()?.media_type === 'video'
+                  ? 'Mídia selecionada'
+                  : 'Revisão de reconhecimento'
+              }}
+            </h2>
+            @if (selectedMedia() && selectedMediaSupportsFaces() && canManage()) {
               <button type="button" (click)="detect()" [disabled]="busy()">Analisar rostos</button>
             }
           </header>
           @if (selectedMedia(); as item) {
-            <p class="media-caption">{{ item.original_name }}
-              @if (item.media_type === 'video') { · Marcações sobre o pôster do vídeo }
-            </p>
+            <p class="media-caption">{{ item.original_name }}</p>
             @if (imageUrl()) {
               <div class="image-stage" [class.drawing]="drawing()"
                 (pointerdown)="pointerDown($event)" (pointermove)="pointerMove($event)"
@@ -111,7 +117,7 @@
             } @else {
               <p>Carregando imagem de revisão...</p>
             }
-            @if (canManage()) {
+            @if (selectedMediaSupportsFaces() && canManage()) {
               <div class="marking-actions">
                 <button type="button" (click)="drawing.set(!drawing()); draft.set(null)">
                   {{ drawing() ? 'Cancelar desenho' : 'Desenhar rosto manualmente' }}
@@ -135,6 +141,24 @@
             </p>
           }
         </article>
+        @if (selectedMedia()?.media_type === 'video') {
+          <article class="faces-panel media-description-panel">
+            <header class="panel-header"><h2>Descrição da mídia</h2></header>
+            <label class="media-description-field">Descrição
+              <textarea maxlength="5000" rows="8"
+                [ngModel]="mediaDescription()"
+                (ngModelChange)="mediaDescription.set($event)"
+                [disabled]="busy() || !canManage()"
+                placeholder="Adicione uma descrição para este vídeo"></textarea>
+              <small>{{ mediaDescription().length }} de 5.000 caracteres</small>
+            </label>
+            @if (canManage()) {
+              <button type="button" class="primary-button"
+                [disabled]="busy() || mediaDescription().length > 5000"
+                (click)="saveDescription()">Salvar descrição</button>
+            }
+          </article>
+        } @else {
         <article class="faces-panel">
           <header class="panel-header"><h2>Rostos na mídia</h2><small>{{ faceTotal() }}</small></header>
           @if (faces().length) {
@@ -165,7 +189,7 @@
                   }
                 </select>
               </label>
-              @if (canManage()) {
+              @if (selectedMediaSupportsFaces() && canManage()) {
                 <button type="button" class="text-button" [disabled]="busy()"
                   (click)="creatingPerson.set(!creatingPerson()); newPersonName.set('')">
                   {{ creatingPerson() ? 'Cancelar cadastro' : 'Cadastrar nova pessoa' }}
@@ -193,6 +217,7 @@
             </div>
           }
         </article>
+        }
       </section>
       <section class="upcoming-panel">
         <header class="panel-header"><h2>Mídias para revisar</h2>
@@ -230,7 +255,7 @@
                   <img [src]="url" alt="Referência facial de {{ personName(reference.person_id) }}" />
                 }
                 <span>Referência de rosto confirmado</span>
-                @if (canManage()) {
+                @if (selectedMediaSupportsFaces() && canManage()) {
                   <button type="button" [disabled]="busy()"
                     (click)="removeReference(reference.id)">Remover</button>
                 }

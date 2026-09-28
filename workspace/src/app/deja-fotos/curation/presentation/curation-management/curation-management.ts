@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnDestroy, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { FotosEnvironmentOption } from '../../../fotos-environment-option';
@@ -15,6 +15,7 @@ interface MediaItem {
   readonly original_name: string;
   readonly media_type: 'image' | 'video';
   readonly original_date: string | null;
+  readonly description?: string | null;
 }
 interface PersonItem {
   readonly id: string;
@@ -73,6 +74,8 @@ export class CurationManagementComponent implements OnDestroy {
   readonly mediaTotal = signal(0);
   readonly mediaPage = signal(0);
   readonly selectedMedia = signal<MediaItem | null>(null);
+  readonly selectedMediaSupportsFaces = computed(() => this.selectedMedia()?.media_type === 'image');
+  readonly mediaDescription = signal('');
   readonly imageUrl = signal<string | null>(null);
   readonly faces = signal<readonly FaceItem[]>([]);
   readonly faceTotal = signal(0);
@@ -220,6 +223,7 @@ export class CurationManagementComponent implements OnDestroy {
     const request = ++this.faceSequence;
     this.releaseImage();
     this.selectedMedia.set(item);
+    this.mediaDescription.set('');
     this.faces.set([]);
     this.facePage.set(0);
     this.faceTotal.set(0);
@@ -229,6 +233,21 @@ export class CurationManagementComponent implements OnDestroy {
     if (!item) return;
     try {
       const path = item.media_type === 'video' ? 'poster' : 'preview';
+      if (item.media_type === 'video') {
+        const [blob, mediaDetail] = await Promise.all([
+          firstValueFrom(this.http.get(`/api/fotos/media/${item.id}/poster`, {
+            responseType: 'blob',
+          })),
+          firstValueFrom(this.http.get<{ description: string | null }>(
+            `/api/fotos/media/${item.id}`,
+          )),
+        ]);
+        if (request !== this.faceSequence || this.destroyed) return;
+        this.imageUrl.set(URL.createObjectURL(blob));
+        this.mediaDescription.set(mediaDetail.description ?? item.description ?? '');
+        return;
+      }
+
       const [blob, faces] = await Promise.all([
         firstValueFrom(this.http.get(`/api/fotos/media/${item.id}/${path}`, {
           responseType: 'blob',
@@ -248,9 +267,34 @@ export class CurationManagementComponent implements OnDestroy {
     }
   }
 
+  async saveDescription(): Promise<void> {
+    const item = this.selectedMedia();
+    if (!item || item.media_type !== 'video' || !this.canManage()) return;
+
+    const description = this.mediaDescription().trim();
+    if (description.length > 5000) {
+      this.error.set('A descrição deve ter no máximo 5.000 caracteres.');
+      return;
+    }
+
+    await this.mutate(async () => {
+      const updated = await firstValueFrom(this.http.patch<{ description: string | null }>(
+        `/api/fotos/media/${item.id}/description`,
+        { description: description || null },
+      ));
+      const savedDescription = updated.description ?? '';
+      this.mediaDescription.set(savedDescription);
+      const updatedItem = { ...item, description: updated.description };
+      this.selectedMedia.set(updatedItem);
+      this.media.update(items => items.map(media =>
+        media.id === item.id ? updatedItem : media,
+      ));
+    }, 'Descrição da mídia salva.');
+  }
+
   async loadMoreFaces(): Promise<void> {
     const item = this.selectedMedia();
-    if (!item || this.facePage() * 50 >= this.faceTotal()) return;
+    if (!item || item.media_type !== 'image' || this.facePage() * 50 >= this.faceTotal()) return;
     try {
       const result = await firstValueFrom(this.http.get<Page<FaceItem>>(
         `/api/fotos/curation/media/${item.id}/faces`,

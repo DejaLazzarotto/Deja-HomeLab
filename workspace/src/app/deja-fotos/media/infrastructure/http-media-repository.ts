@@ -42,6 +42,7 @@ interface MediaResponse {
   readonly album_id: string | null;
 
   readonly original_name: string;
+  readonly description: string | null;
 
   readonly source_content_type: string;
   readonly source_file_extension: string | null;
@@ -232,6 +233,22 @@ export class HttpMediaRepository implements MediaRepository {
     await firstValueFrom(
       this.http.delete<void>(`/api/fotos/media/${mediaId}`),
     );
+  }
+
+  async updateDescription(
+    mediaId: string,
+    description: string | null,
+  ): Promise<Media> {
+    const response = await firstValueFrom(
+      this.http.patch<MediaResponse>(
+        `/api/fotos/media/${mediaId}/description`,
+        {
+          description,
+        },
+      ),
+    );
+
+    return this.mapMedia(response);
   }
 
   async bulkUpdate(
@@ -446,6 +463,7 @@ export class HttpMediaRepository implements MediaRepository {
       environmentId: response.environment_id,
       albumId: response.album_id,
       originalName: response.original_name,
+      description: response.description,
       sourceContentType: response.source_content_type,
       sourceFileExtension: response.source_file_extension,
       sourceFileSize: response.source_file_size,

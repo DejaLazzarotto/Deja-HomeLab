@@ -129,6 +129,31 @@ export class MediaService {
     return this.repository.delete(mediaId);
   }
 
+  updateDescription(
+    mediaId: string,
+    description: string | null,
+  ): Promise<Media> {
+    if (!mediaId.trim()) {
+      throw new Error('O identificador da mídia é obrigatório.');
+    }
+
+    const normalizedDescription =
+      description?.trim() || null;
+
+    if (
+      normalizedDescription
+      && normalizedDescription.length > 5000
+    ) {
+      throw new Error(
+        'A descrição deve ter no máximo 5.000 caracteres.',
+      );
+    }
+
+    return this.repository.updateDescription(
+      mediaId,
+      normalizedDescription,
+    );
+  }
   loadThumbnail(
     mediaId: string,
     mediaType: MediaType,

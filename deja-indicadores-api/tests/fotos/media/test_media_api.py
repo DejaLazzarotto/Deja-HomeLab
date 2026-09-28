@@ -4223,3 +4223,314 @@ def test_process_stale_processing_media_recovers(
     assert response.status_code == 200
     assert response.json()["processing_status"] == "ready"
     assert response.json()["processing_error"] is None
+
+def test_update_video_description_persists_edits_and_clears(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Salva, edita e limpa a descrição individual de um vídeo."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    upload_response = upload_video(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="video-com-descricao.mp4",
+    )
+
+    assert upload_response.status_code == 201
+    assert upload_response.json()["description"] is None
+
+    media_id = upload_response.json()["id"]
+
+    create_response = client.patch(
+        f"{MEDIA_URL}/{media_id}/description",
+        json={
+            "description": "  Viagem em família para a serra.  ",
+        },
+        headers=headers,
+    )
+
+    assert create_response.status_code == 200
+    assert create_response.json()["description"] == (
+        "Viagem em família para a serra."
+    )
+
+    get_response = client.get(
+        f"{MEDIA_URL}/{media_id}",
+        headers=headers,
+    )
+
+    assert get_response.status_code == 200
+    assert get_response.json()["description"] == (
+        "Viagem em família para a serra."
+    )
+
+    edit_response = client.patch(
+        f"{MEDIA_URL}/{media_id}/description",
+        json={
+            "description": "Vídeo editado com uma nova descrição.",
+        },
+        headers=headers,
+    )
+
+    assert edit_response.status_code == 200
+    assert edit_response.json()["description"] == (
+        "Vídeo editado com uma nova descrição."
+    )
+
+    clear_response = client.patch(
+        f"{MEDIA_URL}/{media_id}/description",
+        json={
+            "description": "   ",
+        },
+        headers=headers,
+    )
+
+    assert clear_response.status_code == 200
+    assert clear_response.json()["description"] is None
+
+    final_get_response = client.get(
+        f"{MEDIA_URL}/{media_id}",
+        headers=headers,
+    )
+
+    assert final_get_response.status_code == 200
+    assert final_get_response.json()["description"] is None
+
+
+def test_update_media_description_rejects_image(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Impede descrição individual no fluxo exclusivo de vídeos."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    upload_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="foto-sem-descricao.jpg",
+    )
+
+    assert upload_response.status_code == 201
+
+    media_id = upload_response.json()["id"]
+
+    response = client.patch(
+        f"{MEDIA_URL}/{media_id}/description",
+        json={
+            "description": "Esta descrição não deve ser aceita.",
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"] == (
+        "fotos_media_description_not_supported"
+    )
+
+
+def test_update_video_description_rejects_more_than_5000_characters(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Limita a descrição de vídeo a cinco mil caracteres."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    upload_response = upload_video(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="video-descricao-longa.mp4",
+    )
+
+    assert upload_response.status_code == 201
+
+    media_id = upload_response.json()["id"]
+
+    response = client.patch(
+        f"{MEDIA_URL}/{media_id}/description",
+        json={
+            "description": "x" * 5001,
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+
+def test_update_video_description_allows_analyst_and_rejects_viewer(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Permite descrição para analyst e bloqueia viewer."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        administrator_headers,
+    ) = media_context
+
+    upload_response = upload_video(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=administrator_headers,
+        file_name="video-permissoes-descricao.mp4",
+    )
+
+    assert upload_response.status_code == 201
+
+    media_id = upload_response.json()["id"]
+
+    analyst = create_user(
+        client,
+        organization_id,
+        tenant_id=tenant_id,
+        environment_id=environment_id,
+        email="analyst.description.fotos.media@deja.com",
+        role="analyst",
+    )
+    analyst_headers = authorization_headers(
+        test_settings,
+        analyst,
+    )
+
+    analyst_response = client.patch(
+        f"{MEDIA_URL}/{media_id}/description",
+        json={
+            "description": "Descrição cadastrada pelo analista.",
+        },
+        headers=analyst_headers,
+    )
+
+    assert analyst_response.status_code == 200
+    assert analyst_response.json()["description"] == (
+        "Descrição cadastrada pelo analista."
+    )
+
+    viewer = create_user(
+        client,
+        organization_id,
+        tenant_id=tenant_id,
+        environment_id=environment_id,
+        email="viewer.description.fotos.media@deja.com",
+        role="viewer",
+    )
+    viewer_headers = authorization_headers(
+        test_settings,
+        viewer,
+    )
+
+    viewer_response = client.patch(
+        f"{MEDIA_URL}/{media_id}/description",
+        json={
+            "description": "Viewer não pode alterar esta descrição.",
+        },
+        headers=viewer_headers,
+    )
+
+    assert viewer_response.status_code == 403
+
+    get_response = client.get(
+        f"{MEDIA_URL}/{media_id}",
+        headers=viewer_headers,
+    )
+
+    assert get_response.status_code == 200
+    assert get_response.json()["description"] == (
+        "Descrição cadastrada pelo analista."
+    )
+
+def test_update_video_description_rejects_cross_scope_user(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Impede alteração da descrição por usuário de outro escopo."""
+
+    _, _, environment_id, album_id, administrator_headers = media_context
+
+    upload_response = upload_video(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=administrator_headers,
+        file_name="video-escopo-descricao.mp4",
+    )
+
+    assert upload_response.status_code == 201
+
+    media_id = upload_response.json()["id"]
+
+    other_organization = create_organization(
+        client,
+        name="Organização sem acesso ao vídeo",
+    )
+    other_administrator = create_user(
+        client,
+        str(other_organization["id"]),
+        email="admin.other.description.fotos.media@deja.com",
+        role="organization_admin",
+    )
+    other_headers = authorization_headers(
+        test_settings,
+        other_administrator,
+    )
+
+    response = client.patch(
+        f"{MEDIA_URL}/{media_id}/description",
+        json={
+            "description": "Alteração fora do escopo.",
+        },
+        headers=other_headers,
+    )
+
+    assert response.status_code == 403
+
+    get_response = client.get(
+        f"{MEDIA_URL}/{media_id}",
+        headers=administrator_headers,
+    )
+
+    assert get_response.status_code == 200
+    assert get_response.json()["description"] is None
