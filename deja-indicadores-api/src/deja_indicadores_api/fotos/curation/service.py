@@ -55,6 +55,15 @@ def crop_face(path: Path, face: FotosFaceModel) -> Image.Image:
         return image.crop(box)
 
 
+def same_face_box(face: FotosFaceModel, box: tuple[float, float, float, float]) -> bool:
+    x, y, width, height = box
+    intersection = max(0.0, min(face.x + face.width, x + width) - max(face.x, x)) * max(
+        0.0, min(face.y + face.height, y + height) - max(face.y, y)
+    )
+    smaller_area = min(face.width * face.height, width * height)
+    return smaller_area > 0 and intersection / smaller_area >= 0.60
+
+
 class FotosCurationService:
     def __init__(
         self,
@@ -310,7 +319,8 @@ class FotosCurationService:
 
             if ImageStat.Stat(crop.convert("L")).stddev[0] < 12:
                 raise FaceInvalid("Rosto desfocado ou sem detalhes; mantenha a marcação manual.")
-            engine._cv2()
+            if not engine.validate_reference(crop, self.settings.fotos_face_models_dir):
+                raise FaceInvalid("Não foi encontrado um rosto no recorte; ajuste a marcação.")
         except engine.FaceEngineUnavailable as exc:
             raise FaceEngineError(str(exc)) from exc
         crop.thumbnail((320, 320))
@@ -374,7 +384,7 @@ class FotosCurationService:
             raise FaceInvalid("A mídia precisa estar pronta para análise.")
         path = self._image(media)
         try:
-            boxes = engine.detect(path)
+            boxes = engine.detect(path, self.settings.fotos_face_models_dir)
         except engine.FaceEngineUnavailable as exc:
             raise FaceEngineError(str(exc)) from exc
         existing = self.repo.all_for_media(media.id, media.environment_id)
@@ -382,12 +392,35 @@ class FotosCurationService:
             (ref.person_id, self.settings.uploads_dir / ref.storage_key)
             for ref in self.repo.all_references(media.environment_id)
         ]
+        updated = []
+        if references:
+            for face in existing:
+                if face.status != "unknown":
+                    continue
+                try:
+                    crop = crop_face(path, face)
+                except FaceInvalid:
+                    continue
+                try:
+                    match = engine.suggest(crop, references, self.settings.fotos_face_models_dir)
+                    if not match:
+                        match = engine.suggest_in_image(
+                            path,
+                            (face.x, face.y, face.width, face.height),
+                            references,
+                            self.settings.fotos_face_models_dir,
+                        )
+                except engine.FaceEngineUnavailable as exc:
+                    raise FaceEngineError(str(exc)) from exc
+                if match:
+                    face.person_id, face.confidence = match
+                    face.status = "suggested"
+                    updated.append(face)
+            if updated:
+                self.repo.save()
         created = []
         for x, y, width, height in boxes:
-            if any(
-                abs(face.x - x) < 0.06 and abs(face.y - y) < 0.06 and abs(face.width - width) < 0.08
-                for face in existing
-            ):
+            if any(same_face_box(face, (x, y, width, height)) for face in existing):
                 continue
             face = FotosFaceModel(
                 id=str(uuid4()),
@@ -402,7 +435,17 @@ class FotosCurationService:
                 origin="detected",
                 status="unknown",
             )
-            match = engine.suggest(crop_face(path, face), references)
+            try:
+                match = engine.suggest(
+                    crop_face(path, face), references, self.settings.fotos_face_models_dir
+                )
+                if not match:
+                    match = engine.suggest_in_image(
+                        path, (x, y, width, height), references,
+                        self.settings.fotos_face_models_dir,
+                    )
+            except engine.FaceEngineUnavailable as exc:
+                raise FaceEngineError(str(exc)) from exc
             if match:
                 person_id, confidence = match
                 face.person_id = person_id
@@ -411,4 +454,4 @@ class FotosCurationService:
             self.repo.add(face)
             created.append(face)
             existing.append(face)
-        return created
+        return [*updated, *created]

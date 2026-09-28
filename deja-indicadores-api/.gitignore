@@ -34,3 +34,6 @@ Thumbs.db
 
 # Arquivos enviados pelos usuários
 uploads/
+
+# Modelos faciais instalados localmente, com checksum verificado
+models/fotos/*.onnx

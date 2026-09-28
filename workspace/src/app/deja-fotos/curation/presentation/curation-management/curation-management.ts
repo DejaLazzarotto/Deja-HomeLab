@@ -338,11 +338,14 @@ export class CurationManagementComponent implements OnDestroy {
       const faces = await firstValueFrom(this.http.post<readonly FaceItem[]>(
         `/api/fotos/curation/media/${item.id}/detect`, {},
       ));
-      this.faces.update(items => [...items, ...faces]);
-      this.faceTotal.update(count => count + faces.length);
+      if (this.destroyed || this.selectedMedia()?.id !== item.id) return;
+      const selectedId = this.selectedFaceId();
+      await this.selectMedia(item);
+      const selected = this.faces().find(face => face.id === selectedId);
+      if (selected) this.selectFace(selected);
       this.message.set(faces.length
-        ? `${faces.length} rosto(s) encontrado(s) para revisão.`
-        : 'Nenhum rosto novo detectado. Você pode desenhar uma marcação.');
+        ? `${faces.length} rosto(s) novo(s) ou atualizado(s) para revisão.`
+        : 'Nenhum rosto novo ou sugestão. Você pode corrigir ou desenhar uma marcação.');
     });
   }
 

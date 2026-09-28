@@ -53,6 +53,16 @@
             </div>
           }
 
+          @if (media.processingStatus === 'ready') {
+            <button
+              type="button"
+              class="media-card__open"
+              (click)="viewingMedia.set(media)"
+              [attr.aria-label]="'Abrir ' + media.originalName"
+              [title]="'Abrir ' + media.originalName"
+            ></button>
+          }
+
           <label
             class="media-card__selection"
             [title]="isSelected(media.id) ? 'Remover da seleção' : 'Selecionar mídia'"
@@ -168,6 +178,9 @@
       </article>
     }
   </div>
+  @if (viewingMedia(); as media) {
+    <deja-media-viewer [media]="media" (closed)="viewingMedia.set(null)" />
+  }
 } @else {
   <div class="media-grid__empty">
     <strong>Nenhuma mídia encontrada.</strong>

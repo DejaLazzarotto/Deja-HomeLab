@@ -16,6 +16,11 @@ body {
   overflow: hidden;
 }
 
+/* Keep the media viewer above the Workspace header and sidebar. */
+.workspace-main:has(deja-media-viewer) {
+  z-index: 30;
+}
+
 *,
 *::before,
 *::after {
@@ -201,4 +206,22 @@ body {
 .ticket-card__sla--complied {
   background: rgba(16, 185, 129, 0.15);
   border: 1px solid rgba(16, 185, 129, 0.32);
+}
+
+/* Abrir a mídia sem adicionar controles aos cartões da galeria. */
+.media-card__open,
+.album-media-card__open {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.media-card__open:focus-visible,
+.album-media-card__open:focus-visible {
+  outline: 3px solid var(--workspace-color-primary);
+  outline-offset: -3px;
 }

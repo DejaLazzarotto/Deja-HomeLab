@@ -83,6 +83,11 @@ class Settings(BaseSettings):
         alias="UPLOADS_DIR",
     )
 
+    fotos_face_models_dir: Path = Field(
+        default=Path("models/fotos"),
+        alias="FOTOS_FACE_MODELS_DIR",
+    )
+
     ticket_attachment_max_size_mb: int = Field(
         default=10,
         gt=0,

@@ -1,0 +1,26 @@
+<div class="media-viewer" role="presentation" (click)="closed.emit()">
+  <section
+    class="media-viewer__panel"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="'Visualizar ' + media().originalName"
+    (click)="$event.stopPropagation()"
+  >
+    <header>
+      <strong [title]="media().originalName">{{ media().originalName }}</strong>
+      <button type="button" (click)="closed.emit()" aria-label="Fechar visualização">×</button>
+    </header>
+    @if (loading()) {
+      <p role="status">Carregando mídia...</p>
+    } @else if (error(); as errorMessage) {
+      <p role="alert">{{ errorMessage }}</p>
+    } @else if (url(); as source) {
+      @if (media().mediaType === 'video') {
+        <video [src]="source" controls playsinline preload="metadata"
+          aria-label="Reproduzir vídeo"></video>
+      } @else {
+        <img [src]="source" [alt]="media().originalName" />
+      }
+    }
+  </section>
+</div>

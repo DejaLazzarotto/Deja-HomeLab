@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 
 import { CurationManagementComponent } from './curation-management';
 
@@ -94,5 +95,38 @@ describe('CurationManagementComponent', () => {
     expect(component.draft()?.y).toBeCloseTo(0.2);
     expect(component.draft()?.width).toBeCloseTo(0.6);
     expect(component.draft()?.height).toBeCloseTo(0.6);
+  });
+
+  it('refreshes an existing unidentified face after analysing again', async () => {
+    fixture.componentRef.setInput('canManage', true);
+    fixture.detectChanges();
+    const media = { id: 'media-1', original_name: 'maximo.jpg',
+      media_type: 'image' as const, original_date: null };
+    const unknown = { id: 'face-1', x: 0.1, y: 0.1, width: 0.4, height: 0.4,
+      origin: 'detected' as const, status: 'unknown' as const,
+      person_id: null, confidence: null };
+    component.selectedMedia.set(media);
+    component.faces.set([unknown]);
+    component.faceTotal.set(1);
+    const createUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:preview');
+
+    const analysing = component.detect();
+    http.expectOne('/api/fotos/curation/media/media-1/detect').flush([
+      { ...unknown, status: 'suggested', person_id: 'person-1', confidence: 0.82 },
+    ]);
+    await Promise.resolve();
+    http.expectOne('/api/fotos/media/media-1/preview').flush(
+      new Blob(['image'], { type: 'image/webp' }),
+    );
+    http.expectOne(request => request.url === '/api/fotos/curation/media/media-1/faces')
+      .flush({ items: [{ ...unknown, status: 'suggested', person_id: 'person-1',
+        confidence: 0.82 }], page: 1, total: 1, total_pages: 1 });
+    await analysing;
+    expect(component.faces()).toHaveLength(1);
+    expect(component.faces()[0].status).toBe('suggested');
+    expect(component.faceTotal()).toBe(1);
+    expect(component.message()).toContain('atualizado');
+    http.expectOne('/api/fotos/curation/summary').flush({ pending: 1, unknown: 0 });
+    createUrl.mockRestore();
   });
 });

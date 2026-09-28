@@ -8,12 +8,20 @@ from PIL import Image
 
 from deja_indicadores_api.core.config import Settings
 from deja_indicadores_api.fotos.curation import engine
+from deja_indicadores_api.fotos.curation.models import FotosFaceModel
+from deja_indicadores_api.fotos.curation.service import same_face_box
 from tests.authentication.test_authentication_api import create_environment, create_user
 from tests.authentication.test_user_authorization_api import authorization_headers
 from tests.fotos.media.test_media_api import upload_image
 from tests.fotos.people.test_people_api import create_person
 
 CURATION = "/api/fotos/curation"
+
+
+def test_detected_box_overlapping_a_larger_manual_box_is_the_same_face() -> None:
+    manual = FotosFaceModel(x=0.20, y=0.25, width=0.50, height=0.65)
+    assert same_face_box(manual, (0.26, 0.30, 0.41, 0.55))
+    assert not same_face_box(manual, (0.72, 0.30, 0.20, 0.20))
 
 
 def image_bytes() -> bytes:
@@ -24,9 +32,12 @@ def image_bytes() -> bytes:
     return output.getvalue()
 
 
-def ready_image(client: TestClient, env: str, headers: dict) -> str:
+def ready_image(
+    client: TestClient, env: str, headers: dict, *, content: bytes | None = None
+) -> str:
     upload = upload_image(
-        client, environment_id=env, album_id=None, headers=headers, content=image_bytes()
+        client, environment_id=env, album_id=None, headers=headers,
+        content=content if content is not None else image_bytes(),
     )
     assert upload.status_code == 201, upload.text
     media_id = upload.json()["id"]
@@ -35,17 +46,15 @@ def ready_image(client: TestClient, env: str, headers: dict) -> str:
     return media_id
 
 
-def test_real_engine_detects_no_face_and_matches_reference(tmp_path: Path) -> None:
+def test_real_engine_rejects_a_nonface_reference(tmp_path: Path) -> None:
     blank = tmp_path / "blank.png"
     Image.new("RGB", (128, 128), "white").save(blank)
-    assert engine.detect(blank) == []
+    assert engine.detect(blank, Path("models/fotos")) == []
     pattern = Image.new("RGB", (128, 128))
     pattern.putdata([(x * 2, y * 2, (x ^ y) * 2) for y in range(128) for x in range(128)])
     reference = tmp_path / "reference.webp"
     pattern.save(reference, format="WEBP", lossless=True)
-    match = engine.suggest(pattern, [("known-person", reference)])
-    assert match is not None
-    assert match[0] == "known-person"
+    assert engine.suggest(pattern, [("known-person", reference)], Path("models/fotos")) is None
 
 
 def test_manual_marking_review_teaching_and_pagination(
@@ -77,7 +86,7 @@ def test_manual_marking_review_teaching_and_pagination(
     )
     assert invalid.status_code == 422
 
-    monkeypatch.setattr(engine, "_cv2", lambda: object())
+    monkeypatch.setattr(engine, "validate_reference", lambda crop, models_dir: True)
     taught = client.post(f"{CURATION}/faces/{face['id']}/teach", headers=headers)
     assert taught.status_code == 200, taught.text
     assert (
@@ -134,12 +143,12 @@ def test_detect_suggest_reject_and_scope(
         headers=admin,
     )
     assert seed.status_code == 201, seed.text
-    monkeypatch.setattr(engine, "_cv2", lambda: object())
+    monkeypatch.setattr(engine, "validate_reference", lambda crop, models_dir: True)
     taught = client.post(f"{CURATION}/faces/{seed.json()['id']}/teach", headers=admin)
     assert taught.status_code == 200
     reference_id = taught.json()["id"]
-    monkeypatch.setattr(engine, "detect", lambda path: [(0.55, 0.55, 0.4, 0.4)])
-    monkeypatch.setattr(engine, "suggest", lambda crop, refs: (person["id"], 0.82))
+    monkeypatch.setattr(engine, "detect", lambda path, models_dir: [(0.55, 0.55, 0.4, 0.4)])
+    monkeypatch.setattr(engine, "suggest", lambda crop, refs, models_dir: (person["id"], 0.82))
     detected = client.post(f"{CURATION}/media/{media_id}/detect", headers=admin)
     assert detected.status_code == 200, detected.text
     face = detected.json()[0]
@@ -200,3 +209,54 @@ def test_detect_suggest_reject_and_scope(
     assert (
         client.get(f"{CURATION}/references/{reference_id}/image", headers=admin).status_code == 404
     )
+
+
+def test_analysis_rechecks_existing_unknown_after_teaching(
+    client: TestClient,
+    media_context: tuple,
+    monkeypatch,
+) -> None:
+    _, _, environment, _, headers = media_context
+    person = create_person(client, environment, headers, name="Máximo")
+    taught_media = ready_image(client, environment, headers)
+    seed = client.post(
+        f"{CURATION}/media/{taught_media}/faces",
+        json={"x": 0.05, "y": 0.05, "width": 0.4, "height": 0.4,
+              "person_id": person["id"]},
+        headers=headers,
+    )
+    assert seed.status_code == 201
+    monkeypatch.setattr(engine, "validate_reference", lambda crop, models_dir: True)
+    assert client.post(
+        f"{CURATION}/faces/{seed.json()['id']}/teach", headers=headers
+    ).status_code == 200
+
+    alternate = BytesIO()
+    Image.new("RGB", (120, 120), "purple").save(alternate, format="JPEG")
+    other_media = ready_image(client, environment, headers, content=alternate.getvalue())
+    unknown = client.post(
+        f"{CURATION}/media/{other_media}/faces",
+        json={"x": 0.05, "y": 0.05, "width": 0.4, "height": 0.4},
+        headers=headers,
+    )
+    assert unknown.status_code == 201
+    face_id = unknown.json()["id"]
+    monkeypatch.setattr(engine, "detect", lambda path, models_dir: [(0.05, 0.05, 0.4, 0.4)])
+    monkeypatch.setattr(engine, "suggest", lambda crop, refs, models_dir: (person["id"], 0.82))
+
+    analysed = client.post(f"{CURATION}/media/{other_media}/detect", headers=headers)
+    assert analysed.status_code == 200, analysed.text
+    assert len(analysed.json()) == 1
+    assert analysed.json()[0]["id"] == face_id
+    assert analysed.json()[0]["status"] == "suggested"
+    assert analysed.json()[0]["person_id"] == person["id"]
+    listed = client.get(f"{CURATION}/media/{other_media}/faces", headers=headers).json()
+    assert listed["total"] == 1
+    assert listed["items"][0]["status"] == "suggested"
+    assert client.post(f"{CURATION}/media/{other_media}/detect", headers=headers).json() == []
+    rejected = client.post(f"{CURATION}/faces/{face_id}/reject", headers=headers)
+    assert rejected.status_code == 200
+    assert client.post(f"{CURATION}/media/{other_media}/detect", headers=headers).json() == []
+    final = client.get(f"{CURATION}/media/{other_media}/faces", headers=headers).json()
+    assert final["total"] == 1
+    assert final["items"][0]["status"] == "rejected"

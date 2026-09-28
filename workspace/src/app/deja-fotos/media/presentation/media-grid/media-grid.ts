@@ -33,10 +33,12 @@ import {
   formatMediaDuration,
   formatMediaFileSize,
 } from '../media-presentation';
+import { MediaViewerComponent } from '../media-viewer/media-viewer';
 
 @Component({
   selector: 'deja-media-grid',
   standalone: true,
+  imports: [MediaViewerComponent],
   templateUrl: './media-grid.html',
   styleUrl: './media-grid.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -67,6 +69,8 @@ export class MediaGridComponent implements OnDestroy {
   }>();
 
   readonly pageSelectionChange = output<boolean>();
+
+  readonly viewingMedia = signal<Media | null>(null);
 
   protected readonly thumbnailUrls =
     signal<ReadonlyMap<string, string>>(

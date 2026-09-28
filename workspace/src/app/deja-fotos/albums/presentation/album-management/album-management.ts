@@ -32,6 +32,7 @@ import {
   MediaBulkActionsComponent,
   MediaBulkResult,
   MediaService,
+  MediaViewerComponent,
   formatMediaDate,
   formatMediaDuration,
 } from '../../../media';
@@ -86,6 +87,7 @@ const ALBUM_MEDIA_PAGE_SIZE = 100;
     FormsModule,
     AlbumFormComponent,
     MediaBulkActionsComponent,
+    MediaViewerComponent,
     PersonPanelComponent,
   ],
   templateUrl: './album-management.html',
@@ -147,6 +149,8 @@ export class AlbumManagementComponent
     signal<ReadonlySet<string>>(
       new Set<string>(),
     );
+
+  readonly viewingMedia = signal<Media | null>(null);
 
   readonly deletingAlbumId =
     signal<string | null>(null);
