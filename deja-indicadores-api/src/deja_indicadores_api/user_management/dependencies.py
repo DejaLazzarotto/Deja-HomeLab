@@ -8,15 +8,25 @@ from deja_indicadores_api.authentication.authorization import (
 )
 from deja_indicadores_api.core.database import get_db_session
 from deja_indicadores_api.core.security import PasswordService
+from deja_indicadores_api.module_management.repository import (
+    ModuleRepository,
+    OrganizationModuleRepository,
+)
 from deja_indicadores_api.tenant_management.repository import (
     EnvironmentRepository,
     OrganizationRepository,
     TenantRepository,
 )
-from deja_indicadores_api.user_management.repository import UserRepository
+from deja_indicadores_api.user_management.repository import (
+    UserModuleAccessRepository,
+    UserRepository,
+)
 from deja_indicadores_api.user_management.service import UserService
 
-DatabaseSession = Annotated[Session, Depends(get_db_session)]
+DatabaseSession = Annotated[
+    Session,
+    Depends(get_db_session),
+]
 
 
 def get_user_service(
@@ -25,6 +35,13 @@ def get_user_service(
     """Cria o serviço de usuários para a sessão da requisição."""
 
     user_repository = UserRepository(session)
+    user_module_access_repository = UserModuleAccessRepository(
+        session
+    )
+    module_repository = ModuleRepository(session)
+    organization_module_repository = OrganizationModuleRepository(
+        session
+    )
     organization_repository = OrganizationRepository(session)
     tenant_repository = TenantRepository(session)
     environment_repository = EnvironmentRepository(session)
@@ -33,6 +50,9 @@ def get_user_service(
 
     return UserService(
         user_repository,
+        user_module_access_repository,
+        module_repository,
+        organization_module_repository,
         organization_repository,
         tenant_repository,
         environment_repository,

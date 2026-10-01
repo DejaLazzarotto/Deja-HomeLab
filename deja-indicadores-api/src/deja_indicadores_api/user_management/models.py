@@ -12,6 +12,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from deja_indicadores_api.core.database import Base
+from deja_indicadores_api.module_management.models import MODULE_KEY_LENGTH
 
 
 class UserRole(StrEnum):
@@ -31,6 +32,14 @@ class UserStatus(StrEnum):
 
     ACTIVE = "active"
     INACTIVE = "inactive"
+
+
+class UserModuleRole(StrEnum):
+    """Papéis funcionais permitidos dentro de um módulo."""
+
+    MANAGER = "manager"
+    ANALYST = "analyst"
+    VIEWER = "viewer"
 
 
 class UserModel(Base):
@@ -106,6 +115,53 @@ class UserModel(Base):
         ),
         nullable=False,
         default=UserStatus.ACTIVE,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class UserModuleAccessModel(Base):
+    """Acesso funcional de um usuário a um módulo da plataforma."""
+
+    __tablename__ = "user_module_access"
+
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey(
+            "users.id",
+            name="fk_user_module_access_user_id",
+            ondelete="CASCADE",
+        ),
+        primary_key=True,
+    )
+    module_key: Mapped[str] = mapped_column(
+        String(MODULE_KEY_LENGTH),
+        ForeignKey(
+            "modules.key",
+            name="fk_user_module_access_module_key",
+            ondelete="RESTRICT",
+        ),
+        primary_key=True,
+        index=True,
+    )
+    role: Mapped[UserModuleRole] = mapped_column(
+        Enum(
+            UserModuleRole,
+            values_callable=lambda roles: [
+                role.value for role in roles
+            ],
+            name="user_module_role",
+        ),
+        nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime,

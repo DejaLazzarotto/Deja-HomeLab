@@ -5,6 +5,13 @@ from deja_indicadores_api.authentication.authorization import (
 )
 from deja_indicadores_api.authentication.schemas import AuthenticatedUser
 from deja_indicadores_api.core.security import PasswordService
+from deja_indicadores_api.module_management.exceptions import (
+    UnknownModuleKeysError,
+)
+from deja_indicadores_api.module_management.repository import (
+    ModuleRepository,
+    OrganizationModuleRepository,
+)
 from deja_indicadores_api.tenant_management.exceptions import (
     EnvironmentNotFoundError,
     OrganizationNotFoundError,
@@ -26,6 +33,8 @@ from deja_indicadores_api.user_management.exceptions import (
     RoleScopeMismatchError,
     TenantDoesNotBelongToOrganizationError,
     UserEmailAlreadyExistsError,
+    UserModuleAccessNotApplicableError,
+    UserModuleNotEnabledForOrganizationError,
     UserNotFoundError,
 )
 from deja_indicadores_api.user_management.models import (
@@ -33,9 +42,15 @@ from deja_indicadores_api.user_management.models import (
     UserRole,
     UserStatus,
 )
-from deja_indicadores_api.user_management.repository import UserRepository
+from deja_indicadores_api.user_management.repository import (
+    UserModuleAccessRepository,
+    UserRepository,
+)
 from deja_indicadores_api.user_management.schemas import (
     UserCreate,
+    UserModuleAccessesResponse,
+    UserModuleAccessResponse,
+    UserModuleAccessUpdate,
     UserPasswordSet,
     UserUpdate,
 )
@@ -48,6 +63,13 @@ USER_ADMINISTRATOR_ROLES = frozenset(
     }
 )
 
+USER_MODULE_ACCESS_EXCLUDED_ROLES = frozenset(
+    {
+        UserRole.PLATFORM_ADMIN,
+        UserRole.CLIENT,
+    }
+)
+
 
 class UserService:
     """Regras de aplicação para usuários institucionais."""
@@ -55,6 +77,9 @@ class UserService:
     def __init__(
         self,
         user_repository: UserRepository,
+        user_module_access_repository: UserModuleAccessRepository,
+        module_repository: ModuleRepository,
+        organization_module_repository: OrganizationModuleRepository,
         organization_repository: OrganizationRepository,
         tenant_repository: TenantRepository,
         environment_repository: EnvironmentRepository,
@@ -62,6 +87,13 @@ class UserService:
         authorization_service: AuthorizationService,
     ) -> None:
         self._user_repository = user_repository
+        self._user_module_access_repository = (
+            user_module_access_repository
+        )
+        self._module_repository = module_repository
+        self._organization_module_repository = (
+            organization_module_repository
+        )
         self._organization_repository = organization_repository
         self._tenant_repository = tenant_repository
         self._environment_repository = environment_repository
@@ -191,7 +223,136 @@ class UserService:
 
         return self._user_repository.update(user)
 
-    def _find_by_id(self, user_id: str) -> UserModel:
+    def get_module_accesses(
+        self,
+        user_id: str,
+        current_user: AuthenticatedUser,
+    ) -> UserModuleAccessesResponse:
+        """Retorna o catálogo de módulos aplicado a um usuário."""
+
+        self._require_user_administrator(current_user)
+        user = self._find_by_id(user_id)
+        self._require_user_scope(current_user, user)
+        self._require_module_access_applicable(user)
+
+        return self._build_module_accesses_response(user)
+
+    def update_module_accesses(
+        self,
+        user_id: str,
+        input_data: UserModuleAccessUpdate,
+        current_user: AuthenticatedUser,
+    ) -> UserModuleAccessesResponse:
+        """Substitui os acessos funcionais do usuário."""
+
+        self._require_user_administrator(current_user)
+        user = self._find_by_id(user_id)
+        self._require_user_scope(current_user, user)
+        self._require_module_access_applicable(user)
+
+        organization_id = user.organization_id
+
+        if organization_id is None:
+            raise UserModuleAccessNotApplicableError(
+                user.role.value
+            )
+
+        catalog = self._module_repository.list()
+        catalog_keys = {
+            module.key
+            for module in catalog
+        }
+        requested_keys = {
+            module.module_key
+            for module in input_data.modules
+        }
+        unknown_keys = requested_keys - catalog_keys
+
+        if unknown_keys:
+            raise UnknownModuleKeysError(unknown_keys)
+
+        enabled_keys = set(
+            self._organization_module_repository
+            .list_enabled_module_keys(organization_id)
+        )
+
+        for module_key in sorted(
+            requested_keys - enabled_keys
+        ):
+            raise UserModuleNotEnabledForOrganizationError(
+                organization_id,
+                module_key,
+            )
+
+        self._user_module_access_repository.replace(
+            user.id,
+            [
+                (
+                    module.module_key,
+                    module.role,
+                )
+                for module in input_data.modules
+            ],
+        )
+
+        return self._build_module_accesses_response(user)
+
+    def _build_module_accesses_response(
+        self,
+        user: UserModel,
+    ) -> UserModuleAccessesResponse:
+        """Monta o catálogo com os acessos efetivos do usuário."""
+
+        organization_id = user.organization_id
+
+        if organization_id is None:
+            raise UserModuleAccessNotApplicableError(
+                user.role.value
+            )
+
+        accesses_by_module = {
+            access.module_key: access
+            for access in (
+                self._user_module_access_repository
+                .list_for_user(user.id)
+            )
+        }
+
+        modules = [
+            UserModuleAccessResponse(
+                key=module.key,
+                name=module.name,
+                description=module.description,
+                display_order=module.display_order,
+                organization_enabled=organization_enabled,
+                has_access=(
+                    organization_enabled
+                    and module.key in accesses_by_module
+                ),
+                role=(
+                    accesses_by_module[module.key].role
+                    if (
+                        organization_enabled
+                        and module.key in accesses_by_module
+                    )
+                    else None
+                ),
+            )
+            for module, organization_enabled in (
+                self._organization_module_repository
+                .list_for_organization(organization_id)
+            )
+        ]
+
+        return UserModuleAccessesResponse(
+            user_id=user.id,
+            modules=modules,
+        )
+
+    def _find_by_id(
+        self,
+        user_id: str,
+    ) -> UserModel:
         """Retorna um usuário existente sem aplicar autorização."""
 
         user = self._user_repository.find_by_id(user_id)
@@ -239,6 +400,17 @@ class UserService:
             tenant_id=input_data.tenant_id,
             environment_id=input_data.environment_id,
         )
+
+    @staticmethod
+    def _require_module_access_applicable(
+        user: UserModel,
+    ) -> None:
+        """Garante que o papel utilize acesso funcional por módulo."""
+
+        if user.role in USER_MODULE_ACCESS_EXCLUDED_ROLES:
+            raise UserModuleAccessNotApplicableError(
+                user.role.value
+            )
 
     def _validate_institutional_scope(
         self,
@@ -293,7 +465,9 @@ class UserService:
         )
 
         if organization is None:
-            raise OrganizationNotFoundError(organization_id)
+            raise OrganizationNotFoundError(
+                organization_id
+            )
 
         return organization
 
@@ -307,10 +481,14 @@ class UserService:
         if tenant_id is None:
             return None
 
-        tenant = self._tenant_repository.find_by_id(tenant_id)
+        tenant = self._tenant_repository.find_by_id(
+            tenant_id
+        )
 
         if tenant is None:
-            raise TenantNotFoundError(tenant_id)
+            raise TenantNotFoundError(
+                tenant_id
+            )
 
         if tenant.organization_id != organization.id:
             raise TenantDoesNotBelongToOrganizationError(
@@ -331,14 +509,18 @@ class UserService:
             return None
 
         if tenant is None:
-            raise EnvironmentRequiresTenantError(environment_id)
+            raise EnvironmentRequiresTenantError(
+                environment_id
+            )
 
         environment = self._environment_repository.find_by_id(
             environment_id
         )
 
         if environment is None:
-            raise EnvironmentNotFoundError(environment_id)
+            raise EnvironmentNotFoundError(
+                environment_id
+            )
 
         if environment.tenant_id != tenant.id:
             raise EnvironmentDoesNotBelongToTenantError(
@@ -354,7 +536,7 @@ class UserService:
         tenant: TenantModel | None,
         environment: EnvironmentModel | None,
     ) -> None:
-        """Valida os vínculos obrigatórios e proibidos para cada papel."""
+        """Valida vínculos obrigatórios e proibidos de cada papel."""
 
         if role == UserRole.ORGANIZATION_ADMIN:
             if tenant is not None or environment is not None:

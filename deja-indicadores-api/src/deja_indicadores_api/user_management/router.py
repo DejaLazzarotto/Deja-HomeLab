@@ -13,6 +13,8 @@ from deja_indicadores_api.user_management.models import (
 )
 from deja_indicadores_api.user_management.schemas import (
     UserCreate,
+    UserModuleAccessesResponse,
+    UserModuleAccessUpdate,
     UserPasswordSet,
     UserResponse,
     UserUpdate,
@@ -61,7 +63,9 @@ EnvironmentFilter = Annotated[
 
 StatusFilter = Annotated[
     UserStatus | None,
-    Query(description="Filtra usuários pelo status."),
+    Query(
+        description="Filtra usuários pelo status.",
+    ),
 ]
 
 UserAdministrator = Annotated[
@@ -110,7 +114,10 @@ def get_user(
 ) -> UserResponse:
     """Consulta um usuário permitido pelo escopo do administrador."""
 
-    return service.find_by_id(user_id, current_user)
+    return service.find_by_id(
+        user_id,
+        current_user,
+    )
 
 
 @router.post(
@@ -125,7 +132,10 @@ def create_user(
 ) -> UserResponse:
     """Cadastra um usuário dentro do escopo do administrador."""
 
-    return service.create(input_data, current_user)
+    return service.create(
+        input_data,
+        current_user,
+    )
 
 
 @router.put(
@@ -140,7 +150,11 @@ def update_user(
 ) -> UserResponse:
     """Atualiza um usuário dentro do escopo do administrador."""
 
-    return service.update(user_id, input_data, current_user)
+    return service.update(
+        user_id,
+        input_data,
+        current_user,
+    )
 
 
 @router.put(
@@ -156,6 +170,42 @@ def set_user_password(
     """Define a senha de um usuário permitido pelo escopo."""
 
     return service.set_password(
+        user_id,
+        input_data,
+        current_user,
+    )
+
+
+@router.get(
+    "/users/{user_id}/modules",
+    response_model=UserModuleAccessesResponse,
+)
+def get_user_module_accesses(
+    user_id: UserId,
+    service: UserServiceDependency,
+    current_user: UserAdministrator,
+) -> UserModuleAccessesResponse:
+    """Consulta os acessos funcionais do usuário por módulo."""
+
+    return service.get_module_accesses(
+        user_id,
+        current_user,
+    )
+
+
+@router.put(
+    "/users/{user_id}/modules",
+    response_model=UserModuleAccessesResponse,
+)
+def update_user_module_accesses(
+    user_id: UserId,
+    input_data: UserModuleAccessUpdate,
+    service: UserServiceDependency,
+    current_user: UserAdministrator,
+) -> UserModuleAccessesResponse:
+    """Substitui os acessos funcionais do usuário por módulo."""
+
+    return service.update_module_accesses(
         user_id,
         input_data,
         current_user,

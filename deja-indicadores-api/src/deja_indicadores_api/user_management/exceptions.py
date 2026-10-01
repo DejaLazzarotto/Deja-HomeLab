@@ -94,3 +94,31 @@ class RoleScopeMismatchError(ApplicationError):
             f"O papel '{role}' é incompatível com o escopo informado: "
             f"{reason}."
         )
+
+
+class UserModuleAccessNotApplicableError(ApplicationError):
+    """Usuário não admite acessos funcionais por módulo."""
+
+    error_code = "user_module_access_not_applicable"
+
+    def __init__(self, role: str) -> None:
+        super().__init__(
+            f"O papel institucional '{role}' não utiliza "
+            "acessos funcionais por módulo."
+        )
+
+
+class UserModuleNotEnabledForOrganizationError(ApplicationError):
+    """Módulo solicitado não está liberado para a organização."""
+
+    error_code = "user_module_not_enabled_for_organization"
+
+    def __init__(
+        self,
+        organization_id: str,
+        module_key: str,
+    ) -> None:
+        super().__init__(
+            f"O módulo '{module_key}' não está habilitado para "
+            f"a organização com ID '{organization_id}'."
+        )

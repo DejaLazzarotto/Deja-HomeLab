@@ -4,7 +4,15 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
 from deja_indicadores_api.core.security import PasswordService
-from deja_indicadores_api.user_management.models import UserModel
+from deja_indicadores_api.module_management.models import (
+    ModuleModel,
+    OrganizationModuleModel,
+)
+from deja_indicadores_api.user_management.models import (
+    UserModel,
+    UserModuleAccessModel,
+    UserModuleRole,
+)
 
 ORGANIZATIONS_URL = "/api/v1/organizations"
 TENANTS_URL = "/api/v1/tenants"
@@ -1262,3 +1270,440 @@ def test_set_password_for_unknown_user_returns_not_found(
 
     assert response.status_code == 404
     assert response.json()["error"] == "user_not_found"
+
+TEST_USER_MODULES = (
+    {
+        "key": "indicators",
+        "name": "Indicadores",
+        "description": "Gestão de indicadores.",
+        "display_order": 10,
+    },
+    {
+        "key": "reports",
+        "name": "Relatórios Gerenciais",
+        "description": "Relatórios gerenciais.",
+        "display_order": 30,
+    },
+    {
+        "key": "fotos",
+        "name": "Fotos",
+        "description": "Gestão de fotos e vídeos.",
+        "display_order": 50,
+    },
+)
+
+
+def configure_user_module_catalog(
+    client: TestClient,
+    organization_id: str,
+    enabled_keys: set[str],
+) -> None:
+    """Configura catálogo e liberações para testes de usuários."""
+
+    session_factory = client.app.state.test_session_factory
+
+    with session_factory() as session:
+        session.add_all(
+            [
+                ModuleModel(**module_data)
+                for module_data in TEST_USER_MODULES
+            ]
+        )
+        session.add_all(
+            [
+                OrganizationModuleModel(
+                    organization_id=organization_id,
+                    module_key=str(module_data["key"]),
+                    enabled=str(module_data["key"]) in enabled_keys,
+                )
+                for module_data in TEST_USER_MODULES
+            ]
+        )
+        session.commit()
+
+
+def test_get_user_module_accesses_returns_catalog(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Retorna catálogo com liberação e acesso do usuário."""
+
+    organization, tenant, environment = create_hierarchy(client)
+    organization_id = str(organization["id"])
+
+    configure_user_module_catalog(
+        client,
+        organization_id,
+        {
+            "indicators",
+            "fotos",
+        },
+    )
+
+    user = create_user(
+        client,
+        organization_id,
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+        role="viewer",
+    )
+
+    with test_session_factory() as session:
+        session.add(
+            UserModuleAccessModel(
+                user_id=str(user["id"]),
+                module_key="fotos",
+                role=UserModuleRole.VIEWER,
+            )
+        )
+        session.commit()
+
+    response = client.get(
+        f"{USERS_URL}/{user['id']}/modules"
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["user_id"] == user["id"]
+    assert [
+        module["key"]
+        for module in body["modules"]
+    ] == [
+        "indicators",
+        "reports",
+        "fotos",
+    ]
+
+    modules = {
+        module["key"]: module
+        for module in body["modules"]
+    }
+
+    assert modules["indicators"] == {
+        "key": "indicators",
+        "name": "Indicadores",
+        "description": "Gestão de indicadores.",
+        "display_order": 10,
+        "organization_enabled": True,
+        "has_access": False,
+        "role": None,
+    }
+    assert modules["reports"]["organization_enabled"] is False
+    assert modules["reports"]["has_access"] is False
+    assert modules["reports"]["role"] is None
+    assert modules["fotos"]["organization_enabled"] is True
+    assert modules["fotos"]["has_access"] is True
+    assert modules["fotos"]["role"] == "viewer"
+
+
+def test_update_user_module_accesses_replaces_selection(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Substitui integralmente os módulos e papéis do usuário."""
+
+    organization, tenant, environment = create_hierarchy(client)
+    organization_id = str(organization["id"])
+
+    configure_user_module_catalog(
+        client,
+        organization_id,
+        {
+            "indicators",
+            "reports",
+            "fotos",
+        },
+    )
+
+    user = create_user(
+        client,
+        organization_id,
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+        role="analyst",
+    )
+
+    first_response = client.put(
+        f"{USERS_URL}/{user['id']}/modules",
+        json={
+            "modules": [
+                {
+                    "module_key": "fotos",
+                    "role": "manager",
+                },
+                {
+                    "module_key": "reports",
+                    "role": "viewer",
+                },
+            ]
+        },
+    )
+
+    assert first_response.status_code == 200
+
+    first_modules = {
+        module["key"]: module
+        for module in first_response.json()["modules"]
+    }
+
+    assert first_modules["fotos"]["has_access"] is True
+    assert first_modules["fotos"]["role"] == "manager"
+    assert first_modules["reports"]["has_access"] is True
+    assert first_modules["reports"]["role"] == "viewer"
+    assert first_modules["indicators"]["has_access"] is False
+
+    second_response = client.put(
+        f"{USERS_URL}/{user['id']}/modules",
+        json={
+            "modules": [
+                {
+                    "module_key": "indicators",
+                    "role": "analyst",
+                }
+            ]
+        },
+    )
+
+    assert second_response.status_code == 200
+
+    second_modules = {
+        module["key"]: module
+        for module in second_response.json()["modules"]
+    }
+
+    assert second_modules["indicators"]["has_access"] is True
+    assert second_modules["indicators"]["role"] == "analyst"
+    assert second_modules["fotos"]["has_access"] is False
+    assert second_modules["fotos"]["role"] is None
+    assert second_modules["reports"]["has_access"] is False
+    assert second_modules["reports"]["role"] is None
+
+    with test_session_factory() as session:
+        accesses = list(
+            session.query(UserModuleAccessModel)
+            .filter(
+                UserModuleAccessModel.user_id
+                == str(user["id"])
+            )
+            .all()
+        )
+
+        assert len(accesses) == 1
+        assert accesses[0].module_key == "indicators"
+        assert accesses[0].role == UserModuleRole.ANALYST
+
+
+def test_update_user_module_accesses_rejects_unknown_module(
+    client: TestClient,
+) -> None:
+    """Rejeita módulo inexistente no catálogo."""
+
+    organization, tenant, environment = create_hierarchy(client)
+    organization_id = str(organization["id"])
+
+    configure_user_module_catalog(
+        client,
+        organization_id,
+        {"fotos"},
+    )
+
+    user = create_user(
+        client,
+        organization_id,
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+    )
+
+    response = client.put(
+        f"{USERS_URL}/{user['id']}/modules",
+        json={
+            "modules": [
+                {
+                    "module_key": "unknown_module",
+                    "role": "viewer",
+                }
+            ]
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "unknown_module_keys"
+
+
+def test_update_user_module_accesses_rejects_disabled_module(
+    client: TestClient,
+) -> None:
+    """Impede acesso individual a módulo não liberado à organização."""
+
+    organization, tenant, environment = create_hierarchy(client)
+    organization_id = str(organization["id"])
+
+    configure_user_module_catalog(
+        client,
+        organization_id,
+        {"indicators"},
+    )
+
+    user = create_user(
+        client,
+        organization_id,
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+    )
+
+    response = client.put(
+        f"{USERS_URL}/{user['id']}/modules",
+        json={
+            "modules": [
+                {
+                    "module_key": "fotos",
+                    "role": "viewer",
+                }
+            ]
+        },
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["error"]
+        == "user_module_not_enabled_for_organization"
+    )
+
+
+def test_update_user_module_accesses_rejects_duplicate_module(
+    client: TestClient,
+) -> None:
+    """Rejeita o mesmo módulo repetido na seleção."""
+
+    organization, tenant, environment = create_hierarchy(client)
+    organization_id = str(organization["id"])
+
+    configure_user_module_catalog(
+        client,
+        organization_id,
+        {"fotos"},
+    )
+
+    user = create_user(
+        client,
+        organization_id,
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+    )
+
+    response = client.put(
+        f"{USERS_URL}/{user['id']}/modules",
+        json={
+            "modules": [
+                {
+                    "module_key": "fotos",
+                    "role": "viewer",
+                },
+                {
+                    "module_key": "fotos",
+                    "role": "analyst",
+                },
+            ]
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_update_user_module_accesses_rejects_invalid_role(
+    client: TestClient,
+) -> None:
+    """Aceita somente papéis funcionais previstos para módulos."""
+
+    organization, tenant, environment = create_hierarchy(client)
+    organization_id = str(organization["id"])
+
+    configure_user_module_catalog(
+        client,
+        organization_id,
+        {"fotos"},
+    )
+
+    user = create_user(
+        client,
+        organization_id,
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+    )
+
+    response = client.put(
+        f"{USERS_URL}/{user['id']}/modules",
+        json={
+            "modules": [
+                {
+                    "module_key": "fotos",
+                    "role": "organization_admin",
+                }
+            ]
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_platform_admin_does_not_use_user_module_access(
+    client: TestClient,
+) -> None:
+    """Mantém o administrador global fora das associações por módulo."""
+
+    client.app.state.set_platform_test_administrator()
+
+    response = client.post(
+        USERS_URL,
+        json={
+            "organization_id": None,
+            "tenant_id": None,
+            "environment_id": None,
+            "name": "Administrador Global",
+            "email": "global@deja.com",
+            "role": "platform_admin",
+            "status": "active",
+        },
+    )
+
+    assert response.status_code == 201
+
+    user = response.json()
+
+    modules_response = client.get(
+        f"{USERS_URL}/{user['id']}/modules"
+    )
+
+    assert modules_response.status_code == 400
+    assert (
+        modules_response.json()["error"]
+        == "user_module_access_not_applicable"
+    )
+
+
+def test_client_role_does_not_use_user_module_access(
+    client: TestClient,
+) -> None:
+    """Mantém usuários client no fluxo especializado do Chamados."""
+
+    organization, tenant, environment = create_hierarchy(client)
+
+    user = create_user(
+        client,
+        str(organization["id"]),
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+        role="client",
+    )
+
+    response = client.get(
+        f"{USERS_URL}/{user['id']}/modules"
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["error"]
+        == "user_module_access_not_applicable"
+    )
