@@ -165,6 +165,7 @@ def test_roles_and_institutional_scope(
         environment_id=environment_id,
         email="viewer.people@deja.com",
         role="viewer",
+        module_access={"fotos": "viewer"},
     )
     viewer_headers = authorization_headers(
         test_settings,
@@ -199,6 +200,7 @@ def test_roles_and_institutional_scope(
         environment_id=environment_id,
         email="analyst.people@deja.com",
         role="analyst",
+        module_access={"fotos": "analyst"},
     )
     analyst_headers = authorization_headers(
         test_settings,
@@ -257,6 +259,7 @@ def test_person_media_link_and_scope(
         environment_id=environment_id,
         email="analyst.links@deja.com",
         role="analyst",
+        module_access={"fotos": "analyst"},
     )
     analyst_headers = authorization_headers(
         test_settings,

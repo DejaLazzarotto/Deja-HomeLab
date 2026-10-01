@@ -20,6 +20,7 @@ from deja_indicadores_api.module_management.service import (
 from deja_indicadores_api.tenant_management.repository import (
     OrganizationRepository,
 )
+from deja_indicadores_api.user_management.models import UserModuleRole
 
 DatabaseSession = Annotated[Session, Depends(get_db_session)]
 
@@ -63,6 +64,28 @@ def require_module(
             current_user,
             module_key,
         )
+        return current_user
+
+    return authorize
+
+
+def require_module_roles(
+    module_key: str,
+    *allowed_roles: UserModuleRole,
+) -> Callable[..., AuthenticatedUser]:
+    """Exige acesso individual ao módulo com um papel funcional permitido."""
+
+    authorization_service = AuthorizationService()
+
+    def authorize(
+        current_user: CurrentUser,
+    ) -> AuthenticatedUser:
+        authorization_service.require_module_roles(
+            current_user,
+            module_key=module_key,
+            allowed_roles=allowed_roles,
+        )
+
         return current_user
 
     return authorize

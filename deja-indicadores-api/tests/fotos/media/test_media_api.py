@@ -2039,8 +2039,9 @@ def test_media_role_permissions_match_reader_operator_and_manager(
         organization_id,
         tenant_id=tenant_id,
         environment_id=environment_id,
-        email="viewer.permissions.fotos.media@deja.com",
+     email="viewer.permissions.fotos.media@deja.com",
         role="viewer",
+        module_access={"fotos": "viewer"},
     )
     viewer_headers = authorization_headers(
         test_settings,
@@ -2078,6 +2079,7 @@ def test_media_role_permissions_match_reader_operator_and_manager(
         environment_id=environment_id,
         email="analyst.permissions.fotos.media@deja.com",
         role="analyst",
+        module_access={"fotos": "analyst"},
     )
     analyst_headers = authorization_headers(
         test_settings,
@@ -2118,6 +2120,7 @@ def test_media_role_permissions_match_reader_operator_and_manager(
         environment_id=environment_id,
         email="manager.permissions.fotos.media@deja.com",
         role="manager",
+        module_access={"fotos": "manager"},
     )
     manager_headers = authorization_headers(
         test_settings,
@@ -2136,6 +2139,31 @@ def test_media_role_permissions_match_reader_operator_and_manager(
     assert manager_bulk_response.status_code == 200
     assert manager_bulk_response.json()["succeeded_count"] == 1
     assert manager_bulk_response.json()["failed_count"] == 0
+
+    global_viewer_module_manager = create_user(
+        client,
+        organization_id,
+        tenant_id=tenant_id,
+        environment_id=environment_id,
+        email="viewer.global.manager.fotos.media@deja.com",
+        role="viewer",
+        module_access={"fotos": "manager"},
+    )
+    global_viewer_module_manager_headers = authorization_headers(
+        test_settings,
+        global_viewer_module_manager,
+    )
+
+    module_manager_bulk_response = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={
+            "operation": "clear_original_date_conflict",
+            "media_ids": [media_id],
+        },
+        headers=global_viewer_module_manager_headers,
+    )
+
+    assert module_manager_bulk_response.status_code == 200
 
 
 def test_update_original_date_rejects_analyst(
@@ -2180,7 +2208,8 @@ def test_update_original_date_rejects_analyst(
         environment_id=environment_id,
         email="analyst.fotos.media@deja.com",
         role="analyst",
-    )
+        module_access={"fotos": "analyst"},
+)
     analyst_headers = authorization_headers(
         test_settings,
         analyst,
@@ -2879,6 +2908,7 @@ def test_bulk_rejects_analyst(
         environment_id=environment_id,
         email="analyst.bulk.fotos.media@deja.com",
         role="analyst",
+        module_access={"fotos": "analyst"},
     )
     analyst_headers = authorization_headers(
         test_settings,
@@ -4423,6 +4453,7 @@ def test_update_video_description_allows_analyst_and_rejects_viewer(
         environment_id=environment_id,
         email="analyst.description.fotos.media@deja.com",
         role="analyst",
+        module_access={"fotos": "analyst"},
     )
     analyst_headers = authorization_headers(
         test_settings,
@@ -4449,7 +4480,8 @@ def test_update_video_description_allows_analyst_and_rejects_viewer(
         environment_id=environment_id,
         email="viewer.description.fotos.media@deja.com",
         role="viewer",
-    )
+        module_access={"fotos": "viewer"},
+)
     viewer_headers = authorization_headers(
         test_settings,
         viewer,
@@ -4511,6 +4543,7 @@ def test_update_video_description_rejects_cross_scope_user(
         str(other_organization["id"]),
         email="admin.other.description.fotos.media@deja.com",
         role="organization_admin",
+        module_access={"fotos": "manager"},
     )
     other_headers = authorization_headers(
         test_settings,

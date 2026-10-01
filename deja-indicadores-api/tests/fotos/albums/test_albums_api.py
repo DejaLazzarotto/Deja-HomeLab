@@ -961,13 +961,14 @@ def test_album_periods_respect_role_and_organization_scope(
     )
 
     viewer = create_user(
-        client,
-        organization_id,
-        tenant_id=tenant_id,
-        environment_id=environment_id,
-        email="viewer.fotos.periods@deja.com",
-        role="viewer",
-    )
+    client,
+    organization_id,
+    tenant_id=tenant_id,
+    environment_id=environment_id,
+    email="viewer.fotos.periods@deja.com",
+    role="viewer",
+    module_access={"fotos": "viewer"},
+)
     viewer_headers = authorization_headers(
         test_settings,
         viewer,
@@ -997,7 +998,8 @@ def test_album_periods_respect_role_and_organization_scope(
         str(other_organization["id"]),
         email="admin.other.fotos.periods@deja.com",
         role="organization_admin",
-    )
+        module_access={"fotos": "manager"},
+)
     other_headers = authorization_headers(
         test_settings,
         other_administrator,

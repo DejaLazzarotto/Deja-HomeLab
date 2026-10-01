@@ -13,9 +13,6 @@ from fastapi import (
 )
 from fastapi.responses import FileResponse
 
-from deja_indicadores_api.authentication.dependencies import (
-    require_roles,
-)
 from deja_indicadores_api.authentication.schemas import (
     AuthenticatedUser,
 )
@@ -33,8 +30,9 @@ from deja_indicadores_api.fotos.people.schemas import (
 )
 from deja_indicadores_api.module_management.dependencies import (
     require_module,
+    require_module_roles,
 )
-from deja_indicadores_api.user_management.models import UserRole
+from deja_indicadores_api.user_management.models import UserModuleRole
 
 router = APIRouter(
     prefix="/fotos/people",
@@ -55,13 +53,11 @@ MediaId = Annotated[
 PersonReader = Annotated[
     AuthenticatedUser,
     Depends(
-        require_roles(
-            UserRole.PLATFORM_ADMIN,
-            UserRole.ORGANIZATION_ADMIN,
-            UserRole.TENANT_ADMIN,
-            UserRole.MANAGER,
-            UserRole.ANALYST,
-            UserRole.VIEWER,
+        require_module_roles(
+            "fotos",
+            UserModuleRole.MANAGER,
+            UserModuleRole.ANALYST,
+            UserModuleRole.VIEWER,
         )
     ),
 ]
@@ -69,12 +65,10 @@ PersonReader = Annotated[
 PersonEditor = Annotated[
     AuthenticatedUser,
     Depends(
-        require_roles(
-            UserRole.PLATFORM_ADMIN,
-            UserRole.ORGANIZATION_ADMIN,
-            UserRole.TENANT_ADMIN,
-            UserRole.MANAGER,
-            UserRole.ANALYST,
+        require_module_roles(
+            "fotos",
+            UserModuleRole.MANAGER,
+            UserModuleRole.ANALYST,
         )
     ),
 ]
@@ -82,11 +76,9 @@ PersonEditor = Annotated[
 PersonManager = Annotated[
     AuthenticatedUser,
     Depends(
-        require_roles(
-            UserRole.PLATFORM_ADMIN,
-            UserRole.ORGANIZATION_ADMIN,
-            UserRole.TENANT_ADMIN,
-            UserRole.MANAGER,
+        require_module_roles(
+            "fotos",
+            UserModuleRole.MANAGER,
         )
     ),
 ]

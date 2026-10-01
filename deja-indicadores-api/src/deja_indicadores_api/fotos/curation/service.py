@@ -24,7 +24,11 @@ from deja_indicadores_api.fotos.media.derivative_service import FotosMediaDeriva
 from deja_indicadores_api.fotos.media.models import FotosMediaModel
 from deja_indicadores_api.fotos.media.service import FotosMediaService
 from deja_indicadores_api.fotos.people.models import FotosPersonMediaModel, FotosPersonModel
-from deja_indicadores_api.fotos.people.service import PERSON_MANAGER_ROLES, FotosPersonService
+from deja_indicadores_api.fotos.people.service import (
+    FOTOS_MODULE_KEY,
+    PERSON_MANAGER_ROLES,
+    FotosPersonService,
+)
 
 
 class FaceNotFound(ResourceNotFoundError):
@@ -83,7 +87,11 @@ class FotosCurationService:
         self.authorization = AuthorizationService()
 
     def _manager(self, user: AuthenticatedUser) -> None:
-        self.authorization.require_roles(user, PERSON_MANAGER_ROLES)
+        self.authorization.require_module_roles(
+        user,
+        module_key=FOTOS_MODULE_KEY,
+        allowed_roles=PERSON_MANAGER_ROLES,
+    )
 
     def _media(self, media_id: str, user: AuthenticatedUser) -> FotosMediaModel:
         return self.media_service.find_by_id(media_id, user)
@@ -163,26 +171,37 @@ class FotosCurationService:
         if month:
             where.append(extract("month", FotosMediaModel.original_date) == month)
         if situation != "all":
-            where.append(exists(select(FotosFaceModel.id).where(
-                FotosFaceModel.media_id == FotosMediaModel.id,
-                FotosFaceModel.status.in_(
-                    ("unknown", "rejected") if situation == "unknown" else (situation,)
-                ),
-            )))
+            where.append(
+                exists(
+                    select(FotosFaceModel.id).where(
+                        FotosFaceModel.media_id == FotosMediaModel.id,
+                        FotosFaceModel.status.in_(
+                            ("unknown", "rejected") if situation == "unknown" else (situation,)
+                        ),
+                    )
+                )
+            )
         if person_id:
-            where.append(or_(
-                exists(select(FotosFaceModel.id).where(
-                    FotosFaceModel.media_id == FotosMediaModel.id,
-                    FotosFaceModel.person_id == person_id,
-                )),
-                exists(select(FotosPersonMediaModel.person_id).where(
-                    FotosPersonMediaModel.media_id == FotosMediaModel.id,
-                    FotosPersonMediaModel.person_id == person_id,
-                    FotosPersonMediaModel.environment_id == FotosMediaModel.environment_id,
-                    FotosPersonMediaModel.organization_id == FotosMediaModel.organization_id,
-                    FotosPersonMediaModel.tenant_id == FotosMediaModel.tenant_id,
-                )),
-            ))
+            where.append(
+                or_(
+                    exists(
+                        select(FotosFaceModel.id).where(
+                            FotosFaceModel.media_id == FotosMediaModel.id,
+                            FotosFaceModel.person_id == person_id,
+                        )
+                    ),
+                    exists(
+                        select(FotosPersonMediaModel.person_id).where(
+                            FotosPersonMediaModel.media_id == FotosMediaModel.id,
+                            FotosPersonMediaModel.person_id == person_id,
+                            FotosPersonMediaModel.environment_id == FotosMediaModel.environment_id,
+                            FotosPersonMediaModel.organization_id
+                            == FotosMediaModel.organization_id,
+                            FotosPersonMediaModel.tenant_id == FotosMediaModel.tenant_id,
+                        )
+                    ),
+                )
+            )
         total = int(self.session.scalar(select(func.count(FotosMediaModel.id)).where(*where)) or 0)
         items = self.session.scalars(
             select(FotosMediaModel)
@@ -448,7 +467,9 @@ class FotosCurationService:
                 )
                 if not match:
                     match = engine.suggest_in_image(
-                        path, (x, y, width, height), references,
+                        path,
+                        (x, y, width, height),
+                        references,
                         self.settings.fotos_face_models_dir,
                     )
             except engine.FaceEngineUnavailable as exc:

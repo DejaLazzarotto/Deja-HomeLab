@@ -42,36 +42,29 @@ from deja_indicadores_api.tenant_management.repository import (
     TenantRepository,
 )
 from deja_indicadores_api.user_management.models import (
-    UserRole,
+    UserModuleRole,
 )
+
+FOTOS_MODULE_KEY = "fotos"
 
 FOTOS_ALBUM_READER_ROLES = frozenset(
     {
-        UserRole.PLATFORM_ADMIN,
-        UserRole.ORGANIZATION_ADMIN,
-        UserRole.TENANT_ADMIN,
-        UserRole.MANAGER,
-        UserRole.ANALYST,
-        UserRole.VIEWER,
+        UserModuleRole.MANAGER,
+        UserModuleRole.ANALYST,
+        UserModuleRole.VIEWER,
     }
 )
 
 FOTOS_ALBUM_OPERATOR_ROLES = frozenset(
     {
-        UserRole.PLATFORM_ADMIN,
-        UserRole.ORGANIZATION_ADMIN,
-        UserRole.TENANT_ADMIN,
-        UserRole.MANAGER,
-        UserRole.ANALYST,
+        UserModuleRole.MANAGER,
+        UserModuleRole.ANALYST,
     }
 )
 
 FOTOS_ALBUM_MANAGER_ROLES = frozenset(
     {
-        UserRole.PLATFORM_ADMIN,
-        UserRole.ORGANIZATION_ADMIN,
-        UserRole.TENANT_ADMIN,
-        UserRole.MANAGER,
+        UserModuleRole.MANAGER,
     }
 )
 
@@ -524,13 +517,14 @@ class FotosAlbumService:
     def _require_roles(
         self,
         current_user: AuthenticatedUser,
-        allowed_roles: frozenset[UserRole],
+        allowed_roles: frozenset[UserModuleRole],
     ) -> None:
-        """Exige um papel permitido para a operação."""
+        """Exige um papel funcional permitido no Deja Fotos."""
 
-        self._authorization_service.require_roles(
+        self._authorization_service.require_module_roles(
             current_user,
-            allowed_roles,
+            module_key=FOTOS_MODULE_KEY,
+            allowed_roles=allowed_roles,
         )
 
     def _require_album_scope(

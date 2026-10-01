@@ -7,7 +7,10 @@ from deja_indicadores_api.authentication.schemas import AuthenticatedUser
 from deja_indicadores_api.module_management.exceptions import (
     ModuleNotEnabledError,
 )
-from deja_indicadores_api.user_management.models import UserRole
+from deja_indicadores_api.user_management.models import (
+    UserModuleRole,
+    UserRole,
+)
 
 
 class AuthorizationService:
@@ -35,6 +38,38 @@ class AuthorizationService:
 
         if module_key not in current_user.enabled_modules:
             raise ModuleNotEnabledError(module_key)
+
+    def require_module_roles(
+        self,
+        current_user: AuthenticatedUser,
+        *,
+        module_key: str,
+        allowed_roles: Collection[UserModuleRole],
+    ) -> None:
+        """Exige acesso individual ao módulo com papel funcional permitido."""
+
+        if current_user.role == UserRole.PLATFORM_ADMIN:
+            return
+
+        self.require_module(
+            current_user,
+            module_key,
+        )
+
+        module_access = next(
+            (
+                access
+                for access in current_user.module_access
+                if access.module_key == module_key
+            ),
+            None,
+        )
+
+        if (
+            module_access is None
+            or module_access.role not in allowed_roles
+        ):
+            raise AuthorizationError
 
     def require_organization_scope(
         self,

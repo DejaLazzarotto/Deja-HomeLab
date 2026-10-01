@@ -15,9 +15,6 @@ from fastapi import (
 from fastapi import status as http_status
 from fastapi.responses import FileResponse
 
-from deja_indicadores_api.authentication.dependencies import (
-    require_roles,
-)
 from deja_indicadores_api.authentication.schemas import (
     AuthenticatedUser,
 )
@@ -43,9 +40,10 @@ from deja_indicadores_api.fotos.media.schemas import (
 )
 from deja_indicadores_api.module_management.dependencies import (
     require_module,
+    require_module_roles,
 )
 from deja_indicadores_api.user_management.models import (
-    UserRole,
+    UserModuleRole,
 )
 
 router = APIRouter(
@@ -89,13 +87,11 @@ MediaFile = Annotated[
 FotosMediaReader = Annotated[
     AuthenticatedUser,
     Depends(
-        require_roles(
-            UserRole.PLATFORM_ADMIN,
-            UserRole.ORGANIZATION_ADMIN,
-            UserRole.TENANT_ADMIN,
-            UserRole.MANAGER,
-            UserRole.ANALYST,
-            UserRole.VIEWER,
+        require_module_roles(
+            "fotos",
+            UserModuleRole.MANAGER,
+            UserModuleRole.ANALYST,
+            UserModuleRole.VIEWER,
         )
     ),
 ]
@@ -104,11 +100,9 @@ FotosMediaReader = Annotated[
 FotosMediaManager = Annotated[
     AuthenticatedUser,
     Depends(
-        require_roles(
-            UserRole.PLATFORM_ADMIN,
-            UserRole.ORGANIZATION_ADMIN,
-            UserRole.TENANT_ADMIN,
-            UserRole.MANAGER,
+        require_module_roles(
+            "fotos",
+            UserModuleRole.MANAGER,
         )
     ),
 ]
@@ -117,12 +111,10 @@ FotosMediaManager = Annotated[
 FotosMediaOperator = Annotated[
     AuthenticatedUser,
     Depends(
-        require_roles(
-            UserRole.PLATFORM_ADMIN,
-            UserRole.ORGANIZATION_ADMIN,
-            UserRole.TENANT_ADMIN,
-            UserRole.MANAGER,
-            UserRole.ANALYST,
+        require_module_roles(
+            "fotos",
+            UserModuleRole.MANAGER,
+            UserModuleRole.ANALYST,
         )
     ),
 ]
@@ -176,7 +168,7 @@ def list_media(
         le=200,
     ),
 ) -> FotosMediaListResponse:
-    """Lista uma p?gina de m?dias autorizadas pelos filtros."""
+    """Lista uma página de mídias autorizadas pelos filtros."""
 
     items, total = service.list(
         current_user=current_user,
@@ -220,7 +212,7 @@ def bulk_update_media(
     service: FotosMediaServiceDependency,
     current_user: FotosMediaManager,
 ) -> FotosMediaBulkResponse:
-    """Executa uma opera??o administrativa em lote."""
+    """Executa uma operação administrativa em lote."""
 
     return service.bulk_update(
         payload,
@@ -255,7 +247,7 @@ def update_media_original_date(
     service: FotosMediaServiceDependency,
     current_user: FotosMediaManager,
 ) -> FotosMediaResponse:
-    """Confirma manualmente a data original da m?dia."""
+    """Confirma manualmente a data original da mídia."""
 
     return service.update_original_date(
         media_id,
@@ -281,6 +273,7 @@ def update_media_description(
         payload.description,
         current_user,
     )
+
 
 @router.post(
     "",
@@ -473,7 +466,7 @@ def get_media_original(
 def delete_media(
     media_id: MediaId,
     service: FotosMediaServiceDependency,
-    current_user: FotosMediaOperator,
+    current_user: FotosMediaManager,
 ) -> None:
     """Exclui a mídia e seus arquivos sem remover pessoas ou outras mídias."""
 

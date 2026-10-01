@@ -26,6 +26,7 @@ from deja_indicadores_api.fotos.people.repository import (
     FotosPersonRepository,
 )
 from deja_indicadores_api.fotos.people.service import (
+    FOTOS_MODULE_KEY,
     PERSON_EDITOR_ROLES,
     FotosPersonService,
 )
@@ -90,9 +91,10 @@ class FotosPersonAvatarService:
         file: UploadFile,
         current_user: AuthenticatedUser,
     ) -> FotosPersonModel:
-        self._authorization_service.require_roles(
+        self._authorization_service.require_module_roles(
             current_user,
-            PERSON_EDITOR_ROLES,
+            module_key=FOTOS_MODULE_KEY,
+            allowed_roles=PERSON_EDITOR_ROLES,
         )
         person = self._person_service.find_by_id(
             person_id,
@@ -142,9 +144,10 @@ class FotosPersonAvatarService:
         person_id: str,
         current_user: AuthenticatedUser,
     ) -> FotosPersonModel:
-        self._authorization_service.require_roles(
+        self._authorization_service.require_module_roles(
             current_user,
-            PERSON_EDITOR_ROLES,
+            module_key=FOTOS_MODULE_KEY,
+            allowed_roles=PERSON_EDITOR_ROLES,
         )
         person = self._person_service.find_by_id(
             person_id,

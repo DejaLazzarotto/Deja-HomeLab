@@ -45,35 +45,28 @@ from deja_indicadores_api.tenant_management.repository import (
     EnvironmentRepository,
     TenantRepository,
 )
-from deja_indicadores_api.user_management.models import UserRole
+from deja_indicadores_api.user_management.models import UserModuleRole
+
+FOTOS_MODULE_KEY = "fotos"
 
 PERSON_READER_ROLES = frozenset(
     {
-        UserRole.PLATFORM_ADMIN,
-        UserRole.ORGANIZATION_ADMIN,
-        UserRole.TENANT_ADMIN,
-        UserRole.MANAGER,
-        UserRole.ANALYST,
-        UserRole.VIEWER,
+        UserModuleRole.MANAGER,
+        UserModuleRole.ANALYST,
+        UserModuleRole.VIEWER,
     }
 )
 
 PERSON_EDITOR_ROLES = frozenset(
     {
-        UserRole.PLATFORM_ADMIN,
-        UserRole.ORGANIZATION_ADMIN,
-        UserRole.TENANT_ADMIN,
-        UserRole.MANAGER,
-        UserRole.ANALYST,
+        UserModuleRole.MANAGER,
+        UserModuleRole.ANALYST,
     }
 )
 
 PERSON_MANAGER_ROLES = frozenset(
     {
-        UserRole.PLATFORM_ADMIN,
-        UserRole.ORGANIZATION_ADMIN,
-        UserRole.TENANT_ADMIN,
-        UserRole.MANAGER,
+        UserModuleRole.MANAGER,
     }
 )
 
@@ -109,11 +102,13 @@ class FotosPersonService:
     ) -> tuple[list[FotosPersonModel], int]:
         self._require_roles(current_user, PERSON_READER_ROLES)
 
-        organization_id, tenant_id, environment_id = self._authorization_service.resolve_list_scope(
-            current_user,
-            organization_id=organization_id,
-            tenant_id=tenant_id,
-            environment_id=environment_id,
+        organization_id, tenant_id, environment_id = (
+            self._authorization_service.resolve_list_scope(
+                current_user,
+                organization_id=organization_id,
+                tenant_id=tenant_id,
+                environment_id=environment_id,
+            )
         )
 
         return self._repository.list(
@@ -139,7 +134,10 @@ class FotosPersonService:
 
         environment, tenant = self._resolve_scope(person.environment_id)
 
-        if person.organization_id != tenant.organization_id or person.tenant_id != tenant.id:
+        if (
+            person.organization_id != tenant.organization_id
+            or person.tenant_id != tenant.id
+        ):
             raise FotosPersonNotFoundError(person_id)
 
         self._authorization_service.require_scope(
@@ -316,9 +314,10 @@ class FotosPersonService:
     def _require_roles(
         self,
         current_user: AuthenticatedUser,
-        roles: frozenset[UserRole],
+        roles: frozenset[UserModuleRole],
     ) -> None:
-        self._authorization_service.require_roles(
+        self._authorization_service.require_module_roles(
             current_user,
-            roles,
+            module_key=FOTOS_MODULE_KEY,
+            allowed_roles=roles,
         )

@@ -88,36 +88,29 @@ from deja_indicadores_api.tenant_management.repository import (
     TenantRepository,
 )
 from deja_indicadores_api.user_management.models import (
-    UserRole,
+    UserModuleRole,
 )
+
+FOTOS_MODULE_KEY = "fotos"
 
 FOTOS_MEDIA_READER_ROLES = frozenset(
     {
-        UserRole.PLATFORM_ADMIN,
-        UserRole.ORGANIZATION_ADMIN,
-        UserRole.TENANT_ADMIN,
-        UserRole.MANAGER,
-        UserRole.ANALYST,
-        UserRole.VIEWER,
+        UserModuleRole.MANAGER,
+        UserModuleRole.ANALYST,
+        UserModuleRole.VIEWER,
     }
 )
 
 FOTOS_MEDIA_OPERATOR_ROLES = frozenset(
     {
-        UserRole.PLATFORM_ADMIN,
-        UserRole.ORGANIZATION_ADMIN,
-        UserRole.TENANT_ADMIN,
-        UserRole.MANAGER,
-        UserRole.ANALYST,
+        UserModuleRole.MANAGER,
+        UserModuleRole.ANALYST,
     }
 )
 
 FOTOS_MEDIA_MANAGER_ROLES = frozenset(
     {
-        UserRole.PLATFORM_ADMIN,
-        UserRole.ORGANIZATION_ADMIN,
-        UserRole.TENANT_ADMIN,
-        UserRole.MANAGER,
+        UserModuleRole.MANAGER,
     }
 )
 
@@ -1288,8 +1281,7 @@ class FotosMediaService:
 
         keys = [locked.original_storage_key]
         keys.extend(
-            item.storage_key
-            for item in self._derivative_repository.list_by_media_id(media_id)
+            item.storage_key for item in self._derivative_repository.list_by_media_id(media_id)
         )
         keys.extend(self._repository.reference_keys_for_media(media_id))
         root = self._settings.uploads_dir.resolve()
@@ -1457,14 +1449,16 @@ class FotosMediaService:
 
         return value.astimezone(UTC).replace(tzinfo=None)
 
+
     def _require_roles(
         self,
         current_user: AuthenticatedUser,
-        allowed_roles: frozenset[UserRole],
+        allowed_roles: frozenset[UserModuleRole],
     ) -> None:
-        """Exige um papel permitido para a operação."""
+        """Exige um papel funcional permitido no Deja Fotos."""
 
-        self._authorization_service.require_roles(
+        self._authorization_service.require_module_roles(
             current_user,
-            allowed_roles,
+            module_key=FOTOS_MODULE_KEY,
+            allowed_roles=allowed_roles,
         )

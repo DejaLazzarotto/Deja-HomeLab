@@ -20,6 +20,8 @@ from deja_indicadores_api.tenant_management.models import (
 )
 from deja_indicadores_api.user_management.models import (
     UserModel,
+    UserModuleAccessModel,
+    UserModuleRole,
     UserRole,
     UserStatus,
 )
@@ -212,6 +214,7 @@ def create_user(
     email: str = "usuario@deja.com",
     role: str = "organization_admin",
     status: str = "active",
+    module_access: dict[str, str] | None = None,
 ) -> dict[str, object]:
     """Insere um usuário diretamente para os testes de autenticação."""
 
@@ -231,6 +234,19 @@ def create_user(
 
     with session_factory() as session:
         session.add(user)
+        session.flush()
+
+        for module_key, module_role in (
+            module_access or {}
+        ).items():
+            session.add(
+                UserModuleAccessModel(
+                    user_id=user.id,
+                    module_key=module_key,
+                    role=UserModuleRole(module_role),
+                )
+            )
+
         session.commit()
         session.refresh(user)
 

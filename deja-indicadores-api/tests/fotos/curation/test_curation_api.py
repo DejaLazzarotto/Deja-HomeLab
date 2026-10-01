@@ -1,15 +1,15 @@
 """Contratos de marcação, revisão, escopo e referências faciais."""
 
 from io import BytesIO
-from uuid import uuid4
 from pathlib import Path
+from uuid import uuid4
 
 from fastapi.testclient import TestClient
 from PIL import Image
 
 from deja_indicadores_api.core.config import Settings
 from deja_indicadores_api.fotos.curation import engine
-from deja_indicadores_api.fotos.curation.models import FotosFaceModel, FotosFaceReferenceModel
+from deja_indicadores_api.fotos.curation.models import FotosFaceModel
 from deja_indicadores_api.fotos.curation.service import same_face_box
 from tests.authentication.test_authentication_api import create_environment, create_user
 from tests.authentication.test_user_authorization_api import authorization_headers
@@ -266,6 +266,7 @@ def test_detect_suggest_reject_and_scope(
         environment_id=environment,
         email="viewer.faces@deja.com",
         role="viewer",
+        module_access={"fotos": "viewer"},
     )
     headers = authorization_headers(test_settings, viewer)
     assert client.get(f"{CURATION}/media/{media_id}/faces", headers=headers).status_code == 200

@@ -2,7 +2,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Response, status
 
-from deja_indicadores_api.authentication.dependencies import require_roles
 from deja_indicadores_api.authentication.schemas import AuthenticatedUser
 from deja_indicadores_api.fotos.albums.dependencies import (
     FotosAlbumServiceDependency,
@@ -14,8 +13,11 @@ from deja_indicadores_api.fotos.albums.schemas import (
     FotosAlbumResponse,
     FotosAlbumUpdate,
 )
-from deja_indicadores_api.module_management.dependencies import require_module
-from deja_indicadores_api.user_management.models import UserRole
+from deja_indicadores_api.module_management.dependencies import (
+    require_module,
+    require_module_roles,
+)
+from deja_indicadores_api.user_management.models import UserModuleRole
 
 router = APIRouter(
     prefix="/fotos/albums",
@@ -91,13 +93,11 @@ ActiveFilter = Annotated[
 FotosAlbumReader = Annotated[
     AuthenticatedUser,
     Depends(
-        require_roles(
-            UserRole.PLATFORM_ADMIN,
-            UserRole.ORGANIZATION_ADMIN,
-            UserRole.TENANT_ADMIN,
-            UserRole.MANAGER,
-            UserRole.ANALYST,
-            UserRole.VIEWER,
+        require_module_roles(
+            "fotos",
+            UserModuleRole.MANAGER,
+            UserModuleRole.ANALYST,
+            UserModuleRole.VIEWER,
         )
     ),
 ]
@@ -105,12 +105,10 @@ FotosAlbumReader = Annotated[
 FotosAlbumOperator = Annotated[
     AuthenticatedUser,
     Depends(
-        require_roles(
-            UserRole.PLATFORM_ADMIN,
-            UserRole.ORGANIZATION_ADMIN,
-            UserRole.TENANT_ADMIN,
-            UserRole.MANAGER,
-            UserRole.ANALYST,
+        require_module_roles(
+            "fotos",
+            UserModuleRole.MANAGER,
+            UserModuleRole.ANALYST,
         )
     ),
 ]
@@ -118,11 +116,9 @@ FotosAlbumOperator = Annotated[
 FotosAlbumManager = Annotated[
     AuthenticatedUser,
     Depends(
-        require_roles(
-            UserRole.PLATFORM_ADMIN,
-            UserRole.ORGANIZATION_ADMIN,
-            UserRole.TENANT_ADMIN,
-            UserRole.MANAGER,
+        require_module_roles(
+            "fotos",
+            UserModuleRole.MANAGER,
         )
     ),
 ]
