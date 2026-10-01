@@ -4,7 +4,10 @@ from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from deja_indicadores_api.module_management.schemas import ModuleKey
-from deja_indicadores_api.user_management.models import UserRole
+from deja_indicadores_api.user_management.models import (
+    UserModuleRole,
+    UserRole,
+)
 
 
 class LoginRequest(BaseModel):
@@ -38,7 +41,10 @@ class LoginRequest(BaseModel):
 
     @field_validator("email", mode="before")
     @classmethod
-    def normalize_email(cls, value: object) -> object:
+    def normalize_email(
+        cls,
+        value: object,
+    ) -> object:
         """Normaliza o e-mail antes da validação."""
 
         if isinstance(value, str):
@@ -58,18 +64,34 @@ class AccessTokenResponse(BaseModel):
 class AccessTokenClaims(BaseModel):
     """Claims obrigatórias aceitas em um token de acesso."""
 
-    sub: str = Field(min_length=36, max_length=36)
+    sub: str = Field(
+        min_length=36,
+        max_length=36,
+    )
     organization_id: str | None = Field(
         min_length=36,
         max_length=36,
     )
-    tenant_id: str | None = Field(min_length=36, max_length=36)
-    environment_id: str | None = Field(min_length=36, max_length=36)
+    tenant_id: str | None = Field(
+        min_length=36,
+        max_length=36,
+    )
+    environment_id: str | None = Field(
+        min_length=36,
+        max_length=36,
+    )
     role: UserRole
     type: Literal["access"]
     iat: int
     exp: int
     jti: UUID
+
+
+class AuthenticatedModuleAccess(BaseModel):
+    """Acesso funcional do usuário autenticado a um módulo."""
+
+    module_key: ModuleKey
+    role: UserModuleRole
 
 
 class AuthenticatedUser(BaseModel):
@@ -82,4 +104,9 @@ class AuthenticatedUser(BaseModel):
     name: str
     email: EmailStr
     role: UserRole
-    enabled_modules: list[ModuleKey] = Field(default_factory=list)
+    enabled_modules: list[ModuleKey] = Field(
+        default_factory=list,
+    )
+    module_access: list[AuthenticatedModuleAccess] = Field(
+        default_factory=list,
+    )

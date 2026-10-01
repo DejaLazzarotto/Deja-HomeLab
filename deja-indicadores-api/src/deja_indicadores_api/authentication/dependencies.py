@@ -28,10 +28,20 @@ from deja_indicadores_api.tenant_management.repository import (
     OrganizationRepository,
 )
 from deja_indicadores_api.user_management.models import UserRole
-from deja_indicadores_api.user_management.repository import UserRepository
+from deja_indicadores_api.user_management.repository import (
+    UserModuleAccessRepository,
+    UserRepository,
+)
 
-DatabaseSession = Annotated[Session, Depends(get_db_session)]
-ApplicationSettings = Annotated[Settings, Depends(get_settings)]
+DatabaseSession = Annotated[
+    Session,
+    Depends(get_db_session),
+]
+
+ApplicationSettings = Annotated[
+    Settings,
+    Depends(get_settings),
+]
 
 bearer_scheme = HTTPBearer(
     scheme_name="BearerAuth",
@@ -46,6 +56,9 @@ def get_authentication_service(
     """Cria o serviço de autenticação para a requisição."""
 
     user_repository = UserRepository(session)
+    user_module_access_repository = UserModuleAccessRepository(
+        session
+    )
     organization_repository = OrganizationRepository(session)
     organization_module_repository = OrganizationModuleRepository(
         session
@@ -59,6 +72,7 @@ def get_authentication_service(
 
     return AuthenticationService(
         user_repository,
+        user_module_access_repository,
         organization_repository,
         organization_module_repository,
         password_service,
@@ -86,7 +100,9 @@ def get_current_user(
     if credentials is None:
         raise InvalidAccessTokenError
 
-    return service.authenticate(credentials.credentials)
+    return service.authenticate(
+        credentials.credentials
+    )
 
 
 CurrentUser = Annotated[

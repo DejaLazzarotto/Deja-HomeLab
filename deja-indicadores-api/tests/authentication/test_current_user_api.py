@@ -3,8 +3,16 @@ from uuid import uuid4
 
 import jwt
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session, sessionmaker
 
 from deja_indicadores_api.core.config import Settings
+from deja_indicadores_api.module_management.models import (
+    OrganizationModuleModel,
+)
+from deja_indicadores_api.user_management.models import (
+    UserModuleAccessModel,
+    UserModuleRole,
+)
 from tests.authentication.test_authentication_api import (
     LOGIN_URL,
     create_environment,
@@ -104,22 +112,22 @@ def test_me_returns_authenticated_user_and_institutional_scope(
 
     assert response.status_code == 200
     assert response.json() == {
-        "id": user["id"],
-        "organization_id": organization["id"],
-        "tenant_id": tenant["id"],
-        "environment_id": environment["id"],
-        "name": "Usuário Principal",
-        "email": "identidade@deja.com",
-        "role": "analyst",
-        "enabled_modules": [
-            "chamados",
-            "fotos",
-            "indicators",
-            "measurements",
-            "reports",
-        ],
-    }
-
+    "id": user["id"],
+    "organization_id": organization["id"],
+    "tenant_id": tenant["id"],
+    "environment_id": environment["id"],
+    "name": "Usuário Principal",
+    "email": "identidade@deja.com",
+    "role": "analyst",
+    "enabled_modules": [
+        "chamados",
+        "fotos",
+        "indicators",
+        "measurements",
+        "reports",
+    ],
+    "module_access": [],
+}
 
 def test_me_rejects_missing_bearer_token(
     client: TestClient,
@@ -294,3 +302,267 @@ def test_me_rejects_token_with_divergent_institutional_scope(
     )
 
     assert_invalid_access_token(response)
+
+def test_me_returns_persisted_module_access(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Retorna os acessos funcionais persistidos para o usuário."""
+
+    organization = create_organization(client)
+    tenant = create_tenant(
+        client,
+        str(organization["id"]),
+    )
+    environment = create_environment(
+        client,
+        str(tenant["id"]),
+    )
+    user = create_user(
+        client,
+        str(organization["id"]),
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+        email="modulos@deja.com",
+        role="analyst",
+    )
+    set_password(
+        client,
+        str(user["id"]),
+    )
+
+    with test_session_factory() as session:
+        session.add_all(
+            [
+                UserModuleAccessModel(
+                    user_id=str(user["id"]),
+                    module_key="fotos",
+                    role=UserModuleRole.MANAGER,
+                ),
+                UserModuleAccessModel(
+                    user_id=str(user["id"]),
+                    module_key="reports",
+                    role=UserModuleRole.VIEWER,
+                ),
+            ]
+        )
+        session.commit()
+
+    login_response = client.post(
+        LOGIN_URL,
+        json={
+            "organization_code": organization["code"],
+            "email": "modulos@deja.com",
+            "password": "SenhaSegura123!",
+        },
+    )
+
+    assert login_response.status_code == 200
+
+    response = client.get(
+        ME_URL,
+        headers={
+            "Authorization": (
+                f"Bearer {login_response.json()['access_token']}"
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["module_access"] == [
+        {
+            "module_key": "fotos",
+            "role": "manager",
+        },
+        {
+            "module_key": "reports",
+            "role": "viewer",
+        },
+    ]
+
+
+def test_me_reflects_module_access_change_without_new_token(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Aplica mudanças de acesso na requisição seguinte."""
+
+    organization = create_organization(client)
+    tenant = create_tenant(
+        client,
+        str(organization["id"]),
+    )
+    environment = create_environment(
+        client,
+        str(tenant["id"]),
+    )
+    user = create_user(
+        client,
+        str(organization["id"]),
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+        email="acesso.dinamico@deja.com",
+        role="viewer",
+    )
+    set_password(
+        client,
+        str(user["id"]),
+    )
+
+    with test_session_factory() as session:
+        session.add(
+            UserModuleAccessModel(
+                user_id=str(user["id"]),
+                module_key="fotos",
+                role=UserModuleRole.VIEWER,
+            )
+        )
+        session.commit()
+
+    login_response = client.post(
+        LOGIN_URL,
+        json={
+            "organization_code": organization["code"],
+            "email": "acesso.dinamico@deja.com",
+            "password": "SenhaSegura123!",
+        },
+    )
+
+    assert login_response.status_code == 200
+
+    token = login_response.json()["access_token"]
+    headers = {
+        "Authorization": f"Bearer {token}",
+    }
+
+    first_response = client.get(
+        ME_URL,
+        headers=headers,
+    )
+
+    assert first_response.status_code == 200
+    assert first_response.json()["module_access"] == [
+        {
+            "module_key": "fotos",
+            "role": "viewer",
+        }
+    ]
+
+    with test_session_factory() as session:
+        access = session.get(
+            UserModuleAccessModel,
+            (
+                str(user["id"]),
+                "fotos",
+            ),
+        )
+
+        assert access is not None
+
+        access.role = UserModuleRole.MANAGER
+        session.commit()
+
+    second_response = client.get(
+        ME_URL,
+        headers=headers,
+    )
+
+    assert second_response.status_code == 200
+    assert second_response.json()["module_access"] == [
+        {
+            "module_key": "fotos",
+            "role": "manager",
+        }
+    ]
+
+
+def test_me_omits_access_to_disabled_organization_module(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Oculta acesso individual quando o módulo é desabilitado."""
+
+    organization = create_organization(client)
+    organization_id = str(organization["id"])
+    tenant = create_tenant(
+        client,
+        organization_id,
+    )
+    environment = create_environment(
+        client,
+        str(tenant["id"]),
+    )
+    user = create_user(
+        client,
+        organization_id,
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+        email="modulo.desabilitado@deja.com",
+        role="viewer",
+    )
+    set_password(
+        client,
+        str(user["id"]),
+    )
+
+    with test_session_factory() as session:
+        session.add(
+            UserModuleAccessModel(
+                user_id=str(user["id"]),
+                module_key="fotos",
+                role=UserModuleRole.VIEWER,
+            )
+        )
+        session.commit()
+
+    login_response = client.post(
+        LOGIN_URL,
+        json={
+            "organization_code": organization["code"],
+            "email": "modulo.desabilitado@deja.com",
+            "password": "SenhaSegura123!",
+        },
+    )
+
+    assert login_response.status_code == 200
+
+    token = login_response.json()["access_token"]
+    headers = {
+        "Authorization": f"Bearer {token}",
+    }
+
+    first_response = client.get(
+        ME_URL,
+        headers=headers,
+    )
+
+    assert first_response.status_code == 200
+    assert first_response.json()["module_access"] == [
+        {
+            "module_key": "fotos",
+            "role": "viewer",
+        }
+    ]
+
+    with test_session_factory() as session:
+        association = session.get(
+            OrganizationModuleModel,
+            (
+                organization_id,
+                "fotos",
+            ),
+        )
+
+        assert association is not None
+
+        association.enabled = False
+        session.commit()
+
+    second_response = client.get(
+        ME_URL,
+        headers=headers,
+    )
+
+    assert second_response.status_code == 200
+    assert "fotos" not in second_response.json()["enabled_modules"]
+    assert second_response.json()["module_access"] == []

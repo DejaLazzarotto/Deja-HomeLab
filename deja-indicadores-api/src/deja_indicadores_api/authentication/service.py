@@ -9,6 +9,7 @@ from deja_indicadores_api.authentication.exceptions import (
 from deja_indicadores_api.authentication.schemas import (
     AccessTokenClaims,
     AccessTokenResponse,
+    AuthenticatedModuleAccess,
     AuthenticatedUser,
     LoginRequest,
 )
@@ -27,7 +28,10 @@ from deja_indicadores_api.user_management.models import (
     UserRole,
     UserStatus,
 )
-from deja_indicadores_api.user_management.repository import UserRepository
+from deja_indicadores_api.user_management.repository import (
+    UserModuleAccessRepository,
+    UserRepository,
+)
 
 
 class AuthenticationService:
@@ -36,12 +40,16 @@ class AuthenticationService:
     def __init__(
         self,
         user_repository: UserRepository,
+        user_module_access_repository: UserModuleAccessRepository,
         organization_repository: OrganizationRepository,
         organization_module_repository: OrganizationModuleRepository,
         password_service: PasswordService,
         access_token_service: AccessTokenService,
     ) -> None:
         self._user_repository = user_repository
+        self._user_module_access_repository = (
+            user_module_access_repository
+        )
         self._organization_repository = organization_repository
         self._organization_module_repository = (
             organization_module_repository
@@ -49,7 +57,10 @@ class AuthenticationService:
         self._password_service = password_service
         self._access_token_service = access_token_service
 
-    def login(self, input_data: LoginRequest) -> AccessTokenResponse:
+    def login(
+        self,
+        input_data: LoginRequest,
+    ) -> AccessTokenResponse:
         """Valida as credenciais e emite um token JWT."""
 
         organization_id: str | None = None
@@ -98,7 +109,10 @@ class AuthenticationService:
             expires_in=self._access_token_service.expires_in_seconds,
         )
 
-    def authenticate(self, token: str) -> AuthenticatedUser:
+    def authenticate(
+        self,
+        token: str,
+    ) -> AuthenticatedUser:
         """Valida o token e retorna a identidade persistida do usuário."""
 
         try:
@@ -107,7 +121,9 @@ class AuthenticationService:
         except (InvalidTokenError, ValidationError):
             raise InvalidAccessTokenError from None
 
-        user = self._user_repository.find_by_id(claims.sub)
+        user = self._user_repository.find_by_id(
+            claims.sub
+        )
 
         if (
             user is None
@@ -126,10 +142,28 @@ class AuthenticationService:
 
         enabled_modules = (
             self._organization_module_repository
-            .list_enabled_module_keys(user.organization_id)
+            .list_enabled_module_keys(
+                user.organization_id
+            )
             if user.organization_id is not None
             else []
         )
+
+        enabled_module_set = set(
+            enabled_modules
+        )
+
+        module_access = [
+            AuthenticatedModuleAccess(
+                module_key=access.module_key,
+                role=access.role,
+            )
+            for access in (
+                self._user_module_access_repository
+                .list_for_user(user.id)
+            )
+            if access.module_key in enabled_module_set
+        ]
 
         return AuthenticatedUser(
             id=user.id,
@@ -140,9 +174,13 @@ class AuthenticationService:
             email=user.email,
             role=user.role,
             enabled_modules=enabled_modules,
+            module_access=module_access,
         )
 
-    def _has_valid_role_scope(self, user: UserModel) -> bool:
+    def _has_valid_role_scope(
+        self,
+        user: UserModel,
+    ) -> bool:
         """Valida os vínculos obrigatórios do papel autenticado."""
 
         if user.role == UserRole.PLATFORM_ADMIN:
