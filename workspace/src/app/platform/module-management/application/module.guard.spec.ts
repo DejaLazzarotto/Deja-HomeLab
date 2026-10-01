@@ -2,29 +2,17 @@ import { signal } from '@angular/core';
 
 import { TestBed } from '@angular/core/testing';
 
-import {
-  ActivatedRouteSnapshot,
-  Router,
-  RouterStateSnapshot,
-} from '@angular/router';
+import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
 
 import { of } from 'rxjs';
 
-import {
-  AuthenticationService,
-} from '../../authentication/application/authentication.service';
+import { AuthenticationService } from '../../authentication/application/authentication.service';
 
-import {
-  AuthenticatedUser,
-} from '../../authentication/domain/authenticated-user';
+import { AuthenticatedUser } from '../../authentication/domain/authenticated-user';
 
-import {
-  moduleGuard,
-} from './module.guard';
+import { moduleGuard } from './module.guard';
 
-function createUser(
-  overrides: Partial<AuthenticatedUser> = {},
-): AuthenticatedUser {
+function createUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
   return {
     id: '11111111-1111-1111-1111-111111111111',
     organizationId: '22222222-2222-2222-2222-222222222222',
@@ -34,6 +22,7 @@ function createUser(
     email: 'usuario@deja.com',
     role: 'organization_admin',
     enabledModules: [],
+    moduleAccess: [],
     ...overrides,
   };
 }
@@ -70,10 +59,7 @@ function executeGuard(
   });
 
   const result = TestBed.runInInjectionContext(() =>
-    moduleGuard('reports')(
-      {} as ActivatedRouteSnapshot,
-      {} as RouterStateSnapshot,
-    ),
+    moduleGuard('reports')({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot),
   );
 
   return {
@@ -90,12 +76,15 @@ describe('moduleGuard', () => {
   it('should allow an enabled module', () => {
     const user = createUser({
       enabledModules: ['reports'],
+      moduleAccess: [
+        {
+          moduleKey: 'reports',
+          role: 'viewer',
+        },
+      ],
     });
 
-    const { result, createUrlTree } = executeGuard(
-      user,
-      'access-token',
-    );
+    const { result, createUrlTree } = executeGuard(user, 'access-token');
 
     expect(result).toBe(true);
     expect(createUrlTree).not.toHaveBeenCalled();
@@ -106,10 +95,7 @@ describe('moduleGuard', () => {
       enabledModules: ['indicators'],
     });
 
-    const { result, createUrlTree } = executeGuard(
-      user,
-      'access-token',
-    );
+    const { result, createUrlTree } = executeGuard(user, 'access-token');
 
     expect(result).toEqual({
       commands: ['/'],
@@ -118,10 +104,7 @@ describe('moduleGuard', () => {
   });
 
   it('should redirect a missing session to login', () => {
-    const { result, createUrlTree } = executeGuard(
-      null,
-      null,
-    );
+    const { result, createUrlTree } = executeGuard(null, null);
 
     expect(result).toEqual({
       commands: ['/login'],

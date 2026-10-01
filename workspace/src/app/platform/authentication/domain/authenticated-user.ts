@@ -9,6 +9,16 @@ export type UserRole =
   | 'viewer'
   | 'client';
 
+export type UserModuleRole =
+  | 'manager'
+  | 'analyst'
+  | 'viewer';
+
+export interface AuthenticatedModuleAccess {
+  moduleKey: ModuleKey;
+  role: UserModuleRole;
+}
+
 export interface AuthenticatedUser {
   id: string;
   organizationId: string | null;
@@ -18,4 +28,5 @@ export interface AuthenticatedUser {
   email: string;
   role: UserRole;
   enabledModules: readonly ModuleKey[];
+  moduleAccess: readonly AuthenticatedModuleAccess[];
 }

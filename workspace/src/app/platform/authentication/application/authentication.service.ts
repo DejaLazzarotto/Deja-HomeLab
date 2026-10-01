@@ -2,11 +2,22 @@ import { computed, Injectable, signal } from '@angular/core';
 
 import { HttpClient } from '@angular/common/http';
 
-import { Observable, catchError, map, of, switchMap, tap, throwError } from 'rxjs';
+import {
+  Observable,
+  catchError,
+  map,
+  of,
+  switchMap,
+  tap,
+  throwError,
+} from 'rxjs';
 
 import { ModuleKey } from '../../module-management/domain/module-key';
 
-import { AuthenticatedUser } from '../domain/authenticated-user';
+import {
+  AuthenticatedUser,
+  UserModuleRole,
+} from '../domain/authenticated-user';
 
 import { LoginCredentials } from '../domain/login-credentials';
 
@@ -14,6 +25,11 @@ interface AccessTokenResponse {
   access_token: string;
   token_type: string;
   expires_in: number;
+}
+
+interface AuthenticatedModuleAccessResponse {
+  module_key: ModuleKey;
+  role: UserModuleRole;
 }
 
 interface AuthenticatedUserResponse {
@@ -25,6 +41,7 @@ interface AuthenticatedUserResponse {
   email: string;
   role: AuthenticatedUser['role'];
   enabled_modules: ModuleKey[];
+  module_access: AuthenticatedModuleAccessResponse[];
 }
 
 @Injectable({
@@ -37,25 +54,42 @@ export class AuthenticationService {
 
   readonly user = this.userState.asReadonly();
 
-  readonly isAuthenticated = computed(() => this.userState() !== null);
+  readonly isAuthenticated = computed(
+    () => this.userState() !== null,
+  );
 
-  constructor(private readonly http: HttpClient) {}
+  constructor(
+    private readonly http: HttpClient,
+  ) {}
 
-  login(credentials: LoginCredentials): Observable<AuthenticatedUser> {
+  login(
+    credentials: LoginCredentials,
+  ): Observable<AuthenticatedUser> {
     return this.http
-      .post<AccessTokenResponse>('/api/v1/auth/login', {
-        organization_code: credentials.organizationCode,
-        email: credentials.email,
-        password: credentials.password,
-      })
+      .post<AccessTokenResponse>(
+        '/api/v1/auth/login',
+        {
+          organization_code: credentials.organizationCode,
+          email: credentials.email,
+          password: credentials.password,
+        },
+      )
       .pipe(
         tap((response) => {
-          localStorage.setItem(this.tokenStorageKey, response.access_token);
+          localStorage.setItem(
+            this.tokenStorageKey,
+            response.access_token,
+          );
         }),
-        switchMap(() => this.loadCurrentUser()),
+        switchMap(
+          () => this.loadCurrentUser(),
+        ),
         catchError((error) => {
           this.clearSession();
-          return throwError(() => error);
+
+          return throwError(
+            () => error,
+          );
         }),
       );
   }
@@ -68,27 +102,38 @@ export class AuthenticationService {
     return this.loadCurrentUser().pipe(
       catchError(() => {
         this.clearSession();
+
         return of(null);
       }),
     );
   }
 
   loadCurrentUser(): Observable<AuthenticatedUser> {
-    return this.http.get<AuthenticatedUserResponse>('/api/v1/auth/me').pipe(
-      map((response) => ({
-        id: response.id,
-        organizationId: response.organization_id,
-        tenantId: response.tenant_id,
-        environmentId: response.environment_id,
-        name: response.name,
-        email: response.email,
-        role: response.role,
-        enabledModules: response.enabled_modules,
-      })),
-      tap((user) => {
-        this.userState.set(user);
-      }),
-    );
+    return this.http
+      .get<AuthenticatedUserResponse>(
+        '/api/v1/auth/me',
+      )
+      .pipe(
+        map((response) => ({
+          id: response.id,
+          organizationId: response.organization_id,
+          tenantId: response.tenant_id,
+          environmentId: response.environment_id,
+          name: response.name,
+          email: response.email,
+          role: response.role,
+          enabledModules: response.enabled_modules,
+          moduleAccess: response.module_access.map(
+            access => ({
+              moduleKey: access.module_key,
+              role: access.role,
+            }),
+          ),
+        })),
+        tap((user) => {
+          this.userState.set(user);
+        }),
+      );
   }
 
   logout(): void {
@@ -96,11 +141,15 @@ export class AuthenticationService {
   }
 
   getAccessToken(): string | null {
-    return localStorage.getItem(this.tokenStorageKey);
+    return localStorage.getItem(
+      this.tokenStorageKey,
+    );
   }
 
   private clearSession(): void {
-    localStorage.removeItem(this.tokenStorageKey);
+    localStorage.removeItem(
+      this.tokenStorageKey,
+    );
 
     this.userState.set(null);
   }
