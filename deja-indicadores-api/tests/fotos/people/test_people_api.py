@@ -150,7 +150,11 @@ def test_roles_and_institutional_scope(
     organization_id, tenant_id, environment_id, _, admin = (
         media_context
     )
-    other_environment = create_environment(client, tenant_id, name="Homologação")
+    other_environment = create_environment(
+        client,
+        tenant_id,
+        name="Homologação",
+    )
     other_environment_id = str(other_environment["id"])
     other_person = create_person(
         client,
@@ -171,10 +175,12 @@ def test_roles_and_institutional_scope(
         test_settings,
         viewer,
     )
+
     assert client.get(
         PEOPLE_URL,
         headers=viewer_headers,
     ).status_code == 200
+
     assert client.post(
         PEOPLE_URL,
         json={
@@ -183,10 +189,12 @@ def test_roles_and_institutional_scope(
         },
         headers=viewer_headers,
     ).status_code == 403
+
     assert client.get(
         f"{PEOPLE_URL}/{other_person['id']}",
         headers=viewer_headers,
     ).status_code == 403
+
     assert client.get(
         PEOPLE_URL,
         params={"environment_id": other_environment_id},
@@ -206,17 +214,46 @@ def test_roles_and_institutional_scope(
         test_settings,
         analyst,
     )
-    person = create_person(
-        client,
-        environment_id,
-        analyst_headers,
-        name="Bruna",
-    )
-    assert client.delete(
-        f"{PEOPLE_URL}/{person['id']}",
+
+    assert client.get(
+        PEOPLE_URL,
         headers=analyst_headers,
     ).status_code == 403
 
+    assert client.post(
+        PEOPLE_URL,
+        json={
+            "environment_id": environment_id,
+            "name": "Analista sem permissão",
+        },
+        headers=analyst_headers,
+    ).status_code == 403
+
+    manager = create_user(
+        client,
+        organization_id,
+        tenant_id=tenant_id,
+        environment_id=environment_id,
+        email="manager.people@deja.com",
+        role="user",
+        module_access={"fotos": "manager"},
+    )
+    manager_headers = authorization_headers(
+        test_settings,
+        manager,
+    )
+
+    person = create_person(
+        client,
+        environment_id,
+        manager_headers,
+        name="Bruna",
+    )
+
+    assert client.delete(
+        f"{PEOPLE_URL}/{person['id']}",
+        headers=manager_headers,
+    ).status_code == 204
 
 def test_person_media_link_and_scope(
     client: TestClient,
@@ -226,14 +263,22 @@ def test_person_media_link_and_scope(
     organization_id, tenant_id, environment_id, _, headers = (
         media_context
     )
-    person = create_person(client, environment_id, headers)
+
+    person = create_person(
+        client,
+        environment_id,
+        headers,
+    )
+
     media_response = upload_image(
         client,
         environment_id=environment_id,
         album_id=None,
         headers=headers,
     )
+
     assert media_response.status_code == 201, media_response.text
+
     media_id = media_response.json()["id"]
 
     linked = client.post(
@@ -241,13 +286,18 @@ def test_person_media_link_and_scope(
         json={"media_id": media_id},
         headers=headers,
     )
+
     assert linked.status_code == 204, linked.text
 
     gallery = client.get(
         f"{PEOPLE_URL}/{person['id']}/media",
-        params={"page": 1, "page_size": 1},
+        params={
+            "page": 1,
+            "page_size": 1,
+        },
         headers=headers,
     )
+
     assert gallery.status_code == 200
     assert gallery.json()["total"] == 1
     assert gallery.json()["items"][0]["id"] == media_id
@@ -265,24 +315,36 @@ def test_person_media_link_and_scope(
         test_settings,
         analyst,
     )
+
     assert client.post(
         f"{PEOPLE_URL}/{person['id']}/media",
         json={"media_id": media_id},
         headers=analyst_headers,
     ).status_code == 403
 
-    other_environment = create_environment(client, tenant_id, name="Homologação")
+    other_environment = create_environment(
+        client,
+        tenant_id,
+        name="Homologação",
+    )
+
     other_media = upload_image(
         client,
         environment_id=str(other_environment["id"]),
         album_id=None,
         headers=headers,
-        content=create_test_jpeg(width=19),
+        content=create_test_jpeg(
+            width=19,
+        ),
     )
+
     assert other_media.status_code == 201, other_media.text
+
     assert client.post(
         f"{PEOPLE_URL}/{person['id']}/media",
-        json={"media_id": other_media.json()["id"]},
+        json={
+            "media_id": other_media.json()["id"],
+        },
         headers=headers,
     ).status_code == 409
 
@@ -290,12 +352,13 @@ def test_person_media_link_and_scope(
         f"{PEOPLE_URL}/{person['id']}/media/{media_id}",
         headers=headers,
     )
+
     assert removed.status_code == 204
+
     assert client.get(
         f"{PEOPLE_URL}/{person['id']}/media",
         headers=headers,
     ).json()["total"] == 0
-
 
 def test_avatar_upload_read_remove_and_delete(
     client: TestClient,

@@ -3,3 +3,4 @@ export * from './module-management-repository';
 export * from './organization';
 export * from './organization-input';
 export * from './organization-modules';
+export * from './tenant-environment';

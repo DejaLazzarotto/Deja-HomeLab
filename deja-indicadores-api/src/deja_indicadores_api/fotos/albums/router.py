@@ -89,14 +89,12 @@ ActiveFilter = Annotated[
     ),
 ]
 
-
 FotosAlbumReader = Annotated[
     AuthenticatedUser,
     Depends(
         require_module_roles(
             "fotos",
             UserModuleRole.MANAGER,
-            UserModuleRole.ANALYST,
             UserModuleRole.VIEWER,
         )
     ),
@@ -108,7 +106,6 @@ FotosAlbumOperator = Annotated[
         require_module_roles(
             "fotos",
             UserModuleRole.MANAGER,
-            UserModuleRole.ANALYST,
         )
     ),
 ]

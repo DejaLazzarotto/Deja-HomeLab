@@ -25,6 +25,7 @@ class UserRole(StrEnum):
     ANALYST = "analyst"
     VIEWER = "viewer"
     CLIENT = "client"
+    USER = "user"
 
 
 class UserStatus(StrEnum):

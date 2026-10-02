@@ -1,26 +1,38 @@
 <section class="organizations">
   <header class="organizations__header">
     <div>
-      <p class="organizations__eyebrow">Administração da plataforma</p>
-      <h2>Organizações e módulos</h2>
-      <p>Cadastre clientes e controle os módulos contratados.</p>
+      <p class="organizations__eyebrow">
+        Administração da plataforma
+      </p>
+      <h2>Provisionamento de clientes</h2>
+      <p>
+        Cadastre empresas, aplicativos contratados,
+        tenants e ambientes.
+      </p>
     </div>
 
     <button type="button" (click)="openCreate()">
-      Nova organização
+      Nova empresa
     </button>
   </header>
 
   @if (errorMessage()) {
-    <p class="message message--error">{{ errorMessage() }}</p>
+    <p class="message message--error">
+      {{ errorMessage() }}
+    </p>
   }
 
   @if (operationMessage()) {
-    <p class="message message--success">{{ operationMessage() }}</p>
+    <p class="message message--success">
+      {{ operationMessage() }}
+    </p>
   }
 
   @if (formVisible()) {
-    <form class="organization-form" (ngSubmit)="saveOrganization()">
+    <form
+      class="organization-form"
+      (ngSubmit)="saveOrganization()"
+    >
       <label>
         Código
         <input
@@ -32,7 +44,7 @@
       </label>
 
       <label>
-        Nome
+        Nome da empresa
         <input
           name="name"
           maxlength="255"
@@ -43,19 +55,40 @@
 
       <label>
         Situação
-        <select name="status" [(ngModel)]="form.status">
-          <option value="provisioning">Provisionando</option>
-          <option value="active">Ativa</option>
-          <option value="inactive">Inativa</option>
+        <select
+          name="status"
+          [(ngModel)]="form.status"
+        >
+          <option value="provisioning">
+            Provisionando
+          </option>
+          <option value="active">
+            Ativa
+          </option>
+          <option value="inactive">
+            Inativa
+          </option>
         </select>
       </label>
 
       <div class="actions">
-        <button type="button" class="secondary" (click)="closeForm()">
+        <button
+          type="button"
+          class="secondary"
+          (click)="closeForm()"
+        >
           Cancelar
         </button>
-        <button type="submit" [disabled]="saving()">
-          {{ saving() ? 'Salvando...' : 'Salvar organização' }}
+
+        <button
+          type="submit"
+          [disabled]="saving()"
+        >
+          {{
+            saving()
+              ? 'Salvando...'
+              : 'Salvar empresa'
+          }}
         </button>
       </div>
     </form>
@@ -64,23 +97,41 @@
   <div class="organizations__grid">
     <section class="panel">
       <header class="panel__header">
-        <h3>Organizações</h3>
-        <button type="button" class="secondary" (click)="refresh()">
+        <div>
+          <h3>Empresas</h3>
+          <p>
+            Organizações atendidas pela plataforma.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="secondary"
+          (click)="refresh()"
+        >
           Atualizar
         </button>
       </header>
 
       @if (loading()) {
-        <p class="empty">Carregando organizações...</p>
+        <p class="empty">
+          Carregando empresas...
+        </p>
       } @else if (!organizations().length) {
-        <p class="empty">Nenhuma organização cadastrada.</p>
+        <p class="empty">
+          Nenhuma empresa cadastrada.
+        </p>
       } @else {
         <div class="organization-list">
-          @for (organization of organizations(); track organization.id) {
+          @for (
+            organization of organizations();
+            track organization.id
+          ) {
             <article
               class="organization-card"
               [class.organization-card--selected]="
-                selectedOrganization()?.id === organization.id
+                selectedOrganization()?.id
+                  === organization.id
               "
             >
               <button
@@ -88,9 +139,15 @@
                 class="organization-card__main"
                 (click)="selectOrganization(organization)"
               >
-                <strong>{{ organization.name }}</strong>
-                <span>{{ organization.code }}</span>
-                <span>{{ statusLabel(organization.status) }}</span>
+                <strong>
+                  {{ organization.name }}
+                </strong>
+                <span>
+                  {{ organization.code }}
+                </span>
+                <span>
+                  {{ statusLabel(organization.status) }}
+                </span>
               </button>
 
               <button
@@ -109,33 +166,55 @@
     <section class="panel">
       <header class="panel__header">
         <div>
-          <h3>Módulos liberados</h3>
+          <h3>Aplicativos contratados</h3>
+
           @if (selectedOrganization()) {
-            <p>{{ selectedOrganization()?.name }}</p>
+            <p>
+              {{ selectedOrganization()?.name }}
+            </p>
           }
         </div>
       </header>
 
       @if (!selectedOrganization()) {
         <p class="empty">
-          Selecione uma organização para administrar seus módulos.
+          Selecione uma empresa para administrar
+          seus aplicativos.
         </p>
       } @else if (loadingModules()) {
-        <p class="empty">Carregando módulos...</p>
+        <p class="empty">
+          Carregando aplicativos...
+        </p>
       } @else {
         <div class="module-list">
-          @for (module of modules(); track module.key) {
+          @for (
+            module of modules();
+            track module.key
+          ) {
             <label class="module-card">
               <input
                 type="checkbox"
-                [ngModel]="isModuleEnabled(module.key)"
-                [ngModelOptions]="{ standalone: true }"
-                (ngModelChange)="setModuleEnabled(module.key, $event)"
+                [ngModel]="
+                  isModuleEnabled(module.key)
+                "
+                [ngModelOptions]="{
+                  standalone: true
+                }"
+                (ngModelChange)="
+                  setModuleEnabled(
+                    module.key,
+                    $event
+                  )
+                "
               />
 
               <span>
-                <strong>{{ module.name }}</strong>
-                <small>{{ module.description }}</small>
+                <strong>
+                  {{ module.name }}
+                </strong>
+                <small>
+                  {{ module.description }}
+                </small>
               </span>
             </label>
           }
@@ -147,10 +226,302 @@
             [disabled]="savingModules()"
             (click)="saveModules()"
           >
-            {{ savingModules() ? 'Salvando...' : 'Salvar módulos' }}
+            {{
+              savingModules()
+                ? 'Salvando...'
+                : 'Salvar aplicativos'
+            }}
           </button>
         </div>
       }
     </section>
   </div>
+
+  @if (selectedOrganization()) {
+    <div class="organizations__grid">
+      <section class="panel">
+        <header class="panel__header">
+          <div>
+            <h3>Tenants</h3>
+            <p>
+              {{ selectedOrganization()?.name }}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            (click)="openCreateTenant()"
+          >
+            Novo tenant
+          </button>
+        </header>
+
+        @if (tenantFormVisible()) {
+          <form
+            class="organization-form"
+            (ngSubmit)="saveTenant()"
+          >
+            <label>
+              Nome do tenant
+              <input
+                name="tenantName"
+                maxlength="255"
+                required
+                [(ngModel)]="tenantForm.name"
+              />
+            </label>
+
+            <label>
+              Situação
+              <select
+                name="tenantStatus"
+                [(ngModel)]="tenantForm.status"
+              >
+                <option value="provisioning">
+                  Provisionando
+                </option>
+                <option value="active">
+                  Ativo
+                </option>
+                <option value="inactive">
+                  Inativo
+                </option>
+              </select>
+            </label>
+
+            <div class="actions">
+              <button
+                type="button"
+                class="secondary"
+                (click)="closeTenantForm()"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                [disabled]="savingTenant()"
+              >
+                {{
+                  savingTenant()
+                    ? 'Salvando...'
+                    : 'Salvar tenant'
+                }}
+              </button>
+            </div>
+          </form>
+        }
+
+        @if (loadingTenants()) {
+          <p class="empty">
+            Carregando tenants...
+          </p>
+        } @else if (!tenants().length) {
+          <p class="empty">
+            Nenhum tenant cadastrado para
+            esta empresa.
+          </p>
+        } @else {
+          <div class="organization-list">
+            @for (
+              tenant of tenants();
+              track tenant.id
+            ) {
+              <article
+                class="organization-card"
+                [class.organization-card--selected]="
+                  selectedTenant()?.id
+                    === tenant.id
+                "
+              >
+                <button
+                  type="button"
+                  class="organization-card__main"
+                  (click)="selectTenant(tenant)"
+                >
+                  <strong>
+                    {{ tenant.name }}
+                  </strong>
+                  <span>
+                    {{ statusLabel(tenant.status) }}
+                  </span>
+                </button>
+
+                <div class="actions">
+                  <button
+                    type="button"
+                    class="secondary"
+                    (click)="openEditTenant(tenant)"
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    type="button"
+                    class="secondary"
+                    (click)="deleteTenant(tenant)"
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="panel">
+        <header class="panel__header">
+          <div>
+            <h3>Ambientes</h3>
+
+            @if (selectedTenant()) {
+              <p>
+                {{ selectedTenant()?.name }}
+              </p>
+            }
+          </div>
+
+          @if (selectedTenant()) {
+            <button
+              type="button"
+              (click)="openCreateEnvironment()"
+            >
+              Novo ambiente
+            </button>
+          }
+        </header>
+
+        @if (!selectedTenant()) {
+          <p class="empty">
+            Selecione um tenant para administrar
+            seus ambientes.
+          </p>
+        } @else {
+          @if (environmentFormVisible()) {
+            <form
+              class="organization-form"
+              (ngSubmit)="saveEnvironment()"
+            >
+              <label>
+                Nome do ambiente
+                <input
+                  name="environmentName"
+                  maxlength="255"
+                  required
+                  [(ngModel)]="
+                    environmentForm.name
+                  "
+                />
+              </label>
+
+              <label>
+                Situação
+                <select
+                  name="environmentStatus"
+                  [(ngModel)]="
+                    environmentForm.status
+                  "
+                >
+                  <option value="provisioning">
+                    Provisionando
+                  </option>
+                  <option value="active">
+                    Ativo
+                  </option>
+                  <option value="inactive">
+                    Inativo
+                  </option>
+                </select>
+              </label>
+
+              <div class="actions">
+                <button
+                  type="button"
+                  class="secondary"
+                  (click)="closeEnvironmentForm()"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="submit"
+                  [disabled]="
+                    savingEnvironment()
+                  "
+                >
+                  {{
+                    savingEnvironment()
+                      ? 'Salvando...'
+                      : 'Salvar ambiente'
+                  }}
+                </button>
+              </div>
+            </form>
+          }
+
+          @if (loadingEnvironments()) {
+            <p class="empty">
+              Carregando ambientes...
+            </p>
+          } @else if (!environments().length) {
+            <p class="empty">
+              Nenhum ambiente cadastrado para
+              este tenant.
+            </p>
+          } @else {
+            <div class="organization-list">
+              @for (
+                environment of environments();
+                track environment.id
+              ) {
+                <article class="organization-card">
+                  <div
+                    class="organization-card__main"
+                  >
+                    <strong>
+                      {{ environment.name }}
+                    </strong>
+                    <span>
+                      {{
+                        statusLabel(
+                          environment.status
+                        )
+                      }}
+                    </span>
+                  </div>
+
+                  <div class="actions">
+                    <button
+                      type="button"
+                      class="secondary"
+                      (click)="
+                        openEditEnvironment(
+                          environment
+                        )
+                      "
+                    >
+                      Editar
+                    </button>
+
+                    <button
+                      type="button"
+                      class="secondary"
+                      (click)="
+                        deleteEnvironment(
+                          environment
+                        )
+                      "
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        }
+      </section>
+    </div>
+  }
 </section>

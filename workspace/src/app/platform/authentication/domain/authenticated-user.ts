@@ -7,7 +7,8 @@ export type UserRole =
   | 'manager'
   | 'analyst'
   | 'viewer'
-  | 'client';
+  | 'client'
+  | 'user';
 
 export type UserModuleRole =
   | 'manager'

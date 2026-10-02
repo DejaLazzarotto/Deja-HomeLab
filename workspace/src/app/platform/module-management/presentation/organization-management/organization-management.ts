@@ -11,12 +11,17 @@ import {
 } from '@angular/forms';
 
 import {
+  Environment,
+  EnvironmentInput,
   ModuleKey,
   ModuleManagementService,
   Organization,
   OrganizationInput,
   OrganizationModule,
   OrganizationStatus,
+  Tenant,
+  TenantEnvironmentStatus,
+  TenantInput,
 } from '../../index';
 
 @Component({
@@ -49,17 +54,44 @@ implements OnInit {
   readonly enabledModules =
     signal<readonly ModuleKey[]>([]);
 
+  readonly tenants =
+    signal<readonly Tenant[]>([]);
+
+  readonly selectedTenant =
+    signal<Tenant | null>(null);
+
+  readonly environments =
+    signal<readonly Environment[]>([]);
+
   readonly loading = signal(false);
 
   readonly loadingModules = signal(false);
+
+  readonly loadingTenants = signal(false);
+
+  readonly loadingEnvironments = signal(false);
 
   readonly saving = signal(false);
 
   readonly savingModules = signal(false);
 
+  readonly savingTenant = signal(false);
+
+  readonly savingEnvironment = signal(false);
+
   readonly formVisible = signal(false);
 
+  readonly tenantFormVisible = signal(false);
+
+  readonly environmentFormVisible = signal(false);
+
   readonly editingOrganizationId =
+    signal<string | null>(null);
+
+  readonly editingTenantId =
+    signal<string | null>(null);
+
+  readonly editingEnvironmentId =
     signal<string | null>(null);
 
   readonly errorMessage =
@@ -69,6 +101,12 @@ implements OnInit {
     signal<string | null>(null);
 
   form: OrganizationInput = this.emptyForm();
+
+  tenantForm: TenantInput =
+    this.emptyTenantForm();
+
+  environmentForm: EnvironmentInput =
+    this.emptyEnvironmentForm();
 
   ngOnInit(): void {
     void this.refresh();
@@ -160,7 +198,9 @@ implements OnInit {
           ? 'Organização atualizada com sucesso.'
           : 'Organização cadastrada com sucesso.',
       );
+
       this.closeForm();
+
       await this.refresh();
       await this.selectOrganization(saved);
     } catch {
@@ -176,30 +216,18 @@ implements OnInit {
     organization: Organization,
   ): Promise<void> {
     this.selectedOrganization.set(organization);
-    this.loadingModules.set(true);
+    this.selectedTenant.set(null);
+    this.environments.set([]);
+
+    this.closeTenantForm();
+    this.closeEnvironmentForm();
+
     this.errorMessage.set(null);
 
-    try {
-      const response =
-        await this.service.getOrganizationModules(
-          organization.id,
-        );
-
-      this.modules.set(response.modules);
-      this.enabledModules.set(
-        response.modules
-          .filter(module => module.enabled)
-          .map(module => module.key),
-      );
-    } catch {
-      this.modules.set([]);
-      this.enabledModules.set([]);
-      this.errorMessage.set(
-        'Não foi possível carregar os módulos da organização.',
-      );
-    } finally {
-      this.loadingModules.set(false);
-    }
+    await Promise.all([
+      this.loadModules(organization.id),
+      this.loadTenants(organization.id),
+    ]);
   }
 
   isModuleEnabled(
@@ -240,27 +268,286 @@ implements OnInit {
         );
 
       this.modules.set(response.modules);
+
       this.enabledModules.set(
         response.modules
           .filter(module => module.enabled)
           .map(module => module.key),
       );
+
       this.operationMessage.set(
-        'Módulos da organização atualizados com sucesso.',
+        'Aplicativos contratados atualizados com sucesso.',
       );
     } catch {
       this.errorMessage.set(
-        'Não foi possível salvar os módulos da organização.',
+        'Não foi possível salvar os aplicativos contratados.',
       );
     } finally {
       this.savingModules.set(false);
     }
   }
 
+  openCreateTenant(): void {
+    const organization = this.selectedOrganization();
+
+    if (!organization) {
+      return;
+    }
+
+    this.editingTenantId.set(null);
+
+    this.tenantForm = {
+      ...this.emptyTenantForm(),
+      organizationId: organization.id,
+    };
+
+    this.tenantFormVisible.set(true);
+    this.operationMessage.set(null);
+    this.errorMessage.set(null);
+  }
+
+  openEditTenant(
+    tenant: Tenant,
+  ): void {
+    this.editingTenantId.set(tenant.id);
+
+    this.tenantForm = {
+      organizationId: tenant.organizationId,
+      name: tenant.name,
+      status: tenant.status,
+    };
+
+    this.tenantFormVisible.set(true);
+    this.operationMessage.set(null);
+    this.errorMessage.set(null);
+  }
+
+  closeTenantForm(): void {
+    this.tenantFormVisible.set(false);
+    this.editingTenantId.set(null);
+  }
+
+  async saveTenant(): Promise<void> {
+    const organization = this.selectedOrganization();
+
+    if (!organization) {
+      return;
+    }
+
+    if (!this.tenantForm.name.trim()) {
+      this.errorMessage.set(
+        'Informe o nome do tenant.',
+      );
+      return;
+    }
+
+    this.savingTenant.set(true);
+    this.errorMessage.set(null);
+    this.operationMessage.set(null);
+
+    try {
+      const editingId = this.editingTenantId();
+
+      const input: TenantInput = {
+        ...this.tenantForm,
+        organizationId: organization.id,
+      };
+
+      const saved = editingId
+        ? await this.service.updateTenant(
+            editingId,
+            input,
+          )
+        : await this.service.createTenant(input);
+
+      this.operationMessage.set(
+        editingId
+          ? 'Tenant atualizado com sucesso.'
+          : 'Tenant cadastrado com sucesso.',
+      );
+
+      this.closeTenantForm();
+
+      await this.loadTenants(organization.id);
+      await this.selectTenant(saved);
+    } catch {
+      this.errorMessage.set(
+        'Não foi possível salvar o tenant.',
+      );
+    } finally {
+      this.savingTenant.set(false);
+    }
+  }
+
+  async deleteTenant(
+    tenant: Tenant,
+  ): Promise<void> {
+    const organization = this.selectedOrganization();
+
+    if (!organization) {
+      return;
+    }
+
+    this.errorMessage.set(null);
+    this.operationMessage.set(null);
+
+    try {
+      await this.service.deleteTenant(tenant.id);
+
+      if (this.selectedTenant()?.id === tenant.id) {
+        this.selectedTenant.set(null);
+        this.environments.set([]);
+      }
+
+      await this.loadTenants(organization.id);
+
+      this.operationMessage.set(
+        'Tenant excluído com sucesso.',
+      );
+    } catch {
+      this.errorMessage.set(
+        'Não foi possível excluir o tenant.',
+      );
+    }
+  }
+
+  async selectTenant(
+    tenant: Tenant,
+  ): Promise<void> {
+    this.selectedTenant.set(tenant);
+
+    this.closeEnvironmentForm();
+
+    await this.loadEnvironments(tenant.id);
+  }
+
+  openCreateEnvironment(): void {
+    const tenant = this.selectedTenant();
+
+    if (!tenant) {
+      return;
+    }
+
+    this.editingEnvironmentId.set(null);
+
+    this.environmentForm = {
+      ...this.emptyEnvironmentForm(),
+      tenantId: tenant.id,
+    };
+
+    this.environmentFormVisible.set(true);
+    this.operationMessage.set(null);
+    this.errorMessage.set(null);
+  }
+
+  openEditEnvironment(
+    environment: Environment,
+  ): void {
+    this.editingEnvironmentId.set(environment.id);
+
+    this.environmentForm = {
+      tenantId: environment.tenantId,
+      name: environment.name,
+      status: environment.status,
+    };
+
+    this.environmentFormVisible.set(true);
+    this.operationMessage.set(null);
+    this.errorMessage.set(null);
+  }
+
+  closeEnvironmentForm(): void {
+    this.environmentFormVisible.set(false);
+    this.editingEnvironmentId.set(null);
+  }
+
+  async saveEnvironment(): Promise<void> {
+    const tenant = this.selectedTenant();
+
+    if (!tenant) {
+      return;
+    }
+
+    if (!this.environmentForm.name.trim()) {
+      this.errorMessage.set(
+        'Informe o nome do ambiente.',
+      );
+      return;
+    }
+
+    this.savingEnvironment.set(true);
+    this.errorMessage.set(null);
+    this.operationMessage.set(null);
+
+    try {
+      const editingId = this.editingEnvironmentId();
+
+      const input: EnvironmentInput = {
+        ...this.environmentForm,
+        tenantId: tenant.id,
+      };
+
+      editingId
+        ? await this.service.updateEnvironment(
+            editingId,
+            input,
+          )
+        : await this.service.createEnvironment(input);
+
+      this.operationMessage.set(
+        editingId
+          ? 'Ambiente atualizado com sucesso.'
+          : 'Ambiente cadastrado com sucesso.',
+      );
+
+      this.closeEnvironmentForm();
+
+      await this.loadEnvironments(tenant.id);
+    } catch {
+      this.errorMessage.set(
+        'Não foi possível salvar o ambiente.',
+      );
+    } finally {
+      this.savingEnvironment.set(false);
+    }
+  }
+
+  async deleteEnvironment(
+    environment: Environment,
+  ): Promise<void> {
+    const tenant = this.selectedTenant();
+
+    if (!tenant) {
+      return;
+    }
+
+    this.errorMessage.set(null);
+    this.operationMessage.set(null);
+
+    try {
+      await this.service.deleteEnvironment(
+        environment.id,
+      );
+
+      await this.loadEnvironments(tenant.id);
+
+      this.operationMessage.set(
+        'Ambiente excluído com sucesso.',
+      );
+    } catch {
+      this.errorMessage.set(
+        'Não foi possível excluir o ambiente.',
+      );
+    }
+  }
+
   statusLabel(
-    status: OrganizationStatus,
+    status: OrganizationStatus | TenantEnvironmentStatus,
   ): string {
-    const labels: Record<OrganizationStatus, string> = {
+    const labels: Record<
+      OrganizationStatus | TenantEnvironmentStatus,
+      string
+    > = {
       provisioning: 'Provisionando',
       active: 'Ativa',
       inactive: 'Inativa',
@@ -269,9 +556,113 @@ implements OnInit {
     return labels[status];
   }
 
+  private async loadModules(
+    organizationId: string,
+  ): Promise<void> {
+    this.loadingModules.set(true);
+
+    try {
+      const response =
+        await this.service.getOrganizationModules(
+          organizationId,
+        );
+
+      this.modules.set(response.modules);
+
+      this.enabledModules.set(
+        response.modules
+          .filter(module => module.enabled)
+          .map(module => module.key),
+      );
+    } catch {
+      this.modules.set([]);
+      this.enabledModules.set([]);
+
+      this.errorMessage.set(
+        'Não foi possível carregar os aplicativos da organização.',
+      );
+    } finally {
+      this.loadingModules.set(false);
+    }
+  }
+
+  private async loadTenants(
+    organizationId: string,
+  ): Promise<void> {
+    this.loadingTenants.set(true);
+
+    try {
+      const tenants =
+        await this.service.listTenants(
+          organizationId,
+        );
+
+      this.tenants.set(tenants);
+
+      const selected = this.selectedTenant();
+
+      if (selected) {
+        const updated = tenants.find(
+          tenant => tenant.id === selected.id,
+        );
+
+        if (updated) {
+          this.selectedTenant.set(updated);
+        }
+      }
+    } catch {
+      this.tenants.set([]);
+
+      this.errorMessage.set(
+        'Não foi possível carregar os tenants da organização.',
+      );
+    } finally {
+      this.loadingTenants.set(false);
+    }
+  }
+
+  private async loadEnvironments(
+    tenantId: string,
+  ): Promise<void> {
+    this.loadingEnvironments.set(true);
+
+    try {
+      const environments =
+        await this.service.listEnvironments(
+          tenantId,
+        );
+
+      this.environments.set(environments);
+    } catch {
+      this.environments.set([]);
+
+      this.errorMessage.set(
+        'Não foi possível carregar os ambientes do tenant.',
+      );
+    } finally {
+      this.loadingEnvironments.set(false);
+    }
+  }
+
   private emptyForm(): OrganizationInput {
     return {
       code: '',
+      name: '',
+      status: 'provisioning',
+    };
+  }
+
+  private emptyTenantForm(): TenantInput {
+    return {
+      organizationId: '',
+      name: '',
+      status: 'provisioning',
+    };
+  }
+
+  private emptyEnvironmentForm(): EnvironmentInput {
+    return {
+      tenantId: '',
       name: '',
       status: 'provisioning',
     };

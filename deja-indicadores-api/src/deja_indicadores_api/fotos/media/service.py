@@ -96,7 +96,6 @@ FOTOS_MODULE_KEY = "fotos"
 FOTOS_MEDIA_READER_ROLES = frozenset(
     {
         UserModuleRole.MANAGER,
-        UserModuleRole.ANALYST,
         UserModuleRole.VIEWER,
     }
 )
@@ -104,7 +103,6 @@ FOTOS_MEDIA_READER_ROLES = frozenset(
 FOTOS_MEDIA_OPERATOR_ROLES = frozenset(
     {
         UserModuleRole.MANAGER,
-        UserModuleRole.ANALYST,
     }
 )
 

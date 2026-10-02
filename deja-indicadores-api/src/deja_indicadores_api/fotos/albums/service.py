@@ -50,7 +50,6 @@ FOTOS_MODULE_KEY = "fotos"
 FOTOS_ALBUM_READER_ROLES = frozenset(
     {
         UserModuleRole.MANAGER,
-        UserModuleRole.ANALYST,
         UserModuleRole.VIEWER,
     }
 )
@@ -58,7 +57,6 @@ FOTOS_ALBUM_READER_ROLES = frozenset(
 FOTOS_ALBUM_OPERATOR_ROLES = frozenset(
     {
         UserModuleRole.MANAGER,
-        UserModuleRole.ANALYST,
     }
 )
 

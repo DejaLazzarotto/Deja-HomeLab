@@ -10,7 +10,7 @@
   <header class="user-list__header">
     <div class="user-list__heading">
       <span class="user-list__eyebrow">
-        Deja Indicadores
+        Administração da plataforma
       </span>
 
       <h2 class="user-list__title">
@@ -18,11 +18,16 @@
       </h2>
 
       <p class="user-list__description">
-        Gerencie usuários, papéis, status, escopos e senhas.
+        Gerencie usuários, escopos institucionais,
+        acessos por aplicativo e senhas.
       </p>
     </div>
 
-    @if (!formVisible() && !passwordFormVisible()) {
+    @if (
+      !formVisible()
+      && !passwordFormVisible()
+      && !moduleAccessFormVisible()
+    ) {
       <button
         class="user-list__primary-button"
         type="button"
@@ -58,7 +63,7 @@
           </h3>
 
           <p>
-            Informe os dados de acesso e o escopo institucional.
+            Informe os dados do usuário e seu escopo institucional.
           </p>
         </div>
       </div>
@@ -89,7 +94,7 @@
         </label>
 
         <label class="user-list__field">
-          <span>Papel</span>
+          <span>Tipo de usuário</span>
 
           <select
             name="role"
@@ -97,7 +102,10 @@
             [(ngModel)]="form.role"
             (ngModelChange)="onRoleChange()"
           >
-            @for (role of roleOptions; track role.value) {
+            @for (
+              role of roleOptions;
+              track role.value
+            ) {
               <option [value]="role.value">
                 {{ role.label }}
               </option>
@@ -125,7 +133,7 @@
 
         @if (form.role !== 'platform_admin') {
           <label class="user-list__field">
-            <span>Organização</span>
+            <span>Empresa</span>
 
             <select
               name="organizationId"
@@ -137,7 +145,7 @@
                 [ngValue]="null"
                 disabled
               >
-                Selecione a organização
+                Selecione a empresa
               </option>
 
               @for (
@@ -185,7 +193,8 @@
         }
 
         @if (
-          form.role === 'manager'
+          form.role === 'user'
+          || form.role === 'manager'
           || form.role === 'analyst'
           || form.role === 'viewer'
           || form.role === 'client'
@@ -296,6 +305,14 @@
         }
       </div>
 
+      @if (form.role === 'user') {
+        <p class="user-list__description">
+          O usuário será criado sem função global.
+          Os acessos aos aplicativos serão definidos
+          separadamente pela ação Acessos.
+        </p>
+      }
+
       <div class="user-list__form-actions">
         <button
           class="user-list__action"
@@ -323,6 +340,142 @@
         </button>
       </div>
     </form>
+  }
+
+  @if (
+    moduleAccessFormVisible()
+    && moduleAccessUser()
+  ) {
+    <section class="user-list__form">
+      <div class="user-list__form-header">
+        <div>
+          <h3>
+            Acessos por aplicativo
+          </h3>
+
+          <p>
+            {{ moduleAccessUser()?.name }}
+          </p>
+        </div>
+      </div>
+
+      @if (loadingModuleAccesses()) {
+        <div class="user-list__empty">
+          <h3>
+            Carregando acessos...
+          </h3>
+
+          <p>
+            Consultando os aplicativos disponíveis
+            para a empresa deste usuário.
+          </p>
+        </div>
+      } @else {
+        <div class="user-list__form-grid">
+          @for (
+            module of moduleAccesses();
+            track module.key
+          ) {
+            @if (module.organizationEnabled) {
+              <div class="user-list__field">
+                <label>
+                  <input
+                    type="checkbox"
+                    [ngModel]="module.hasAccess"
+                    [ngModelOptions]="{
+                      standalone: true
+                    }"
+                    (ngModelChange)="
+                      setModuleAccessEnabled(
+                        module.key,
+                        $event
+                      )
+                    "
+                  />
+
+                  <strong>
+                    {{ module.name }}
+                  </strong>
+                </label>
+
+                @if (module.description) {
+                  <small>
+                    {{ module.description }}
+                  </small>
+                }
+
+                @if (module.hasAccess) {
+                  <label>
+                    <span>Papel no aplicativo</span>
+
+                    <select
+                      [ngModel]="module.role"
+                      [ngModelOptions]="{
+                        standalone: true
+                      }"
+                      (ngModelChange)="
+                        setModuleAccessRole(
+                          module.key,
+                          $event
+                        )
+                      "
+                    >
+                      @for (
+                        role of moduleRoleOptions(
+                          module.key
+                        );
+                        track role.value
+                      ) {
+                        <option [value]="role.value">
+                          {{ role.label }}
+                        </option>
+                      }
+                    </select>
+                  </label>
+                }
+              </div>
+            }
+          }
+        </div>
+
+        @if (!moduleAccesses().length) {
+          <div class="user-list__empty">
+            <h3>
+              Nenhum aplicativo disponível
+            </h3>
+
+            <p>
+              A empresa deste usuário não possui
+              aplicativos contratados.
+            </p>
+          </div>
+        }
+
+        <div class="user-list__form-actions">
+          <button
+            class="user-list__action"
+            type="button"
+            [disabled]="savingModuleAccesses()"
+            (click)="cancelModuleAccess()"
+          >
+            Cancelar
+          </button>
+
+          <button
+            class="user-list__primary-button"
+            type="button"
+            [disabled]="savingModuleAccesses()"
+            (click)="saveModuleAccesses()"
+          >
+            {{
+              savingModuleAccesses()
+                ? 'Salvando...'
+                : 'Salvar acessos'
+            }}
+          </button>
+        </div>
+      }
+    </section>
   }
 
   @if (
@@ -410,7 +563,7 @@
     (ngSubmit)="applyFilters()"
   >
     <label class="user-list__field">
-      <span>Organização</span>
+      <span>Empresa</span>
 
       <select
         name="filterOrganizationId"
@@ -554,7 +707,7 @@
             </th>
 
             <th scope="col">
-              Papel
+              Tipo
             </th>
 
             <th scope="col">
@@ -643,6 +796,16 @@
                   >
                     Editar
                   </button>
+
+                  @if (canManageModuleAccess(user)) {
+                    <button
+                      class="user-list__action"
+                      type="button"
+                      (click)="openModuleAccess(user)"
+                    >
+                      Acessos
+                    </button>
+                  }
 
                   <button
                     class="user-list__action"

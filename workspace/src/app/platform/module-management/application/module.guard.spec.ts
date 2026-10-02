@@ -2,17 +2,32 @@ import { signal } from '@angular/core';
 
 import { TestBed } from '@angular/core/testing';
 
-import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
+import {
+  ActivatedRouteSnapshot,
+  Router,
+  RouterStateSnapshot,
+} from '@angular/router';
 
 import { of } from 'rxjs';
 
-import { AuthenticationService } from '../../authentication/application/authentication.service';
+import {
+  AuthenticationService,
+} from '../../authentication/application/authentication.service';
 
-import { AuthenticatedUser } from '../../authentication/domain/authenticated-user';
+import type {
+  AuthenticatedUser,
+  UserModuleRole,
+} from '../../authentication/domain/authenticated-user';
+
+import {
+  ModuleKey,
+} from '../domain/module-key';
 
 import { moduleGuard } from './module.guard';
 
-function createUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
+function createUser(
+  overrides: Partial<AuthenticatedUser> = {},
+): AuthenticatedUser {
   return {
     id: '11111111-1111-1111-1111-111111111111',
     organizationId: '22222222-2222-2222-2222-222222222222',
@@ -30,6 +45,8 @@ function createUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUs
 function executeGuard(
   user: AuthenticatedUser | null,
   accessToken: string | null,
+  moduleKey: ModuleKey = 'reports',
+  allowedRoles?: readonly UserModuleRole[],
 ): {
   result: ReturnType<ReturnType<typeof moduleGuard>>;
   createUrlTree: ReturnType<typeof vi.fn>;
@@ -59,7 +76,13 @@ function executeGuard(
   });
 
   const result = TestBed.runInInjectionContext(() =>
-    moduleGuard('reports')({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot),
+    moduleGuard(
+      moduleKey,
+      allowedRoles,
+    )(
+      {} as ActivatedRouteSnapshot,
+      {} as RouterStateSnapshot,
+    ),
   );
 
   return {
@@ -84,7 +107,13 @@ describe('moduleGuard', () => {
       ],
     });
 
-    const { result, createUrlTree } = executeGuard(user, 'access-token');
+    const {
+      result,
+      createUrlTree,
+    } = executeGuard(
+      user,
+      'access-token',
+    );
 
     expect(result).toBe(true);
     expect(createUrlTree).not.toHaveBeenCalled();
@@ -95,7 +124,13 @@ describe('moduleGuard', () => {
       enabledModules: ['indicators'],
     });
 
-    const { result, createUrlTree } = executeGuard(user, 'access-token');
+    const {
+      result,
+      createUrlTree,
+    } = executeGuard(
+      user,
+      'access-token',
+    );
 
     expect(result).toEqual({
       commands: ['/'],
@@ -103,8 +138,87 @@ describe('moduleGuard', () => {
     expect(createUrlTree).toHaveBeenCalledWith(['/']);
   });
 
+  it('should allow fotos manager in administrative routes', () => {
+    const user = createUser({
+      role: 'user',
+      enabledModules: ['fotos'],
+      moduleAccess: [
+        {
+          moduleKey: 'fotos',
+          role: 'manager',
+        },
+      ],
+    });
+
+    const {
+      result,
+      createUrlTree,
+    } = executeGuard(
+      user,
+      'access-token',
+      'fotos',
+      ['manager'],
+    );
+
+    expect(result).toBe(true);
+    expect(createUrlTree).not.toHaveBeenCalled();
+  });
+
+  it('should redirect fotos viewer from administrative routes', () => {
+    const user = createUser({
+      role: 'user',
+      enabledModules: ['fotos'],
+      moduleAccess: [
+        {
+          moduleKey: 'fotos',
+          role: 'viewer',
+        },
+      ],
+    });
+
+    const {
+      result,
+      createUrlTree,
+    } = executeGuard(
+      user,
+      'access-token',
+      'fotos',
+      ['manager'],
+    );
+
+    expect(result).toEqual({
+      commands: ['/'],
+    });
+    expect(createUrlTree).toHaveBeenCalledWith(['/']);
+  });
+
+  it('should allow platform admin in restricted module routes', () => {
+    const user = createUser({
+      role: 'platform_admin',
+    });
+
+    const {
+      result,
+      createUrlTree,
+    } = executeGuard(
+      user,
+      'access-token',
+      'fotos',
+      ['manager'],
+    );
+
+    expect(result).toBe(true);
+    expect(createUrlTree).not.toHaveBeenCalled();
+  });
+
   it('should redirect a missing session to login', () => {
-    const { result, createUrlTree } = executeGuard(null, null);
+    const {
+      result,
+      createUrlTree,
+    } = executeGuard(
+      null,
+      null,
+    );
 
     expect(result).toEqual({
       commands: ['/login'],

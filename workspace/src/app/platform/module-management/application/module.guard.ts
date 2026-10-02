@@ -15,29 +15,56 @@ import {
   AuthenticationService,
 } from '../../authentication/application/authentication.service';
 
+import type {
+  UserModuleRole,
+} from '../../authentication/domain/authenticated-user';
+
 import {
   ModuleKey,
 } from '../domain/module-key';
 
 import {
   canAccessModule,
+  getModuleRole,
 } from './module-access';
 
 export const moduleGuard = (
   moduleKey: ModuleKey,
+  allowedRoles?: readonly UserModuleRole[],
 ): CanActivateFn => () => {
   const authentication = inject(AuthenticationService);
   const router = inject(Router);
 
   const authorize = (
     user: ReturnType<AuthenticationService['user']>,
-  ): true | ReturnType<Router['createUrlTree']> => (
-    canAccessModule(user, moduleKey)
+  ): true | ReturnType<Router['createUrlTree']> => {
+    if (!canAccessModule(user, moduleKey)) {
+      return router.createUrlTree([
+        '/',
+      ]);
+    }
+
+    if (
+      user?.role === 'platform_admin'
+      || !allowedRoles?.length
+    ) {
+      return true;
+    }
+
+    const moduleRole = getModuleRole(
+      user,
+      moduleKey,
+    );
+
+    return (
+      moduleRole
+      && allowedRoles.includes(moduleRole)
+    )
       ? true
       : router.createUrlTree([
           '/',
-        ])
-  );
+        ]);
+  };
 
   const currentUser = authentication.user();
 

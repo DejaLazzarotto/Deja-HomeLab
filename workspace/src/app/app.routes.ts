@@ -176,7 +176,7 @@ export const routes: Routes = [
     canActivate: [
       authenticationGuard,
       workspaceAccessGuard,
-      moduleGuard('fotos'),
+      moduleGuard('fotos', ['manager']),
     ],
     loadComponent: workspacePage,
   },
@@ -186,7 +186,7 @@ export const routes: Routes = [
     canActivate: [
       authenticationGuard,
       workspaceAccessGuard,
-      moduleGuard('fotos'),
+      moduleGuard('fotos', ['manager']),
     ],
     loadComponent: workspacePage,
   },
@@ -196,7 +196,7 @@ export const routes: Routes = [
     canActivate: [
       authenticationGuard,
       workspaceAccessGuard,
-      moduleGuard('fotos'),
+      moduleGuard('fotos', ['manager']),
     ],
     loadComponent: workspacePage,
   },

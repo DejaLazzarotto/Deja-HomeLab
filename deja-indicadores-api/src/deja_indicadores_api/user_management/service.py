@@ -35,10 +35,12 @@ from deja_indicadores_api.user_management.exceptions import (
     UserEmailAlreadyExistsError,
     UserModuleAccessNotApplicableError,
     UserModuleNotEnabledForOrganizationError,
+    UserModuleRoleNotAllowedError,
     UserNotFoundError,
 )
 from deja_indicadores_api.user_management.models import (
     UserModel,
+    UserModuleRole,
     UserRole,
     UserStatus,
 )
@@ -283,6 +285,16 @@ class UserService:
                 organization_id,
                 module_key,
             )
+
+        for module in input_data.modules:
+            if (
+                module.module_key == "fotos"
+                and module.role == UserModuleRole.ANALYST
+            ):
+                raise UserModuleRoleNotAllowedError(
+                    module.module_key,
+                    module.role.value,
+                )
 
         self._user_module_access_repository.replace(
             user.id,

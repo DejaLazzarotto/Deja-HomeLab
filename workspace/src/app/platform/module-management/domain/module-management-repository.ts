@@ -15,6 +15,13 @@ import {
   OrganizationModules,
 } from './organization-modules';
 
+import {
+  Environment,
+  EnvironmentInput,
+  Tenant,
+  TenantInput,
+} from './tenant-environment';
+
 export interface ModuleManagementRepository {
 
   listOrganizations(): Promise<readonly Organization[]>;
@@ -27,6 +34,40 @@ export interface ModuleManagementRepository {
     id: string,
     input: OrganizationInput,
   ): Promise<Organization>;
+
+  listTenants(
+    organizationId?: string,
+  ): Promise<readonly Tenant[]>;
+
+  createTenant(
+    input: TenantInput,
+  ): Promise<Tenant>;
+
+  updateTenant(
+    id: string,
+    input: TenantInput,
+  ): Promise<Tenant>;
+
+  deleteTenant(
+    id: string,
+  ): Promise<void>;
+
+  listEnvironments(
+    tenantId?: string,
+  ): Promise<readonly Environment[]>;
+
+  createEnvironment(
+    input: EnvironmentInput,
+  ): Promise<Environment>;
+
+  updateEnvironment(
+    id: string,
+    input: EnvironmentInput,
+  ): Promise<Environment>;
+
+  deleteEnvironment(
+    id: string,
+  ): Promise<void>;
 
   listCatalog(): Promise<readonly ModuleCatalogItem[]>;
 

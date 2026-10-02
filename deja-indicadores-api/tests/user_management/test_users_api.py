@@ -1707,3 +1707,112 @@ def test_client_role_does_not_use_user_module_access(
         response.json()["error"]
         == "user_module_access_not_applicable"
     )
+
+def test_neutral_user_uses_module_access_for_functional_role(
+    client: TestClient,
+) -> None:
+    """Mantém usuário neutro e define função somente por aplicativo."""
+
+    organization, tenant, environment = create_hierarchy(client)
+    organization_id = str(organization["id"])
+
+    configure_user_module_catalog(
+        client,
+        organization_id,
+        {
+            "indicators",
+            "fotos",
+        },
+    )
+
+    user = create_user(
+        client,
+        organization_id,
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+        name="Usuário Neutro",
+        email="neutro@deja.com",
+        role="user",
+    )
+
+    assert user["role"] == "user"
+
+    initial_response = client.get(
+        f"{USERS_URL}/{user['id']}/modules"
+    )
+
+    assert initial_response.status_code == 200
+
+    initial_modules = {
+        module["key"]: module
+        for module in initial_response.json()["modules"]
+    }
+
+    assert initial_modules["indicators"]["has_access"] is False
+    assert initial_modules["indicators"]["role"] is None
+    assert initial_modules["fotos"]["has_access"] is False
+    assert initial_modules["fotos"]["role"] is None
+
+    update_response = client.put(
+        f"{USERS_URL}/{user['id']}/modules",
+        json={
+            "modules": [
+                {
+                    "module_key": "fotos",
+                    "role": "manager",
+                }
+            ]
+        },
+    )
+
+    assert update_response.status_code == 200
+
+    updated_modules = {
+        module["key"]: module
+        for module in update_response.json()["modules"]
+    }
+
+    assert updated_modules["fotos"]["has_access"] is True
+    assert updated_modules["fotos"]["role"] == "manager"
+    assert updated_modules["indicators"]["has_access"] is False
+    assert updated_modules["indicators"]["role"] is None
+
+def test_update_user_module_accesses_rejects_analyst_for_fotos(
+    client: TestClient,
+) -> None:
+    """Impede papel analyst no módulo Fotos."""
+
+    organization, tenant, environment = create_hierarchy(client)
+    organization_id = str(organization["id"])
+
+    configure_user_module_catalog(
+        client,
+        organization_id,
+        {"fotos"},
+    )
+
+    user = create_user(
+        client,
+        organization_id,
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+        role="user",
+    )
+
+    response = client.put(
+        f"{USERS_URL}/{user['id']}/modules",
+        json={
+            "modules": [
+                {
+                    "module_key": "fotos",
+                    "role": "analyst",
+                }
+            ]
+        },
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["error"]
+        == "user_module_role_not_allowed"
+    )

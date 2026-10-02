@@ -197,4 +197,149 @@ describe('HttpUserRepository', () => {
     });
   });
 
+it('should load user module accesses', async () => {
+  const resultPromise =
+    repository.getModuleAccesses(
+      userResponse.id,
+    );
+
+  const request = httpTesting.expectOne(
+    `/api/v1/users/${userResponse.id}/modules`,
+  );
+
+  expect(request.request.method).toBe('GET');
+
+  request.flush({
+    user_id: userResponse.id,
+    modules: [
+      {
+        key: 'fotos',
+        name: 'Fotos',
+        description: 'Gestão de fotos e vídeos.',
+        display_order: 50,
+        organization_enabled: true,
+        has_access: true,
+        role: 'manager',
+      },
+      {
+        key: 'indicators',
+        name: 'Indicadores',
+        description: 'Gestão de indicadores.',
+        display_order: 10,
+        organization_enabled: true,
+        has_access: false,
+        role: null,
+      },
+    ],
+  });
+
+  await expect(resultPromise).resolves.toEqual({
+    userId: userResponse.id,
+    modules: [
+      {
+        key: 'fotos',
+        name: 'Fotos',
+        description: 'Gestão de fotos e vídeos.',
+        displayOrder: 50,
+        organizationEnabled: true,
+        hasAccess: true,
+        role: 'manager',
+      },
+      {
+        key: 'indicators',
+        name: 'Indicadores',
+        description: 'Gestão de indicadores.',
+        displayOrder: 10,
+        organizationEnabled: true,
+        hasAccess: false,
+        role: null,
+      },
+    ],
+  });
+});
+
+it('should save user module accesses', async () => {
+  const resultPromise =
+    repository.updateModuleAccesses(
+      userResponse.id,
+      [
+        {
+          moduleKey: 'fotos',
+          role: 'manager',
+        },
+        {
+          moduleKey: 'indicators',
+          role: 'viewer',
+        },
+      ],
+    );
+
+  const request = httpTesting.expectOne(
+    `/api/v1/users/${userResponse.id}/modules`,
+  );
+
+  expect(request.request.method).toBe('PUT');
+
+  expect(request.request.body).toEqual({
+    modules: [
+      {
+        module_key: 'fotos',
+        role: 'manager',
+      },
+      {
+        module_key: 'indicators',
+        role: 'viewer',
+      },
+    ],
+  });
+
+  request.flush({
+    user_id: userResponse.id,
+    modules: [
+      {
+        key: 'fotos',
+        name: 'Fotos',
+        description: 'Gestão de fotos e vídeos.',
+        display_order: 50,
+        organization_enabled: true,
+        has_access: true,
+        role: 'manager',
+      },
+      {
+        key: 'indicators',
+        name: 'Indicadores',
+        description: 'Gestão de indicadores.',
+        display_order: 10,
+        organization_enabled: true,
+        has_access: true,
+        role: 'viewer',
+      },
+    ],
+  });
+
+  await expect(resultPromise).resolves.toEqual({
+    userId: userResponse.id,
+    modules: [
+      {
+        key: 'fotos',
+        name: 'Fotos',
+        description: 'Gestão de fotos e vídeos.',
+        displayOrder: 50,
+        organizationEnabled: true,
+        hasAccess: true,
+        role: 'manager',
+      },
+      {
+        key: 'indicators',
+        name: 'Indicadores',
+        description: 'Gestão de indicadores.',
+        displayOrder: 10,
+        organizationEnabled: true,
+        hasAccess: true,
+        role: 'viewer',
+      },
+    ],
+  });
+});
+
 });

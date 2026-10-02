@@ -18,6 +18,11 @@ import {
   UserInput,
 } from './user-input';
 
+import {
+  UserModuleAccesses,
+  UserModuleAccessSelection,
+} from './user-module-access';
+
 export interface UserRepository {
 
   list(
@@ -41,5 +46,14 @@ export interface UserRepository {
     id: string,
     password: string,
   ): Promise<User>;
+
+  getModuleAccesses(
+    id: string,
+  ): Promise<UserModuleAccesses>;
+
+  updateModuleAccesses(
+    id: string,
+    modules: readonly UserModuleAccessSelection[],
+  ): Promise<UserModuleAccesses>;
 
 }

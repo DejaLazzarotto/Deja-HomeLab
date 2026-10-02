@@ -52,7 +52,6 @@ FOTOS_MODULE_KEY = "fotos"
 PERSON_READER_ROLES = frozenset(
     {
         UserModuleRole.MANAGER,
-        UserModuleRole.ANALYST,
         UserModuleRole.VIEWER,
     }
 )
@@ -60,7 +59,6 @@ PERSON_READER_ROLES = frozenset(
 PERSON_EDITOR_ROLES = frozenset(
     {
         UserModuleRole.MANAGER,
-        UserModuleRole.ANALYST,
     }
 )
 

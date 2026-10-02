@@ -2024,7 +2024,7 @@ def test_media_role_permissions_match_reader_operator_and_manager(
     ],
     test_settings: Settings,
 ) -> None:
-    """Valida leitura, operação e curadoria conforme o papel."""
+    """Valida leitura e administração conforme o papel do módulo."""
 
     (
         organization_id,
@@ -2039,7 +2039,7 @@ def test_media_role_permissions_match_reader_operator_and_manager(
         organization_id,
         tenant_id=tenant_id,
         environment_id=environment_id,
-     email="viewer.permissions.fotos.media@deja.com",
+        email="viewer.permissions.fotos.media@deja.com",
         role="viewer",
         module_access={"fotos": "viewer"},
     )
@@ -2086,32 +2086,29 @@ def test_media_role_permissions_match_reader_operator_and_manager(
         analyst,
     )
 
+    analyst_list_response = client.get(
+        MEDIA_URL,
+        params={
+            "environment_id": environment_id,
+        },
+        headers=analyst_headers,
+    )
+
+    assert analyst_list_response.status_code == 403
+
     analyst_upload_response = upload_image(
         client,
         environment_id=environment_id,
         album_id=album_id,
         headers=analyst_headers,
-        file_name="analyst-permitido.jpg",
+        file_name="analyst-sem-permissao.jpg",
         content=create_test_jpeg(
             width=31,
             height=19,
         ),
     )
 
-    assert analyst_upload_response.status_code == 201
-
-    media_id = analyst_upload_response.json()["id"]
-
-    analyst_bulk_response = client.patch(
-        f"{MEDIA_URL}/bulk",
-        json={
-            "operation": "clear_original_date_conflict",
-            "media_ids": [media_id],
-        },
-        headers=analyst_headers,
-    )
-
-    assert analyst_bulk_response.status_code == 403
+    assert analyst_upload_response.status_code == 403
 
     manager = create_user(
         client,
@@ -2119,13 +2116,29 @@ def test_media_role_permissions_match_reader_operator_and_manager(
         tenant_id=tenant_id,
         environment_id=environment_id,
         email="manager.permissions.fotos.media@deja.com",
-        role="manager",
+        role="user",
         module_access={"fotos": "manager"},
     )
     manager_headers = authorization_headers(
         test_settings,
         manager,
     )
+
+    manager_upload_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=manager_headers,
+        file_name="manager-permitido.jpg",
+        content=create_test_jpeg(
+            width=31,
+            height=19,
+        ),
+    )
+
+    assert manager_upload_response.status_code == 201
+
+    media_id = manager_upload_response.json()["id"]
 
     manager_bulk_response = client.patch(
         f"{MEDIA_URL}/bulk",
@@ -4413,7 +4426,7 @@ def test_update_video_description_rejects_more_than_5000_characters(
 
     assert response.status_code == 422
 
-def test_update_video_description_allows_analyst_and_rejects_viewer(
+def test_update_video_description_rejects_analyst_and_viewer(
     client: TestClient,
     media_context: tuple[
         str,
@@ -4424,7 +4437,7 @@ def test_update_video_description_allows_analyst_and_rejects_viewer(
     ],
     test_settings: Settings,
 ) -> None:
-    """Permite descrição para analyst e bloqueia viewer."""
+    """Bloqueia alteração da descrição para analyst e viewer."""
 
     (
         organization_id,
@@ -4463,15 +4476,12 @@ def test_update_video_description_allows_analyst_and_rejects_viewer(
     analyst_response = client.patch(
         f"{MEDIA_URL}/{media_id}/description",
         json={
-            "description": "Descrição cadastrada pelo analista.",
+            "description": "Analyst não pode alterar esta descrição.",
         },
         headers=analyst_headers,
     )
 
-    assert analyst_response.status_code == 200
-    assert analyst_response.json()["description"] == (
-        "Descrição cadastrada pelo analista."
-    )
+    assert analyst_response.status_code == 403
 
     viewer = create_user(
         client,
@@ -4481,7 +4491,7 @@ def test_update_video_description_allows_analyst_and_rejects_viewer(
         email="viewer.description.fotos.media@deja.com",
         role="viewer",
         module_access={"fotos": "viewer"},
-)
+    )
     viewer_headers = authorization_headers(
         test_settings,
         viewer,
@@ -4503,9 +4513,8 @@ def test_update_video_description_allows_analyst_and_rejects_viewer(
     )
 
     assert get_response.status_code == 200
-    assert get_response.json()["description"] == (
-        "Descrição cadastrada pelo analista."
-    )
+    assert get_response.json()["description"] is None
+
 
 def test_update_video_description_rejects_cross_scope_user(
     client: TestClient,

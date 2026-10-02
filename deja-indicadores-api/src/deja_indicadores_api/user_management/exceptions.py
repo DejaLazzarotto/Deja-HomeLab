@@ -122,3 +122,18 @@ class UserModuleNotEnabledForOrganizationError(ApplicationError):
             f"O módulo '{module_key}' não está habilitado para "
             f"a organização com ID '{organization_id}'."
         )
+
+class UserModuleRoleNotAllowedError(ApplicationError):
+    """Papel funcional não é permitido para o módulo informado."""
+
+    error_code = "user_module_role_not_allowed"
+
+    def __init__(
+        self,
+        module_key: str,
+        role: str,
+    ) -> None:
+        super().__init__(
+            f"O papel '{role}' não é permitido "
+            f"para o módulo '{module_key}'."
+        )

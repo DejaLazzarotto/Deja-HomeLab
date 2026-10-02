@@ -90,7 +90,6 @@ FotosMediaReader = Annotated[
         require_module_roles(
             "fotos",
             UserModuleRole.MANAGER,
-            UserModuleRole.ANALYST,
             UserModuleRole.VIEWER,
         )
     ),
@@ -114,7 +113,6 @@ FotosMediaOperator = Annotated[
         require_module_roles(
             "fotos",
             UserModuleRole.MANAGER,
-            UserModuleRole.ANALYST,
         )
     ),
 ]

@@ -13,3 +13,4 @@ export * from './user-input';
 export * from './user-not-found.error';
 export * from './user-repository';
 export * from './user-validator';
+export * from './user-module-access';

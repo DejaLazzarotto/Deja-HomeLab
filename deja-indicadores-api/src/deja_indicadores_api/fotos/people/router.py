@@ -56,7 +56,6 @@ PersonReader = Annotated[
         require_module_roles(
             "fotos",
             UserModuleRole.MANAGER,
-            UserModuleRole.ANALYST,
             UserModuleRole.VIEWER,
         )
     ),
@@ -68,7 +67,6 @@ PersonEditor = Annotated[
         require_module_roles(
             "fotos",
             UserModuleRole.MANAGER,
-            UserModuleRole.ANALYST,
         )
     ),
 ]

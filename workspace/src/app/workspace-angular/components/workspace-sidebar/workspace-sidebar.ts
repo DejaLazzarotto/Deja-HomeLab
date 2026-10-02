@@ -26,6 +26,7 @@ import {
 
 import {
   canAccessModule,
+  getModuleRole,
 } from '../../../platform/module-management/application/module-access';
 
 import {
@@ -171,7 +172,22 @@ export class WorkspaceSidebarComponent
         const moduleKey = item.metadata?.['moduleKey'];
 
         if (isModuleKey(moduleKey)) {
-          return canAccessModule(user, moduleKey);
+          if (!canAccessModule(user, moduleKey)) {
+            return false;
+          }
+
+          if (moduleKey === 'fotos') {
+            if (user?.role === 'platform_admin') {
+              return true;
+            }
+
+            return (
+              getModuleRole(user, moduleKey)
+              === 'manager'
+            );
+          }
+
+          return true;
         }
 
         return true;
@@ -222,5 +238,4 @@ export class WorkspaceSidebarComponent
       navigation.icon,
     );
   }
-
 }

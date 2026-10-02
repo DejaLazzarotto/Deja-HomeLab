@@ -1,5 +1,6 @@
 import {
   HttpClient,
+  HttpParams,
 } from '@angular/common/http';
 
 import {
@@ -7,6 +8,8 @@ import {
 } from 'rxjs';
 
 import {
+  Environment,
+  EnvironmentInput,
   ModuleCatalogItem,
   ModuleKey,
   ModuleManagementRepository,
@@ -14,6 +17,8 @@ import {
   OrganizationInput,
   OrganizationModule,
   OrganizationModules,
+  Tenant,
+  TenantInput,
 } from '../domain';
 
 interface OrganizationResponse {
@@ -21,6 +26,24 @@ interface OrganizationResponse {
   readonly code: string;
   readonly name: string;
   readonly status: Organization['status'];
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
+interface TenantResponse {
+  readonly id: string;
+  readonly organization_id: string;
+  readonly name: string;
+  readonly status: Tenant['status'];
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
+interface EnvironmentResponse {
+  readonly id: string;
+  readonly tenant_id: string;
+  readonly name: string;
+  readonly status: Environment['status'];
   readonly created_at: string;
   readonly updated_at: string;
 }
@@ -61,7 +84,9 @@ implements ModuleManagementRepository {
       ),
     );
 
-    return response.map(item => this.mapOrganization(item));
+    return response.map(
+      item => this.mapOrganization(item),
+    );
   }
 
   async createOrganization(
@@ -89,6 +114,132 @@ implements ModuleManagementRepository {
     );
 
     return this.mapOrganization(response);
+  }
+
+  async listTenants(
+    organizationId?: string,
+  ): Promise<readonly Tenant[]> {
+    let params = new HttpParams();
+
+    if (organizationId) {
+      params = params.set(
+        'organization_id',
+        organizationId,
+      );
+    }
+
+    const response = await firstValueFrom(
+      this.http.get<readonly TenantResponse[]>(
+        '/api/v1/tenants',
+        {
+          params,
+        },
+      ),
+    );
+
+    return response.map(
+      item => this.mapTenant(item),
+    );
+  }
+
+  async createTenant(
+    input: TenantInput,
+  ): Promise<Tenant> {
+    const response = await firstValueFrom(
+      this.http.post<TenantResponse>(
+        '/api/v1/tenants',
+        this.mapTenantRequest(input),
+      ),
+    );
+
+    return this.mapTenant(response);
+  }
+
+  async updateTenant(
+    id: string,
+    input: TenantInput,
+  ): Promise<Tenant> {
+    const response = await firstValueFrom(
+      this.http.put<TenantResponse>(
+        `/api/v1/tenants/${id}`,
+        this.mapTenantRequest(input),
+      ),
+    );
+
+    return this.mapTenant(response);
+  }
+
+  async deleteTenant(
+    id: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(
+        `/api/v1/tenants/${id}`,
+      ),
+    );
+  }
+
+  async listEnvironments(
+    tenantId?: string,
+  ): Promise<readonly Environment[]> {
+    let params = new HttpParams();
+
+    if (tenantId) {
+      params = params.set(
+        'tenant_id',
+        tenantId,
+      );
+    }
+
+    const response = await firstValueFrom(
+      this.http.get<readonly EnvironmentResponse[]>(
+        '/api/v1/environments',
+        {
+          params,
+        },
+      ),
+    );
+
+    return response.map(
+      item => this.mapEnvironment(item),
+    );
+  }
+
+  async createEnvironment(
+    input: EnvironmentInput,
+  ): Promise<Environment> {
+    const response = await firstValueFrom(
+      this.http.post<EnvironmentResponse>(
+        '/api/v1/environments',
+        this.mapEnvironmentRequest(input),
+      ),
+    );
+
+    return this.mapEnvironment(response);
+  }
+
+  async updateEnvironment(
+    id: string,
+    input: EnvironmentInput,
+  ): Promise<Environment> {
+    const response = await firstValueFrom(
+      this.http.put<EnvironmentResponse>(
+        `/api/v1/environments/${id}`,
+        this.mapEnvironmentRequest(input),
+      ),
+    );
+
+    return this.mapEnvironment(response);
+  }
+
+  async deleteEnvironment(
+    id: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(
+        `/api/v1/environments/${id}`,
+      ),
+    );
   }
 
   async listCatalog(): Promise<readonly ModuleCatalogItem[]> {
@@ -146,12 +297,58 @@ implements ModuleManagementRepository {
     };
   }
 
+  private mapTenantRequest(
+    input: TenantInput,
+  ): Record<string, string> {
+    return {
+      organization_id: input.organizationId,
+      name: input.name.trim(),
+      status: input.status,
+    };
+  }
+
+  private mapEnvironmentRequest(
+    input: EnvironmentInput,
+  ): Record<string, string> {
+    return {
+      tenant_id: input.tenantId,
+      name: input.name.trim(),
+      status: input.status,
+    };
+  }
+
   private mapOrganization(
     response: OrganizationResponse,
   ): Organization {
     return {
       id: response.id,
       code: response.code,
+      name: response.name,
+      status: response.status,
+      createdAt: response.created_at,
+      updatedAt: response.updated_at,
+    };
+  }
+
+  private mapTenant(
+    response: TenantResponse,
+  ): Tenant {
+    return {
+      id: response.id,
+      organizationId: response.organization_id,
+      name: response.name,
+      status: response.status,
+      createdAt: response.created_at,
+      updatedAt: response.updated_at,
+    };
+  }
+
+  private mapEnvironment(
+    response: EnvironmentResponse,
+  ): Environment {
+    return {
+      id: response.id,
+      tenantId: response.tenant_id,
       name: response.name,
       status: response.status,
       createdAt: response.created_at,

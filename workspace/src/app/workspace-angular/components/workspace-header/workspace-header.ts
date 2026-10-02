@@ -48,6 +48,7 @@ export class WorkspaceHeaderComponent {
       analyst: 'Analista',
       viewer: 'Visualizador',
       client: 'Cliente',
+      user: 'Usuário',
     };
 
     return labels[role];

@@ -27,12 +27,14 @@ import {
 } from '../../../../deja-chamados/client-users';
 
 import {
+  UserModuleRole,
   UserRole,
 } from '../../../authentication/domain/authenticated-user';
 
 import {
   User,
   UserInput,
+  UserModuleAccess,
   UserService,
   UserStatus,
 } from '../../index';
@@ -65,6 +67,11 @@ export interface UserClientOption {
 
 interface UserRoleOption {
   readonly value: UserRole;
+  readonly label: string;
+}
+
+interface UserModuleRoleOption {
+  readonly value: UserModuleRole;
   readonly label: string;
 }
 
@@ -134,6 +141,21 @@ export class UserListComponent implements OnInit {
 
   readonly passwordUser = signal<User | null>(null);
 
+  readonly moduleAccessUser =
+    signal<User | null>(null);
+
+  readonly moduleAccesses =
+    signal<readonly UserModuleAccess[]>([]);
+
+  readonly moduleAccessFormVisible =
+    signal(false);
+
+  readonly loadingModuleAccesses =
+    signal(false);
+
+  readonly savingModuleAccesses =
+    signal(false);
+
   readonly errorMessage = signal<string | null>(null);
 
   readonly operationMessage = signal<string | null>(null);
@@ -171,6 +193,10 @@ export class UserListComponent implements OnInit {
       label: 'Administrador do tenant',
     },
     {
+      value: 'user',
+      label: 'Usuário',
+    },
+    {
       value: 'manager',
       label: 'Gestor',
     },
@@ -193,22 +219,33 @@ export class UserListComponent implements OnInit {
   }
 
   get roleOptions(): readonly UserRoleOption[] {
+    const selectableRoles: readonly UserRole[] = [
+      'platform_admin',
+      'organization_admin',
+      'tenant_admin',
+      'user',
+      'client',
+    ];
+
+    const available = this.allRoleOptions.filter(
+      option => selectableRoles.includes(option.value),
+    );
+
     if (this.currentUserRole === 'platform_admin') {
-      return this.allRoleOptions;
+      return available;
     }
 
     if (this.currentUserRole === 'organization_admin') {
-      return this.allRoleOptions.filter(
-        option => option.value !== 'platform_admin',
+      return available.filter(
+        option =>
+          option.value !== 'platform_admin',
       );
     }
 
-    return this.allRoleOptions.filter(
+    return available.filter(
       option => [
         'tenant_admin',
-        'manager',
-        'analyst',
-        'viewer',
+        'user',
         'client',
       ].includes(option.value),
     );
@@ -353,6 +390,9 @@ export class UserListComponent implements OnInit {
     this.password = '';
     this.passwordConfirmation = '';
 
+    this.moduleAccessFormVisible.set(false);
+    this.moduleAccessUser.set(null);
+
     this.formVisible.set(true);
     this.passwordFormVisible.set(false);
   }
@@ -364,6 +404,9 @@ export class UserListComponent implements OnInit {
     this.operationError.set(null);
     this.operationMessage.set(null);
     this.selectedClientId = null;
+
+    this.moduleAccessFormVisible.set(false);
+    this.moduleAccessUser.set(null);
 
     this.form = {
       organizationId: user.organizationId,
@@ -411,6 +454,170 @@ export class UserListComponent implements OnInit {
     this.editingUserId.set(null);
     this.selectedClientId = null;
     this.operationError.set(null);
+  }
+
+  async openModuleAccess(
+    user: User,
+  ): Promise<void> {
+    this.moduleAccessUser.set(user);
+    this.moduleAccesses.set([]);
+    this.moduleAccessFormVisible.set(true);
+
+    this.formVisible.set(false);
+    this.passwordFormVisible.set(false);
+
+    this.loadingModuleAccesses.set(true);
+    this.operationError.set(null);
+    this.operationMessage.set(null);
+
+    try {
+      const response =
+        await this.service.getModuleAccesses(
+          user.id,
+        );
+
+      this.moduleAccesses.set(response.modules);
+    } catch (error: unknown) {
+      this.operationError.set(
+        this.resolveErrorMessage(error),
+      );
+
+      this.moduleAccessFormVisible.set(false);
+      this.moduleAccessUser.set(null);
+    } finally {
+      this.loadingModuleAccesses.set(false);
+    }
+  }
+
+  cancelModuleAccess(): void {
+    this.moduleAccessFormVisible.set(false);
+    this.moduleAccessUser.set(null);
+    this.moduleAccesses.set([]);
+    this.operationError.set(null);
+  }
+
+  canManageModuleAccess(
+    user: User,
+  ): boolean {
+    return [
+      'user',
+      'manager',
+      'analyst',
+      'viewer',
+    ].includes(user.role);
+  }
+
+  moduleRoleOptions(
+    moduleKey: UserModuleAccess['key'],
+  ): readonly UserModuleRoleOption[] {
+    const options: readonly UserModuleRoleOption[] = [
+      {
+        value: 'manager',
+        label: 'Gestor',
+      },
+      {
+        value: 'analyst',
+        label: 'Analista',
+      },
+      {
+        value: 'viewer',
+        label: 'Visualizador',
+      },
+    ];
+
+    if (moduleKey === 'fotos') {
+      return options.filter(
+        option => option.value !== 'analyst',
+      );
+    }
+
+    return options;
+  }
+
+  setModuleAccessEnabled(
+    moduleKey: UserModuleAccess['key'],
+    enabled: boolean,
+  ): void {
+    this.moduleAccesses.update(modules =>
+      modules.map(module => {
+        if (module.key !== moduleKey) {
+          return module;
+        }
+
+        return {
+          ...module,
+          hasAccess: enabled,
+          role: enabled
+            ? module.role ?? 'viewer'
+            : null,
+        };
+      }),
+    );
+  }
+
+  setModuleAccessRole(
+    moduleKey: UserModuleAccess['key'],
+    role: UserModuleRole,
+  ): void {
+    this.moduleAccesses.update(modules =>
+      modules.map(module =>
+        module.key === moduleKey
+          ? {
+              ...module,
+              hasAccess: true,
+              role,
+            }
+          : module,
+      ),
+    );
+  }
+
+  async saveModuleAccesses(): Promise<void> {
+    const user = this.moduleAccessUser();
+
+    if (!user || this.savingModuleAccesses()) {
+      return;
+    }
+
+    this.savingModuleAccesses.set(true);
+    this.operationError.set(null);
+    this.operationMessage.set(null);
+
+    try {
+      const selectedModules =
+        this.moduleAccesses()
+          .filter(
+            module =>
+              module.organizationEnabled
+              && module.hasAccess
+              && module.role,
+          )
+          .map(module => ({
+            moduleKey: module.key,
+            role: module.role as UserModuleRole,
+          }));
+
+      const response =
+        await this.service.updateModuleAccesses(
+          user.id,
+          selectedModules,
+        );
+
+      this.moduleAccesses.set(response.modules);
+
+      this.operationMessage.set(
+        'Acessos por aplicativo atualizados com sucesso.',
+      );
+
+      this.moduleAccessFormVisible.set(false);
+      this.moduleAccessUser.set(null);
+    } catch (error: unknown) {
+      this.operationError.set(
+        this.resolveErrorMessage(error),
+      );
+    } finally {
+      this.savingModuleAccesses.set(false);
+    }
   }
 
   onRoleChange(): void {
@@ -575,7 +782,7 @@ export class UserListComponent implements OnInit {
               userId: createdUser.id,
               clientId: this.selectedClientId,
             });
-          } catch (error: unknown) {
+          } catch {
             this.formVisible.set(false);
 
             this.operationError.set(
@@ -614,6 +821,10 @@ export class UserListComponent implements OnInit {
     this.passwordConfirmation = '';
     this.operationError.set(null);
     this.operationMessage.set(null);
+
+    this.moduleAccessFormVisible.set(false);
+    this.moduleAccessUser.set(null);
+
     this.formVisible.set(false);
     this.passwordFormVisible.set(true);
   }
@@ -765,7 +976,7 @@ export class UserListComponent implements OnInit {
   }
 
   private createEmptyInput(): UserInput {
-    const role: UserRole = 'viewer';
+    const role: UserRole = 'user';
 
     const input: UserInput = {
       organizationId:
@@ -826,7 +1037,7 @@ export class UserListComponent implements OnInit {
     }
 
     if (error.status === 400) {
-      return 'Revise o papel e o escopo institucional informados.';
+      return 'Revise o papel, o escopo institucional e os acessos por aplicativo informados.';
     }
 
     if (error.status === 403) {
@@ -834,7 +1045,7 @@ export class UserListComponent implements OnInit {
     }
 
     if (error.status === 404) {
-      return 'O usuário, Cliente ou recurso de escopo não foi encontrado.';
+      return 'O usuário, Cliente, aplicativo ou recurso de escopo não foi encontrado.';
     }
 
     if (error.status === 409) {
