@@ -36,6 +36,10 @@ import {
 } from '../../../platform/authentication/application/authentication.service';
 
 import {
+  getModuleRole,
+} from '../../../platform/module-management/application/module-access';
+
+import {
   WorkspaceWidgetInstance,
 } from '../../../core/workspace-sdk/runtime/workspace-widget';
 
@@ -156,27 +160,20 @@ export class WorkspaceAlbumManagementWidgetComponent
   protected readonly environmentError =
     signal<string | null>(null);
 
-  protected readonly canEdit = [
-    'platform_admin',
-    'organization_admin',
-    'tenant_admin',
-    'manager',
-    'analyst',
-  ].includes(this.currentUser?.role ?? '');
+  protected readonly fotosRole =
+    getModuleRole(this.currentUser, 'fotos');
 
-  protected readonly canOrganize = [
-    'platform_admin',
-    'organization_admin',
-    'tenant_admin',
-    'manager',
-  ].includes(this.currentUser?.role ?? '');
+  protected readonly canEdit =
+    this.currentUser?.role === 'platform_admin'
+    || this.fotosRole === 'manager';
 
-  protected readonly canDelete = [
-    'platform_admin',
-    'organization_admin',
-    'tenant_admin',
-    'manager',
-  ].includes(this.currentUser?.role ?? '');
+  protected readonly canOrganize =
+    this.currentUser?.role === 'platform_admin'
+    || this.fotosRole === 'manager';
+
+  protected readonly canDelete =
+    this.currentUser?.role === 'platform_admin'
+    || this.fotosRole === 'manager';
 
   @Input({
     required: true,

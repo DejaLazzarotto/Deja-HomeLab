@@ -44,7 +44,21 @@ INSTITUTIONAL_READER_ROLES = frozenset(
     }
 )
 
-PLATFORM_ADMIN_ROLE = frozenset({UserRole.PLATFORM_ADMIN})
+ENVIRONMENT_READER_ROLES = frozenset(
+    {
+        UserRole.PLATFORM_ADMIN,
+        UserRole.ORGANIZATION_ADMIN,
+        UserRole.TENANT_ADMIN,
+        UserRole.MANAGER,
+        UserRole.USER,
+    }
+)
+
+PLATFORM_ADMIN_ROLE = frozenset(
+    {
+        UserRole.PLATFORM_ADMIN,
+    }
+)
 
 ORGANIZATION_EDITOR_ROLES = frozenset(
     {
@@ -451,7 +465,7 @@ class EnvironmentService:
 
         self._require_roles(
             current_user,
-            INSTITUTIONAL_READER_ROLES,
+            ENVIRONMENT_READER_ROLES,
         )
         (
             effective_organization_id,
@@ -479,7 +493,7 @@ class EnvironmentService:
 
         self._require_roles(
             current_user,
-            INSTITUTIONAL_READER_ROLES,
+            ENVIRONMENT_READER_ROLES,
         )
         environment = self._find_by_id(environment_id)
         tenant = self._require_tenant(environment.tenant_id)

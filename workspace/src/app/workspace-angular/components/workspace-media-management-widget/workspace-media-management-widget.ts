@@ -35,6 +35,10 @@ import {
 } from '../../../platform/authentication/application/authentication.service';
 
 import {
+  getModuleRole,
+} from '../../../platform/module-management/application/module-access';
+
+import {
   WorkspaceWidgetInstance,
 } from '../../../core/workspace-sdk/runtime/workspace-widget';
 
@@ -150,20 +154,16 @@ export class WorkspaceMediaManagementWidgetComponent
   protected readonly environmentError =
     signal<string | null>(null);
 
-  protected readonly canUpload = [
-    'platform_admin',
-    'organization_admin',
-    'tenant_admin',
-    'manager',
-    'analyst',
-  ].includes(this.currentUser?.role ?? '');
+  protected readonly fotosRole =
+    getModuleRole(this.currentUser, 'fotos');
 
-  protected readonly canCurate = [
-    'platform_admin',
-    'organization_admin',
-    'tenant_admin',
-    'manager',
-  ].includes(this.currentUser?.role ?? '');
+  protected readonly canUpload =
+    this.currentUser?.role === 'platform_admin'
+    || this.fotosRole === 'manager';
+
+  protected readonly canCurate =
+    this.currentUser?.role === 'platform_admin'
+    || this.fotosRole === 'manager';
 
   @Input({
     required: true,

@@ -7,6 +7,10 @@
  */
 
 import {
+  HttpClient,
+} from '@angular/common/http';
+
+import {
   ChangeDetectionStrategy,
   Component,
   Input,
@@ -15,14 +19,22 @@ import {
   signal,
 } from '@angular/core';
 
-import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
-import { AuthenticationService } from '../../../platform/authentication/application/authentication.service';
+import {
+  firstValueFrom,
+} from 'rxjs';
 
 import {
   CurationManagementComponent,
   FotosEnvironmentOption,
 } from '../../../deja-fotos';
+
+import {
+  AuthenticationService,
+} from '../../../platform/authentication/application/authentication.service';
+
+import {
+  getModuleRole,
+} from '../../../platform/module-management/application/module-access';
 
 import {
   WorkspaceWidgetInstance,
@@ -53,23 +65,37 @@ import {
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class WorkspaceCurationManagementWidgetComponent implements OnInit {
+export class WorkspaceCurationManagementWidgetComponent
+  implements OnInit {
   private readonly http = inject(HttpClient);
-  protected readonly user = inject(AuthenticationService).user();
-  protected readonly environments = signal<readonly FotosEnvironmentOption[]>([]);
-  protected readonly canManage = [
-    'platform_admin', 'organization_admin', 'tenant_admin', 'manager',
-  ].includes(this.user?.role ?? '');
+
+  protected readonly user =
+    inject(AuthenticationService).user();
+
+  protected readonly environments =
+    signal<readonly FotosEnvironmentOption[]>([]);
+
+  protected readonly fotosRole =
+    getModuleRole(this.user, 'fotos');
+
+  protected readonly canManage =
+    this.user?.role === 'platform_admin'
+    || this.fotosRole === 'manager';
 
   async ngOnInit(): Promise<void> {
     try {
-      this.environments.set(await firstValueFrom(this.http.get<readonly FotosEnvironmentOption[]>(
-        '/api/v1/environments',
-      )));
+      this.environments.set(
+        await firstValueFrom(
+          this.http.get<readonly FotosEnvironmentOption[]>(
+            '/api/v1/environments',
+          ),
+        ),
+      );
     } catch {
       // A página ainda permite listar mídias do escopo autorizado.
     }
   }
+
   @Input({
     required: true,
   })

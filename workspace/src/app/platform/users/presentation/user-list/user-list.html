@@ -346,16 +346,72 @@
     moduleAccessFormVisible()
     && moduleAccessUser()
   ) {
-    <section class="user-list__form">
-      <div class="user-list__form-header">
-        <div>
+    <section class="user-list__form user-list__access-panel">
+      <div class="user-list__access-header">
+        <div class="user-list__access-heading">
+          <span class="user-list__eyebrow">
+            Permissões funcionais
+          </span>
+
           <h3>
             Acessos por aplicativo
           </h3>
 
           <p>
-            {{ moduleAccessUser()?.name }}
+            Defina quais aplicativos este usuário pode acessar
+            e qual papel ele exerce em cada um deles.
           </p>
+        </div>
+
+        <div class="user-list__access-user">
+          <div class="user-list__access-avatar">
+            {{
+              moduleAccessUser()?.name?.charAt(0)
+              || '?'
+            }}
+          </div>
+
+          <div class="user-list__access-user-info">
+            <strong>
+              {{ moduleAccessUser()?.name }}
+            </strong>
+
+            <span>
+              {{ moduleAccessUser()?.email }}
+            </span>
+
+            <div class="user-list__access-scope">
+              @if (moduleAccessUser()?.organizationId) {
+                <span>
+                  {{
+                    organizationName(
+                      moduleAccessUser()?.organizationId ?? null
+                    )
+                  }}
+                </span>
+              }
+
+              @if (moduleAccessUser()?.tenantId) {
+                <span>
+                  {{
+                    tenantName(
+                      moduleAccessUser()?.tenantId ?? null
+                    )
+                  }}
+                </span>
+              }
+
+              @if (moduleAccessUser()?.environmentId) {
+                <span>
+                  {{
+                    environmentName(
+                      moduleAccessUser()?.environmentId ?? null
+                    )
+                  }}
+                </span>
+              }
+            </div>
+          </div>
         </div>
       </div>
 
@@ -371,42 +427,68 @@
           </p>
         </div>
       } @else {
-        <div class="user-list__form-grid">
+        <div class="user-list__access-grid">
           @for (
             module of moduleAccesses();
             track module.key
           ) {
             @if (module.organizationEnabled) {
-              <div class="user-list__field">
-                <label>
-                  <input
-                    type="checkbox"
-                    [ngModel]="module.hasAccess"
-                    [ngModelOptions]="{
-                      standalone: true
-                    }"
-                    (ngModelChange)="
-                      setModuleAccessEnabled(
-                        module.key,
-                        $event
-                      )
+              <article
+                class="user-list__access-card"
+                [class.user-list__access-card--enabled]="
+                  module.hasAccess
+                "
+              >
+                <div class="user-list__access-card-main">
+                  <label class="user-list__access-toggle">
+                    <input
+                      type="checkbox"
+                      [ngModel]="module.hasAccess"
+                      [ngModelOptions]="{
+                        standalone: true
+                      }"
+                      (ngModelChange)="
+                        setModuleAccessEnabled(
+                          module.key,
+                          $event
+                        )
+                      "
+                    />
+
+                    <span class="user-list__access-toggle-control"></span>
+                  </label>
+
+                  <div class="user-list__access-module">
+                    <strong>
+                      {{ module.name }}
+                    </strong>
+
+                    @if (module.description) {
+                      <p>
+                        {{ module.description }}
+                      </p>
+                    }
+                  </div>
+
+                  <span
+                    class="user-list__access-state"
+                    [class.user-list__access-state--enabled]="
+                      module.hasAccess
                     "
-                  />
-
-                  <strong>
-                    {{ module.name }}
-                  </strong>
-                </label>
-
-                @if (module.description) {
-                  <small>
-                    {{ module.description }}
-                  </small>
-                }
+                  >
+                    {{
+                      module.hasAccess
+                        ? 'Habilitado'
+                        : 'Sem acesso'
+                    }}
+                  </span>
+                </div>
 
                 @if (module.hasAccess) {
-                  <label>
-                    <span>Papel no aplicativo</span>
+                  <label class="user-list__access-role">
+                    <span>
+                      Papel no aplicativo
+                    </span>
 
                     <select
                       [ngModel]="module.role"
@@ -433,7 +515,7 @@
                     </select>
                   </label>
                 }
-              </div>
+              </article>
             }
           }
         </div>
@@ -451,7 +533,7 @@
           </div>
         }
 
-        <div class="user-list__form-actions">
+        <div class="user-list__form-actions user-list__access-actions">
           <button
             class="user-list__action"
             type="button"

@@ -75,6 +75,19 @@ InstitutionalReader = Annotated[
     ),
 ]
 
+EnvironmentReader = Annotated[
+    AuthenticatedUser,
+    Depends(
+        require_roles(
+            UserRole.PLATFORM_ADMIN,
+            UserRole.ORGANIZATION_ADMIN,
+            UserRole.TENANT_ADMIN,
+            UserRole.MANAGER,
+            UserRole.USER,
+        )
+    ),
+]
+
 PlatformAdministrator = Annotated[
     AuthenticatedUser,
     Depends(require_roles(UserRole.PLATFORM_ADMIN)),
@@ -291,7 +304,7 @@ def delete_tenant(
 )
 def list_environments(
     service: EnvironmentServiceDependency,
-    current_user: InstitutionalReader,
+    current_user: EnvironmentReader,
     organization_id: OrganizationFilter = None,
     tenant_id: TenantFilter = None,
     environment_id: EnvironmentFilter = None,
@@ -313,7 +326,7 @@ def list_environments(
 def get_environment(
     environment_id: ResourceId,
     service: EnvironmentServiceDependency,
-    current_user: InstitutionalReader,
+    current_user: EnvironmentReader,
 ) -> EnvironmentResponse:
     """Consulta um ambiente dentro do escopo permitido."""
 
