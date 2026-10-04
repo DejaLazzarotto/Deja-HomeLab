@@ -1,0 +1,70 @@
+<main class="albums-page">
+  <header class="albums-header">
+    <div>
+      <p class="eyebrow">
+        Fotos
+      </p>
+
+      <h1>
+        Meus álbuns
+      </h1>
+    </div>
+
+    <button
+      class="profile-button"
+      type="button"
+      aria-label="Perfil"
+    >
+      <span>
+        U
+      </span>
+    </button>
+  </header>
+
+  @if (loading()) {
+    <section class="state-card">
+      <p>
+        Carregando álbuns...
+      </p>
+    </section>
+  } @else if (error()) {
+    <section class="state-card state-card-error">
+      <p>
+        {{ error() }}
+      </p>
+    </section>
+  } @else if (albums().length === 0) {
+    <section class="state-card">
+      <p>
+        Nenhum álbum disponível.
+      </p>
+    </section>
+  } @else {
+    <section class="albums-grid">
+      @for (
+        album of albums();
+        track album.id
+      ) {
+        <article class="album-card">
+          <div class="album-cover">
+            <span class="album-cover-placeholder">
+              {{ album.name.charAt(0).toUpperCase() }}
+            </span>
+          </div>
+
+          <div class="album-info">
+            <h2>
+              {{ album.name }}
+            </h2>
+
+            @if (album.description) {
+              <p class="album-description">
+                {{ album.description }}
+              </p>
+            }
+          </div>
+        </article>
+      }
+    </section>
+  }
+</main>

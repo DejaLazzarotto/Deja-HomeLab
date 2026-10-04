@@ -26,6 +26,12 @@
     },
     {
       "path": "./tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/deja-fotos-pwa/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/deja-fotos-pwa/tsconfig.spec.json"
     }
   ]
 }

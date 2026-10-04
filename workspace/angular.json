@@ -30,9 +30,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.scss"
-            ]
+            "styles": ["src/styles.scss"]
           },
           "configurations": {
             "production": {
@@ -69,6 +67,75 @@
             },
             "development": {
               "buildTarget": "deja-workspace:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        }
+      }
+    },
+    "deja-fotos-pwa": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "projects/deja-fotos-pwa",
+      "sourceRoot": "projects/deja-fotos-pwa/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "projects/deja-fotos-pwa/src/main.ts",
+            "tsConfig": "projects/deja-fotos-pwa/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "projects/deja-fotos-pwa/public"
+              }
+            ],
+            "styles": ["projects/deja-fotos-pwa/src/styles.scss"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+          "proxyConfig": "proxy.conf.json"
+       },
+        "configurations": {
+            "production": {
+              "buildTarget": "deja-fotos-pwa:build:production"
+            },
+            "development": {
+              "buildTarget": "deja-fotos-pwa:build:development"
             }
           },
           "defaultConfiguration": "development"
