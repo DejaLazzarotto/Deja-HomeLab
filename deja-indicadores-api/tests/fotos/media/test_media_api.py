@@ -1297,6 +1297,83 @@ def test_upload_media_without_album(
     assert response.json()["album_id"] is None
 
 
+def test_list_media_periods_groups_by_year_and_month(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Agrupa os períodos reais do acervo por ano e mês."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    media_dates = (
+        (2024, 2, 10, 21),
+        (2024, 2, 20, 22),
+        (2023, 1, 15, 23),
+    )
+
+    for year, month, day, width in media_dates:
+        response = upload_image(
+            client,
+            environment_id=environment_id,
+            album_id=album_id,
+            headers=headers,
+            file_name=f"foto-{year}-{month}-{day}.jpg",
+            content=create_test_jpeg(
+                width=width,
+                height=13,
+                original_date=datetime(
+                    year,
+                    month,
+                    day,
+                    12,
+                ),
+            ),
+        )
+
+        assert response.status_code == 201
+
+    without_date_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="sem-data-periodos.jpg",
+        content=create_test_jpeg(
+            width=24,
+            height=13,
+        ),
+    )
+
+    assert without_date_response.status_code == 201
+
+    response = client.get(
+        f"{MEDIA_URL}/periods",
+        params={
+            "environment_id": environment_id,
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "year": 2024,
+            "month": 2,
+            "media_count": 2,
+        },
+        {
+            "year": 2023,
+            "month": 1,
+            "media_count": 1,
+        },
+    ]
+
 def test_list_media_filters_by_album(
     client: TestClient,
     media_context: tuple[

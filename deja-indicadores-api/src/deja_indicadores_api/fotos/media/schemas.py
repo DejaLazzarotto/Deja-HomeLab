@@ -131,6 +131,24 @@ class FotosMediaListResponse(BaseModel):
     total_pages: int
 
 
+class FotosMediaPeriodResponse(BaseModel):
+    """Período real existente no acervo do Deja Fotos."""
+
+    year: int = Field(
+        ge=1,
+        le=9999,
+    )
+
+    month: int = Field(
+        ge=1,
+        le=12,
+    )
+
+    media_count: int = Field(
+        ge=1,
+    )
+
+
 class FotosMediaBulkUpdateBase(BaseModel):
     """Campos comuns das operações administrativas em lote."""
 

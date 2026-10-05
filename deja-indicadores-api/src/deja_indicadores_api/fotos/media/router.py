@@ -34,6 +34,7 @@ from deja_indicadores_api.fotos.media.schemas import (
     FotosMediaDescriptionUpdate,
     FotosMediaListResponse,
     FotosMediaOriginalDateUpdate,
+    FotosMediaPeriodResponse,
     FotosMediaProcessingStatus,
     FotosMediaResponse,
     FotosMediaType,
@@ -200,6 +201,26 @@ def list_media(
         total_pages=total_pages,
     )
 
+
+@router.get(
+    "/periods",
+    response_model=list[FotosMediaPeriodResponse],
+)
+def list_media_periods(
+    service: FotosMediaServiceDependency,
+    current_user: FotosMediaReader,
+    organization_id: str | None = Query(default=None),
+    tenant_id: str | None = Query(default=None),
+    environment_id: str | None = Query(default=None),
+) -> list[FotosMediaPeriodResponse]:
+    """Lista os períodos reais existentes no acervo autorizado."""
+
+    return service.list_periods(
+        current_user,
+        organization_id=organization_id,
+        tenant_id=tenant_id,
+        environment_id=environment_id,
+    )
 
 @router.patch(
     "/bulk",

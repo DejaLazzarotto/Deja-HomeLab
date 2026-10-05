@@ -66,6 +66,7 @@ from deja_indicadores_api.fotos.media.schemas import (
     FotosMediaBulkSetOriginalDate,
     FotosMediaBulkUpdate,
     FotosMediaBulkVerifyOriginalDate,
+    FotosMediaPeriodResponse,
 )
 from deja_indicadores_api.fotos.media.storage import (
     build_derivative_storage_key,
@@ -269,6 +270,44 @@ class FotosMediaService:
             page_size=page_size,
         )
 
+    def list_periods(
+        self,
+        current_user: AuthenticatedUser,
+        *,
+        organization_id: str | None = None,
+        tenant_id: str | None = None,
+        environment_id: str | None = None,
+    ) -> list[FotosMediaPeriodResponse]:
+        """Lista os períodos reais existentes dentro do escopo permitido."""
+
+        self._require_roles(
+            current_user,
+            FOTOS_MEDIA_READER_ROLES,
+        )
+
+        (
+            effective_organization_id,
+            effective_tenant_id,
+            effective_environment_id,
+        ) = self._authorization_service.resolve_list_scope(
+            current_user,
+            organization_id=organization_id,
+            tenant_id=tenant_id,
+            environment_id=environment_id,
+        )
+
+        return [
+            FotosMediaPeriodResponse(
+                year=year,
+                month=month,
+                media_count=media_count,
+            )
+            for year, month, media_count in self._repository.list_periods(
+                organization_id=effective_organization_id,
+                tenant_id=effective_tenant_id,
+                environment_id=effective_environment_id,
+            )
+        ]
     def find_by_id(
         self,
         media_id: str,
@@ -895,6 +934,7 @@ class FotosMediaService:
         if isinstance(
             payload,
             FotosMediaBulkVerifyOriginalDate,
+
         ):
             return self._verify_original_date(
                 media,

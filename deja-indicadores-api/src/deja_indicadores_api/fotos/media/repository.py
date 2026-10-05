@@ -11,6 +11,12 @@ from deja_indicadores_api.fotos.media.models import (
     FotosMediaModel,
 )
 
+FotosMediaPeriodRow = tuple[
+    int,
+    int,
+    int,
+]
+
 
 class FotosMediaRepository:
     """Acesso persistente às mídias do Deja Fotos."""
@@ -47,52 +53,28 @@ class FotosMediaRepository:
         conditions = []
 
         if organization_id is not None:
-            conditions.append(
-                FotosMediaModel.organization_id
-                == organization_id
-            )
+            conditions.append(FotosMediaModel.organization_id == organization_id)
 
         if tenant_id is not None:
-            conditions.append(
-                FotosMediaModel.tenant_id
-                == tenant_id
-            )
+            conditions.append(FotosMediaModel.tenant_id == tenant_id)
 
         if environment_id is not None:
-            conditions.append(
-                FotosMediaModel.environment_id
-                == environment_id
-            )
+            conditions.append(FotosMediaModel.environment_id == environment_id)
 
         if album_id is not None:
-            conditions.append(
-                FotosMediaModel.album_id
-                == album_id
-            )
+            conditions.append(FotosMediaModel.album_id == album_id)
 
         if media_type is not None:
-            conditions.append(
-                FotosMediaModel.media_type
-                == media_type
-            )
+            conditions.append(FotosMediaModel.media_type == media_type)
 
         if processing_status is not None:
-            conditions.append(
-                FotosMediaModel.processing_status
-                == processing_status
-            )
+            conditions.append(FotosMediaModel.processing_status == processing_status)
 
         if original_date_from is not None:
-            conditions.append(
-                FotosMediaModel.original_date
-                >= original_date_from
-            )
+            conditions.append(FotosMediaModel.original_date >= original_date_from)
 
         if original_date_to is not None:
-            conditions.append(
-                FotosMediaModel.original_date
-                <= original_date_to
-            )
+            conditions.append(FotosMediaModel.original_date <= original_date_to)
 
         if original_year is not None:
             conditions.append(
@@ -113,46 +95,23 @@ class FotosMediaRepository:
             )
 
         if without_original_date:
-            conditions.append(
-                FotosMediaModel.original_date.is_(None)
-            )
+            conditions.append(FotosMediaModel.original_date.is_(None))
 
         if original_date_verified is not None:
-            conditions.append(
-                FotosMediaModel.original_date_verified
-                == original_date_verified
-            )
+            conditions.append(FotosMediaModel.original_date_verified == original_date_verified)
 
         if original_date_conflict is not None:
-            conditions.append(
-                FotosMediaModel.original_date_conflict
-                == original_date_conflict
-            )
+            conditions.append(FotosMediaModel.original_date_conflict == original_date_conflict)
 
         if was_converted is not None:
-            conditions.append(
-                FotosMediaModel.was_converted
-                == was_converted
-            )
+            conditions.append(FotosMediaModel.was_converted == was_converted)
 
         if not include_deleted:
-            conditions.append(
-                FotosMediaModel.deleted_at.is_(None)
-            )
+            conditions.append(FotosMediaModel.deleted_at.is_(None))
 
-        count_statement = (
-            select(
-                func.count(FotosMediaModel.id)
-            )
-            .where(*conditions)
-        )
+        count_statement = select(func.count(FotosMediaModel.id)).where(*conditions)
 
-        total = int(
-            self._session.scalar(
-                count_statement
-            )
-            or 0
-        )
+        total = int(self._session.scalar(count_statement) or 0)
 
         statement = (
             select(FotosMediaModel)
@@ -162,20 +121,86 @@ class FotosMediaRepository:
                 FotosMediaModel.created_at.desc(),
                 FotosMediaModel.id.asc(),
             )
-            .offset(
-                (page - 1) * page_size
-            )
-            .limit(
-                page_size
-            )
+            .offset((page - 1) * page_size)
+            .limit(page_size)
         )
 
-        items = list(
-            self._session.scalars(statement).all()
-        )
+        items = list(self._session.scalars(statement).all())
 
         return items, total
 
+    def list_periods(
+        self,
+        *,
+        organization_id: str | None = None,
+        tenant_id: str | None = None,
+        environment_id: str | None = None,
+    ) -> list[FotosMediaPeriodRow]:
+        """Lista os períodos reais existentes no acervo com suas quantidades."""
+
+        year_expression = extract(
+            "year",
+            FotosMediaModel.original_date,
+        )
+        month_expression = extract(
+            "month",
+            FotosMediaModel.original_date,
+        )
+
+        conditions = [
+            FotosMediaModel.deleted_at.is_(None),
+            FotosMediaModel.original_date.is_not(None),
+        ]
+
+        if organization_id is not None:
+            conditions.append(
+                FotosMediaModel.organization_id
+                == organization_id
+            )
+
+        if tenant_id is not None:
+            conditions.append(
+                FotosMediaModel.tenant_id
+                == tenant_id
+            )
+
+        if environment_id is not None:
+            conditions.append(
+                FotosMediaModel.environment_id
+                == environment_id
+            )
+
+        statement = (
+            select(
+                year_expression.label("year"),
+                month_expression.label("month"),
+                func.count(
+                    FotosMediaModel.id
+                ).label("media_count"),
+            )
+            .where(*conditions)
+            .group_by(
+                year_expression,
+                month_expression,
+            )
+            .order_by(
+                year_expression.desc(),
+                month_expression.desc(),
+            )
+        )
+
+        rows = self._session.execute(
+            statement
+        ).all()
+
+        return [
+            (
+                int(row.year),
+                int(row.month),
+                int(row.media_count),
+            )
+            for row in rows
+        ]
     def find_by_id(
         self,
         media_id: str,
@@ -184,16 +209,10 @@ class FotosMediaRepository:
     ) -> FotosMediaModel | None:
         """Localiza uma mídia pelo identificador."""
 
-        statement = select(
-            FotosMediaModel
-        ).where(
-            FotosMediaModel.id == media_id
-        )
+        statement = select(FotosMediaModel).where(FotosMediaModel.id == media_id)
 
         if not include_deleted:
-            statement = statement.where(
-                FotosMediaModel.deleted_at.is_(None)
-            )
+            statement = statement.where(FotosMediaModel.deleted_at.is_(None))
 
         return self._session.scalar(statement)
 
@@ -224,31 +243,19 @@ class FotosMediaRepository:
     ) -> FotosMediaModel | None:
         """Localiza mídia ativa pelo checksum SHA-256."""
 
-        statement = select(
-            FotosMediaModel
-        ).where(
-            FotosMediaModel.checksum_sha256
-            == checksum_sha256,
+        statement = select(FotosMediaModel).where(
+            FotosMediaModel.checksum_sha256 == checksum_sha256,
             FotosMediaModel.deleted_at.is_(None),
         )
 
         if organization_id is not None:
-            statement = statement.where(
-                FotosMediaModel.organization_id
-                == organization_id
-            )
+            statement = statement.where(FotosMediaModel.organization_id == organization_id)
 
         if tenant_id is not None:
-            statement = statement.where(
-                FotosMediaModel.tenant_id
-                == tenant_id
-            )
+            statement = statement.where(FotosMediaModel.tenant_id == tenant_id)
 
         if environment_id is not None:
-            statement = statement.where(
-                FotosMediaModel.environment_id
-                == environment_id
-            )
+            statement = statement.where(FotosMediaModel.environment_id == environment_id)
 
         return self._session.scalar(statement)
 
@@ -263,10 +270,8 @@ class FotosMediaRepository:
         statement = (
             select(FotosMediaModel)
             .where(
-                FotosMediaModel.environment_id
-                == environment_id,
-                FotosMediaModel.source_checksum_sha256
-                == source_checksum_sha256,
+                FotosMediaModel.environment_id == environment_id,
+                FotosMediaModel.source_checksum_sha256 == source_checksum_sha256,
             )
             .order_by(
                 FotosMediaModel.deleted_at.asc(),
@@ -289,9 +294,7 @@ class FotosMediaRepository:
             )
         )
 
-        return bool(
-            self._session.scalar(statement)
-        )
+        return bool(self._session.scalar(statement))
 
     def add(
         self,
