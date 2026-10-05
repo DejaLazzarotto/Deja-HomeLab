@@ -1,0 +1,80 @@
+<main class="year-page">
+  <header class="year-header">
+    <button
+      class="back-button"
+      type="button"
+      aria-label="Voltar"
+      (click)="goBack()"
+    >
+      ‹
+    </button>
+
+    <div>
+      <p class="eyebrow">
+        Por datas
+      </p>
+
+      <h1>
+        @if (year()) {
+          {{ year() }}
+        }
+      </h1>
+    </div>
+  </header>
+
+  <section class="year-intro">
+    <p>
+      Escolha um mês para explorar
+      seus momentos.
+    </p>
+  </section>
+
+  @if (loading()) {
+    <section class="state-card">
+      <p>
+        Carregando meses...
+      </p>
+    </section>
+  } @else if (error()) {
+    <section class="state-card state-card-error">
+      <p>
+        {{ error() }}
+      </p>
+    </section>
+  } @else if (months().length === 0) {
+    <section class="state-card">
+      <p>
+        Nenhuma mídia disponível
+        para este ano.
+      </p>
+    </section>
+  } @else {
+    <section class="month-list">
+      @for (
+        item of months();
+        track item.month
+      ) {
+        <button
+          class="month-card"
+          type="button"
+          (click)="openMonth(item.month)"
+        >
+          <div>
+            <h2>
+              {{ item.name }}
+            </h2>
+
+            <p>
+              {{ item.mediaCount }}
+              fotos e vídeos
+            </p>
+          </div>
+
+          <span aria-hidden="true">
+            ›
+          </span>
+        </button>
+      }
+    </section>
+  }
+</main>

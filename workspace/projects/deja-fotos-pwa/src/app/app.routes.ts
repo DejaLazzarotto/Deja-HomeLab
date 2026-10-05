@@ -31,6 +31,45 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'dates/:year/:month',
+    title: 'Período | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/dates/month-page/month-page'
+      ).then(
+        module => module.MonthPageComponent,
+      ),
+  },
+  {
+    path: 'dates/:year',
+    title: 'Ano | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/dates/year-page/year-page'
+      ).then(
+        module => module.YearPageComponent,
+      ),
+  },
+  {
+    path: 'dates',
+    title: 'Por datas | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/dates/dates-page/dates-page'
+      ).then(
+        module => module.DatesPageComponent,
+      ),
+  },
+  {
     path: 'albums',
     title: 'Meus álbuns | Fotos',
     canActivate: [

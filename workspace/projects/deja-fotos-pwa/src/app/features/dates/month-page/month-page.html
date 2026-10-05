@@ -1,0 +1,87 @@
+<main class="month-page">
+  <header class="month-header">
+    <button
+      class="back-button"
+      type="button"
+      aria-label="Voltar"
+      (click)="goBack()"
+    >
+      ‹
+    </button>
+
+    <div>
+      <p class="eyebrow">
+        Por datas
+      </p>
+
+      <h1>
+        @if (monthName() && year()) {
+          {{ monthName() }} de {{ year() }}
+        }
+      </h1>
+    </div>
+  </header>
+
+  <section class="month-intro">
+    <p>
+      Explore as fotos e vídeos
+      deste período.
+    </p>
+  </section>
+
+  @if (loading()) {
+    <section class="state-card">
+      <p>
+        Carregando mídias...
+      </p>
+    </section>
+  } @else if (error()) {
+    <section class="state-card state-card-error">
+      <p>
+        {{ error() }}
+      </p>
+    </section>
+  } @else if (media().length === 0) {
+    <section class="state-card">
+      <p>
+        Nenhuma mídia disponível
+        para este período.
+      </p>
+    </section>
+  } @else {
+    <section class="media-grid">
+      @for (
+        item of media();
+        track item.id
+      ) {
+        <article class="media-card">
+          @if (item.thumbnailUrl) {
+            <img
+              class="media-thumbnail"
+              [src]="item.thumbnailUrl"
+              [alt]="item.originalName"
+              loading="lazy"
+            />
+          } @else {
+            <div class="media-placeholder">
+              @if (item.mediaType === 'video') {
+                Vídeo
+              } @else {
+                Foto
+              }
+            </div>
+          }
+
+          @if (item.mediaType === 'video') {
+            <span
+              class="video-badge"
+              aria-label="Vídeo"
+            >
+              ▶
+            </span>
+          }
+        </article>
+      }
+    </section>
+  }
+</main>

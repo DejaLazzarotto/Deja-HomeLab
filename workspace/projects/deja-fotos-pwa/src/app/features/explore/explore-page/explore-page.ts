@@ -1,7 +1,12 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  inject,
 } from '@angular/core';
+
+import {
+  Router,
+} from '@angular/router';
 
 @Component({
   selector: 'app-explore-page',
@@ -11,4 +16,13 @@ import {
   changeDetection:
     ChangeDetectionStrategy.OnPush,
 })
-export class ExplorePageComponent {}
+export class ExplorePageComponent {
+  private readonly router =
+    inject(Router);
+
+  openDates(): void {
+    void this.router.navigateByUrl(
+      '/dates',
+    );
+  }
+}
