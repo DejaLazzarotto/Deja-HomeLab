@@ -31,6 +31,19 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'dates/:year/:month/media/:mediaId',
+    title: 'Visualizar mídia | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/dates/media-viewer-page/media-viewer-page'
+      ).then(
+        module => module.MediaViewerPageComponent,
+      ),
+  },
+  {
     path: 'dates/:year/:month',
     title: 'Período | Fotos',
     canActivate: [

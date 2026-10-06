@@ -54,7 +54,12 @@
         item of media();
         track item.id
       ) {
-        <article class="media-card">
+        <button
+          class="media-card"
+          type="button"
+          [attr.aria-label]="'Abrir ' + item.originalName"
+          (click)="openMedia(item.id)"
+        >
           @if (item.thumbnailUrl) {
             <img
               class="media-thumbnail"
@@ -80,7 +85,7 @@
               ▶
             </span>
           }
-        </article>
+        </button>
       }
     </section>
   }

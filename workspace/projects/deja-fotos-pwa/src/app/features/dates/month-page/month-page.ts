@@ -7,18 +7,11 @@ import {
   signal,
 } from '@angular/core';
 
-import {
-  HttpClient,
-} from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 
-import {
-  ActivatedRoute,
-  Router,
-} from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
-import {
-  firstValueFrom,
-} from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
 interface MediaResponse {
   id: string;
@@ -63,71 +56,49 @@ const MONTH_NAMES = [
   standalone: true,
   templateUrl: './month-page.html',
   styleUrl: './month-page.scss',
-  changeDetection:
-    ChangeDetectionStrategy.OnPush,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MonthPageComponent
-  implements OnInit, OnDestroy {
-  private readonly http =
-    inject(HttpClient);
+export class MonthPageComponent implements OnInit, OnDestroy {
+  private readonly http = inject(HttpClient);
 
-  private readonly route =
-    inject(ActivatedRoute);
+  private readonly route = inject(ActivatedRoute);
 
-  private readonly router =
-    inject(Router);
+  private readonly router = inject(Router);
 
-  private readonly objectUrls =
-    new Set<string>();
+  private readonly objectUrls = new Set<string>();
 
-  readonly year =
-    signal<number | null>(null);
+  readonly year = signal<number | null>(null);
 
-  readonly month =
-    signal<number | null>(null);
+  readonly month = signal<number | null>(null);
 
-  readonly monthName =
-    signal<string>('');
+  readonly monthName = signal<string>('');
 
-  readonly media =
-    signal<readonly MediaViewItem[]>([]);
+  readonly media = signal<readonly MediaViewItem[]>([]);
 
-  readonly loading =
-    signal(true);
+  readonly loading = signal(true);
 
-  readonly error =
-    signal<string | null>(null);
+  readonly error = signal<string | null>(null);
 
   async ngOnInit(): Promise<void> {
-    const yearParam =
-      this.route.snapshot.paramMap.get(
-        'year',
-      );
+    const yearParam = this.route.snapshot.paramMap.get('year');
 
-    const monthParam =
-      this.route.snapshot.paramMap.get(
-        'month',
-      );
+    const monthParam = this.route.snapshot.paramMap.get('month');
 
-    const selectedYear =
-      Number(yearParam);
+    const selectedYear = Number(yearParam);
 
-    const selectedMonth =
-      Number(monthParam);
+    const selectedMonth = Number(monthParam);
 
     if (
-      !yearParam
-      || !monthParam
-      || !Number.isInteger(selectedYear)
-      || !Number.isInteger(selectedMonth)
-      || selectedYear < 1
-      || selectedYear > 9999
-      || selectedMonth < 1
-      || selectedMonth > 12
+      !yearParam ||
+      !monthParam ||
+      !Number.isInteger(selectedYear) ||
+      !Number.isInteger(selectedMonth) ||
+      selectedYear < 1 ||
+      selectedYear > 9999 ||
+      selectedMonth < 1 ||
+      selectedMonth > 12
     ) {
-      this.error.set(
-        'Período inválido.',
-      );
+      this.error.set('Período inválido.');
 
       this.loading.set(false);
 
@@ -136,108 +107,77 @@ export class MonthPageComponent
 
     this.year.set(selectedYear);
     this.month.set(selectedMonth);
-    this.monthName.set(
-      MONTH_NAMES[
-        selectedMonth - 1
-      ],
-    );
+    this.monthName.set(MONTH_NAMES[selectedMonth - 1]);
 
     try {
-      const response =
-        await firstValueFrom(
-          this.http.get<MediaListResponse>(
-            '/api/fotos/media',
-            {
-              params: {
-                original_year:
-                  selectedYear,
-                original_month:
-                  selectedMonth,
-                page: 1,
-                page_size: 200,
-              },
-            },
-          ),
-        );
+      const response = await firstValueFrom(
+        this.http.get<MediaListResponse>('/api/fotos/media', {
+          params: {
+            original_year: selectedYear,
+            original_month: selectedMonth,
+            page: 1,
+            page_size: 200,
+          },
+        }),
+      );
 
-      const items =
-        await Promise.all(
-          response.items.map(
-            item =>
-              this.createViewItem(
-                item,
-              ),
-          ),
-        );
+      const items = await Promise.all(response.items.map((item) => this.createViewItem(item)));
 
       this.media.set(items);
     } catch {
-      this.error.set(
-        'Não foi possível carregar as mídias.',
-      );
+      this.error.set('Não foi possível carregar as mídias.');
     } finally {
       this.loading.set(false);
     }
   }
 
   ngOnDestroy(): void {
-    for (
-      const objectUrl
-      of this.objectUrls
-    ) {
-      URL.revokeObjectURL(
-        objectUrl,
-      );
+    for (const objectUrl of this.objectUrls) {
+      URL.revokeObjectURL(objectUrl);
     }
 
     this.objectUrls.clear();
   }
 
   goBack(): void {
-    const selectedYear =
-      this.year();
+    const selectedYear = this.year();
 
     if (selectedYear === null) {
-      void this.router.navigateByUrl(
-        '/dates',
-      );
+      void this.router.navigateByUrl('/dates');
 
       return;
     }
 
-    void this.router.navigate(
-      [
-        '/dates',
-        selectedYear,
-      ],
-    );
+    void this.router.navigate(['/dates', selectedYear]);
   }
 
-  private async createViewItem(
-    item: MediaResponse,
-  ): Promise<MediaViewItem> {
-    let thumbnailUrl: string | null =
-      null;
+  openMedia(mediaId: string): void {
+    const selectedYear = this.year();
+
+    const selectedMonth = this.month();
+
+    if (selectedYear === null || selectedMonth === null) {
+      return;
+    }
+
+    void this.router.navigate(['/dates', selectedYear, selectedMonth, 'media', mediaId]);
+  }
+
+  private async createViewItem(item: MediaResponse): Promise<MediaViewItem> {
+    let thumbnailUrl: string | null = null;
 
     try {
-      const thumbnail =
-        await firstValueFrom(
-          this.http.get(
-            `/api/fotos/media/${item.id}/thumbnail`,
-            {
-              responseType: 'blob',
-            },
-          ),
-        );
+      const derivative = item.media_type === 'video' ? 'poster' : 'thumbnail';
 
-      thumbnailUrl =
-        URL.createObjectURL(
-          thumbnail,
-        );
-
-      this.objectUrls.add(
-        thumbnailUrl,
+      const thumbnail = await firstValueFrom(
+        this.http.get(`/api/fotos/media/${item.id}/${derivative}`, {
+          responseType: 'blob',
+        }),
       );
+
+      thumbnailUrl = URL.createObjectURL(thumbnail);
+
+      this.objectUrls.add(thumbnailUrl);
     } catch {
       thumbnailUrl = null;
     }
@@ -245,10 +185,8 @@ export class MonthPageComponent
     return {
       id: item.id,
       mediaType: item.media_type,
-      originalDate:
-        item.original_date,
-      originalName:
-        item.original_name,
+      originalDate: item.original_date,
+      originalName: item.original_name,
       thumbnailUrl,
     };
   }
