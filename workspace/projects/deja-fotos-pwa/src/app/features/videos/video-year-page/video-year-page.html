@@ -1,0 +1,110 @@
+<main class="video-year-page">
+  <header class="video-year-header">
+    <button
+      class="back-button"
+      type="button"
+      aria-label="Voltar"
+      (click)="goBack()"
+    >
+      ‹
+    </button>
+
+    <div>
+      <p class="eyebrow">
+        Vídeos
+      </p>
+
+      <h1>
+        @if (year()) {
+          {{ year() }}
+        }
+      </h1>
+    </div>
+  </header>
+
+  <section class="video-year-intro">
+    <p>
+      Explore os vídeos deste ano.
+    </p>
+  </section>
+
+  @if (loading()) {
+    <section class="state-card">
+      <p>
+        Carregando vídeos...
+      </p>
+    </section>
+  } @else if (error()) {
+    <section class="state-card state-card-error">
+      <p>
+        {{ error() }}
+      </p>
+    </section>
+  } @else if (videos().length === 0) {
+    <section class="state-card">
+      <p>
+        Nenhum vídeo disponível
+        para este ano.
+      </p>
+    </section>
+  } @else {
+    <section class="video-grid">
+      @for (
+        item of videos();
+        track item.id
+      ) {
+        <button
+          class="video-card"
+          type="button"
+          [attr.aria-label]="'Abrir ' + item.originalName"
+          (click)="openVideo(item.id)"
+        >
+          @if (item.posterUrl) {
+            <img
+              class="video-poster"
+              [src]="item.posterUrl"
+              [alt]="item.originalName"
+              loading="lazy"
+            />
+          } @else {
+            <div class="video-placeholder">
+              Vídeo
+            </div>
+          }
+
+          <span
+            class="video-badge"
+            aria-hidden="true"
+          >
+            ▶
+          </span>
+        </button>
+      }
+    </section>
+
+    @if (loadingMore()) {
+      <section class="load-more-state">
+        <p>
+          Carregando mais vídeos...
+        </p>
+      </section>
+    }
+
+    @if (loadMoreError()) {
+      <section
+        class="load-more-state load-more-error"
+      >
+        <p>
+          {{ loadMoreError() }}
+        </p>
+
+        <button
+          type="button"
+          (click)="loadNextPage()"
+        >
+          Tentar novamente
+        </button>
+      </section>
+    }
+  }
+</main>

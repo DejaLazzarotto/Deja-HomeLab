@@ -1,0 +1,80 @@
+<main class="video-viewer-page">
+  <header class="viewer-header">
+    <button
+      class="back-button"
+      type="button"
+      aria-label="Voltar"
+      (click)="goBack()"
+    >
+      ‹
+    </button>
+
+    <div>
+      <p class="eyebrow">
+        Vídeos
+      </p>
+
+      <h1>
+        Visualizar vídeo
+      </h1>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <section class="state-card">
+      <p>
+        Carregando vídeo...
+      </p>
+    </section>
+  } @else if (error()) {
+    <section class="state-card state-card-error">
+      <p>
+        {{ error() }}
+      </p>
+    </section>
+  } @else if (media() && mediaUrl()) {
+    <section
+      class="viewer-content"
+      (touchstart)="onTouchStart($event)"
+      (touchend)="onTouchEnd($event)"
+    >
+      <button
+        class="navigation-button navigation-button-previous"
+        type="button"
+        aria-label="Vídeo anterior"
+        [disabled]="currentIndex() <= 0"
+        (click)="showPrevious()"
+      >
+        ‹
+      </button>
+
+      <div class="media-stage">
+        <video
+          class="viewer-video"
+          [src]="mediaUrl()"
+          controls
+          playsinline
+          preload="metadata"
+        >
+          Seu navegador não suporta reprodução de vídeo.
+        </video>
+
+        <div class="media-position">
+          {{ currentIndex() + 1 }}
+          de
+          {{ total() }}
+        </div>
+      </div>
+
+      <button
+        class="navigation-button navigation-button-next"
+        type="button"
+        aria-label="Próximo vídeo"
+        [disabled]="currentIndex() >= videos().length - 1"
+        (click)="showNext()"
+      >
+        ›
+      </button>
+    </section>
+  }
+</main>

@@ -122,6 +122,45 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'videos/:year/media/:mediaId',
+    title: 'Visualizar vídeo | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/videos/video-viewer-page/video-viewer-page'
+      ).then(
+        module => module.VideoViewerPageComponent,
+      ),
+  },
+  {
+    path: 'videos/:year',
+    title: 'Vídeos do ano | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/videos/video-year-page/video-year-page'
+      ).then(
+        module => module.VideoYearPageComponent,
+      ),
+  },
+  {
+    path: 'videos',
+    title: 'Vídeos | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/videos/videos-page/videos-page'
+      ).then(
+        module => module.VideosPageComponent,
+      ),
+  },
+  {
     path: 'albums',
     title: 'Meus álbuns | Fotos',
     canActivate: [

@@ -31,4 +31,10 @@ export class ExplorePageComponent {
       '/people',
     );
   }
+
+  openVideos(): void {
+    void this.router.navigateByUrl(
+      '/videos',
+    );
+  }
 }

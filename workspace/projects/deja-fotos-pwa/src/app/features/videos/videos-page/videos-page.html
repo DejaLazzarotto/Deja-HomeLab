@@ -1,0 +1,77 @@
+<main class="videos-page">
+  <header class="videos-header">
+    <button
+      class="back-button"
+      type="button"
+      aria-label="Voltar"
+      (click)="goBack()"
+    >
+      ‹
+    </button>
+
+    <div>
+      <p class="eyebrow">
+        Fotos
+      </p>
+
+      <h1>
+        Vídeos
+      </h1>
+    </div>
+  </header>
+
+  <section class="videos-intro">
+    <p>
+      Escolha um ano para explorar
+      seus vídeos.
+    </p>
+  </section>
+
+  @if (loading()) {
+    <section class="state-card">
+      <p>
+        Carregando vídeos...
+      </p>
+    </section>
+  } @else if (error()) {
+    <section class="state-card state-card-error">
+      <p>
+        {{ error() }}
+      </p>
+    </section>
+  } @else if (years().length === 0) {
+    <section class="state-card">
+      <p>
+        Nenhum vídeo com data disponível.
+      </p>
+    </section>
+  } @else {
+    <section class="year-list">
+      @for (
+        item of years();
+        track item.year
+      ) {
+        <button
+          class="year-card"
+          type="button"
+          (click)="openYear(item.year)"
+        >
+          <div>
+            <h2>
+              {{ item.year }}
+            </h2>
+
+            <p>
+              {{ item.mediaCount }}
+              vídeos
+            </p>
+          </div>
+
+          <span aria-hidden="true">
+            ›
+          </span>
+        </button>
+      }
+    </section>
+  }
+</main>
