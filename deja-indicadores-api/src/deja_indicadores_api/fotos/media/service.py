@@ -277,6 +277,7 @@ class FotosMediaService:
         organization_id: str | None = None,
         tenant_id: str | None = None,
         environment_id: str | None = None,
+        media_type: str | None = None,
     ) -> list[FotosMediaPeriodResponse]:
         """Lista os períodos reais existentes dentro do escopo permitido."""
 
@@ -306,6 +307,7 @@ class FotosMediaService:
                 organization_id=effective_organization_id,
                 tenant_id=effective_tenant_id,
                 environment_id=effective_environment_id,
+                media_type=media_type,
             )
         ]
     def find_by_id(

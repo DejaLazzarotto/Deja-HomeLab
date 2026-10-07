@@ -135,6 +135,7 @@ class FotosMediaRepository:
         organization_id: str | None = None,
         tenant_id: str | None = None,
         environment_id: str | None = None,
+        media_type: str | None = None,
     ) -> list[FotosMediaPeriodRow]:
         """Lista os períodos reais existentes no acervo com suas quantidades."""
 
@@ -168,6 +169,12 @@ class FotosMediaRepository:
             conditions.append(
                 FotosMediaModel.environment_id
                 == environment_id
+            )
+
+        if media_type is not None:
+            conditions.append(
+                FotosMediaModel.media_type
+                == media_type
             )
 
         statement = (

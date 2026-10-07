@@ -212,6 +212,7 @@ def list_media_periods(
     organization_id: str | None = Query(default=None),
     tenant_id: str | None = Query(default=None),
     environment_id: str | None = Query(default=None),
+    media_type: Annotated[FotosMediaType | None, Query()] = None,
 ) -> list[FotosMediaPeriodResponse]:
     """Lista os períodos reais existentes no acervo autorizado."""
 
@@ -220,6 +221,7 @@ def list_media_periods(
         organization_id=organization_id,
         tenant_id=tenant_id,
         environment_id=environment_id,
+        media_type=media_type,
     )
 
 @router.patch(

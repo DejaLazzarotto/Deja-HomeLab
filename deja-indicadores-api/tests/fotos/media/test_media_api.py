@@ -1374,6 +1374,80 @@ def test_list_media_periods_groups_by_year_and_month(
         },
     ]
 
+
+def test_list_media_periods_filters_by_media_type(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Filtra os periodos para retornar somente videos."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    image_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="foto-periodo.jpg",
+        content=create_test_jpeg(
+            original_date=datetime(
+                2024,
+                2,
+                10,
+                12,
+            ),
+        ),
+    )
+
+    assert image_response.status_code == 201
+
+    video_response = upload_video(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="video-periodo.mp4",
+    )
+
+    assert video_response.status_code == 201
+
+    video_id = video_response.json()["id"]
+
+    date_response = client.patch(
+        f"{MEDIA_URL}/{video_id}/original-date",
+        json={
+            "original_date": "2024-02-20T12:00:00",
+        },
+        headers=headers,
+    )
+
+    assert date_response.status_code == 200
+
+    response = client.get(
+        f"{MEDIA_URL}/periods",
+        params={
+            "environment_id": environment_id,
+            "media_type": "video",
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "year": 2024,
+            "month": 2,
+            "media_count": 1,
+        },
+    ]
+
+
 def test_list_media_filters_by_album(
     client: TestClient,
     media_context: tuple[
