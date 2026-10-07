@@ -387,6 +387,20 @@
   margin-top: 14px;
 }
 
+.people-card {
+  padding: 16px;
+}
+
+.people-card-heading {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .person-item {
   display: grid;
 
@@ -395,6 +409,18 @@
   gap: 6px;
 
   min-width: 0;
+
+  padding: 0;
+
+  border: 0;
+
+  background: transparent;
+
+  color: inherit;
+
+  font: inherit;
+
+  cursor: pointer;
 }
 
 .person-avatar {
@@ -419,6 +445,10 @@
   font-size: 15px;
 
   font-weight: 800;
+}
+
+.person-avatar-image {
+  object-fit: cover;
 }
 
 .person-item span {

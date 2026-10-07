@@ -271,11 +271,149 @@
       </section>
     }
     @case ('avatars') {
-      <section class="upcoming-panel">
-        <h2>Avatares</h2>
-        <p>Os avatares são fotos de perfil gerenciadas no Dashboard de Álbuns.
-          Eles não são usados como referência automática para reconhecimento facial.</p>
-        <p>{{ peopleTotal() }} pessoa(s) cadastrada(s) neste ambiente.</p>
+      <section class="upcoming-panel avatar-management">
+        <header class="panel-header">
+          <div>
+            <h2>Avatares</h2>
+            <p class="avatar-management__intro">
+              Os avatares são fotos de perfil e não são usados automaticamente
+              como referência para reconhecimento facial.
+            </p>
+          </div>
+          <small>{{ peopleTotal() }} pessoa(s)</small>
+        </header>
+
+        <div class="avatar-people-grid">
+          @for (person of people(); track person.id) {
+            <article
+              class="avatar-person-card"
+              [class.selected]="selectedAvatarPersonId() === person.id"
+            >
+              <button
+                type="button"
+                class="avatar-person-select"
+                (click)="selectAvatarPerson(person.id)"
+              >
+                @if (avatarUrls().get(person.id); as avatarUrl) {
+                  <img
+                    class="avatar-person-image"
+                    [src]="avatarUrl"
+                    [alt]="'Avatar de ' + person.name"
+                  />
+                } @else {
+                  <span
+                    class="avatar-person-placeholder"
+                    aria-hidden="true"
+                  >
+                    {{ person.name.slice(0, 1).toUpperCase() }}
+                  </span>
+                }
+
+                <strong>{{ person.name }}</strong>
+
+                <span>
+                  {{
+                    person.avatar_content_type
+                      ? 'Avatar definido'
+                      : 'Sem avatar'
+                  }}
+                </span>
+              </button>
+
+              @if (canManage()) {
+                <div class="avatar-person-actions">
+                  <label class="avatar-upload">
+                    Enviar foto
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      [disabled]="busy()"
+                      (change)="uploadAvatar(person.id, $any($event.target).files?.[0] ?? null)"
+                    />
+                  </label>
+
+                  @if (person.avatar_content_type) {
+                    <button
+                      type="button"
+                      class="text-button"
+                      [disabled]="busy()"
+                      (click)="removeAvatar(person.id)"
+                    >
+                      Remover
+                    </button>
+                  }
+                </div>
+              }
+            </article>
+          } @empty {
+            <p class="panel-empty">
+              Nenhuma pessoa cadastrada neste ambiente.
+            </p>
+          }
+        </div>
+
+        @if (selectedAvatarPersonId()) {
+          <section class="avatar-photo-picker">
+            <header class="panel-header">
+              <div>
+                <h2>
+                  Fotos de {{ personName(selectedAvatarPersonId()) }}
+                </h2>
+                <p>
+                  Escolha uma foto já vinculada à pessoa para usá-la como avatar.
+                </p>
+              </div>
+              <small>{{ avatarMediaTotal() }} mídia(s)</small>
+            </header>
+
+            @if (avatarLoading() && !avatarMedia().length) {
+              <p class="panel-empty">
+                Carregando fotos...
+              </p>
+            } @else {
+              <div class="avatar-photo-grid">
+                @for (item of avatarMedia(); track item.id) {
+                  <button
+                    type="button"
+                    class="avatar-photo-card"
+                    [disabled]="busy() || !canManage()"
+                    (click)="useMediaAsAvatar(selectedAvatarPersonId(), item.id)"
+                  >
+                    @if (avatarMediaUrls().get(item.id); as url) {
+                      <img
+                        [src]="url"
+                        [alt]="item.original_name"
+                      />
+                    } @else {
+                      <span>Sem miniatura</span>
+                    }
+
+                    <strong>Usar como avatar</strong>
+                  </button>
+                } @empty {
+                  <p class="panel-empty">
+                    Essa pessoa ainda não possui fotos vinculadas.
+                  </p>
+                }
+              </div>
+
+              @if (avatarMediaPage() * 50 < avatarMediaTotal()) {
+                <button
+                  type="button"
+                  class="text-button"
+                  [disabled]="avatarLoading()"
+                  (click)="loadAvatarMedia(true)"
+                >
+                  {{
+                    avatarLoading()
+                      ? 'Carregando...'
+                      : 'Carregar mais fotos'
+                  }}
+                </button>
+              }
+            }
+          </section>
+        }
       </section>
     }
   }

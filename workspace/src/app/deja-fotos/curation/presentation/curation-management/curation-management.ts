@@ -39,6 +39,17 @@ interface ReferenceItem {
   readonly face_id: string;
   readonly person_id: string;
 }
+interface PersonMediaItem {
+  readonly id: string;
+  readonly original_name: string;
+  readonly media_type: 'image' | 'video';
+}
+interface PersonMediaPage {
+  readonly items: readonly PersonMediaItem[];
+  readonly page: number;
+  readonly total: number;
+  readonly total_pages: number;
+}
 interface Box {
   readonly x: number;
   readonly y: number;
@@ -59,7 +70,7 @@ export class CurationManagementComponent implements OnDestroy {
   readonly environments = input<readonly FotosEnvironmentOption[]>([]);
   readonly defaultEnvironmentId = input<string | null>(null);
   readonly canManage = input(false);
-  readonly activeTab = signal<CurationTab>('recognition');
+  readonly activeTab = signal<CurationTab>(this.restoreActiveTab());
   readonly environmentId = signal('');
   readonly situationFilter = signal('all');
   readonly personFilter = signal('');
@@ -88,6 +99,13 @@ export class CurationManagementComponent implements OnDestroy {
   readonly referenceUrls = signal<ReadonlyMap<string, string>>(new Map());
   readonly referencePage = signal(0);
   readonly referenceTotal = signal(0);
+  readonly avatarUrls = signal<ReadonlyMap<string, string>>(new Map());
+  readonly selectedAvatarPersonId = signal('');
+  readonly avatarMedia = signal<readonly PersonMediaItem[]>([]);
+  readonly avatarMediaUrls = signal<ReadonlyMap<string, string>>(new Map());
+  readonly avatarMediaPage = signal(0);
+  readonly avatarMediaTotal = signal(0);
+  readonly avatarLoading = signal(false);
   readonly summary = signal({ pending: 0, unknown: 0 });
   readonly loading = signal(false);
   readonly busy = signal(false);
@@ -123,11 +141,15 @@ export class CurationManagementComponent implements OnDestroy {
     this.referenceSequence++;
     this.releaseImage();
     this.releaseReferences();
+    this.releaseAvatarUrls();
+    this.releaseAvatarMediaUrls();
   }
 
   selectTab(tab: CurationTab): void {
     this.activeTab.set(tab);
+    sessionStorage.setItem('deja-fotos-curation-active-tab', tab);
     if (tab === 'people') void this.loadReferences();
+    if (tab === 'avatars') void this.loadAvatarUrls();
   }
 
   changeEnvironment(id: string): void {
@@ -138,6 +160,12 @@ export class CurationManagementComponent implements OnDestroy {
     this.albumFilter.set('');
     this.referenceSequence++;
     this.releaseReferences();
+    this.releaseAvatarUrls();
+    this.releaseAvatarMediaUrls();
+    this.selectedAvatarPersonId.set('');
+    this.avatarMedia.set([]);
+    this.avatarMediaPage.set(0);
+    this.avatarMediaTotal.set(0);
     this.references.set([]);
     this.people.set([]);
     this.albums.set([]);
@@ -158,6 +186,10 @@ export class CurationManagementComponent implements OnDestroy {
       this.people.set(more ? [...this.people(), ...result.items] : result.items);
       this.peopleTotal.set(result.total);
       this.peoplePage.set(result.page);
+
+      if (this.activeTab() === 'avatars') {
+        void this.loadAvatarUrls();
+      }
     } catch (error) {
       this.error.set(this.errorMessage(error));
     }
@@ -499,6 +531,301 @@ export class CurationManagementComponent implements OnDestroy {
     }, 'Referência removida.');
   }
 
+  async selectAvatarPerson(personId: string): Promise<void> {
+    if (
+      !personId
+      || personId === this.selectedAvatarPersonId()
+    ) {
+      return;
+    }
+
+    this.selectedAvatarPersonId.set(personId);
+    this.avatarMedia.set([]);
+    this.avatarMediaPage.set(0);
+    this.avatarMediaTotal.set(0);
+    this.releaseAvatarMediaUrls();
+
+    await this.loadAvatarMedia();
+  }
+
+  async loadAvatarMedia(more = false): Promise<void> {
+    const personId = this.selectedAvatarPersonId();
+
+    if (
+      !personId
+      || this.avatarLoading()
+    ) {
+      return;
+    }
+
+    const page =
+      more
+        ? this.avatarMediaPage() + 1
+        : 1;
+
+    this.avatarLoading.set(true);
+    this.error.set(null);
+
+    try {
+      const result = await firstValueFrom(
+        this.http.get<PersonMediaPage>(
+          `/api/fotos/people/${personId}/media`,
+          {
+            params: {
+              page,
+              page_size: 50,
+            },
+          },
+        ),
+      );
+
+      if (
+        this.destroyed
+        || personId !== this.selectedAvatarPersonId()
+      ) {
+        return;
+      }
+
+      const images = result.items.filter(
+        item => item.media_type === 'image',
+      );
+
+      this.avatarMedia.set(
+        more
+          ? [
+              ...this.avatarMedia(),
+              ...images,
+            ]
+          : images,
+      );
+
+      this.avatarMediaPage.set(result.page);
+      this.avatarMediaTotal.set(result.total);
+
+      for (const item of images) {
+        try {
+          const blob = await firstValueFrom(
+            this.http.get(
+              `/api/fotos/media/${item.id}/thumbnail`,
+              {
+                responseType: 'blob',
+              },
+            ),
+          );
+
+          if (
+            this.destroyed
+            || personId !== this.selectedAvatarPersonId()
+          ) {
+            return;
+          }
+
+          const url = URL.createObjectURL(blob);
+
+          this.avatarMediaUrls.update(current => {
+            const next = new Map(current);
+            next.set(item.id, url);
+            return next;
+          });
+        } catch {
+          // A foto continua disponível mesmo sem miniatura.
+        }
+      }
+    } catch (error) {
+      this.error.set(this.errorMessage(error));
+    } finally {
+      this.avatarLoading.set(false);
+    }
+  }
+
+  async uploadAvatar(
+    personId: string,
+    file: File | null,
+  ): Promise<void> {
+    if (
+      !file
+      || !this.canManage()
+      || this.busy()
+    ) {
+      return;
+    }
+
+    await this.mutate(
+      async () => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const updated = await firstValueFrom(
+          this.http.put<PersonItem>(
+            `/api/fotos/people/${personId}/avatar`,
+            formData,
+          ),
+        );
+
+        this.replacePerson(updated);
+        await this.refreshAvatar(updated);
+      },
+      'Avatar atualizado.',
+    );
+  }
+
+  async removeAvatar(
+    personId: string,
+  ): Promise<void> {
+    if (
+      !this.canManage()
+      || this.busy()
+    ) {
+      return;
+    }
+
+    await this.mutate(
+      async () => {
+        const updated = await firstValueFrom(
+          this.http.delete<PersonItem>(
+            `/api/fotos/people/${personId}/avatar`,
+          ),
+        );
+
+        this.replacePerson(updated);
+        this.replaceAvatarUrl(
+          personId,
+          null,
+        );
+      },
+      'Avatar removido.',
+    );
+  }
+
+  async useMediaAsAvatar(
+    personId: string,
+    mediaId: string,
+  ): Promise<void> {
+    if (
+      !this.canManage()
+      || this.busy()
+    ) {
+      return;
+    }
+
+    await this.mutate(
+      async () => {
+        const blob = await firstValueFrom(
+          this.http.get(
+            `/api/fotos/media/${mediaId}/preview`,
+            {
+              responseType: 'blob',
+            },
+          ),
+        );
+
+        const file = new File(
+          [blob],
+          'avatar.webp',
+          {
+            type:
+              blob.type
+              || 'image/webp',
+          },
+        );
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const updated = await firstValueFrom(
+          this.http.put<PersonItem>(
+            `/api/fotos/people/${personId}/avatar`,
+            formData,
+          ),
+        );
+
+        this.replacePerson(updated);
+        await this.refreshAvatar(updated);
+      },
+      'Foto definida como avatar.',
+    );
+  }
+
+  private replacePerson(
+    person: PersonItem,
+  ): void {
+    this.people.update(items =>
+      items.map(item =>
+        item.id === person.id
+          ? person
+          : item,
+      ),
+    );
+  }
+
+  private async refreshAvatar(
+    person: PersonItem,
+  ): Promise<void> {
+    if (!person.avatar_content_type) {
+      this.replaceAvatarUrl(
+        person.id,
+        null,
+      );
+
+      return;
+    }
+
+    const blob = await firstValueFrom(
+      this.http.get(
+        `/api/fotos/people/${person.id}/avatar`,
+        {
+          responseType: 'blob',
+        },
+      ),
+    );
+
+    if (this.destroyed) {
+      return;
+    }
+
+    this.replaceAvatarUrl(
+      person.id,
+      URL.createObjectURL(blob),
+    );
+  }
+
+  private replaceAvatarUrl(
+    personId: string,
+    url: string | null,
+  ): void {
+    const current =
+      this.avatarUrls().get(personId);
+
+    if (current) {
+      URL.revokeObjectURL(current);
+    }
+
+    this.avatarUrls.update(previous => {
+      const next = new Map(previous);
+
+      if (url) {
+        next.set(personId, url);
+      } else {
+        next.delete(personId);
+      }
+
+      return next;
+    });
+  }
+
+  private releaseAvatarMediaUrls(): void {
+    for (
+      const url
+      of this.avatarMediaUrls().values()
+    ) {
+      URL.revokeObjectURL(url);
+    }
+
+    this.avatarMediaUrls.set(
+      new Map(),
+    );
+  }
+
   private replaceFace(face: FaceItem): void {
     this.faces.update(items => items.map(item => item.id === face.id ? face : item));
   }
@@ -528,6 +855,53 @@ export class CurationManagementComponent implements OnDestroy {
   private releaseReferences(): void {
     for (const url of this.referenceUrls().values()) URL.revokeObjectURL(url);
     this.referenceUrls.set(new Map());
+  }
+
+  private async loadAvatarUrls(): Promise<void> {
+    this.releaseAvatarUrls();
+
+    const people = this.people();
+
+    for (const person of people) {
+      if (!person.avatar_content_type) continue;
+
+      try {
+        const blob = await firstValueFrom(this.http.get(
+          `/api/fotos/people/${person.id}/avatar`,
+          { responseType: 'blob' },
+        ));
+
+        if (this.destroyed || this.activeTab() !== 'avatars') return;
+
+        const url = URL.createObjectURL(blob);
+        this.avatarUrls.update(current => {
+          const next = new Map(current);
+          next.set(person.id, url);
+          return next;
+        });
+      } catch {
+        // A pessoa continua disponível mesmo se o avatar estiver ausente.
+      }
+    }
+  }
+
+  private releaseAvatarUrls(): void {
+    for (const url of this.avatarUrls().values()) URL.revokeObjectURL(url);
+    this.avatarUrls.set(new Map());
+  }
+
+  private restoreActiveTab(): CurationTab {
+    const tab = sessionStorage.getItem('deja-fotos-curation-active-tab');
+
+    if (
+      tab === 'recognition'
+      || tab === 'people'
+      || tab === 'avatars'
+    ) {
+      return tab;
+    }
+
+    return 'recognition';
   }
 
   private errorMessage(error: unknown): string {
