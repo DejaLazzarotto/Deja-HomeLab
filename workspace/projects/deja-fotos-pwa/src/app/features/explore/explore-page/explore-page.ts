@@ -25,4 +25,10 @@ export class ExplorePageComponent {
       '/dates',
     );
   }
+
+  openPeople(): void {
+    void this.router.navigateByUrl(
+      '/people',
+    );
+  }
 }

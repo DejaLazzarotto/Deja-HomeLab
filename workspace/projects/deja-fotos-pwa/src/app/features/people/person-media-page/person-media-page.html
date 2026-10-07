@@ -1,0 +1,107 @@
+<main class="person-media-page">
+  <header class="person-media-header">
+    <button
+      type="button"
+      class="back-button"
+      (click)="goBack()"
+      aria-label="Voltar"
+    >
+      ←
+    </button>
+
+    <div>
+      <p class="eyebrow">
+        Pessoas
+      </p>
+
+      <h1>
+        {{ person()?.name || 'Pessoa' }}
+      </h1>
+
+      @if (!loading() && !error()) {
+        <p class="subtitle">
+          {{ total() }}
+          @if (total() === 1) {
+            mídia
+          } @else {
+            mídias
+          }
+        </p>
+      }
+    </div>
+  </header>
+
+  @if (loading()) {
+    <section class="state-card">
+      <p>
+        Carregando mídias...
+      </p>
+    </section>
+  } @else if (error()) {
+    <section class="state-card state-card-error">
+      <p>
+        {{ error() }}
+      </p>
+    </section>
+  } @else if (media().length === 0) {
+    <section class="state-card">
+      <p>
+        Nenhuma mídia vinculada a esta pessoa.
+      </p>
+    </section>
+  } @else {
+    <section class="media-grid">
+      @for (item of media(); track item.id) {
+        <button
+          type="button"
+          class="media-card"
+          (click)="openMedia(item.id)"
+        >
+          @if (item.thumbnailUrl) {
+            <img
+              class="media-thumbnail"
+              [src]="item.thumbnailUrl"
+              [alt]="item.original_name"
+            />
+          } @else {
+            <div class="media-placeholder">
+              Sem prévia
+            </div>
+          }
+
+          @if (item.media_type === 'video') {
+            <span
+              class="video-badge"
+              aria-label="Vídeo"
+            >
+              ▶
+            </span>
+          }
+        </button>
+      }
+    </section>
+
+    @if (loadingMore()) {
+      <section class="load-more-state">
+        <p>
+          Carregando mais mídias...
+        </p>
+      </section>
+    }
+
+    @if (loadMoreError()) {
+      <section class="load-more-state load-more-error">
+        <p>
+          {{ loadMoreError() }}
+        </p>
+
+        <button
+          type="button"
+          (click)="loadNextPage()"
+        >
+          Tentar novamente
+        </button>
+      </section>
+    }
+  }
+</main>

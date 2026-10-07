@@ -31,6 +31,45 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'people/:personId/media/:mediaId',
+    title: 'Visualizar mídia | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/people/person-media-viewer-page/person-media-viewer-page'
+      ).then(
+        module => module.PersonMediaViewerPageComponent,
+      ),
+  },
+  {
+    path: 'people/:personId',
+    title: 'Mídias da pessoa | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/people/person-media-page/person-media-page'
+      ).then(
+        module => module.PersonMediaPageComponent,
+      ),
+  },
+  {
+    path: 'people',
+    title: 'Por pessoas | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/people/people-page/people-page'
+      ).then(
+        module => module.PeoplePageComponent,
+      ),
+  },
+  {
     path: 'dates/:year/:month/media/:mediaId',
     title: 'Visualizar mídia | Fotos',
     canActivate: [

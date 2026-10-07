@@ -1,0 +1,76 @@
+<main class="people-page">
+  <header class="people-header">
+    <button
+      type="button"
+      class="back-button"
+      (click)="goBack()"
+      aria-label="Voltar"
+    >
+      ←
+    </button>
+
+    <div>
+      <p class="eyebrow">Explorar</p>
+
+      <h1>Por Pessoas</h1>
+
+      <p class="subtitle">
+        Escolha uma pessoa para ver as fotos e vídeos associados.
+      </p>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <section class="state-card">
+      <p>Carregando pessoas...</p>
+    </section>
+  } @else if (error()) {
+    <section class="state-card state-card-error">
+      <p>{{ error() }}</p>
+    </section>
+  } @else if (people().length === 0) {
+    <section class="state-card">
+      <p>Nenhuma pessoa cadastrada.</p>
+    </section>
+  } @else {
+    <section class="people-grid">
+      @for (person of people(); track person.id) {
+        <button
+          type="button"
+          class="person-card"
+          (click)="openPerson(person.id)"
+        >
+          <div class="avatar-shell">
+            @if (person.avatarUrl) {
+              <img
+                class="person-avatar"
+                [src]="person.avatarUrl"
+                [alt]="person.name"
+              />
+            } @else {
+              <div
+                class="person-avatar person-avatar-placeholder"
+                aria-hidden="true"
+              >
+                {{ person.name.charAt(0).toUpperCase() }}
+              </div>
+            }
+          </div>
+
+          <div class="person-info">
+            <strong>{{ person.name }}</strong>
+
+            <span>
+              {{ person.mediaCount }}
+              @if (person.mediaCount === 1) {
+                mídia
+              } @else {
+                mídias
+              }
+            </span>
+          </div>
+        </button>
+      }
+    </section>
+  }
+</main>
