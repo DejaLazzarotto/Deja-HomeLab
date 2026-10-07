@@ -88,5 +88,30 @@
         </button>
       }
     </section>
+
+    @if (loadingMore()) {
+      <section class="load-more-state">
+        <p>
+          Carregando mais mídias...
+        </p>
+      </section>
+    }
+
+    @if (loadMoreError()) {
+      <section
+        class="load-more-state load-more-error"
+      >
+        <p>
+          {{ loadMoreError() }}
+        </p>
+
+        <button
+          type="button"
+          (click)="loadNextPage()"
+        >
+          Tentar novamente
+        </button>
+      </section>
+    }
   }
 </main>

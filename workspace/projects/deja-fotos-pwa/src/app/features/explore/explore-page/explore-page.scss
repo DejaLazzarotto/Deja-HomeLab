@@ -629,8 +629,15 @@
    TELAS MAIORES
    ========================================================= */
 
-@media (min-width: 600px) {
+@media (min-width: 600px) and (orientation: portrait) {
   .explore-page {
     max-width: 480px;
+  }
+}
+
+@media (orientation: landscape) {
+  .explore-page {
+    max-width: none;
+    margin: 0;
   }
 }

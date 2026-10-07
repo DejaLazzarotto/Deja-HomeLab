@@ -229,9 +229,16 @@ h1 {
   }
 }
 
-@media (min-width: 600px) {
+@media (min-width: 600px) and (orientation: portrait) {
   .dates-page {
     max-width: 480px;
     margin: 0 auto;
+  }
+}
+
+@media (orientation: landscape) {
+  .dates-page {
+    max-width: none;
+    margin: 0;
   }
 }

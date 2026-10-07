@@ -337,3 +337,19 @@
     font-size: 14px;
   }
 }
+
+@media (orientation: landscape) {
+  .login-page {
+    padding: 0;
+  }
+
+  .login-shell {
+    width: 100%;
+    max-width: none;
+    min-height: 100dvh;
+
+    border-radius: 0;
+
+    box-shadow: none;
+  }
+}

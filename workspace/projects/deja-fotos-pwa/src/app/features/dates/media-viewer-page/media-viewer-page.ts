@@ -28,6 +28,9 @@ interface MediaListResponse {
   total_pages: number;
 }
 
+const PAGE_SIZE = 30;
+const PREFETCH_THRESHOLD = 5;
+
 @Component({
   selector: 'app-media-viewer-page',
   standalone: true,
@@ -48,6 +51,14 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
 
   private touchStartY: number | null = null;
 
+  private currentPage = 0;
+
+  private totalPages = 0;
+
+  private totalMedia = 0;
+
+  private loadingMore = false;
+
   readonly year = signal<number | null>(null);
 
   readonly month = signal<number | null>(null);
@@ -66,12 +77,17 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
 
   readonly error = signal<string | null>(null);
 
+  readonly total = signal<number>(0);
+
   async ngOnInit(): Promise<void> {
-    const yearParam = this.route.snapshot.paramMap.get('year');
+    const yearParam =
+      this.route.snapshot.paramMap.get('year');
 
-    const monthParam = this.route.snapshot.paramMap.get('month');
+    const monthParam =
+      this.route.snapshot.paramMap.get('month');
 
-    const mediaId = this.route.snapshot.paramMap.get('mediaId');
+    const mediaId =
+      this.route.snapshot.paramMap.get('mediaId');
 
     const selectedYear = Number(yearParam);
 
@@ -100,30 +116,13 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
     this.mediaId.set(mediaId);
 
     try {
-      const monthResponse = await firstValueFrom(
-        this.http.get<MediaListResponse>('/api/fotos/media', {
-          params: {
-            original_year: selectedYear,
-            original_month: selectedMonth,
-            page: 1,
-            page_size: 200,
-          },
-        }),
-      );
-
-      this.monthMedia.set(monthResponse.items);
-
-      const index = monthResponse.items.findIndex((item) => item.id === mediaId);
-
-      if (index < 0) {
-        throw new Error('Mídia não encontrada no período.');
-      }
-
-      this.currentIndex.set(index);
+      await this.loadUntilMediaFound(mediaId);
 
       await this.loadCurrentMedia();
     } catch {
-      this.error.set('Não foi possível carregar a mídia.');
+      this.error.set(
+        'Não foi possível carregar a mídia.',
+      );
     } finally {
       this.loading.set(false);
     }
@@ -138,13 +137,20 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
 
     const selectedMonth = this.month();
 
-    if (selectedYear === null || selectedMonth === null) {
+    if (
+      selectedYear === null ||
+      selectedMonth === null
+    ) {
       void this.router.navigateByUrl('/dates');
 
       return;
     }
 
-    void this.router.navigate(['/dates', selectedYear, selectedMonth]);
+    void this.router.navigate([
+      '/dates',
+      selectedYear,
+      selectedMonth,
+    ]);
   }
 
   async showPrevious(): Promise<void> {
@@ -162,7 +168,19 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
 
     const items = this.monthMedia();
 
-    if (index < 0 || index >= items.length - 1) {
+    if (index < 0) {
+      return;
+    }
+
+    if (
+      index >= items.length - PREFETCH_THRESHOLD
+    ) {
+      await this.loadNextPage();
+    }
+
+    const updatedItems = this.monthMedia();
+
+    if (index >= updatedItems.length - 1) {
       return;
     }
 
@@ -181,8 +199,13 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
     this.touchStartY = touch.clientY;
   }
 
-  async onTouchEnd(event: TouchEvent): Promise<void> {
-    if (this.touchStartX === null || this.touchStartY === null) {
+  async onTouchEnd(
+    event: TouchEvent,
+  ): Promise<void> {
+    if (
+      this.touchStartX === null ||
+      this.touchStartY === null
+    ) {
       return;
     }
 
@@ -190,34 +213,140 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
 
     if (!touch) {
       this.resetTouch();
+
       return;
     }
 
-    const deltaX = touch.clientX - this.touchStartX;
+    const deltaX =
+      touch.clientX - this.touchStartX;
 
-    const deltaY = touch.clientY - this.touchStartY;
+    const deltaY =
+      touch.clientY - this.touchStartY;
 
     this.resetTouch();
 
     const minimumSwipeDistance = 50;
 
-    if (Math.abs(deltaX) < minimumSwipeDistance) {
+    if (
+      Math.abs(deltaX) <
+      minimumSwipeDistance
+    ) {
       return;
     }
 
-    if (Math.abs(deltaX) <= Math.abs(deltaY)) {
+    if (
+      Math.abs(deltaX) <=
+      Math.abs(deltaY)
+    ) {
       return;
     }
 
     if (deltaX < 0) {
       await this.showNext();
+
       return;
     }
 
     await this.showPrevious();
   }
 
-  private async changeMedia(index: number): Promise<void> {
+  private async loadUntilMediaFound(
+    mediaId: string,
+  ): Promise<void> {
+    let page = 1;
+
+    while (true) {
+      await this.loadPage(page);
+
+      const index =
+        this.monthMedia().findIndex(
+          (item) => item.id === mediaId,
+        );
+
+      if (index >= 0) {
+        this.currentIndex.set(index);
+
+        return;
+      }
+
+      if (page >= this.totalPages) {
+        throw new Error(
+          'Mídia não encontrada no período.',
+        );
+      }
+
+      page += 1;
+    }
+  }
+
+  private async loadNextPage(): Promise<void> {
+    if (
+      this.loadingMore ||
+      this.currentPage >= this.totalPages
+    ) {
+      return;
+    }
+
+    this.loadingMore = true;
+
+    try {
+      await this.loadPage(
+        this.currentPage + 1,
+      );
+    } finally {
+      this.loadingMore = false;
+    }
+  }
+
+  private async loadPage(
+    page: number,
+  ): Promise<void> {
+    const selectedYear = this.year();
+
+    const selectedMonth = this.month();
+
+    if (
+      selectedYear === null ||
+      selectedMonth === null
+    ) {
+      throw new Error('Período inválido.');
+    }
+
+    const response = await firstValueFrom(
+      this.http.get<MediaListResponse>(
+        '/api/fotos/media',
+        {
+          params: {
+            original_year: selectedYear,
+            original_month: selectedMonth,
+            page,
+            page_size: PAGE_SIZE,
+          },
+        },
+      ),
+    );
+
+    if (page === 1) {
+      this.monthMedia.set(response.items);
+    } else {
+      this.monthMedia.update(
+        (current) => [
+          ...current,
+          ...response.items,
+        ],
+      );
+    }
+
+    this.currentPage = response.page;
+    this.totalPages = response.total_pages;
+    this.totalMedia = response.total;
+
+    this.total.set(this.totalMedia);
+  }
+
+  private async changeMedia(
+    index: number,
+  ): Promise<void> {
     const items = this.monthMedia();
 
     const item = items[index];
@@ -239,13 +368,27 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
 
       const selectedMonth = this.month();
 
-      if (selectedYear !== null && selectedMonth !== null) {
-        await this.router.navigate(['/dates', selectedYear, selectedMonth, 'media', item.id], {
-          replaceUrl: true,
-        });
+      if (
+        selectedYear !== null &&
+        selectedMonth !== null
+      ) {
+        await this.router.navigate(
+          [
+            '/dates',
+            selectedYear,
+            selectedMonth,
+            'media',
+            item.id,
+          ],
+          {
+            replaceUrl: true,
+          },
+        );
       }
     } catch {
-      this.error.set('Não foi possível carregar a mídia.');
+      this.error.set(
+        'Não foi possível carregar a mídia.',
+      );
     } finally {
       this.loading.set(false);
     }
@@ -254,31 +397,40 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
   private async loadCurrentMedia(): Promise<void> {
     const index = this.currentIndex();
 
-    const item = this.monthMedia()[index];
+    const item =
+      this.monthMedia()[index];
 
     if (!item) {
       throw new Error('Mídia inválida.');
     }
 
-    const media = await firstValueFrom(this.http.get<MediaResponse>(`/api/fotos/media/${item.id}`));
+    const media = await firstValueFrom(
+      this.http.get<MediaResponse>(
+        `/api/fotos/media/${item.id}`,
+      ),
+    );
 
     this.media.set(media);
 
     await this.loadMediaBlob(media);
   }
 
-  private async loadMediaBlob(media: MediaResponse): Promise<void> {
-    const endpoint = 'preview';
-
+  private async loadMediaBlob(
+    media: MediaResponse,
+  ): Promise<void> {
     const blob = await firstValueFrom(
-      this.http.get(`/api/fotos/media/${media.id}/${endpoint}`, {
-        responseType: 'blob',
-      }),
+      this.http.get(
+        `/api/fotos/media/${media.id}/preview`,
+        {
+          responseType: 'blob',
+        },
+      ),
     );
 
     this.revokeObjectUrl();
 
-    this.objectUrl = URL.createObjectURL(blob);
+    this.objectUrl =
+      URL.createObjectURL(blob);
 
     this.mediaUrl.set(this.objectUrl);
   }
@@ -288,7 +440,9 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    URL.revokeObjectURL(this.objectUrl);
+    URL.revokeObjectURL(
+      this.objectUrl,
+    );
 
     this.objectUrl = null;
   }
