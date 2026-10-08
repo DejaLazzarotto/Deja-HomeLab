@@ -1,0 +1,305 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+
+  color: #17324a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.album-media-page {
+  position: relative;
+  isolation: isolate;
+
+  width: 100%;
+  min-height: 100dvh;
+
+  padding:
+    max(18px, env(safe-area-inset-top))
+    12px
+    max(20px, env(safe-area-inset-bottom));
+
+  background: transparent;
+}
+
+/* FUNDO */
+
+.album-media-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.12) 0%,
+      rgba(255, 255, 255, 0.26) 48%,
+      rgba(255, 255, 255, 0.12) 100%
+    ),
+    url("/fundo-login.png");
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* CABECALHO */
+
+.album-media-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 2px 4px 0;
+}
+
+.album-media-header > div {
+  min-width: 0;
+}
+
+.back-button {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: #edf5fb;
+  color: #336f99;
+
+  font: inherit;
+  font-size: 28px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.eyebrow {
+  margin: 0 0 3px;
+
+  color: #526c82;
+  font-size: 11px;
+  font-weight: 700;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  overflow-wrap: anywhere;
+}
+
+h1 {
+  margin: 0;
+
+  color: #17324a;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.05;
+
+  letter-spacing: -0.035em;
+}
+
+/* INTRODUCAO */
+
+.album-media-intro {
+  margin-top: 22px;
+  padding: 0 6px;
+}
+
+.album-media-intro p {
+  margin: 0;
+
+  color: #526c82;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* ESTADOS */
+
+.state-card {
+  margin-top: 18px;
+  padding: 18px;
+
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.97);
+
+  box-shadow:
+    0 12px 28px rgba(22, 50, 74, 0.07),
+    0 2px 8px rgba(22, 50, 74, 0.04);
+}
+
+.state-card p {
+  margin: 0;
+
+  color: #647b8f;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.state-card-error p {
+  color: #a33a3a;
+}
+
+/* GALERIA */
+
+.media-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 5px;
+  margin-top: 18px;
+}
+
+.media-card {
+  position: relative;
+  display: block;
+
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+
+  aspect-ratio: 1;
+
+  border: 0;
+  border-radius: 12px;
+
+  background: #edf2f8;
+
+  box-shadow:
+    0 6px 16px rgba(22, 50, 74, 0.07);
+
+  cursor: pointer;
+}
+
+.media-thumbnail {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.media-placeholder {
+  display: grid;
+
+  width: 100%;
+  height: 100%;
+
+  place-items: center;
+
+  color: #7a8798;
+  font-size: 12px;
+}
+
+.video-badge {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+
+  display: grid;
+
+  width: 24px;
+  height: 24px;
+
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: rgba(23, 50, 74, 0.74);
+
+  color: #ffffff;
+  font-size: 10px;
+}
+
+/* CARREGAMENTO PROGRESSIVO */
+
+.load-more-state {
+  margin-top: 14px;
+  padding: 12px;
+
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+
+  text-align: center;
+}
+
+.load-more-state p {
+  margin: 0;
+
+  color: #647b8f;
+  font-size: 12px;
+}
+
+.load-more-error button {
+  margin-top: 10px;
+  padding: 8px 12px;
+
+  border: 0;
+  border-radius: 10px;
+
+  background: #edf5fb;
+  color: #336f99;
+
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+/* RESPONSIVIDADE */
+
+@media (max-width: 340px) {
+  .album-media-page {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  h1 {
+    font-size: 23px;
+  }
+
+  .media-grid {
+    gap: 3px;
+  }
+}
+
+@media (min-width: 600px) and (orientation: portrait) {
+  .album-media-page {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
+
+@media (orientation: landscape) {
+  .album-media-page {
+    max-width: none;
+    margin: 0;
+  }
+
+  .media-grid {
+    grid-template-columns:
+      repeat(5, minmax(0, 1fr));
+
+    gap: 6px;
+  }
+}

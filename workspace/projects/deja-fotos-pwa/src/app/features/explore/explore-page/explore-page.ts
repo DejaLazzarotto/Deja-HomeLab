@@ -128,6 +128,12 @@ implements OnInit, OnDestroy {
     ]);
   }
 
+  openAlbums(): void {
+    void this.router.navigateByUrl(
+      '/albums',
+    );
+  }
+
   openVideos(): void {
     void this.router.navigateByUrl(
       '/videos',

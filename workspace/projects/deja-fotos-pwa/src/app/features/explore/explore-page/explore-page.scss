@@ -36,9 +36,15 @@
   background:
     linear-gradient(
       180deg,
-      #f9fbfd 0%,
-      #eef4f8 100%
-    );
+      rgba(249, 251, 253, 0.20) 0%,
+      rgba(249, 251, 253, 0.46) 55%,
+      rgba(238, 244, 248, 0.30) 100%
+    ),
+    url("/fundo-login.png");
+
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
 }
 
 /* =========================================================
@@ -62,17 +68,7 @@
 
   min-height: 190px;
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.12) 0%,
-      rgba(255, 255, 255, 0.48) 56%,
-      rgba(248, 251, 253, 1) 100%
-    ),
-    url("/fundo-login.png");
-
-  background-size: cover;
-  background-position: center 27%;
+  background: transparent;
 }
 
 .brand-row {

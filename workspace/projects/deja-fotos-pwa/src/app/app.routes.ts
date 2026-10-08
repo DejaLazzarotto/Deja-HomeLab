@@ -161,6 +161,58 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'albums/:albumId/:year/:month/media/:mediaId',
+    title: 'Visualizar mídia do álbum | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/albums/album-media-viewer-page/album-media-viewer-page'
+      ).then(
+        module => module.AlbumMediaViewerPageComponent,
+      ),
+  },
+  {
+    path: 'albums/:albumId/:year/:month',
+    title: 'Mídias do álbum | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/albums/album-media-page/album-media-page'
+      ).then(
+        module => module.AlbumMediaPageComponent,
+      ),
+  },
+  {
+    path: 'albums/:albumId/:year',
+    title: 'Meses do álbum | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/albums/album-months-page/album-months-page'
+      ).then(
+        module => module.AlbumMonthsPageComponent,
+      ),
+  },
+  {
+    path: 'albums/:albumId',
+    title: 'Anos do álbum | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/albums/album-years-page/album-years-page'
+      ).then(
+        module => module.AlbumYearsPageComponent,
+      ),
+  },
+  {
     path: 'albums',
     title: 'Meus álbuns | Fotos',
     canActivate: [

@@ -1,0 +1,78 @@
+<main class="album-years-page">
+  <header class="album-years-header">
+    <button
+      class="back-button"
+      type="button"
+      aria-label="Voltar para Meus álbuns"
+      (click)="goBack()"
+    >
+      ‹
+    </button>
+
+    <div>
+      <p class="eyebrow">
+        Meus álbuns
+      </p>
+
+      <h1>
+        {{ albumName() }}
+      </h1>
+    </div>
+  </header>
+
+  <section class="album-years-intro">
+    <p>
+      Escolha um ano para explorar
+      as fotos e vídeos deste álbum.
+    </p>
+  </section>
+
+  @if (loading()) {
+    <section class="state-card">
+      <p>
+        Carregando anos...
+      </p>
+    </section>
+  } @else if (error()) {
+    <section class="state-card state-card-error">
+      <p>
+        {{ error() }}
+      </p>
+    </section>
+  } @else if (years().length === 0) {
+    <section class="state-card">
+      <p>
+        Nenhuma mídia com data disponível
+        neste álbum.
+      </p>
+    </section>
+  } @else {
+    <section class="year-list">
+      @for (
+        item of years();
+        track item.year
+      ) {
+        <button
+          class="year-card"
+          type="button"
+          (click)="openYear(item.year)"
+        >
+          <div>
+            <h2>
+              {{ item.year }}
+            </h2>
+
+            <p>
+              {{ item.mediaCount }}
+              fotos e vídeos
+            </p>
+          </div>
+
+          <span aria-hidden="true">
+            ›
+          </span>
+        </button>
+      }
+    </section>
+  }
+</main>

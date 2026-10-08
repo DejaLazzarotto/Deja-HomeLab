@@ -1,0 +1,117 @@
+<main class="album-media-page">
+  <header class="album-media-header">
+    <button
+      class="back-button"
+      type="button"
+      aria-label="Voltar para os meses do álbum"
+      (click)="goBack()"
+    >
+      ‹
+    </button>
+
+    <div>
+      <p class="eyebrow">
+        {{ albumName() }}
+      </p>
+
+      <h1>
+        @if (monthName() && year()) {
+          {{ monthName() }} de {{ year() }}
+        }
+      </h1>
+    </div>
+  </header>
+
+  <section class="album-media-intro">
+    <p>
+      Explore as fotos e vídeos
+      deste período do álbum.
+    </p>
+  </section>
+
+  @if (loading()) {
+    <section class="state-card">
+      <p>
+        Carregando mídias...
+      </p>
+    </section>
+  } @else if (error()) {
+    <section class="state-card state-card-error">
+      <p>
+        {{ error() }}
+      </p>
+    </section>
+  } @else if (media().length === 0) {
+    <section class="state-card">
+      <p>
+        Nenhuma mídia disponível
+        para este período do álbum.
+      </p>
+    </section>
+  } @else {
+    <section class="media-grid">
+      @for (
+        item of media();
+        track item.id
+      ) {
+        <button
+          class="media-card"
+          type="button"
+          [attr.aria-label]="'Abrir ' + item.originalName"
+          (click)="openMedia(item.id)"
+        >
+          @if (item.thumbnailUrl) {
+            <img
+              class="media-thumbnail"
+              [src]="item.thumbnailUrl"
+              [alt]="item.originalName"
+              loading="lazy"
+            />
+          } @else {
+            <div class="media-placeholder">
+              @if (item.mediaType === 'video') {
+                Vídeo
+              } @else {
+                Foto
+              }
+            </div>
+          }
+
+          @if (item.mediaType === 'video') {
+            <span
+              class="video-badge"
+              aria-label="Vídeo"
+            >
+              ▶
+            </span>
+          }
+        </button>
+      }
+    </section>
+
+    @if (loadingMore()) {
+      <section class="load-more-state">
+        <p>
+          Carregando mais mídias...
+        </p>
+      </section>
+    }
+
+    @if (loadMoreError()) {
+      <section
+        class="load-more-state load-more-error"
+      >
+        <p>
+          {{ loadMoreError() }}
+        </p>
+
+        <button
+          type="button"
+          (click)="loadNextPage()"
+        >
+          Tentar novamente
+        </button>
+      </section>
+    }
+  }
+</main>

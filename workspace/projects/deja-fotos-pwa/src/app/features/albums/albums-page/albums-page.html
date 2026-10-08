@@ -1,5 +1,14 @@
 <main class="albums-page">
   <header class="albums-header">
+    <button
+      class="back-button"
+      type="button"
+      aria-label="Voltar para Explorar"
+      (click)="goBack()"
+    >
+      ‹
+    </button>
+
     <div>
       <p class="eyebrow">
         Fotos
@@ -9,16 +18,6 @@
         Meus álbuns
       </h1>
     </div>
-
-    <button
-      class="profile-button"
-      type="button"
-      aria-label="Perfil"
-    >
-      <span>
-        U
-      </span>
-    </button>
   </header>
 
   @if (loading()) {
@@ -45,11 +44,25 @@
         album of albums();
         track album.id
       ) {
-        <article class="album-card">
+        <button
+          class="album-card"
+          type="button"
+          (click)="openAlbum(album.id)"
+          [attr.aria-label]="'Abrir álbum ' + album.name"
+        >
           <div class="album-cover">
-            <span class="album-cover-placeholder">
-              {{ album.name.charAt(0).toUpperCase() }}
-            </span>
+            @if (album.coverUrl) {
+              <img
+                class="album-cover-image"
+                [src]="album.coverUrl"
+                [alt]="'Capa do álbum ' + album.name"
+                loading="lazy"
+              />
+            } @else {
+              <span class="album-cover-placeholder">
+                {{ album.name.charAt(0).toUpperCase() }}
+              </span>
+            }
           </div>
 
           <div class="album-info">
@@ -63,7 +76,7 @@
               </p>
             }
           </div>
-        </article>
+        </button>
       }
     </section>
   }
