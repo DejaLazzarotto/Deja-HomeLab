@@ -274,7 +274,7 @@
           </label>
         }
 
-        @if (!editingUserId()) {
+        @if (!editingUserId() && form.role !== 'user') {
           <label class="user-list__field">
             <span>Senha inicial</span>
 

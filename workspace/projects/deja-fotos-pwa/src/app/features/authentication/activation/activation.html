@@ -1,0 +1,173 @@
+<main class="login-page">
+  <section class="login-shell">
+    <div class="login-background"></div>
+
+    <div class="login-content">
+      <header class="login-header">
+        <div class="brand-logo" aria-hidden="true">
+          <svg viewBox="0 0 96 72">
+            <path
+              class="camera-outline"
+              d="M18 22 H31 L36 14 H60 L65 22 H78
+                 C84 22 88 26 88 32 V57
+                 C88 63 84 67 78 67 H18
+                 C12 67 8 63 8 57 V32
+                 C8 26 12 22 18 22 Z"
+            />
+            <circle class="camera-dot" cx="75" cy="33" r="3" />
+            <path
+              class="camera-heart"
+              d="M48 58 C40 50 29 43 29 34
+                 C29 28 33 24 39 24
+                 C43 24 46 26 48 30
+                 C50 26 53 24 57 24
+                 C63 24 67 28 67 34
+                 C67 43 56 50 48 58 Z"
+            />
+          </svg>
+        </div>
+
+        <h1>Fotos</h1>
+        <p>Ativação da conta</p>
+      </header>
+
+      @if (step() === 'request') {
+        <form
+          class="login-form"
+          [formGroup]="identityForm"
+          (ngSubmit)="requestCode()"
+        >
+          <p class="form-description">
+            Informe sua organização e seu e-mail para receber
+            o código de ativação.
+          </p>
+
+          <label class="field">
+            <span class="field-icon" aria-hidden="true">◈</span>
+            <input
+              type="text"
+              formControlName="organizationCode"
+              autocomplete="organization"
+              placeholder="Organização"
+              aria-label="Organização"
+            />
+          </label>
+
+          <label class="field">
+            <span class="field-icon" aria-hidden="true">✉</span>
+            <input
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+              placeholder="E-mail"
+              aria-label="E-mail"
+            />
+          </label>
+
+          @if (error()) {
+            <p class="login-error" role="alert">{{ error() }}</p>
+          }
+
+          <button
+            class="login-button"
+            type="submit"
+            [disabled]="identityForm.invalid || loading()"
+          >
+            {{ loading() ? 'Solicitando...' : 'Receber código' }}
+          </button>
+        </form>
+      }
+
+      @if (step() === 'confirm') {
+        <form
+          class="login-form"
+          [formGroup]="confirmationForm"
+          (ngSubmit)="confirmActivation()"
+        >
+          @if (information()) {
+            <p class="form-information" role="status">
+              {{ information() }}
+            </p>
+          }
+
+          <label class="field">
+            <span class="field-icon" aria-hidden="true">#</span>
+            <input
+              type="text"
+              formControlName="code"
+              inputmode="numeric"
+              maxlength="6"
+              autocomplete="one-time-code"
+              placeholder="Código de 6 dígitos"
+              aria-label="Código de verificação"
+            />
+          </label>
+
+          <label class="field">
+            <span class="field-icon" aria-hidden="true">◈</span>
+            <input
+              type="password"
+              formControlName="newPassword"
+              autocomplete="new-password"
+              placeholder="Nova senha"
+              aria-label="Nova senha"
+            />
+          </label>
+
+          <label class="field">
+            <span class="field-icon" aria-hidden="true">◈</span>
+            <input
+              type="password"
+              formControlName="confirmPassword"
+              autocomplete="new-password"
+              placeholder="Confirmar senha"
+              aria-label="Confirmar nova senha"
+            />
+          </label>
+
+          <p class="password-hint">
+            Utilize uma senha de 8 a 128 caracteres.
+          </p>
+
+          @if (error()) {
+            <p class="login-error" role="alert">{{ error() }}</p>
+          }
+
+          <button
+            class="login-button"
+            type="submit"
+            [disabled]="confirmationForm.invalid || loading()"
+          >
+            {{ loading() ? 'Confirmando...' : 'Ativar minha conta' }}
+          </button>
+
+          <button
+            class="text-button"
+            type="button"
+            [disabled]="loading()"
+            (click)="backToRequest()"
+          >
+            Solicitar outro código
+          </button>
+        </form>
+      }
+
+      @if (step() === 'completed') {
+        <div class="completion-content">
+          <p class="form-information" role="status">
+            Sua senha foi definida com sucesso!
+          </p>
+          <a class="login-button login-link" routerLink="/login">
+            Ir para o login
+          </a>
+        </div>
+      }
+
+      @if (step() !== 'completed') {
+        <a class="back-link" routerLink="/login">
+          Voltar ao login
+        </a>
+      }
+    </div>
+  </section>
+</main>

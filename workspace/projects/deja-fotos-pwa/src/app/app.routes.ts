@@ -8,6 +8,16 @@ import {
 
 export const routes: Routes = [
   {
+    path: 'ativar-conta',
+    title: 'Ativar conta | Fotos',
+    loadComponent: () =>
+      import(
+        './features/authentication/activation/activation'
+      ).then(
+        module => module.ActivationComponent,
+      ),
+  },
+  {
     path: 'login',
     title: 'Entrar | Fotos',
     loadComponent: () =>

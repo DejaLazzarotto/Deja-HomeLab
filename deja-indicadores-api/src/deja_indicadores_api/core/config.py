@@ -104,6 +104,10 @@ class Settings(BaseSettings):
         gt=0,
         alias="SMTP_TIMEOUT_SECONDS",
     )
+    fotos_verification_secret_key: str = Field(
+        default="",
+        alias="FOTOS_VERIFICATION_SECRET_KEY",
+    )
     uploads_dir: Path = Field(
         default=Path("uploads"),
         alias="UPLOADS_DIR",

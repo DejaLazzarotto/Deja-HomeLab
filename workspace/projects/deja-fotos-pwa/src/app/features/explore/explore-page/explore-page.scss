@@ -667,3 +667,88 @@
     margin: 0;
   }
 }
+/* =========================================================
+   MENU DA CONTA
+   ========================================================= */
+
+.account-area {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: 16px;
+  z-index: 20;
+}
+
+.account-avatar {
+  width: 40px;
+  height: 40px;
+
+  display: grid;
+  place-items: center;
+
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+
+  background: #315f82;
+  box-shadow: 0 4px 14px rgba(22, 50, 74, 0.18);
+
+  color: #ffffff;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.account-avatar:focus-visible,
+.account-menu-logout:focus-visible {
+  outline: 3px solid #78a8c9;
+  outline-offset: 3px;
+}
+
+.account-menu {
+  position: absolute;
+  top: 48px;
+  right: 0;
+
+  width: 190px;
+  padding: 8px;
+
+  border: 1px solid rgba(49, 95, 130, 0.12);
+  border-radius: 16px;
+
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(22, 50, 74, 0.16);
+}
+
+.account-menu-user {
+  padding: 10px 9px;
+
+  overflow-wrap: anywhere;
+
+  color: #17324a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.account-menu-logout {
+  width: 100%;
+  padding: 11px 10px;
+
+  border: 0;
+  border-radius: 10px;
+
+  background: #edf5fb;
+
+  color: #315f82;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.account-menu-logout:hover {
+  background: #dcecf7;
+}

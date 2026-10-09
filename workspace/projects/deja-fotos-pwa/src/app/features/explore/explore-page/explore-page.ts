@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 
 import { HttpClient } from '@angular/common/http';
+import { AuthenticationService } from '../../../core/authentication/authentication.service';
 
 import {
   Router,
@@ -48,6 +49,21 @@ implements OnInit, OnDestroy {
 
   private readonly router =
     inject(Router);
+
+  readonly authentication =
+    inject(AuthenticationService);
+
+  readonly accountMenuOpen = signal(false);
+
+  toggleAccountMenu(): void {
+    this.accountMenuOpen.update(open => !open);
+  }
+
+  logout(): void {
+    this.authentication.logout();
+    this.accountMenuOpen.set(false);
+    void this.router.navigateByUrl('/login');
+  }
 
   private readonly objectUrls =
     new Set<string>();

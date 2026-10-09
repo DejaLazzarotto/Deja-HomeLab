@@ -11,9 +11,7 @@ import {
   Validators,
 } from '@angular/forms';
 
-import {
-  Router,
-} from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import {
   finalize,
@@ -26,9 +24,7 @@ import {
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [
-    ReactiveFormsModule,
-  ],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './login.html',
   styleUrl: './login.scss',
   changeDetection:

@@ -353,3 +353,15 @@
     box-shadow: none;
   }
 }
+.activation-link {
+  display: block;
+  margin-top: 18px;
+  color: #315f82;
+  font-size: 13px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.activation-link:hover {
+  text-decoration: underline;
+}

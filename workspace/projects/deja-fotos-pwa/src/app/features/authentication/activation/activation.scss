@@ -1,0 +1,77 @@
+@use '../login/login.scss';
+
+.form-description {
+  margin: 0 0 6px;
+  color: #607d96;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.form-information {
+  margin: 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(232, 245, 252, 0.92);
+  color: #315f82;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.password-hint {
+  margin: -5px 0 0;
+  color: #7890a8;
+  font-size: 12px;
+  text-align: center;
+}
+
+.text-button {
+  border: 0;
+  background: transparent;
+  color: #236ea6;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.text-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.back-link {
+  display: block;
+  margin-top: 22px;
+  color: #315f82;
+  font-size: 13px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.back-link:hover,
+.text-button:not(:disabled):hover {
+  text-decoration: underline;
+}
+
+.completion-content {
+  display: grid;
+  gap: 20px;
+}
+
+.login-link {
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+}
+
+@media (max-width: 480px) {
+  .form-description,
+  .form-information {
+    font-size: 12px;
+  }
+
+  .back-link {
+    margin-top: 18px;
+  }
+}

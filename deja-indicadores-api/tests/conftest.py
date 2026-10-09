@@ -31,6 +31,10 @@ from deja_indicadores_api.fotos.albums.models import (
     FotosAlbumModel,
     FotosAlbumPeriodDescriptionModel,
 )
+from deja_indicadores_api.fotos.authentication.models import (
+    FotosVerificationCodeModel,
+)
+from deja_indicadores_api.fotos.authentication.rate_limit_models import FotosAuthRateLimitModel
 from deja_indicadores_api.fotos.curation.models import FotosFaceModel, FotosFaceReferenceModel
 from deja_indicadores_api.fotos.media.dependencies import (
     get_fotos_media_session_factory,
@@ -145,6 +149,8 @@ def clear_database(
         session.execute(delete(FotosAlbumPeriodDescriptionModel))
         session.execute(delete(FotosAlbumModel))
         session.execute(delete(FotosPersonModel))
+        session.execute(delete(FotosAuthRateLimitModel))
+        session.execute(delete(FotosVerificationCodeModel))
         session.execute(delete(UserModel))
         session.execute(delete(EnvironmentModel))
         session.execute(delete(TenantModel))
@@ -200,6 +206,7 @@ def test_app(
         yield app
     finally:
         app.dependency_overrides.clear()
+
 
 @pytest.fixture()
 def client(

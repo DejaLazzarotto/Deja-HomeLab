@@ -1,4 +1,31 @@
 <main class="explore-page">
+  <div class="account-area">
+    <button
+      class="account-avatar"
+      type="button"
+      aria-label="Abrir menu da conta"
+      [attr.aria-expanded]="accountMenuOpen()"
+      (click)="toggleAccountMenu()"
+    >
+      {{ (authentication.user()?.name || '?').charAt(0).toUpperCase() }}
+    </button>
+
+    @if (accountMenuOpen()) {
+      <div class="account-menu">
+        <div class="account-menu-user">
+          {{ authentication.user()?.name }}
+        </div>
+
+        <button
+          class="account-menu-logout"
+          type="button"
+          (click)="logout()"
+        >
+          Sair
+        </button>
+      </div>
+    }
+  </div>
   <section class="explore-hero">
     <div class="brand-row">
       <div

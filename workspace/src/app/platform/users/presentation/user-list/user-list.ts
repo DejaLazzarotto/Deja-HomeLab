@@ -729,6 +729,7 @@ export class UserListComponent implements OnInit {
 
     if (
       !editingUserId
+      && this.form.role !== 'user'
       && !this.passwordIsValid()
     ) {
       return;
@@ -758,19 +759,21 @@ export class UserListComponent implements OnInit {
             this.form,
           );
 
-        try {
-          await this.service.setPassword(
-            createdUser.id,
-            this.password,
-          );
-        } catch {
-          this.formVisible.set(false);
-          this.operationError.set(
-            'Usuário cadastrado, mas a senha não foi definida. Use a ação Redefinir senha.',
-          );
+        if (this.form.role !== 'user') {
+          try {
+            await this.service.setPassword(
+              createdUser.id,
+              this.password,
+            );
+          } catch {
+            this.formVisible.set(false);
+            this.operationError.set(
+              'Usuário cadastrado, mas a senha não foi definida. Use a ação Redefinir senha.',
+            );
 
-          await this.refresh();
-          return;
+            await this.refresh();
+            return;
+          }
         }
 
         if (
