@@ -78,6 +78,32 @@ class Settings(BaseSettings):
         alias="ACCESS_TOKEN_EXPIRE_MINUTES",
     )
 
+    smtp_host: str = Field(
+        default="mail.deja.com.br",
+        alias="SMTP_HOST",
+    )
+    smtp_port: int = Field(
+        default=465,
+        gt=0,
+        alias="SMTP_PORT",
+    )
+    smtp_username: str = Field(
+        default="",
+        alias="SMTP_USERNAME",
+    )
+    smtp_password: str = Field(
+        default="",
+        alias="SMTP_PASSWORD",
+    )
+    smtp_from_email: str = Field(
+        default="",
+        alias="SMTP_FROM_EMAIL",
+    )
+    smtp_timeout_seconds: int = Field(
+        default=15,
+        gt=0,
+        alias="SMTP_TIMEOUT_SECONDS",
+    )
     uploads_dir: Path = Field(
         default=Path("uploads"),
         alias="UPLOADS_DIR",
