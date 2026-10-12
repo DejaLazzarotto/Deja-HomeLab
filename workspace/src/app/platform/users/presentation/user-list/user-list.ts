@@ -129,17 +129,11 @@ export class UserListComponent implements OnInit {
 
   readonly saving = signal(false);
 
-  readonly savingPassword = signal(false);
-
   readonly loadingClientLink = signal(false);
 
   readonly formVisible = signal(false);
 
-  readonly passwordFormVisible = signal(false);
-
   readonly editingUserId = signal<string | null>(null);
-
-  readonly passwordUser = signal<User | null>(null);
 
   readonly moduleAccessUser =
     signal<User | null>(null);
@@ -173,10 +167,6 @@ export class UserListComponent implements OnInit {
   form: UserInput = this.createEmptyInput();
 
   selectedClientId: string | null = null;
-
-  password = '';
-
-  passwordConfirmation = '';
 
   private readonly allRoleOptions:
   readonly UserRoleOption[] = [
@@ -387,14 +377,10 @@ export class UserListComponent implements OnInit {
     this.form = this.createEmptyInput();
     this.selectedClientId = null;
 
-    this.password = '';
-    this.passwordConfirmation = '';
-
     this.moduleAccessFormVisible.set(false);
     this.moduleAccessUser.set(null);
 
     this.formVisible.set(true);
-    this.passwordFormVisible.set(false);
   }
 
   async openEdit(
@@ -418,9 +404,6 @@ export class UserListComponent implements OnInit {
       status: user.status,
     };
 
-    this.password = '';
-    this.passwordConfirmation = '';
-    this.passwordFormVisible.set(false);
 
     if (user.role === 'client') {
       this.loadingClientLink.set(true);
@@ -464,7 +447,6 @@ export class UserListComponent implements OnInit {
     this.moduleAccessFormVisible.set(true);
 
     this.formVisible.set(false);
-    this.passwordFormVisible.set(false);
 
     this.loadingModuleAccesses.set(true);
     this.operationError.set(null);
@@ -727,13 +709,6 @@ export class UserListComponent implements OnInit {
       return;
     }
 
-    if (
-      !editingUserId
-      && !this.passwordIsValid()
-    ) {
-      return;
-    }
-
     this.saving.set(true);
     this.operationError.set(null);
     this.operationMessage.set(null);
@@ -757,21 +732,6 @@ export class UserListComponent implements OnInit {
           await this.service.create(
             this.form,
           );
-
-        try {
-          await this.service.setPassword(
-            createdUser.id,
-            this.password,
-          );
-        } catch {
-          this.formVisible.set(false);
-          this.operationError.set(
-            'Usuário cadastrado, mas a senha não foi definida. Use a ação Redefinir senha.',
-          );
-
-          await this.refresh();
-          return;
-        }
 
         if (
           this.form.role === 'client'
@@ -810,64 +770,6 @@ export class UserListComponent implements OnInit {
       );
     } finally {
       this.saving.set(false);
-    }
-  }
-
-  openPassword(
-    user: User,
-  ): void {
-    this.passwordUser.set(user);
-    this.password = '';
-    this.passwordConfirmation = '';
-    this.operationError.set(null);
-    this.operationMessage.set(null);
-
-    this.moduleAccessFormVisible.set(false);
-    this.moduleAccessUser.set(null);
-
-    this.formVisible.set(false);
-    this.passwordFormVisible.set(true);
-  }
-
-  cancelPassword(): void {
-    this.passwordFormVisible.set(false);
-    this.passwordUser.set(null);
-    this.operationError.set(null);
-  }
-
-  async savePassword(): Promise<void> {
-    const user = this.passwordUser();
-
-    if (
-      !user
-      || this.savingPassword()
-      || !this.passwordIsValid()
-    ) {
-      return;
-    }
-
-    this.savingPassword.set(true);
-    this.operationError.set(null);
-    this.operationMessage.set(null);
-
-    try {
-      await this.service.setPassword(
-        user.id,
-        this.password,
-      );
-
-      this.passwordFormVisible.set(false);
-      this.passwordUser.set(null);
-
-      this.operationMessage.set(
-        'Senha redefinida com sucesso.',
-      );
-    } catch (error: unknown) {
-      this.operationError.set(
-        this.resolveErrorMessage(error),
-      );
-    } finally {
-      this.savingPassword.set(false);
     }
   }
 
@@ -1001,30 +903,6 @@ export class UserListComponent implements OnInit {
     return {
       ...this.form,
     };
-  }
-
-  private passwordIsValid(): boolean {
-    if (
-      this.password.length < 8
-      || this.password.length > 128
-    ) {
-      this.operationError.set(
-        'A senha deve possuir entre 8 e 128 caracteres.',
-      );
-      return false;
-    }
-
-    if (
-      this.password
-      !== this.passwordConfirmation
-    ) {
-      this.operationError.set(
-        'A confirmação da senha não corresponde.',
-      );
-      return false;
-    }
-
-    return true;
   }
 
   private resolveErrorMessage(

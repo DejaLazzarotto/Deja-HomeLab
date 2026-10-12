@@ -1,3 +1,4 @@
+
 import {
   ChangeDetectionStrategy,
   Component,
@@ -14,6 +15,10 @@ import {
 } from '@angular/router';
 
 import { firstValueFrom } from 'rxjs';
+
+import {
+  AuthenticationService,
+} from '../../../core/authentication/authentication.service';
 
 interface PersonResponse {
   readonly id: string;
@@ -49,11 +54,43 @@ implements OnInit, OnDestroy {
   private readonly router =
     inject(Router);
 
+  private readonly authentication =
+    inject(AuthenticationService);
+
   private readonly objectUrls =
     new Set<string>();
 
   readonly peoplePreview =
     signal<readonly PersonPreview[]>([]);
+
+  readonly profileMenuOpen =
+    signal(false);
+
+  readonly currentUser =
+    this.authentication.user;
+
+  get userInitial(): string {
+    return this.currentUser()
+      ?.name
+      ?.trim()
+      .charAt(0)
+      .toUpperCase() || '?';
+  }
+
+  toggleProfileMenu(): void {
+    this.profileMenuOpen.update(open => !open);
+  }
+
+  closeProfileMenu(): void {
+    this.profileMenuOpen.set(false);
+  }
+
+  logout(): void {
+    this.closeProfileMenu();
+    this.authentication.logout();
+
+    void this.router.navigateByUrl('/login');
+  }
 
   async ngOnInit(): Promise<void> {
     try {

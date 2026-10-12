@@ -1,4 +1,53 @@
+
 <main class="explore-page">
+  <div class="profile-container">
+    <button
+      class="profile-avatar-button"
+      type="button"
+      (click)="toggleProfileMenu()"
+      [attr.aria-expanded]="profileMenuOpen()"
+      aria-label="Abrir menu do usuário"
+      aria-haspopup="true"
+    >
+      <span class="profile-avatar">
+        {{ userInitial }}
+      </span>
+    </button>
+
+    @if (profileMenuOpen()) {
+      <div class="profile-menu">
+        <div class="profile-menu-header">
+          <strong>
+            {{ currentUser()?.name || 'Usuário' }}
+          </strong>
+
+          <span>
+            {{ currentUser()?.email }}
+          </span>
+        </div>
+
+        <button
+          class="profile-menu-logout"
+          type="button"
+          (click)="logout()"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              d="M9 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"
+            />
+            <path d="M16 17l5-5-5-5" />
+            <path d="M21 12H9" />
+          </svg>
+
+          Sair
+        </button>
+      </div>
+    }
+  </div>
+
   <section class="explore-hero">
     <div class="brand-row">
       <div
@@ -104,8 +153,6 @@
           ›
         </span>
       </div>
-
-
     </button>
 
     <article class="explore-card people-card">
@@ -184,6 +231,7 @@
         }
       </div>
     </article>
+
     <button
       class="explore-card"
       type="button"

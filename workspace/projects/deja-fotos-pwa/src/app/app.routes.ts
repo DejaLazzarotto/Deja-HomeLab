@@ -1,3 +1,4 @@
+
 import {
   Routes,
 } from '@angular/router';
@@ -18,7 +19,26 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'explore',
+    path: 'activation',
+    title: 'Primeiro acesso | Fotos',
+    loadComponent: () =>
+      import(
+        './features/authentication/activation/activation'
+      ).then(
+        module => module.ActivationComponent,
+      ),
+  },
+  {
+    path: 'password-reset',
+    title: 'Recuperar senha | Fotos',
+    loadComponent: () =>
+      import(
+        './features/authentication/password-reset/password-reset'
+      ).then(
+        module => module.PasswordResetComponent,
+      ),
+  },
+  {    path: 'explore',
     title: 'Explorar | Fotos',
     canActivate: [
       fotosAccessGuard,

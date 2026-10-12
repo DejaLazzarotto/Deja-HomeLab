@@ -25,7 +25,6 @@
 
     @if (
       !formVisible()
-      && !passwordFormVisible()
       && !moduleAccessFormVisible()
     ) {
       <button
@@ -274,35 +273,6 @@
           </label>
         }
 
-        @if (!editingUserId()) {
-          <label class="user-list__field">
-            <span>Senha inicial</span>
-
-            <input
-              name="password"
-              type="password"
-              minlength="8"
-              maxlength="128"
-              autocomplete="new-password"
-              required
-              [(ngModel)]="password"
-            />
-          </label>
-
-          <label class="user-list__field">
-            <span>Confirmar senha</span>
-
-            <input
-              name="passwordConfirmation"
-              type="password"
-              minlength="8"
-              maxlength="128"
-              autocomplete="new-password"
-              required
-              [(ngModel)]="passwordConfirmation"
-            />
-          </label>
-        }
       </div>
 
       @if (form.role === 'user') {
@@ -560,86 +530,6 @@
     </section>
   }
 
-  @if (
-    passwordFormVisible()
-    && passwordUser()
-  ) {
-    <form
-      class="user-list__form"
-      #passwordForm="ngForm"
-      (ngSubmit)="savePassword()"
-    >
-      <div class="user-list__form-header">
-        <div>
-          <h3>
-            Redefinir senha
-          </h3>
-
-          <p>
-            Defina uma nova senha para
-            {{ passwordUser()?.name }}.
-          </p>
-        </div>
-      </div>
-
-      <div class="user-list__form-grid">
-        <label class="user-list__field">
-          <span>Nova senha</span>
-
-          <input
-            name="newPassword"
-            type="password"
-            minlength="8"
-            maxlength="128"
-            autocomplete="new-password"
-            required
-            [(ngModel)]="password"
-          />
-        </label>
-
-        <label class="user-list__field">
-          <span>Confirmar nova senha</span>
-
-          <input
-            name="newPasswordConfirmation"
-            type="password"
-            minlength="8"
-            maxlength="128"
-            autocomplete="new-password"
-            required
-            [(ngModel)]="passwordConfirmation"
-          />
-        </label>
-      </div>
-
-      <div class="user-list__form-actions">
-        <button
-          class="user-list__action"
-          type="button"
-          [disabled]="savingPassword()"
-          (click)="cancelPassword()"
-        >
-          Cancelar
-        </button>
-
-        <button
-          class="user-list__primary-button"
-          type="submit"
-          [disabled]="
-            passwordForm.invalid
-            || savingPassword()
-          "
-        >
-          {{
-            savingPassword()
-              ? 'Salvando...'
-              : 'Redefinir senha'
-          }}
-        </button>
-      </div>
-    </form>
-  }
-
   <form
     class="user-list__filters"
     (ngSubmit)="applyFilters()"
@@ -889,13 +779,6 @@
                     </button>
                   }
 
-                  <button
-                    class="user-list__action"
-                    type="button"
-                    (click)="openPassword(user)"
-                  >
-                    Redefinir senha
-                  </button>
                 </div>
               </td>
             </tr>

@@ -1,3 +1,4 @@
+
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,6 +14,7 @@ import {
 
 import {
   Router,
+  RouterLink,
 } from '@angular/router';
 
 import {
@@ -28,6 +30,7 @@ import {
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    RouterLink,
   ],
   templateUrl: './login.html',
   styleUrl: './login.scss',

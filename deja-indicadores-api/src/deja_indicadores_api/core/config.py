@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """ConfiguraÃ§Ãµes da aplicaÃ§Ã£o carregadas por variÃ¡veis de ambiente."""
+    """Configurações da aplicação carregadas por variáveis de ambiente."""
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -104,6 +104,12 @@ class Settings(BaseSettings):
         gt=0,
         alias="SMTP_TIMEOUT_SECONDS",
     )
+
+    fotos_verification_secret_key: str = Field(
+        default="",
+        alias="FOTOS_VERIFICATION_SECRET_KEY",
+    )
+
     uploads_dir: Path = Field(
         default=Path("uploads"),
         alias="UPLOADS_DIR",
@@ -166,6 +172,6 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Retorna uma instÃ¢ncia compartilhada das configuraÃ§Ãµes."""
+    """Retorna uma instância compartilhada das configurações."""
 
     return Settings()
