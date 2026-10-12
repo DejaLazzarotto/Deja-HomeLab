@@ -727,16 +727,21 @@
                     {{ organizationName(user.organizationId) }}
                   </span>
 
-                  @if (user.tenantId) {
-                    <span>
-                      {{ tenantName(user.tenantId) }}
-                    </span>
-                  }
-
                   @if (user.environmentId) {
                     <span>
                       {{ environmentName(user.environmentId) }}
                     </span>
+                  }
+
+                  @if (canManageModuleAccess(user)) {
+                    @for (
+                      accessLabel of userAccessLabels(user.id);
+                      track accessLabel
+                    ) {
+                      <span>
+                        {{ accessLabel }}
+                      </span>
+                    }
                   }
                 </div>
               </td>

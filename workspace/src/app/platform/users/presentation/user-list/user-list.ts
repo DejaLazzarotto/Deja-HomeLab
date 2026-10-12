@@ -125,6 +125,56 @@ export class UserListComponent implements OnInit {
 
   readonly users = signal<readonly User[]>([]);
 
+  readonly userModuleAccesses =
+    signal<Record<string, readonly UserModuleAccess[]>>({});
+
+  async loadUserModuleAccesses(users: readonly User[]): Promise<void> {
+    this.userModuleAccesses.set({});
+
+    await Promise.all(
+      users.filter(user => this.canManageModuleAccess(user))
+        .map(async user => {
+          try {
+            const response = await this.service.getModuleAccesses(user.id);
+
+            this.userModuleAccesses.update(current => ({
+              ...current,
+              [user.id]: response.modules.filter(
+                module => module.organizationEnabled && module.hasAccess,
+              ),
+            }));
+          } catch {
+            this.userModuleAccesses.update(current => ({
+              ...current,
+              [user.id]: [],
+            }));
+          }
+        }),
+    );
+  }
+
+  userAccessLabels(userId: string): readonly string[] {
+    const modules = this.userModuleAccesses()[userId];
+
+    if (!modules) {
+      return ['Carregando acessos...'];
+    }
+
+    if (!modules.length) {
+      return ['Nenhum aplicativo autorizado'];
+    }
+
+    const roles: Record<string, string> = {
+      manager: 'Gestor',
+      analyst: 'Analista',
+      viewer: 'Visualizador',
+    };
+
+    return modules.map(
+      module => `${module.name} — ${roles[module.role ?? ''] ?? module.role}`,
+    );
+  }
+
   readonly loading = signal(false);
 
   readonly saving = signal(false);
@@ -314,14 +364,15 @@ export class UserListComponent implements OnInit {
     this.errorMessage.set(null);
 
     try {
-      this.users.set(
-        await this.service.list({
-          organizationId: this.filterOrganizationId,
-          tenantId: this.filterTenantId,
-          environmentId: this.filterEnvironmentId,
-          status: this.filterStatus,
-        }),
-      );
+      const users = await this.service.list({
+        organizationId: this.filterOrganizationId,
+        tenantId: this.filterTenantId,
+        environmentId: this.filterEnvironmentId,
+        status: this.filterStatus,
+      });
+
+      this.users.set(users);
+      void this.loadUserModuleAccesses(users);
     } catch {
       this.errorMessage.set(
         'Não foi possível carregar os usuários.',
@@ -586,6 +637,13 @@ export class UserListComponent implements OnInit {
         );
 
       this.moduleAccesses.set(response.modules);
+
+      this.userModuleAccesses.update(current => ({
+        ...current,
+        [user.id]: response.modules.filter(
+          module => module.organizationEnabled && module.hasAccess,
+        ),
+      }));
 
       this.operationMessage.set(
         'Acessos por aplicativo atualizados com sucesso.',

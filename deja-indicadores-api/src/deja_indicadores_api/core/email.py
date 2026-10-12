@@ -23,8 +23,9 @@ class EmailService:
         recipient: str,
         subject: str,
         body: str,
+        html_body: str | None = None,
     ) -> None:
-        """Envia uma mensagem de texto simples."""
+        """Envia texto simples com HTML opcional."""
 
         settings = self._settings
 
@@ -36,15 +37,16 @@ class EmailService:
                 settings.smtp_from_email,
             )
         ):
-            raise EmailDeliveryError(
-                "O serviço SMTP não está configurado."
-            )
+            raise EmailDeliveryError("O serviço SMTP não está configurado.")
 
         message = EmailMessage()
         message["From"] = settings.smtp_from_email
         message["To"] = recipient
         message["Subject"] = subject
         message.set_content(body)
+
+        if html_body is not None:
+            message.add_alternative(html_body, subtype="html")
 
         context = ssl.create_default_context()
 
@@ -62,6 +64,4 @@ class EmailService:
                 smtp.send_message(message)
 
         except (smtplib.SMTPException, OSError):
-            raise EmailDeliveryError(
-                "Não foi possível enviar o e-mail."
-            ) from None
+            raise EmailDeliveryError("Não foi possível enviar o e-mail.") from None
