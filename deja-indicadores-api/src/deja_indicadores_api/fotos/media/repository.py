@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import exists, extract, func, or_, select, update
 from sqlalchemy.orm import Session
@@ -45,12 +45,18 @@ class FotosMediaRepository:
         original_date_conflict: bool | None = None,
         was_converted: bool | None = None,
         include_deleted: bool = False,
+        sort: str = "original_date",
+        recent_days: int | None = None,
         page: int = 1,
         page_size: int = 50,
     ) -> tuple[list[FotosMediaModel], int]:
         """Lista uma página de mídias e retorna o total filtrado."""
 
         conditions = []
+
+        if recent_days is not None:
+            cutoff = datetime.now(UTC) - timedelta(days=recent_days)
+            conditions.append(FotosMediaModel.created_at >= cutoff.replace(tzinfo=None))
 
         if organization_id is not None:
             conditions.append(FotosMediaModel.organization_id == organization_id)
@@ -113,14 +119,22 @@ class FotosMediaRepository:
 
         total = int(self._session.scalar(count_statement) or 0)
 
-        statement = (
-            select(FotosMediaModel)
-            .where(*conditions)
-            .order_by(
+        if sort == "recent":
+            ordering = (
+                FotosMediaModel.created_at.desc(),
+                FotosMediaModel.id.desc(),
+            )
+        else:
+            ordering = (
                 FotosMediaModel.original_date.desc(),
                 FotosMediaModel.created_at.desc(),
                 FotosMediaModel.id.asc(),
             )
+
+        statement = (
+            select(FotosMediaModel)
+            .where(*conditions)
+            .order_by(*ordering)
             .offset((page - 1) * page_size)
             .limit(page_size)
         )
@@ -154,36 +168,22 @@ class FotosMediaRepository:
         ]
 
         if organization_id is not None:
-            conditions.append(
-                FotosMediaModel.organization_id
-                == organization_id
-            )
+            conditions.append(FotosMediaModel.organization_id == organization_id)
 
         if tenant_id is not None:
-            conditions.append(
-                FotosMediaModel.tenant_id
-                == tenant_id
-            )
+            conditions.append(FotosMediaModel.tenant_id == tenant_id)
 
         if environment_id is not None:
-            conditions.append(
-                FotosMediaModel.environment_id
-                == environment_id
-            )
+            conditions.append(FotosMediaModel.environment_id == environment_id)
 
         if media_type is not None:
-            conditions.append(
-                FotosMediaModel.media_type
-                == media_type
-            )
+            conditions.append(FotosMediaModel.media_type == media_type)
 
         statement = (
             select(
                 year_expression.label("year"),
                 month_expression.label("month"),
-                func.count(
-                    FotosMediaModel.id
-                ).label("media_count"),
+                func.count(FotosMediaModel.id).label("media_count"),
             )
             .where(*conditions)
             .group_by(
@@ -196,9 +196,7 @@ class FotosMediaRepository:
             )
         )
 
-        rows = self._session.execute(
-            statement
-        ).all()
+        rows = self._session.execute(statement).all()
 
         return [
             (
@@ -208,6 +206,7 @@ class FotosMediaRepository:
             )
             for row in rows
         ]
+
     def find_by_id(
         self,
         media_id: str,

@@ -90,6 +90,32 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'recent/media/:mediaId',
+    title: 'Visualizar mídia recente | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/recent/recent-media-viewer-page/recent-media-viewer-page'
+      ).then(
+        module => module.RecentMediaViewerPageComponent,
+      ),
+  },
+  {
+    path: 'recent',
+    title: 'Recentes | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/recent/recent-page/recent-page'
+      ).then(
+        module => module.RecentPageComponent,
+      ),
+  },
+  {
     path: 'dates/:year/:month/media/:mediaId',
     title: 'Visualizar mídia | Fotos',
     canActivate: [

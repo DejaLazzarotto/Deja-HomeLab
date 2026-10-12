@@ -171,6 +171,9 @@ implements OnInit, OnDestroy {
     );
   }
 
+  openRecents(): void {
+    void this.router.navigateByUrl('/recent');
+  }
   openVideos(): void {
     void this.router.navigateByUrl(
       '/videos',

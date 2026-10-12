@@ -211,6 +211,8 @@ class FotosMediaService:
         original_date_conflict: bool | None = None,
         was_converted: bool | None = None,
         include_deleted: bool = False,
+        sort: str = "original_date",
+        recent_days: int | None = None,
         page: int = 1,
         page_size: int = 50,
     ) -> tuple[list[FotosMediaModel], int]:
@@ -266,6 +268,8 @@ class FotosMediaService:
             original_date_conflict=original_date_conflict,
             was_converted=was_converted,
             include_deleted=include_deleted,
+            sort=sort,
+            recent_days=recent_days,
             page=page,
             page_size=page_size,
         )
@@ -310,6 +314,7 @@ class FotosMediaService:
                 media_type=media_type,
             )
         ]
+
     def find_by_id(
         self,
         media_id: str,
@@ -936,7 +941,6 @@ class FotosMediaService:
         if isinstance(
             payload,
             FotosMediaBulkVerifyOriginalDate,
-
         ):
             return self._verify_original_date(
                 media,
@@ -1488,7 +1492,6 @@ class FotosMediaService:
             return value
 
         return value.astimezone(UTC).replace(tzinfo=None)
-
 
     def _require_roles(
         self,

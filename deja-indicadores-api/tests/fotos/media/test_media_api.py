@@ -2373,7 +2373,7 @@ def test_update_original_date_rejects_analyst(
         email="analyst.fotos.media@deja.com",
         role="analyst",
         module_access={"fotos": "analyst"},
-)
+    )
     analyst_headers = authorization_headers(
         test_settings,
         analyst,
@@ -3321,10 +3321,14 @@ def test_delete_one_photo_preserves_person_and_other_photo(
     first_keys = []
     second_keys = []
     with test_session_factory() as session:
-        session.add(FotosPersonModel(
-            id=person_id, name="Pessoa preservada",
-            avatar_storage_key=avatar_key, **scope,
-        ))
+        session.add(
+            FotosPersonModel(
+                id=person_id,
+                name="Pessoa preservada",
+                avatar_storage_key=avatar_key,
+                **scope,
+            )
+        )
         session.flush()
         for media, owned in ((first, first_keys), (second, second_keys)):
             face_id = str(uuid4())
@@ -3332,22 +3336,40 @@ def test_delete_one_photo_preserves_person_and_other_photo(
                 f"fotos/{organization_id}/{tenant_id}/{environment_id}"
                 f"/face-references/{person_id}/{face_id}.webp"
             )
-            session.add(FotosFaceModel(
-                id=face_id, media_id=media["id"], person_id=person_id,
-                x=0.1, y=0.1, width=0.5, height=0.5,
-                origin="manual", status="confirmed", **scope,
-            ))
+            session.add(
+                FotosFaceModel(
+                    id=face_id,
+                    media_id=media["id"],
+                    person_id=person_id,
+                    x=0.1,
+                    y=0.1,
+                    width=0.5,
+                    height=0.5,
+                    origin="manual",
+                    status="confirmed",
+                    **scope,
+                )
+            )
             session.flush()
-            session.add(FotosFaceReferenceModel(
-                id=str(uuid4()), face_id=face_id, person_id=person_id,
-                storage_key=reference_key, **scope,
-            ))
+            session.add(
+                FotosFaceReferenceModel(
+                    id=str(uuid4()),
+                    face_id=face_id,
+                    person_id=person_id,
+                    storage_key=reference_key,
+                    **scope,
+                )
+            )
             session.add(FotosPersonMediaModel(person_id=person_id, media_id=media["id"], **scope))
             keys.append(reference_key)
             owned.append(reference_key)
-            derivatives = session.query(FotosMediaDerivativeModel).filter_by(
-                media_id=media["id"],
-            ).all()
+            derivatives = (
+                session.query(FotosMediaDerivativeModel)
+                .filter_by(
+                    media_id=media["id"],
+                )
+                .all()
+            )
             assert derivatives
             owned.extend(item.storage_key for item in derivatives)
         session.commit()
@@ -4418,6 +4440,7 @@ def test_process_stale_processing_media_recovers(
     assert response.json()["processing_status"] == "ready"
     assert response.json()["processing_error"] is None
 
+
 def test_update_video_description_persists_edits_and_clears(
     client: TestClient,
     media_context: tuple[
@@ -4454,9 +4477,7 @@ def test_update_video_description_persists_edits_and_clears(
     )
 
     assert create_response.status_code == 200
-    assert create_response.json()["description"] == (
-        "Viagem em família para a serra."
-    )
+    assert create_response.json()["description"] == ("Viagem em família para a serra.")
 
     get_response = client.get(
         f"{MEDIA_URL}/{media_id}",
@@ -4464,9 +4485,7 @@ def test_update_video_description_persists_edits_and_clears(
     )
 
     assert get_response.status_code == 200
-    assert get_response.json()["description"] == (
-        "Viagem em família para a serra."
-    )
+    assert get_response.json()["description"] == ("Viagem em família para a serra.")
 
     edit_response = client.patch(
         f"{MEDIA_URL}/{media_id}/description",
@@ -4477,9 +4496,7 @@ def test_update_video_description_persists_edits_and_clears(
     )
 
     assert edit_response.status_code == 200
-    assert edit_response.json()["description"] == (
-        "Vídeo editado com uma nova descrição."
-    )
+    assert edit_response.json()["description"] == ("Vídeo editado com uma nova descrição.")
 
     clear_response = client.patch(
         f"{MEDIA_URL}/{media_id}/description",
@@ -4536,9 +4553,7 @@ def test_update_media_description_rejects_image(
     )
 
     assert response.status_code == 409
-    assert response.json()["error"] == (
-        "fotos_media_description_not_supported"
-    )
+    assert response.json()["error"] == ("fotos_media_description_not_supported")
 
 
 def test_update_video_description_rejects_more_than_5000_characters(
@@ -4576,6 +4591,7 @@ def test_update_video_description_rejects_more_than_5000_characters(
     )
 
     assert response.status_code == 422
+
 
 def test_update_video_description_rejects_analyst_and_viewer(
     client: TestClient,
@@ -4727,3 +4743,206 @@ def test_update_video_description_rejects_cross_scope_user(
 
     assert get_response.status_code == 200
     assert get_response.json()["description"] is None
+
+
+def test_list_media_sort_recent_by_upload_date(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Diferencia a data de envio da data original da fotografia."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    media_ids = []
+
+    for day, width in ((20, 21), (10, 22), (15, 23)):
+        response = upload_image(
+            client,
+            environment_id=environment_id,
+            album_id=album_id,
+            headers=headers,
+            file_name=f"recente-{day}.jpg",
+            content=create_test_jpeg(
+                width=width,
+                original_date=datetime(2024, 1, day, 12),
+            ),
+        )
+
+        assert response.status_code == 201
+        media_ids.append(response.json()["id"])
+
+    with test_session_factory() as session:
+        for index, media_id in enumerate(media_ids):
+            media = session.get(FotosMediaModel, media_id)
+            assert media is not None
+            media.created_at = datetime(2025, 1, index + 1, 12)
+
+        session.commit()
+
+    params = {
+        "environment_id": environment_id,
+        "page": 1,
+        "page_size": 2,
+    }
+
+    recent = client.get(
+        MEDIA_URL,
+        params={**params, "sort": "recent"},
+        headers=headers,
+    )
+
+    assert recent.status_code == 200
+    assert [item["id"] for item in recent.json()["items"]] == [
+        media_ids[2],
+        media_ids[1],
+    ]
+    assert recent.json()["total"] == 3
+    assert recent.json()["total_pages"] == 2
+
+    second_page = client.get(
+        MEDIA_URL,
+        params={**params, "sort": "recent", "page": 2},
+        headers=headers,
+    )
+
+    assert second_page.status_code == 200
+    assert [item["id"] for item in second_page.json()["items"]] == [
+        media_ids[0],
+    ]
+
+    original = client.get(
+        MEDIA_URL,
+        params=params,
+        headers=headers,
+    )
+
+    assert original.status_code == 200
+    assert [item["id"] for item in original.json()["items"]] == [
+        media_ids[0],
+        media_ids[2],
+    ]
+
+    invalid = client.get(
+        MEDIA_URL,
+        params={**params, "sort": "invalid"},
+        headers=headers,
+    )
+
+    assert invalid.status_code == 422
+
+
+def test_list_media_recent_days_filters_upload_date(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Filtra pela data de envio, preservando totais e paginação."""
+
+    _, _, environment_id, album_id, headers = media_context
+
+    media_ids = []
+
+    for index in range(3):
+        response = upload_image(
+            client,
+            environment_id=environment_id,
+            album_id=album_id,
+            headers=headers,
+            file_name=f"ultimos-15-dias-{index}.jpg",
+            content=create_test_jpeg(width=21 + index),
+        )
+
+        assert response.status_code == 201
+        media_ids.append(response.json()["id"])
+
+    with test_session_factory() as session:
+        dates = [
+            datetime.now(UTC) - timedelta(days=20),
+            datetime.now(UTC) - timedelta(days=10),
+            datetime.now(UTC) - timedelta(hours=12),
+        ]
+
+        for media_id, created_at in zip(media_ids, dates, strict=True):
+            media = session.get(FotosMediaModel, media_id)
+            assert media is not None
+            media.created_at = created_at.replace(tzinfo=None)
+
+        session.commit()
+
+    response = client.get(
+        MEDIA_URL,
+        params={
+            "environment_id": environment_id,
+            "sort": "recent",
+            "recent_days": 15,
+            "page": 1,
+            "page_size": 1,
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+
+    payload = response.json()
+
+    assert [item["id"] for item in payload["items"]] == [
+        media_ids[2],
+    ]
+    assert payload["total"] == 2
+    assert payload["total_pages"] == 2
+
+    second_page = client.get(
+        MEDIA_URL,
+        params={
+            "environment_id": environment_id,
+            "sort": "recent",
+            "recent_days": 15,
+            "page": 2,
+            "page_size": 1,
+        },
+        headers=headers,
+    )
+
+    assert second_page.status_code == 200
+    assert [item["id"] for item in second_page.json()["items"]] == [
+        media_ids[1],
+    ]
+
+    empty = client.get(
+        MEDIA_URL,
+        params={
+            "environment_id": environment_id,
+            "sort": "recent",
+            "recent_days": 1,
+        },
+        headers=headers,
+    )
+
+    assert empty.status_code == 200
+    assert [item["id"] for item in empty.json()["items"]] == [
+        media_ids[2],
+    ]
+    assert empty.json()["total"] == 1
+
+    invalid = client.get(
+        MEDIA_URL,
+        params={
+            "recent_days": 0,
+        },
+        headers=headers,
+    )
+
+    assert invalid.status_code == 422

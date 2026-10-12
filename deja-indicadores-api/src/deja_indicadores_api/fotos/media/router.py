@@ -1,6 +1,6 @@
 from datetime import datetime
 from pathlib import Path as FilePath
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import (
     APIRouter,
@@ -157,6 +157,10 @@ def list_media(
     original_date_verified: bool | None = Query(default=None),
     original_date_conflict: bool | None = Query(default=None),
     was_converted: bool | None = Query(default=None),
+    sort: Literal["original_date", "recent"] = Query(
+        default="original_date",
+    ),
+    recent_days: int | None = Query(default=None, ge=1, le=365),
     page: int = Query(
         default=1,
         ge=1,
@@ -185,13 +189,13 @@ def list_media(
         original_date_verified=original_date_verified,
         original_date_conflict=original_date_conflict,
         was_converted=was_converted,
+        sort=sort,
+        recent_days=recent_days,
         page=page,
         page_size=page_size,
     )
 
-    total_pages = (
-        total + page_size - 1
-    ) // page_size
+    total_pages = (total + page_size - 1) // page_size
 
     return FotosMediaListResponse(
         items=items,
@@ -223,6 +227,7 @@ def list_media_periods(
         environment_id=environment_id,
         media_type=media_type,
     )
+
 
 @router.patch(
     "/bulk",
@@ -468,10 +473,7 @@ def get_media_original(
         current_user,
     )
 
-    download_name = (
-        f"{FilePath(media.original_name).stem}"
-        f"{media.file_extension or ''}"
-    )
+    download_name = f"{FilePath(media.original_name).stem}{media.file_extension or ''}"
 
     return FileResponse(
         path=file_path,
