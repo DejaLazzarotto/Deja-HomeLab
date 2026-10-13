@@ -13,6 +13,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { firstValueFrom } from 'rxjs';
 
+import { FavoritesService } from '../../../core/favorites/favorites.service';
+
 interface MediaResponse {
   id: string;
   media_type: 'image' | 'video';
@@ -40,6 +42,8 @@ const PREFETCH_THRESHOLD = 5;
 })
 export class MediaViewerPageComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
+
+  private readonly favoritesService = inject(FavoritesService);
 
   private readonly route = inject(ActivatedRoute);
 
@@ -72,6 +76,12 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
   readonly currentIndex = signal<number>(-1);
 
   readonly mediaUrl = signal<string | null>(null);
+
+  readonly isFavorite = signal(false);
+
+  readonly favoriteLoading = signal(false);
+
+  readonly favoriteSaving = signal(false);
 
   readonly loading = signal(true);
 
@@ -394,6 +404,84 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
     }
   }
 
+  private favoriteRequestVersion = 0;
+
+  private readonly favoriteSavingMediaIds = new Set<string>();
+
+  private async refreshFavorite(mediaId: string): Promise<void> {
+    const version = ++this.favoriteRequestVersion;
+
+    this.isFavorite.set(false);
+    this.favoriteLoading.set(true);
+
+    try {
+      const favorite = await this.favoritesService.isFavorite(mediaId);
+
+      if (
+        version === this.favoriteRequestVersion &&
+        this.mediaId() === mediaId
+      ) {
+        this.isFavorite.set(favorite);
+      }
+    } catch {
+      if (
+        version === this.favoriteRequestVersion &&
+        this.mediaId() === mediaId
+      ) {
+        this.isFavorite.set(false);
+      }
+    } finally {
+      if (version === this.favoriteRequestVersion) {
+        this.favoriteLoading.set(false);
+      }
+    }
+  }
+
+  async toggleFavorite(): Promise<void> {
+    const mediaId = this.mediaId();
+
+    if (
+      !mediaId ||
+      this.favoriteLoading() ||
+      this.favoriteSavingMediaIds.has(mediaId)
+    ) {
+      return;
+    }
+
+    const version = this.favoriteRequestVersion;
+    const shouldAdd = !this.isFavorite();
+
+    this.favoriteSavingMediaIds.add(mediaId);
+    this.favoriteSaving.set(true);
+
+    try {
+      if (shouldAdd) {
+        await this.favoritesService.add(mediaId);
+      } else {
+        await this.favoritesService.remove(mediaId);
+      }
+
+      if (
+        version === this.favoriteRequestVersion &&
+        this.mediaId() === mediaId
+      ) {
+        this.isFavorite.set(shouldAdd);
+      }
+    } catch {
+      if (
+        version === this.favoriteRequestVersion &&
+        this.mediaId() === mediaId
+      ) {
+        void this.refreshFavorite(mediaId);
+      }
+    } finally {
+      this.favoriteSavingMediaIds.delete(mediaId);
+
+      this.favoriteSaving.set(
+        this.favoriteSavingMediaIds.has(this.mediaId() ?? ''),
+      );
+    }
+  }
   private async loadCurrentMedia(): Promise<void> {
     const index = this.currentIndex();
 
@@ -411,6 +499,8 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
     );
 
     this.media.set(media);
+
+    void this.refreshFavorite(media.id);
 
     await this.loadMediaBlob(media);
   }

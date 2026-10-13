@@ -36,6 +36,19 @@
       </button>
 
       <div class="media-stage">
+        <button
+          class="favorite-button"
+          type="button"
+          [class.is-favorite]="isFavorite()"
+          [attr.aria-label]="isFavorite() ? 'Remover dos favoritos' : 'Adicionar aos favoritos'"
+          [attr.aria-pressed]="isFavorite()"
+          [disabled]="favoriteLoading() || favoriteSaving()"
+          (click)="toggleFavorite()"
+        >
+          {{ isFavorite() ? '♥' : '♡' }}
+        </button>
+
+
         @if (media()?.media_type === 'image') {
           <img class="viewer-image" [src]="mediaUrl()" [alt]="media()?.original_name ?? 'Foto'" />
         } @else {

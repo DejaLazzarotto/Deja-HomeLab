@@ -171,6 +171,9 @@ implements OnInit, OnDestroy {
     );
   }
 
+  openFavorites(): void {
+    void this.router.navigateByUrl('/favorites');
+  }
   openRecents(): void {
     void this.router.navigateByUrl('/recent');
   }

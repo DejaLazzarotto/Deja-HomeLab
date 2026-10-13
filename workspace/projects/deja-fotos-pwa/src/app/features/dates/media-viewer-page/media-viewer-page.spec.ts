@@ -134,6 +134,18 @@ describe('MediaViewerPageComponent', () => {
       setTimeout(resolve, 0);
     });
 
+    const favoriteThirtyRequest =
+      httpTestingController.expectOne(
+        '/api/fotos/favorites/media-30',
+      );
+
+    favoriteThirtyRequest.flush({
+      media_id: 'media-30',
+      is_favorite: true,
+    });
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
     const previewThirtyRequest =
       httpTestingController.expectOne(
         '/api/fotos/media/media-30/preview',
@@ -146,6 +158,7 @@ describe('MediaViewerPageComponent', () => {
     await fixture.whenStable();
 
     expect(component.currentIndex()).toBe(29);
+    expect(component.isFavorite()).toBe(true);
     expect(component.monthMedia().length).toBe(30);
     expect(component.total()).toBe(40);
 
@@ -186,6 +199,15 @@ describe('MediaViewerPageComponent', () => {
       setTimeout(resolve, 0);
     });
 
+    const favoriteThirtyOneRequest =
+      httpTestingController.expectOne(
+        '/api/fotos/favorites/media-31',
+      );
+
+    favoriteThirtyOneRequest.flush({
+      media_id: 'media-31',
+      is_favorite: false,
+    });
     const previewThirtyOneRequest =
       httpTestingController.expectOne(
         '/api/fotos/media/media-31/preview',
@@ -199,7 +221,54 @@ describe('MediaViewerPageComponent', () => {
 
     expect(component.currentIndex()).toBe(30);
     expect(component.mediaId()).toBe('media-31');
+    expect(component.isFavorite()).toBe(false);
     expect(component.monthMedia().length).toBe(40);
     expect(component.total()).toBe(40);
+  });
+
+  it('should add and remove a favorite without duplicate requests', async () => {
+    const mediaId = 'media-30';
+    const favoriteUrl = `/api/fotos/favorites/${mediaId}`;
+
+    component.mediaId.set(mediaId);
+
+    const addPromise = component.toggleFavorite();
+
+    expect(component.favoriteSaving()).toBe(true);
+
+    const duplicateClick = component.toggleFavorite();
+
+    const putRequests = httpTestingController.match(
+      (request) =>
+        request.method === 'PUT' &&
+        request.url === favoriteUrl,
+    );
+
+    expect(putRequests.length).toBe(1);
+
+    putRequests[0].flush({
+      media_id: mediaId,
+      is_favorite: true,
+    });
+
+    await Promise.all([addPromise, duplicateClick]);
+
+    expect(component.isFavorite()).toBe(true);
+    expect(component.favoriteSaving()).toBe(false);
+
+    const removePromise = component.toggleFavorite();
+
+    const deleteRequest = httpTestingController.expectOne(
+      (request) =>
+        request.method === 'DELETE' &&
+        request.url === favoriteUrl,
+    );
+
+    deleteRequest.flush(null);
+
+    await removePromise;
+
+    expect(component.isFavorite()).toBe(false);
+    expect(component.favoriteSaving()).toBe(false);
   });
 });

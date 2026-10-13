@@ -42,6 +42,9 @@ from deja_indicadores_api.fotos.authentication.router import (
 from deja_indicadores_api.fotos.curation.router import (
     router as fotos_curation_router,
 )
+from deja_indicadores_api.fotos.media.favorite_router import (
+    router as fotos_favorites_router,
+)
 from deja_indicadores_api.fotos.media.router import (
     router as fotos_media_router,
 )
@@ -86,6 +89,7 @@ api_router.include_router(dashboards_router)
 api_router.include_router(fotos_albums_router)
 api_router.include_router(fotos_authentication_router)
 api_router.include_router(fotos_media_router)
+api_router.include_router(fotos_favorites_router)
 api_router.include_router(fotos_people_router)
 api_router.include_router(fotos_curation_router)
 

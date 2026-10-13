@@ -38,6 +38,9 @@ from deja_indicadores_api.fotos.media.dependencies import (
 from deja_indicadores_api.fotos.media.derivative_models import (
     FotosMediaDerivativeModel,
 )
+from deja_indicadores_api.fotos.media.favorite_models import (
+    FotosMediaFavoriteModel,
+)
 from deja_indicadores_api.fotos.media.models import (
     FotosMediaModel,
 )
@@ -141,6 +144,7 @@ def clear_database(
         session.execute(delete(FotosFaceReferenceModel))
         session.execute(delete(FotosFaceModel))
         session.execute(delete(FotosMediaDerivativeModel))
+        session.execute(delete(FotosMediaFavoriteModel))
         session.execute(delete(FotosMediaModel))
         session.execute(delete(FotosAlbumPeriodDescriptionModel))
         session.execute(delete(FotosAlbumModel))

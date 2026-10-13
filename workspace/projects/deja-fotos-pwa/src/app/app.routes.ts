@@ -90,6 +90,32 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'favorites/media/:mediaId',
+    title: 'Visualizar favorito | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/favorites/favorite-media-viewer-page/favorite-media-viewer-page'
+      ).then(
+        module => module.FavoriteMediaViewerPageComponent,
+      ),
+  },
+  {
+    path: 'favorites',
+    title: 'Meus favoritos | Fotos',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/favorites/favorites-page/favorites-page'
+      ).then(
+        module => module.FavoritesPageComponent,
+      ),
+  },
+  {
     path: 'recent/media/:mediaId',
     title: 'Visualizar mídia recente | Fotos',
     canActivate: [

@@ -35,6 +35,8 @@ interface MediaListResponse {
   total_pages: number;
 }
 
+import { FavoritesService } from '../../../core/favorites/favorites.service';
+
 const PAGE_SIZE = 30;
 const PREFETCH_THRESHOLD = 5;
 
@@ -56,6 +58,8 @@ export class VideoViewerPageComponent
 
   private readonly router =
     inject(Router);
+
+  private readonly favoritesService = inject(FavoritesService);
 
   private objectUrl:
     string | null = null;
@@ -89,6 +93,11 @@ export class VideoViewerPageComponent
 
   readonly mediaUrl =
     signal<string | null>(null);
+  readonly isFavorite = signal(false);
+
+  readonly favoriteLoading = signal(false);
+
+  readonly favoriteSaving = signal(false);
 
   readonly loading =
     signal(true);
@@ -486,6 +495,8 @@ export class VideoViewerPageComponent
 
     this.media.set(media);
 
+    void this.refreshFavorite(media.id);
+
     await this.loadMediaBlob(
       media,
     );
@@ -530,6 +541,70 @@ export class VideoViewerPageComponent
     this.objectUrl = null;
   }
 
+  private favoriteRequestVersion = 0;
+
+  private readonly favoriteSavingMediaIds = new Set<string>();
+
+  private async refreshFavorite(mediaId: string): Promise<void> {
+    const version = ++this.favoriteRequestVersion;
+
+    this.isFavorite.set(false);
+    this.favoriteSaving.set(
+      this.favoriteSavingMediaIds.has(mediaId),
+    );
+    this.favoriteLoading.set(true);
+
+    try {
+      const favorite = await this.favoritesService.isFavorite(mediaId);
+
+      if (version === this.favoriteRequestVersion && this.mediaId() === mediaId) {
+        this.isFavorite.set(favorite);
+      }
+    } catch {
+      if (version === this.favoriteRequestVersion && this.mediaId() === mediaId) {
+        this.isFavorite.set(false);
+      }
+    } finally {
+      if (version === this.favoriteRequestVersion) {
+        this.favoriteLoading.set(false);
+      }
+    }
+  }
+
+  async toggleFavorite(): Promise<void> {
+    const mediaId = this.mediaId();
+
+    if (!mediaId || this.favoriteLoading() || this.favoriteSavingMediaIds.has(mediaId)) {
+      return;
+    }
+
+    const version = this.favoriteRequestVersion;
+    const shouldAdd = !this.isFavorite();
+
+    this.favoriteSavingMediaIds.add(mediaId);
+    this.favoriteSaving.set(true);
+
+    try {
+      if (shouldAdd) {
+        await this.favoritesService.add(mediaId);
+      } else {
+        await this.favoritesService.remove(mediaId);
+      }
+
+      if (version === this.favoriteRequestVersion && this.mediaId() === mediaId) {
+        this.isFavorite.set(shouldAdd);
+      }
+    } catch {
+      if (version === this.favoriteRequestVersion && this.mediaId() === mediaId) {
+        void this.refreshFavorite(mediaId);
+      }
+    } finally {
+      this.favoriteSavingMediaIds.delete(mediaId);
+      this.favoriteSaving.set(
+        this.favoriteSavingMediaIds.has(this.mediaId() ?? ''),
+      );
+    }
+  }
   private resetTouch(): void {
     this.touchStartX = null;
     this.touchStartY = null;
