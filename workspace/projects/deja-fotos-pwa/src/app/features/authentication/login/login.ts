@@ -59,16 +59,29 @@ export class LoginComponent {
   readonly error =
     signal<string | null>(null);
 
+  private readonly rememberedOrganizationKey =
+    'deja-fotos.remembered-organization';
+
+  private readonly rememberedEmailKey =
+    'deja-fotos.remembered-email';
+
+  private readRememberedValue(key: string): string {
+    try {
+      return localStorage.getItem(key) ?? '';
+    } catch {
+      return '';
+    }
+  }
   readonly form =
     this.formBuilder.nonNullable.group({
       organizationCode: [
-        '',
+        this.readRememberedValue(this.rememberedOrganizationKey),
         [
           Validators.required,
         ],
       ],
       email: [
-        '',
+        this.readRememberedValue(this.rememberedEmailKey),
         [
           Validators.required,
           Validators.email,
@@ -123,6 +136,20 @@ export class LoginComponent {
             );
 
             return;
+          }
+
+          try {
+            localStorage.setItem(
+              this.rememberedOrganizationKey,
+              organizationCode.trim().toUpperCase(),
+            );
+
+            localStorage.setItem(
+              this.rememberedEmailKey,
+              email.trim().toLowerCase(),
+            );
+          } catch {
+            // O login continua normalmente se o armazenamento falhar.
           }
 
           void this.router.navigateByUrl(
