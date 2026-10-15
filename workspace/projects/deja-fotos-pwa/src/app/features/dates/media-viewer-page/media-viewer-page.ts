@@ -5,6 +5,7 @@ import {
   OnInit,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 
 import { HttpClient } from '@angular/common/http';
@@ -14,6 +15,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { FavoritesService } from '../../../core/favorites/favorites.service';
+import { PinchZoomDirective } from '../../../shared/directives/pinch-zoom.directive';
 
 interface MediaResponse {
   id: string;
@@ -36,6 +38,7 @@ const PREFETCH_THRESHOLD = 5;
 @Component({
   selector: 'app-media-viewer-page',
   standalone: true,
+  imports: [PinchZoomDirective],
   templateUrl: './media-viewer-page.html',
   styleUrl: './media-viewer-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,6 +47,8 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
 
   private readonly favoritesService = inject(FavoritesService);
+
+  private readonly pinchZoom = viewChild(PinchZoomDirective);
 
   private readonly route = inject(ActivatedRoute);
 
@@ -198,6 +203,11 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
   }
 
   onTouchStart(event: TouchEvent): void {
+    if (event.touches.length !== 1) {
+      this.resetTouch();
+      return;
+    }
+
     const touch = event.changedTouches[0];
 
     if (!touch) {
@@ -364,6 +374,8 @@ export class MediaViewerPageComponent implements OnInit, OnDestroy {
     if (!item) {
       return;
     }
+
+    this.pinchZoom()?.reset();
 
     this.loading.set(true);
     this.error.set(null);

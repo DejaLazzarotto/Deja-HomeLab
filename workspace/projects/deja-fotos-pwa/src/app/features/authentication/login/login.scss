@@ -353,3 +353,14 @@
     box-shadow: none;
   }
 }
+button.field-action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+button.field-action:focus {
+  outline: none;
+}

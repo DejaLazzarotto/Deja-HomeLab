@@ -12,6 +12,7 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest';
 
 import { MediaViewerPageComponent } from './media-viewer-page';
@@ -270,5 +271,49 @@ describe('MediaViewerPageComponent', () => {
 
     expect(component.isFavorite()).toBe(false);
     expect(component.favoriteSaving()).toBe(false);
+  });
+
+  it('should navigate using a single-finger swipe', async () => {
+    const next = vi.spyOn(component, 'showNext')
+      .mockResolvedValue(undefined);
+
+    component.onTouchStart({
+      touches: [{ clientX: 200, clientY: 100 }],
+      changedTouches: [{ clientX: 200, clientY: 100 }],
+    } as unknown as TouchEvent);
+
+    await component.onTouchEnd({
+      changedTouches: [{ clientX: 100, clientY: 100 }],
+    } as unknown as TouchEvent);
+
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it('should ignore a multi-touch gesture during swipe navigation', async () => {
+    const next = vi.spyOn(component, 'showNext')
+      .mockResolvedValue(undefined);
+
+    const previous = vi.spyOn(component, 'showPrevious')
+      .mockResolvedValue(undefined);
+
+    component.onTouchStart({
+      touches: [{ clientX: 200, clientY: 100 }],
+      changedTouches: [{ clientX: 200, clientY: 100 }],
+    } as unknown as TouchEvent);
+
+    component.onTouchStart({
+      touches: [
+        { clientX: 180, clientY: 100 },
+        { clientX: 220, clientY: 100 },
+      ],
+      changedTouches: [{ clientX: 180, clientY: 100 }],
+    } as unknown as TouchEvent);
+
+    await component.onTouchEnd({
+      changedTouches: [{ clientX: 50, clientY: 100 }],
+    } as unknown as TouchEvent);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(previous).not.toHaveBeenCalled();
   });
 });

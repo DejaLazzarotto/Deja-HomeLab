@@ -141,7 +141,7 @@
           </span>
 
           <input
-            type="password"
+            [type]="showPassword() ? 'text' : 'password'"
             formControlName="password"
             name="password"
             autocomplete="current-password"
@@ -149,9 +149,12 @@
             aria-label="Senha"
           />
 
-          <span
+          <button
             class="field-action"
-            aria-hidden="true"
+            type="button"
+            [attr.aria-label]="showPassword() ? 'Ocultar senha' : 'Mostrar senha'"
+            [attr.aria-pressed]="showPassword()"
+            (click)="togglePasswordVisibility()"
           >
             <svg viewBox="0 0 24 24">
               <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
@@ -161,7 +164,7 @@
                 r="3"
               />
             </svg>
-          </span>
+          </button>
         </label>
 
         @if (error()) {

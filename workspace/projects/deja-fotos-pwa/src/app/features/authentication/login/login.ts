@@ -47,6 +47,12 @@ export class LoginComponent {
   private readonly router =
     inject(Router);
 
+  readonly showPassword = signal(false);
+
+  togglePasswordVisibility(): void {
+    this.showPassword.update((visible) => !visible);
+  }
+
   readonly loading =
     signal(false);
 

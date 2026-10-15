@@ -48,7 +48,7 @@
           {{ isFavorite() ? '♥' : '♡' }}
         </button>
         @if (media()?.media_type === 'image') {
-          <img class="viewer-image" [src]="mediaUrl()" [alt]="media()?.original_name ?? 'Foto'" />
+          <img appPinchZoom class="viewer-image" [src]="mediaUrl()" [alt]="media()?.original_name ?? 'Foto'" />
         } @else {
           <video class="viewer-video" [src]="mediaUrl()" controls playsinline preload="metadata">
             Seu navegador não suporta reprodução de vídeo.
