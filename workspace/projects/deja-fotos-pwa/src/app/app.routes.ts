@@ -9,6 +9,19 @@ import {
 
 export const routes: Routes = [
   {
+    path: 'welcome',
+    title: 'Boas-vindas | VIVARO',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/welcome/welcome-page'
+      ).then(
+        module => module.WelcomePageComponent,
+      ),
+  },
+  {
     path: 'login',
     title: 'Entrar | Fotos',
     loadComponent: () =>

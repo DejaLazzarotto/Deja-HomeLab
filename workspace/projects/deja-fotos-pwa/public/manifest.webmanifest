@@ -1,0 +1,32 @@
+{
+  "lang": "pt-BR",
+  "name": "VIVARO",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/branding/vivaro/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/branding/vivaro/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/branding/vivaro/icon-maskable-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "description": "VIVARO - Momentos que permanecem.",
+  "short_name": "VIVARO",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF"
+}

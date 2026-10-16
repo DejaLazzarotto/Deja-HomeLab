@@ -1,0 +1,267 @@
+<main
+  class="welcome"
+  (touchstart)="onTouchStart($event)"
+  (touchend)="onTouchEnd($event)"
+>
+  <header class="welcome__header">
+    <span class="welcome__brand">VIVARO</span>
+
+    <button
+      type="button"
+      class="welcome__skip"
+      (click)="skip()"
+    >
+      Pular
+    </button>
+  </header>
+
+  <section class="welcome__content">
+    @switch (currentPage()) {
+
+      @case (0) {
+        <article class="welcome__slide">
+          <img
+            class="welcome__logo"
+            src="/branding/vivaro/logo-principal.png"
+            alt="VIVARO"
+          />
+
+          <h1>Que bom ter você aqui!</h1>
+
+          <p>
+            Olá! É um prazer receber você na
+            <strong>Deja Tecnologia</strong>.
+          </p>
+
+          <p>
+            Você está prestes a conhecer o
+            <strong>VIVARO</strong>, um aplicativo
+            que desenvolvemos com muito carinho
+            para ajudar a guardar, organizar e
+            reviver momentos especiais.
+          </p>
+
+          <p>
+            Acreditamos que cada fotografia conta
+            uma história, e que essas histórias
+            merecem ser preservadas e compartilhadas
+            com quem faz parte delas.
+          </p>
+
+          <p class="welcome__highlight">
+            Seja muito bem-vindo. Esperamos que
+            você se sinta em casa!
+          </p>
+        </article>
+      }
+
+      @case (1) {
+        <article class="welcome__slide">
+          <h1>Seu espaço dentro da plataforma</h1>
+
+          <p>
+            O VIVARO faz parte da
+            <strong>Deja Platform</strong>,
+            uma plataforma criada para reunir
+            diferentes soluções em um único lugar.
+          </p>
+
+          <p>
+            Ela permite que famílias, grupos,
+            empresas e outras organizações utilizem
+            nossos produtos, cada uma com seu próprio
+            espaço e suas informações.
+          </p>
+
+          <p>
+            É por isso que, na entrada do aplicativo,
+            pedimos sua <strong>Organização</strong>.
+          </p>
+
+          <p>
+            Esse nome nos ajuda a identificar o espaço
+            ao qual você pertence, para que possa
+            acessar as fotografias, os álbuns e os
+            recursos disponíveis para você.
+          </p>
+
+          <p class="welcome__highlight">
+            Várias histórias podem fazer parte da plataforma.
+            A sua tem seu próprio lugar.
+          </p>
+        </article>
+      }
+
+      @case (2) {
+        <article class="welcome__slide">
+          <h1>O VIVARO está evoluindo!</h1>
+
+          <h2>O que você pode fazer hoje</h2>
+
+          <p>
+            Explorar suas fotografias e vídeos,
+            reviver momentos especiais e marcar
+            suas fotos favoritas para encontrá-las
+            com facilidade.
+          </p>
+
+          <h2>Quem organiza suas fotografias?</h2>
+
+          <p>
+            Nesta versão, a organização dos álbuns,
+            o envio de fotografias e os demais
+            trabalhos de curadoria são realizados
+            pelos responsáveis pelo seu espaço,
+            utilizando outro aplicativo da
+            Deja Tecnologia.
+          </p>
+
+          <h2>O que estamos preparando</h2>
+
+          <p>
+            Estamos desenvolvendo uma nova versão
+            para que você também possa enviar suas
+            próprias fotografias e criar e organizar
+            seus álbuns diretamente pelo VIVARO.
+          </p>
+
+          <p class="welcome__highlight">
+            Este é apenas o começo. Queremos que
+            o VIVARO cresça junto com as suas histórias!
+          </p>
+        </article>
+      }
+
+      @case (3) {
+        <article class="welcome__slide">
+          <h1>Mais que um simples atalho</h1>
+
+          <h2>Atalho de site</h2>
+
+          <p>
+            Um ícone que facilita abrir um endereço
+            na internet, geralmente utilizando
+            o navegador.
+          </p>
+
+          <h2>Aplicativo PWA</h2>
+
+          <p>
+            Pode funcionar em uma janela própria,
+            sem a barra de endereços, proporcionando
+            uma experiência semelhante à de um
+            aplicativo comum.
+          </p>
+
+          <p>
+            O VIVARO foi desenvolvido para oferecer
+            essa experiência de aplicativo.
+          </p>
+
+          <p>
+            Quando instalado em um dispositivo
+            compatível, ele pode ser aberto
+            diretamente pelo seu ícone, com uma
+            apresentação mais limpa e confortável
+            para explorar fotografias e vídeos.
+          </p>
+
+          <p class="welcome__highlight">
+            É a praticidade de um aplicativo,
+            com a facilidade de acesso pela internet.
+          </p>
+        </article>
+      }
+
+      @case (4) {
+        <article class="welcome__slide">
+          <img
+            class="welcome__app-icon"
+            src="/branding/vivaro/icon-192.png"
+            alt="Ícone do aplicativo VIVARO"
+          />
+
+          <h1>O VIVARO sempre por perto</h1>
+
+          <p>
+            Você sabia que pode ter o VIVARO
+            na tela inicial do seu celular,
+            assim como os aplicativos que já
+            utiliza todos os dias?
+          </p>
+
+          <p>
+            Com poucos passos, você poderá abrir
+            suas fotografias diretamente pelo
+            ícone do VIVARO, sem precisar procurar
+            o endereço no navegador.
+          </p>
+
+          <p>
+            A instalação utiliza os recursos do
+            próprio celular, sem a necessidade
+            de baixar arquivos de sites desconhecidos.
+          </p>
+
+          <p class="welcome__highlight">
+            E fique tranquilo: se preferir,
+            você também poderá continuar usando
+            o VIVARO pelo navegador.
+          </p>
+
+          <button
+            type="button"
+            class="welcome__install"
+            disabled
+          >
+            Instalar o VIVARO
+          </button>
+
+          <button
+            type="button"
+            class="welcome__continue"
+            (click)="skip()"
+          >
+            Continuar pelo navegador
+          </button>
+        </article>
+      }
+    }
+  </section>
+
+  <footer class="welcome__footer">
+    <div class="welcome__indicators">
+      @for (page of [0, 1, 2, 3, 4]; track page) {
+        <button
+          type="button"
+          class="welcome__indicator"
+          [class.welcome__indicator--active]="currentPage() === page"
+          [attr.aria-label]="'Ir para a tela ' + (page + 1)"
+          [attr.aria-current]="currentPage() === page ? 'step' : null"
+          (click)="goToPage(page)"
+        ></button>
+      }
+    </div>
+
+    <div class="welcome__navigation">
+      <button
+        type="button"
+        class="welcome__back"
+        [disabled]="isFirstPage"
+        (click)="previousPage()"
+      >
+        Voltar
+      </button>
+
+      @if (!isLastPage) {
+        <button
+          type="button"
+          class="welcome__next"
+          (click)="nextPage()"
+        >
+          Próximo
+        </button>
+      }
+    </div>
+  </footer>
+</main>

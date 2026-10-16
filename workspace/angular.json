@@ -30,7 +30,9 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": [
+              "src/styles.scss"
+            ]
           },
           "configurations": {
             "production": {
@@ -99,7 +101,9 @@
                 "input": "projects/deja-fotos-pwa/public"
               }
             ],
-            "styles": ["projects/deja-fotos-pwa/src/styles.scss"]
+            "styles": [
+              "projects/deja-fotos-pwa/src/styles.scss"
+            ]
           },
           "configurations": {
             "production": {
@@ -115,7 +119,8 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "serviceWorker": "projects/deja-fotos-pwa/ngsw-config.json"
             },
             "development": {
               "optimization": false,
@@ -128,9 +133,9 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-          "proxyConfig": "proxy.conf.json"
-       },
-        "configurations": {
+            "proxyConfig": "proxy.conf.json"
+          },
+          "configurations": {
             "production": {
               "buildTarget": "deja-fotos-pwa:build:production"
             },
