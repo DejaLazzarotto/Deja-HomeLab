@@ -1,0 +1,211 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+  font-family: Inter, -apple-system,
+    BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  color: #17324a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.help-quick {
+  min-height: 100dvh;
+  width: 100%;
+  padding: max(20px, env(safe-area-inset-top))
+    15px max(20px, env(safe-area-inset-bottom));
+  background:
+    linear-gradient(
+      180deg,
+      rgba(249, 251, 253, .20) 0%,
+      rgba(249, 251, 253, .46) 55%,
+      rgba(238, 244, 248, .30) 100%
+    ),
+    url("/fundo-login.png");
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+}
+
+.help-quick__header {
+  text-align: center;
+  padding: 9px 8px 18px;
+}
+
+.help-quick__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+}
+
+.help-quick__brand img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.help-quick__header h1 {
+  margin: 0;
+  font-size: 29px;
+  font-weight: 800;
+  letter-spacing: -.035em;
+}
+
+.help-quick__header p {
+  margin: 7px 0 0;
+  font-size: 13px;
+  color: #42637f;
+}
+
+.help-quick__intro,
+.help-quick__topic,
+.help-quick__tip {
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 19px;
+  background: rgba(255, 255, 255, .97);
+  box-shadow: 0 8px 24px
+    rgba(22, 50, 74, .09);
+}
+
+.help-quick__intro {
+  margin-bottom: 13px;
+  padding: 12px;
+  text-align: center;
+}
+
+.help-quick__intro svg {
+  display: block;
+  width: 100%;
+  max-width: 330px;
+  height: auto;
+  margin: 0 auto;
+}
+
+.help-quick__intro p {
+  margin: 10px auto 0;
+  max-width: 330px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #547188;
+}
+
+.help-quick__topics {
+  display: grid;
+  gap: 10px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.help-quick__topic {
+  width: 100%;
+  padding: 14px 12px;
+}
+
+.help-quick__topic-heading {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.help-quick__icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 13px;
+  background: #ecf6fc;
+}
+
+.help-quick__icon svg {
+  width: 49px;
+  height: 49px;
+}
+
+.help-quick__topic h2 {
+  margin: 0 0 4px;
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.help-quick__topic-heading p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #55738a;
+}
+
+.help-quick__instructions {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e4eef5;
+}
+
+.help-quick__instructions p {
+  margin: 0 0 8px;
+  color: #55738a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.help-quick__instructions p:last-child {
+  margin-bottom: 0;
+}
+
+.help-quick__tip {
+  margin-top: 13px;
+  padding: 16px;
+}
+
+.help-quick__tip strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #276d9c;
+  font-size: 15px;
+}
+
+.help-quick__tip p {
+  margin: 0;
+  color: #55738a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.help-quick__footer {
+  max-width: 480px;
+  margin: 15px auto 0;
+}
+
+.help-quick__footer button {
+  width: 100%;
+  min-height: 46px;
+  border: 0;
+  border-radius: 24px;
+  background: #327db5;
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.help-quick__footer button:focus-visible {
+  outline: 3px solid #17324a;
+  outline-offset: 3px;
+}
+
+@media (min-width: 600px) and (orientation: portrait) {
+  .help-quick {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}

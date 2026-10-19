@@ -11,6 +11,84 @@ import { welcomeEntryGuard } from './core/welcome/welcome-entry.guard';
 
 export const routes: Routes = [
   {
+    path: 'help/viewer',
+    title: 'Visualizar fotos e vídeos | Ajuda VIVARO',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/help/viewer/help-viewer-page'
+      ).then(
+        module => module.HelpViewerPageComponent,
+      ),
+  },
+  {
+    path: 'help/quick-access',
+    title: 'Explorar rápido | Ajuda VIVARO',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/help/quick-access/help-quick-access-page'
+      ).then(
+        module => module.HelpQuickAccessPageComponent,
+      ),
+  },
+  {
+    path: 'help/albums',
+    title: 'Álbuns | Ajuda VIVARO',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/help/albums/help-albums-page'
+      ).then(
+        module => module.HelpAlbumsPageComponent,
+      ),
+  },
+  {
+    path: 'help/people',
+    title: 'Por Pessoas e IA | Ajuda VIVARO',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/help/people/help-people-page'
+      ).then(
+        module => module.HelpPeoplePageComponent,
+      ),
+  },
+  {
+    path: 'help/dates',
+    title: 'Por Datas | Ajuda VIVARO',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/help/dates/help-dates-page'
+      ).then(
+        module => module.HelpDatesPageComponent,
+      ),
+  },
+  {
+    path: 'help',
+    title: 'Central de Ajuda | VIVARO',
+    canActivate: [
+      fotosAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/help/help-page'
+      ).then(
+        module => module.HelpPageComponent,
+      ),
+  },
+  {
     path: 'welcome',
     title: 'Boas-vindas | VIVARO',
     loadComponent: () =>

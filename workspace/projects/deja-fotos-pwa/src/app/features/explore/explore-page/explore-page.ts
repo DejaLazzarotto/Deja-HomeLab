@@ -82,6 +82,10 @@ implements OnInit, OnDestroy {
     void this.router.navigateByUrl('/welcome');
   }
 
+  openHelp(): void {
+    this.closeProfileMenu();
+    void this.router.navigateByUrl('/help');
+  }
   toggleProfileMenu(): void {
     this.profileMenuOpen.update(open => !open);
   }
