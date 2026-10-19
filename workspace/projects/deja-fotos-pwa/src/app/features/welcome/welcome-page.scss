@@ -115,12 +115,12 @@
 
 .welcome__app-icon {
   display: block;
-  width: 106px;
-  height: 106px;
+  width: 64px;
+  height: 64px;
   max-width: 100%;
 
   object-fit: contain;
-  margin: 0 auto 16px;
+  margin: 0 auto 8px;
 
   border-radius: 0;
 }
@@ -337,4 +337,69 @@
   .welcome__indicator {
     transition: none;
   }
+}
+
+
+
+
+/* Escolha da plataforma de instalacao */
+
+.welcome__platform-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  width: min(100%, 290px);
+  margin: 16px auto 0;
+}
+
+.welcome__platform-button {
+  min-height: 40px;
+  padding: 8px;
+
+  border: 1px solid #bdd0df;
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.88);
+  color: #315b79;
+
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.welcome__platform-button--selected {
+  border-color: #2f83bd;
+  background: #e6f2fb;
+  color: #17547e;
+}
+
+.welcome__platform-button:focus-visible {
+  outline: 3px solid #2f83bd;
+  outline-offset: 2px;
+}
+
+.welcome__install-help {
+  width: min(100%, 330px);
+  margin: 10px auto 0;
+  padding: 12px 14px;
+
+  border: 1px solid #bdd0df;
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.92);
+  text-align: left;
+}
+
+.welcome__install-help h2 {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+
+.welcome__install-help ol {
+  margin: 0;
+  padding-left: 20px;
+  color: #40566b;
+  font-size: 12px;
+  line-height: 1.6;
 }

@@ -22,7 +22,7 @@
         <article class="welcome__slide">
           <img
             class="welcome__logo"
-            src="/branding/vivaro/logo-principal.png"
+            src="/branding/vivaro/logo-principal-mobile.png"
             alt="VIVARO"
           />
 
@@ -209,15 +209,52 @@
             o VIVARO pelo navegador.
           </p>
 
-          <button
-            type="button"
-            class="welcome__install"
-            disabled
-          >
-            Instalar o VIVARO
-          </button>
+                              <div class="welcome__platform-actions">
+            <button
+              type="button"
+              class="welcome__platform-button"
+              [class.welcome__platform-button--selected]="selectedInstallation() === 'ios'"
+              [attr.aria-expanded]="selectedInstallation() === 'ios'"
+              (click)="selectInstallation('ios')"
+            >
+              iPhone / iPad
+            </button>
 
-          <button
+            <button
+              type="button"
+              class="welcome__platform-button"
+              [class.welcome__platform-button--selected]="selectedInstallation() === 'android'"
+              [attr.aria-expanded]="selectedInstallation() === 'android'"
+              (click)="selectInstallation('android')"
+            >
+              Android
+            </button>
+          </div>
+
+          @if (selectedInstallation() === 'ios') {
+            <div class="welcome__install-help">
+              <h2>Como instalar no iPhone ou iPad</h2>
+              <ol>
+                <li>Abra o VIVARO no <strong>Safari</strong>.</li>
+                <li>Toque em <strong>Compartilhar</strong>.</li>
+                <li>Escolha <strong>Adicionar à Tela de Início</strong>.</li>
+                <li>Confirme em <strong>Adicionar</strong>.</li>
+              </ol>
+            </div>
+          }
+
+          @if (selectedInstallation() === 'android') {
+            <div class="welcome__install-help">
+              <h2>Como instalar no Android</h2>
+              <ol>
+                <li>Abra o VIVARO no <strong>Chrome</strong>.</li>
+                <li>Toque no menu de <strong>três pontos</strong>.</li>
+                <li>Escolha <strong>Instalar aplicativo</strong> ou <strong>Adicionar à tela inicial</strong>.</li>
+                <li>Confirme a instalação.</li>
+              </ol>
+            </div>
+          }
+<button
             type="button"
             class="welcome__continue"
             (click)="skip()"

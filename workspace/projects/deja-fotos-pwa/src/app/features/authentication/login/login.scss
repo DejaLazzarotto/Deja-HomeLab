@@ -73,9 +73,16 @@
 }
 
 .brand-logo {
-  width: 82px;
-  height: 62px;
+  width: 86px;
+  height: 86px;
   margin-bottom: 8px;
+}
+
+.brand-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .brand-logo svg {
@@ -311,8 +318,8 @@
   }
 
   .brand-logo {
-    width: 78px;
-    height: 58px;
+    width: 82px;
+    height: 82px;
   }
 
   .login-header h1 {

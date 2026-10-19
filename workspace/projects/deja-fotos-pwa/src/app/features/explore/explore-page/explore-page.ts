@@ -77,6 +77,11 @@ implements OnInit, OnDestroy {
       .toUpperCase() || '?';
   }
 
+  openWelcome(): void {
+    this.closeProfileMenu();
+    void this.router.navigateByUrl('/welcome');
+  }
+
   toggleProfileMenu(): void {
     this.profileMenuOpen.update(open => !open);
   }

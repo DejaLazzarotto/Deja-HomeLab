@@ -7,13 +7,12 @@ import {
   fotosAccessGuard,
 } from './core/authentication/fotos-access.guard';
 
+import { welcomeEntryGuard } from './core/welcome/welcome-entry.guard';
+
 export const routes: Routes = [
   {
     path: 'welcome',
     title: 'Boas-vindas | VIVARO',
-    canActivate: [
-      fotosAccessGuard,
-    ],
     loadComponent: () =>
       import(
         './features/welcome/welcome-page'
@@ -312,8 +311,9 @@ export const routes: Routes = [
   },
   {
     path: '',
-    redirectTo: 'explore',
     pathMatch: 'full',
+    canActivate: [welcomeEntryGuard],
+    children: [],
   },
   {
     path: '**',

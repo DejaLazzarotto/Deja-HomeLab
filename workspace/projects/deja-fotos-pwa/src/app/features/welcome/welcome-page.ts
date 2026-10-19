@@ -9,6 +9,9 @@ import {
   Router,
 } from '@angular/router';
 
+
+import { WelcomeService } from '../../core/welcome/welcome.service';
+
 @Component({
   selector: 'app-welcome-page',
   standalone: true,
@@ -19,6 +22,16 @@ import {
 export class WelcomePageComponent {
   private readonly router = inject(Router);
 
+  private readonly welcomeService = inject(WelcomeService);
+
+
+  readonly selectedInstallation = signal<'ios' | 'android' | null>(null);
+
+  selectInstallation(platform: 'ios' | 'android'): void {
+    this.selectedInstallation.update(
+      current => current === platform ? null : platform,
+    );
+  }
   readonly currentPage = signal(0);
 
   readonly totalPages = 5;
@@ -105,6 +118,7 @@ export class WelcomePageComponent {
   }
 
   skip(): void {
-    void this.router.navigateByUrl('/explore');
+    this.welcomeService.markCompleted();
+    void this.router.navigateByUrl('/login');
   }
 }

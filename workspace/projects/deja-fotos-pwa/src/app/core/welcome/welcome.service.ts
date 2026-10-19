@@ -4,58 +4,27 @@ import { Injectable } from '@angular/core';
   providedIn: 'root',
 })
 export class WelcomeService {
-  private readonly storagePrefix =
+  private readonly storageKey =
     'vivaro.welcome.completed.v1';
 
-  private storageKey(
-    organization: string,
-    email: string,
-  ): string {
-    const normalizedOrganization =
-      organization.trim().toUpperCase();
-
-    const normalizedEmail =
-      email.trim().toLowerCase();
-
-    return [
-      this.storagePrefix,
-      encodeURIComponent(normalizedOrganization),
-      encodeURIComponent(normalizedEmail),
-    ].join('.');
-  }
-
-  shouldShow(
-    organization: string,
-    email: string,
-  ): boolean {
-    if (!organization.trim() || !email.trim()) {
-      return false;
-    }
-
+  shouldShow(): boolean {
     try {
       return localStorage.getItem(
-        this.storageKey(organization, email),
+        this.storageKey,
       ) !== 'true';
     } catch {
-      return false;
+      return true;
     }
   }
 
-  markCompleted(
-    organization: string,
-    email: string,
-  ): void {
-    if (!organization.trim() || !email.trim()) {
-      return;
-    }
-
+  markCompleted(): void {
     try {
       localStorage.setItem(
-        this.storageKey(organization, email),
+        this.storageKey,
         'true',
       );
     } catch {
-      // Falhas no armazenamento nao impedem o uso do aplicativo.
+      // O armazenamento indisponivel nao bloqueia o aplicativo.
     }
   }
 }

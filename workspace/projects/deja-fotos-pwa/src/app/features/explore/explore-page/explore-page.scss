@@ -81,10 +81,17 @@
 }
 
 .brand-logo {
-  width: 46px;
-  height: 34px;
+  width: 56px;
+  height: 42px;
 
   flex: 0 0 auto;
+}
+
+.brand-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .brand-logo svg {
@@ -674,6 +681,9 @@
    ========================================================= */
 
 .profile-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   position: absolute;
   top: max(12px, env(safe-area-inset-top));
   right: max(14px, env(safe-area-inset-right));
@@ -782,6 +792,60 @@
   width: 19px;
   height: 19px;
 
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
+.header-action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  padding: 0;
+
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+
+  background: #e6f0f7;
+  color: #315b79;
+
+  box-shadow: 0 3px 12px rgba(22, 50, 74, 0.16);
+
+  cursor: pointer;
+}
+
+.header-action-button svg {
+  width: 21px;
+  height: 21px;
+
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.header-action-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.header-action-button:focus-visible {
+  outline: 3px solid #315b79;
+  outline-offset: 3px;
+}
+
+.quick-icon svg {
+  display: block;
+  width: 18px;
+  height: 18px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
