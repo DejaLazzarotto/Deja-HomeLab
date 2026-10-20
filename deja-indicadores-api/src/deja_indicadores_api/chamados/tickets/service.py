@@ -20,13 +20,13 @@ from deja_indicadores_api.chamados.tickets.exceptions import (
 )
 from deja_indicadores_api.chamados.tickets.models import ChamadosTicketModel
 from deja_indicadores_api.chamados.tickets.repository import ChamadosTicketRepository
-from deja_indicadores_api.chamados.tickets.timeline.service import (
-    ChamadosTicketTimelineService,
-)
 from deja_indicadores_api.chamados.tickets.schemas import (
     ChamadosTicketCreate,
     ChamadosTicketStatusUpdate,
     ChamadosTicketUpdate,
+)
+from deja_indicadores_api.chamados.tickets.timeline.service import (
+    ChamadosTicketTimelineService,
 )
 from deja_indicadores_api.user_management.models import (
     UserModel,

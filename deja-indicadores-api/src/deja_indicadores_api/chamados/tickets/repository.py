@@ -6,10 +6,10 @@ from deja_indicadores_api.chamados.tickets.enums import (
     ChamadosTicketPriority,
     ChamadosTicketStatus,
 )
-from deja_indicadores_api.user_management.models import UserModel
 from deja_indicadores_api.chamados.tickets.models import (
     ChamadosTicketModel,
 )
+from deja_indicadores_api.user_management.models import UserModel
 
 
 class ChamadosTicketRepository:

@@ -1,6 +1,7 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, status as http_status
+from fastapi import APIRouter, Depends, Path
+from fastapi import status as http_status
 
 from deja_indicadores_api.authentication.dependencies import require_roles
 from deja_indicadores_api.authentication.schemas import AuthenticatedUser
@@ -13,7 +14,6 @@ from deja_indicadores_api.chamados.tickets.comments.schemas import (
 )
 from deja_indicadores_api.module_management.dependencies import require_module
 from deja_indicadores_api.user_management.models import UserRole
-
 
 router = APIRouter(
     prefix="/chamados/tickets",

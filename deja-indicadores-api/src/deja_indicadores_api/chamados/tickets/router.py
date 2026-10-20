@@ -1,6 +1,7 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, Query, status as http_status
+from fastapi import APIRouter, Depends, Path, Query
+from fastapi import status as http_status
 
 from deja_indicadores_api.authentication.dependencies import require_roles
 from deja_indicadores_api.authentication.schemas import AuthenticatedUser
