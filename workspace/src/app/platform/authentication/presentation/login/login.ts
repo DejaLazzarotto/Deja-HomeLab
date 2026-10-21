@@ -12,6 +12,7 @@ import {
 } from '@angular/forms';
 
 import { finalize } from 'rxjs';
+import { Router } from '@angular/router';
 
 import { AuthenticationService } from '../../application/authentication.service';
 
@@ -25,6 +26,8 @@ import { AuthenticationService } from '../../application/authentication.service'
 })
 export class LoginComponent {
   private readonly authentication = inject(AuthenticationService);
+
+  private readonly router = inject(Router);
 
   private readonly formBuilder = inject(NonNullableFormBuilder);
 
@@ -90,11 +93,11 @@ export class LoginComponent {
       .subscribe({
         next: user => {
           if (user.role === 'client') {
-            window.location.replace('/portal');
+            void this.router.navigateByUrl('/portal');
             return;
           }
 
-          window.location.replace('/');
+          void this.router.navigateByUrl('/');
         },
         error: error => {
           this.errorMessage.set(
@@ -128,3 +131,4 @@ export class LoginComponent {
     return 'Não foi possível entrar no sistema.';
   }
 }
+

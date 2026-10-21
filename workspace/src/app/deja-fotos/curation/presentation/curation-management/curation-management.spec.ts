@@ -34,7 +34,7 @@ describe('CurationManagementComponent', () => {
     component.selectTab('avatars');
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain(
-      'não são usados como referência automática',
+      'não são usados automaticamente como referência para reconhecimento facial',
     );
   });
 
@@ -158,3 +158,4 @@ describe('CurationManagementComponent', () => {
     createUrl.mockRestore();
   });
 });
+
