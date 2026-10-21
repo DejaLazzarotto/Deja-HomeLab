@@ -1,4 +1,4 @@
-from uuid import uuid7
+from uuid6 import uuid7
 
 from deja_platform_api.authentication.authorization import (
     AuthorizationService,

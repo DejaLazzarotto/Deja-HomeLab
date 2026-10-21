@@ -1,7 +1,7 @@
 from pathlib import Path
-from uuid import uuid7
 
 from fastapi import UploadFile
+from uuid6 import uuid7
 
 from deja_platform_api.authentication.authorization import (
     AuthorizationService,
