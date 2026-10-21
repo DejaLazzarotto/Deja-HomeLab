@@ -1,0 +1,211 @@
+from jwt.exceptions import InvalidTokenError
+from pydantic import ValidationError
+
+from deja_platform_api.authentication.exceptions import (
+    InactiveUserError,
+    InvalidAccessTokenError,
+    InvalidCredentialsError,
+)
+from deja_platform_api.authentication.schemas import (
+    AccessTokenClaims,
+    AccessTokenResponse,
+    AuthenticatedModuleAccess,
+    AuthenticatedUser,
+    LoginRequest,
+)
+from deja_platform_api.core.security import (
+    AccessTokenService,
+    PasswordService,
+)
+from deja_platform_api.module_management.repository import (
+    OrganizationModuleRepository,
+)
+from deja_platform_api.tenant_management.repository import (
+    OrganizationRepository,
+)
+from deja_platform_api.user_management.models import (
+    UserModel,
+    UserRole,
+    UserStatus,
+)
+from deja_platform_api.user_management.repository import (
+    UserModuleAccessRepository,
+    UserRepository,
+)
+
+
+class AuthenticationService:
+    """Autentica usuários e valida identidades por token."""
+
+    def __init__(
+        self,
+        user_repository: UserRepository,
+        user_module_access_repository: UserModuleAccessRepository,
+        organization_repository: OrganizationRepository,
+        organization_module_repository: OrganizationModuleRepository,
+        password_service: PasswordService,
+        access_token_service: AccessTokenService,
+    ) -> None:
+        self._user_repository = user_repository
+        self._user_module_access_repository = (
+            user_module_access_repository
+        )
+        self._organization_repository = organization_repository
+        self._organization_module_repository = (
+            organization_module_repository
+        )
+        self._password_service = password_service
+        self._access_token_service = access_token_service
+
+    def login(
+        self,
+        input_data: LoginRequest,
+    ) -> AccessTokenResponse:
+        """Valida as credenciais e emite um token JWT."""
+
+        organization_id: str | None = None
+
+        if input_data.organization_code is not None:
+            organization = self._organization_repository.find_by_code(
+                input_data.organization_code
+            )
+
+            if organization is None:
+                raise InvalidCredentialsError
+
+            organization_id = organization.id
+
+        user = self._user_repository.find_by_organization_and_email(
+            organization_id,
+            str(input_data.email),
+        )
+
+        if (
+            user is None
+            or user.password_hash is None
+            or not self._password_service.verify(
+                input_data.password,
+                user.password_hash,
+            )
+        ):
+            raise InvalidCredentialsError
+
+        if user.status != UserStatus.ACTIVE:
+            raise InactiveUserError
+
+        if not self._has_valid_role_scope(user):
+            raise InvalidCredentialsError
+
+        access_token = self._access_token_service.create(
+            subject=user.id,
+            organization_id=user.organization_id,
+            tenant_id=user.tenant_id,
+            environment_id=user.environment_id,
+            role=user.role.value,
+        )
+
+        return AccessTokenResponse(
+            access_token=access_token,
+            expires_in=self._access_token_service.expires_in_seconds,
+        )
+
+    def authenticate(
+        self,
+        token: str,
+    ) -> AuthenticatedUser:
+        """Valida o token e retorna a identidade persistida do usuário."""
+
+        try:
+            payload = self._access_token_service.decode(token)
+            claims = AccessTokenClaims.model_validate(payload)
+        except (InvalidTokenError, ValidationError):
+            raise InvalidAccessTokenError from None
+
+        user = self._user_repository.find_by_id(
+            claims.sub
+        )
+
+        if (
+            user is None
+            or user.status != UserStatus.ACTIVE
+            or not self._has_valid_role_scope(user)
+        ):
+            raise InvalidAccessTokenError
+
+        if (
+            user.organization_id != claims.organization_id
+            or user.tenant_id != claims.tenant_id
+            or user.environment_id != claims.environment_id
+            or user.role != claims.role
+        ):
+            raise InvalidAccessTokenError
+
+        enabled_modules = (
+            self._organization_module_repository
+            .list_enabled_module_keys(
+                user.organization_id
+            )
+            if user.organization_id is not None
+            else []
+        )
+
+        enabled_module_set = set(
+            enabled_modules
+        )
+
+        module_access = [
+            AuthenticatedModuleAccess(
+                module_key=access.module_key,
+                role=access.role,
+            )
+            for access in (
+                self._user_module_access_repository
+                .list_for_user(user.id)
+            )
+            if access.module_key in enabled_module_set
+        ]
+
+        return AuthenticatedUser(
+            id=user.id,
+            organization_id=user.organization_id,
+            tenant_id=user.tenant_id,
+            environment_id=user.environment_id,
+            name=user.name,
+            email=user.email,
+            role=user.role,
+            enabled_modules=enabled_modules,
+            module_access=module_access,
+        )
+
+    def _has_valid_role_scope(
+        self,
+        user: UserModel,
+    ) -> bool:
+        """Valida os vínculos obrigatórios do papel autenticado."""
+
+        if user.role == UserRole.PLATFORM_ADMIN:
+            return (
+                user.organization_id is None
+                and user.tenant_id is None
+                and user.environment_id is None
+            )
+
+        if user.organization_id is None:
+            return False
+
+        if user.role == UserRole.ORGANIZATION_ADMIN:
+            return (
+                user.tenant_id is None
+                and user.environment_id is None
+            )
+
+        if user.role == UserRole.TENANT_ADMIN:
+            return (
+                user.tenant_id is not None
+                and user.environment_id is None
+            )
+
+        return (
+            user.tenant_id is not None
+            and user.environment_id is not None
+        )

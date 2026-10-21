@@ -1,0 +1,47 @@
+from typing import Annotated
+
+from fastapi import Depends
+from sqlalchemy.orm import Session
+
+from deja_platform_api.authentication.authorization import (
+    AuthorizationService,
+)
+from deja_platform_api.core.database import (
+    get_db_session,
+)
+from deja_platform_api.fotos.albums.repository import (
+    FotosAlbumRepository,
+)
+from deja_platform_api.fotos.albums.service import (
+    FotosAlbumService,
+)
+from deja_platform_api.fotos.media.repository import (
+    FotosMediaRepository,
+)
+from deja_platform_api.tenant_management.repository import (
+    EnvironmentRepository,
+    TenantRepository,
+)
+
+
+def get_fotos_album_service(
+    session: Annotated[
+        Session,
+        Depends(get_db_session),
+    ],
+) -> FotosAlbumService:
+    """Monta o serviço de álbuns do Deja Fotos."""
+
+    return FotosAlbumService(
+        repository=FotosAlbumRepository(session),
+        media_repository=FotosMediaRepository(session),
+        tenant_repository=TenantRepository(session),
+        environment_repository=EnvironmentRepository(session),
+        authorization_service=AuthorizationService(),
+    )
+
+
+FotosAlbumServiceDependency = Annotated[
+    FotosAlbumService,
+    Depends(get_fotos_album_service),
+]

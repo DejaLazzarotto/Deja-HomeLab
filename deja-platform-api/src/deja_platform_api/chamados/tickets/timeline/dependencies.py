@@ -1,0 +1,45 @@
+from typing import Annotated
+
+from fastapi import Depends
+from sqlalchemy.orm import Session
+
+from deja_platform_api.authentication.authorization import (
+    AuthorizationService,
+)
+from deja_platform_api.chamados.tickets.repository import (
+    ChamadosTicketRepository,
+)
+from deja_platform_api.chamados.tickets.timeline.repository import (
+    ChamadosTicketTimelineRepository,
+)
+from deja_platform_api.chamados.tickets.timeline.service import (
+    ChamadosTicketTimelineService,
+)
+from deja_platform_api.core.database import get_db_session
+from deja_platform_api.user_management.repository import (
+    UserRepository,
+)
+
+DatabaseSession = Annotated[
+    Session,
+    Depends(get_db_session),
+]
+
+
+def get_chamados_ticket_timeline_service(
+    session: DatabaseSession,
+) -> ChamadosTicketTimelineService:
+    """Cria o serviço de timeline para a sessão da requisição."""
+
+    return ChamadosTicketTimelineService(
+        ChamadosTicketTimelineRepository(session),
+        ChamadosTicketRepository(session),
+        AuthorizationService(),
+        UserRepository(session),
+    )
+
+
+ChamadosTicketTimelineServiceDependency = Annotated[
+    ChamadosTicketTimelineService,
+    Depends(get_chamados_ticket_timeline_service),
+]

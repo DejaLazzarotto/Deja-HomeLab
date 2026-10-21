@@ -4,7 +4,7 @@
 
 Backend:
 
-- caminho: `deja-indicadores-api`
+- caminho: `deja-platform-api`
 - endereço: `127.0.0.1:8000`
 
 Frontend:

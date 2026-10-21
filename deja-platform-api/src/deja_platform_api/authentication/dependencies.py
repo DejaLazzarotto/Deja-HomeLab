@@ -1,0 +1,131 @@
+from collections.abc import Callable
+from typing import Annotated
+
+from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.orm import Session
+
+from deja_platform_api.authentication.authorization import (
+    AuthorizationService,
+)
+from deja_platform_api.authentication.exceptions import (
+    InvalidAccessTokenError,
+)
+from deja_platform_api.authentication.schemas import AuthenticatedUser
+from deja_platform_api.authentication.service import (
+    AuthenticationService,
+)
+from deja_platform_api.core.config import Settings, get_settings
+from deja_platform_api.core.database import get_db_session
+from deja_platform_api.core.security import (
+    AccessTokenService,
+    PasswordService,
+)
+from deja_platform_api.module_management.repository import (
+    OrganizationModuleRepository,
+)
+from deja_platform_api.tenant_management.repository import (
+    OrganizationRepository,
+)
+from deja_platform_api.user_management.models import UserRole
+from deja_platform_api.user_management.repository import (
+    UserModuleAccessRepository,
+    UserRepository,
+)
+
+DatabaseSession = Annotated[
+    Session,
+    Depends(get_db_session),
+]
+
+ApplicationSettings = Annotated[
+    Settings,
+    Depends(get_settings),
+]
+
+bearer_scheme = HTTPBearer(
+    scheme_name="BearerAuth",
+    auto_error=False,
+)
+
+
+def get_authentication_service(
+    session: DatabaseSession,
+    settings: ApplicationSettings,
+) -> AuthenticationService:
+    """Cria o serviço de autenticação para a requisição."""
+
+    user_repository = UserRepository(session)
+    user_module_access_repository = UserModuleAccessRepository(
+        session
+    )
+    organization_repository = OrganizationRepository(session)
+    organization_module_repository = OrganizationModuleRepository(
+        session
+    )
+    password_service = PasswordService()
+    access_token_service = AccessTokenService(
+        secret_key=settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+        expire_minutes=settings.access_token_expire_minutes,
+    )
+
+    return AuthenticationService(
+        user_repository,
+        user_module_access_repository,
+        organization_repository,
+        organization_module_repository,
+        password_service,
+        access_token_service,
+    )
+
+
+AuthenticationServiceDependency = Annotated[
+    AuthenticationService,
+    Depends(get_authentication_service),
+]
+
+BearerCredentials = Annotated[
+    HTTPAuthorizationCredentials | None,
+    Depends(bearer_scheme),
+]
+
+
+def get_current_user(
+    credentials: BearerCredentials,
+    service: AuthenticationServiceDependency,
+) -> AuthenticatedUser:
+    """Valida o Bearer token e retorna o usuário autenticado."""
+
+    if credentials is None:
+        raise InvalidAccessTokenError
+
+    return service.authenticate(
+        credentials.credentials
+    )
+
+
+CurrentUser = Annotated[
+    AuthenticatedUser,
+    Depends(get_current_user),
+]
+
+
+def require_roles(
+    *allowed_roles: UserRole,
+) -> Callable[[AuthenticatedUser], AuthenticatedUser]:
+    """Cria uma dependência que exige um dos papéis informados."""
+
+    authorization_service = AuthorizationService()
+
+    def authorize(
+        current_user: CurrentUser,
+    ) -> AuthenticatedUser:
+        authorization_service.require_roles(
+            current_user,
+            allowed_roles,
+        )
+
+        return current_user
+
+    return authorize

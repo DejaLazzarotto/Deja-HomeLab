@@ -6,7 +6,7 @@ O Chamados é um módulo funcional da Deja Platform, com backend FastAPI e front
 
 ## Backend
 
-- Repositório: `deja-indicadores-api`
+- Repositório: `deja-platform-api`
 - Framework: FastAPI
 - Persistência: SQLAlchemy 2
 - Banco de dados: MySQL
