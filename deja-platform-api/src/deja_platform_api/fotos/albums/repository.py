@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlalchemy import extract, func, select
 from sqlalchemy.orm import Session
 
