@@ -1136,6 +1136,7 @@ export class WorkspaceComposition {
         metadata: {
           type: 'platform-administration',
           section: 'organizations',
+          hideChrome: true,
         },
         widgets: [
           {

@@ -12,8 +12,10 @@
  */
 
 import {
+  inject,
   Injectable,
 } from '@angular/core';
+import { APP_BASE_HREF } from '@angular/common';
 
 /**
  * Provider Angular responsável pela resolução dos
@@ -34,8 +36,12 @@ import {
 })
 export class WorkspaceIconProvider {
 
+  private readonly baseHref = inject(APP_BASE_HREF, { optional: true })
+    ?? document.querySelector('base')?.getAttribute('href')
+    ?? '/';
+
   private readonly brandingPath =
-    '/branding/icons';
+    `${this.baseHref.replace(/\/$/, '')}/branding/icons`;
 
   /**
    * Resolve o caminho físico correspondente a um
