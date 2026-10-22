@@ -1106,6 +1106,7 @@ export class WorkspaceComposition {
           type: 'administration',
           section: 'users',
           permission: 'user-administration',
+          hideChrome: true,
         },
         widgets: [
           {
