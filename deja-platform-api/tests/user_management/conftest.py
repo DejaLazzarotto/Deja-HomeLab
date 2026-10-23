@@ -43,6 +43,19 @@ def authorize_user_management_requests(
         current_user.environment_id = None
         current_user.role = UserRole.ORGANIZATION_ADMIN
 
+    def set_current_test_user_id(user_id: str) -> None:
+        current_user.id = user_id
+
+    test_app.state.set_current_test_user_id = set_current_test_user_id
+
+    def set_current_test_tenant(organization_id: str, tenant_id: str) -> None:
+        current_user.organization_id = organization_id
+        current_user.tenant_id = tenant_id
+        current_user.environment_id = None
+        current_user.role = UserRole.TENANT_ADMIN
+
+    test_app.state.set_current_test_tenant = set_current_test_tenant
+
     test_app.dependency_overrides[get_current_user] = (
         override_get_current_user
     )
@@ -59,3 +72,5 @@ def authorize_user_management_requests(
         test_app.dependency_overrides.pop(get_current_user, None)
         del test_app.state.set_platform_test_administrator
         del test_app.state.set_current_test_organization
+        del test_app.state.set_current_test_user_id
+        del test_app.state.set_current_test_tenant

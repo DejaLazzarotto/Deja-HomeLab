@@ -1149,13 +1149,13 @@ def test_set_user_password_stores_argon2_hash(
 ) -> None:
     """Armazena a senha como hash Argon2 sem expor dados sensíveis."""
 
-    organization = create_organization(client)
+    organization, tenant, environment = create_hierarchy(client)
     user = create_user(
         client,
         organization_id=str(organization["id"]),
-        tenant_id=None,
-        environment_id=None,
-        role="organization_admin",
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+        role="viewer",
     )
     plain_password = "SenhaSegura123!"
 
@@ -1190,14 +1190,19 @@ def test_set_user_password_replaces_existing_hash(
 ) -> None:
     """Substitui o hash anterior quando a senha é alterada."""
 
-    organization = create_organization(client)
+    organization, tenant, environment = create_hierarchy(client)
     user = create_user(
         client,
         organization_id=str(organization["id"]),
-        tenant_id=None,
-        environment_id=None,
-        role="organization_admin",
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+        role="viewer",
     )
+
+    with test_session_factory() as session:
+        stored_user = session.get(UserModel, str(user["id"]))
+        assert stored_user is not None
+        assert stored_user.credentials_version == 1
 
     first_response = client.put(
         f"{USERS_URL}/{user['id']}/password",
@@ -1211,6 +1216,7 @@ def test_set_user_password_replaces_existing_hash(
 
         assert stored_user is not None
         first_hash = stored_user.password_hash
+        assert stored_user.credentials_version == 2
 
     second_response = client.put(
         f"{USERS_URL}/{user['id']}/password",
@@ -1223,6 +1229,7 @@ def test_set_user_password_replaces_existing_hash(
         stored_user = session.get(UserModel, str(user["id"]))
 
         assert stored_user is not None
+        assert stored_user.credentials_version == 3
         assert stored_user.password_hash != first_hash
         assert PasswordService().verify(
             "SegundaSenha456!",
@@ -1232,6 +1239,113 @@ def test_set_user_password_replaces_existing_hash(
             "PrimeiraSenha123!",
             stored_user.password_hash,
         )
+
+
+
+def test_password_reset_revokes_only_target_user_token(
+    client: TestClient,
+) -> None:
+    """Redefinir senha invalida apenas o JWT do usuario afetado."""
+
+    from deja_platform_api.authentication.dependencies import (
+        get_current_user,
+    )
+    from tests.authentication.test_authentication_api import (
+        LOGIN_URL,
+    )
+
+    organization, tenant, environment = create_hierarchy(client)
+
+    users = []
+    for email in (
+        "revogado@deja.com",
+        "preservado@deja.com",
+    ):
+        user = create_user(
+            client,
+            organization_id=str(organization["id"]),
+            tenant_id=str(tenant["id"]),
+            environment_id=str(environment["id"]),
+            email=email,
+            role="viewer",
+        )
+        users.append(user)
+
+        response = client.put(
+            f"{USERS_URL}/{user['id']}/password",
+            json={"password": "SenhaOriginal123!"},
+        )
+        assert response.status_code == 200
+
+    tokens = []
+
+    for email in (
+        "revogado@deja.com",
+        "preservado@deja.com",
+    ):
+        response = client.post(
+            LOGIN_URL,
+            json={
+                "organization_code": organization["code"],
+                "email": email,
+                "password": "SenhaOriginal123!",
+            },
+        )
+        assert response.status_code == 200
+        tokens.append(response.json()["access_token"])
+
+    me_url = "/api/v1/auth/me"
+
+    original_override = client.app.dependency_overrides.pop(
+        get_current_user
+    )
+
+    def authenticated_me(token: str):
+        client.app.dependency_overrides.pop(get_current_user, None)
+        try:
+            return client.get(
+                me_url,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        finally:
+            client.app.dependency_overrides[get_current_user] = (
+                original_override
+            )
+
+    client.app.dependency_overrides[get_current_user] = (
+        original_override
+    )
+
+    for token in tokens:
+        response = authenticated_me(token)
+        assert response.status_code == 200
+
+    reset_response = client.put(
+        f"{USERS_URL}/{users[0]['id']}/password",
+        json={"password": "SenhaAtualizada456!"},
+    )
+    assert reset_response.status_code == 200
+
+    revoked = authenticated_me(tokens[0])
+    assert revoked.status_code == 401
+    assert revoked.json()["error"] == "invalid_access_token"
+
+    preserved = authenticated_me(tokens[1])
+    assert preserved.status_code == 200
+
+    new_login = client.post(
+        LOGIN_URL,
+        json={
+            "organization_code": organization["code"],
+            "email": "revogado@deja.com",
+            "password": "SenhaAtualizada456!",
+        },
+    )
+    assert new_login.status_code == 200
+
+    new_token = new_login.json()["access_token"]
+    authenticated = authenticated_me(new_token)
+    assert authenticated.status_code == 200
 
 
 def test_set_user_password_rejects_short_password(
@@ -1254,6 +1368,207 @@ def test_set_user_password_rejects_short_password(
     )
 
     assert response.status_code == 422
+
+
+def test_cannot_set_platform_admin_password(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Impede alteração administrativa da senha de administrador global."""
+
+    client.app.state.set_platform_test_administrator()
+
+    response = client.post(
+        USERS_URL,
+        json={
+            "organization_id": None,
+            "tenant_id": None,
+            "environment_id": None,
+            "name": "Administrador Global Protegido",
+            "email": "global.protegido@deja.com",
+            "role": "platform_admin",
+            "status": "active",
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    user_id = str(response.json()["id"])
+
+    with test_session_factory() as session:
+        stored_user = session.get(UserModel, user_id)
+        assert stored_user is not None
+        stored_user.password_hash = PasswordService().hash(
+            "SenhaOriginal123!"
+        )
+        session.commit()
+        original_hash = stored_user.password_hash
+
+    response = client.put(
+        f"{USERS_URL}/{user_id}/password",
+        json={"password": "SenhaNova456!"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["error"] == "access_forbidden"
+
+    with test_session_factory() as session:
+        stored_user = session.get(UserModel, user_id)
+        assert stored_user is not None
+        assert stored_user.password_hash == original_hash
+
+
+
+
+def test_password_administration_rejects_equal_level(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Impede redefinicao de senha de administrador de mesmo nivel."""
+
+    organization = create_organization(client)
+    user = create_user(
+        client,
+        organization_id=str(organization["id"]),
+        role="organization_admin",
+    )
+
+    response = client.put(
+        f"{USERS_URL}/{user['id']}/password",
+        json={"password": "NovaSenha123!"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["error"] == "access_forbidden"
+
+    with test_session_factory() as session:
+        stored_user = session.get(UserModel, str(user["id"]))
+        assert stored_user is not None
+        assert stored_user.password_hash is None
+
+
+def test_password_administration_allows_subordinate(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Permite definir senha de usuario subordinado autorizado."""
+
+    organization, tenant, environment = create_hierarchy(client)
+
+    user = create_user(
+        client,
+        organization_id=str(organization["id"]),
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+        role="viewer",
+    )
+
+    response = client.put(
+        f"{USERS_URL}/{user['id']}/password",
+        json={"password": "NovaSenha123!"},
+    )
+
+    assert response.status_code == 200
+
+    with test_session_factory() as session:
+        stored_user = session.get(UserModel, str(user["id"]))
+        assert stored_user is not None
+        assert stored_user.password_hash is not None
+        assert PasswordService().verify(
+            "NovaSenha123!",
+            stored_user.password_hash,
+        )
+
+def test_password_administration_rejects_own_password(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Impede redefinicao administrativa da propria senha."""
+
+    organization = create_organization(client)
+    user = create_user(
+        client,
+        organization_id=str(organization["id"]),
+        role="organization_admin",
+    )
+
+    client.app.state.set_current_test_user_id(str(user["id"]))
+
+    response = client.put(
+        f"{USERS_URL}/{user['id']}/password",
+        json={"password": "NovaSenha123!"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["error"] == "access_forbidden"
+
+    with test_session_factory() as session:
+        stored_user = session.get(UserModel, str(user["id"]))
+        assert stored_user is not None
+        assert stored_user.password_hash is None
+
+
+
+def test_tenant_admin_password_permissions(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Valida permissoes de senha do administrador de tenant."""
+
+    organization, tenant, environment = create_hierarchy(client)
+
+    subordinate = create_user(
+        client,
+        organization_id=str(organization["id"]),
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
+        email="subordinado@deja.com",
+        role="viewer",
+    )
+
+    other_admin = create_user(
+        client,
+        organization_id=str(organization["id"]),
+        tenant_id=str(tenant["id"]),
+        environment_id=None,
+        email="outro.admin@deja.com",
+        role="tenant_admin",
+    )
+
+    client.app.state.set_current_test_tenant(
+        str(organization["id"]),
+        str(tenant["id"]),
+    )
+
+    allowed = client.put(
+        f"{USERS_URL}/{subordinate['id']}/password",
+        json={"password": "SenhaNova123!"},
+    )
+
+    forbidden = client.put(
+        f"{USERS_URL}/{other_admin['id']}/password",
+        json={"password": "SenhaIndevida123!"},
+    )
+
+    assert allowed.status_code == 200
+    assert forbidden.status_code == 403
+    assert forbidden.json()["error"] == "access_forbidden"
+
+    with test_session_factory() as session:
+        subordinate_record = session.get(
+            UserModel, str(subordinate["id"])
+        )
+        admin_record = session.get(
+            UserModel, str(other_admin["id"])
+        )
+
+        assert subordinate_record is not None
+        assert admin_record is not None
+
+        assert PasswordService().verify(
+            "SenhaNova123!",
+            subordinate_record.password_hash,
+        )
+        assert admin_record.password_hash is None
 
 
 def test_set_password_for_unknown_user_returns_not_found(

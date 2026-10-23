@@ -232,7 +232,9 @@ def test_http_password_reset_replaces_password(
     )
     from deja_platform_api.user_management.models import UserModel
     from tests.authentication.test_authentication_api import (
+        create_environment,
         create_organization,
+        create_tenant,
         create_user,
     )
 
@@ -241,9 +243,14 @@ def test_http_password_reset_replaces_password(
         enabled_modules={"fotos"},
     )
 
+    tenant = create_tenant(client, str(organization["id"]))
+    environment = create_environment(client, str(tenant["id"]))
+
     user = create_user(
         client,
         organization_id=str(organization["id"]),
+        tenant_id=str(tenant["id"]),
+        environment_id=str(environment["id"]),
         role="user",
         module_access={"fotos": "viewer"},
     )
@@ -304,6 +311,24 @@ def test_http_password_reset_replaces_password(
     }
 
     try:
+        old_login = client.post(
+            "/api/v1/auth/login",
+            json={
+                "organization_code": str(organization["code"]),
+                "email": str(user["email"]),
+                "password": old_password,
+            },
+        )
+        assert old_login.status_code == 200, old_login.text
+
+        old_token = old_login.json()["access_token"]
+        old_headers = {"Authorization": f"Bearer {old_token}"}
+
+        assert client.get(
+            "/api/v1/auth/me",
+            headers=old_headers,
+        ).status_code == 200
+
         with test_session_factory() as session:
             stored_user = session.get(UserModel, user_id)
 
@@ -330,6 +355,7 @@ def test_http_password_reset_replaces_password(
 
             assert stored_user is not None
             assert stored_user.password_hash is not None
+            assert stored_user.credentials_version == 2
 
             assert password_service.verify(
                 new_password,
@@ -342,6 +368,29 @@ def test_http_password_reset_replaces_password(
 
             assert stored_code is not None
             assert stored_code.consumed_at is not None
+
+        revoked = client.get(
+            "/api/v1/auth/me",
+            headers=old_headers,
+        )
+        assert revoked.status_code == 401
+        assert revoked.json()["error"] == "invalid_access_token"
+
+        new_login = client.post(
+            "/api/v1/auth/login",
+            json={
+                "organization_code": str(organization["code"]),
+                "email": str(user["email"]),
+                "password": new_password,
+            },
+        )
+        assert new_login.status_code == 200, new_login.text
+
+        new_token = new_login.json()["access_token"]
+        assert client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {new_token}"},
+        ).status_code == 200
 
         second_response = client.post(
             "/api/fotos/auth/password-reset/confirm",

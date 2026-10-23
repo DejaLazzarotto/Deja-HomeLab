@@ -140,6 +140,7 @@ class FotosVerificationConfirmationService:
             raise FotosVerificationInvalidCodeError()
 
         user.password_hash = self._password_service.hash(new_password)
+        user.credentials_version += 1
 
         self._repository.consume(verification, now)
 

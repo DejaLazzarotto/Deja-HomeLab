@@ -5,6 +5,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Integer,
     String,
     UniqueConstraint,
     func,
@@ -95,6 +96,12 @@ class UserModel(Base):
     password_hash: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
+    )
+    credentials_version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default="1",
     )
     role: Mapped[UserRole] = mapped_column(
         Enum(

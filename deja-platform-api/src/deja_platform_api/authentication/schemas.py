@@ -82,6 +82,7 @@ class AccessTokenClaims(BaseModel):
     )
     role: UserRole
     type: Literal["access"]
+    credentials_version: int = Field(default=1, ge=1)
     iat: int
     exp: int
     jti: UUID

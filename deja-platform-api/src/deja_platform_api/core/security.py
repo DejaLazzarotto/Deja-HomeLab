@@ -50,6 +50,7 @@ class AccessTokenService:
         tenant_id: str | None,
         environment_id: str | None,
         role: str,
+        credentials_version: int = 1,
     ) -> str:
         """Gera um token de acesso com o escopo institucional do usuário."""
 
@@ -65,6 +66,7 @@ class AccessTokenService:
             "environment_id": environment_id,
             "role": role,
             "type": "access",
+            "credentials_version": credentials_version,
             "iat": issued_at,
             "exp": expires_at,
             "jti": str(uuid4()),

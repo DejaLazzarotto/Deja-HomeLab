@@ -39,6 +39,7 @@ def test_confirm_valid_code_updates_password_and_consumes_code():
     user = SimpleNamespace(
         id="usuario-001",
         password_hash=None,
+        credentials_version=1,
     )
 
     verification = SimpleNamespace(
@@ -87,6 +88,7 @@ def test_confirm_valid_code_updates_password_and_consumes_code():
     password_service.hash.assert_called_once_with("NovaSenha123")
 
     assert user.password_hash == "hash-da-nova-senha"
+    assert user.credentials_version == 2
 
     service._repository.consume.assert_called_once_with(
         verification,

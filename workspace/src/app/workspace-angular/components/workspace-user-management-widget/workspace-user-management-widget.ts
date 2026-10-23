@@ -89,6 +89,7 @@ interface EnvironmentResponse {
         [service]="composition.service"
         [clientUserLinkService]="clientUsersComposition.service"
         [currentUserRole]="currentUser.role"
+        [currentUserId]="currentUser.id"
         [organizations]="organizations()"
         [tenants]="tenants()"
         [environments]="environments()"

@@ -1,6 +1,6 @@
 from collections.abc import Collection
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from deja_platform_api.user_management.models import (
@@ -103,6 +103,42 @@ class UserRepository:
         self._session.commit()
         self._session.refresh(user)
 
+        return user
+
+
+    def update_password(
+        self,
+        user_id: str,
+        password_hash: str,
+    ) -> UserModel:
+        """Atualiza a senha e incrementa sua versao atomicamente."""
+
+        statement = (
+            update(UserModel)
+            .where(UserModel.id == user_id)
+            .values(
+                password_hash=password_hash,
+                credentials_version=UserModel.credentials_version + 1,
+            )
+        )
+
+        try:
+            result = self._session.execute(statement)
+
+            if result.rowcount != 1:
+                raise ValueError("Usuario nao encontrado.")
+
+            self._session.commit()
+        except Exception:
+            self._session.rollback()
+            raise
+
+        user = self._session.get(UserModel, user_id)
+
+        if user is None:
+            raise ValueError("Usuario nao encontrado.")
+
+        self._session.refresh(user)
         return user
 
 

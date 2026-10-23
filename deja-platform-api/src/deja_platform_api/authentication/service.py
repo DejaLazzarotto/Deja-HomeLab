@@ -102,6 +102,7 @@ class AuthenticationService:
             tenant_id=user.tenant_id,
             environment_id=user.environment_id,
             role=user.role.value,
+            credentials_version=user.credentials_version,
         )
 
         return AccessTokenResponse(
@@ -137,6 +138,7 @@ class AuthenticationService:
             or user.tenant_id != claims.tenant_id
             or user.environment_id != claims.environment_id
             or user.role != claims.role
+            or user.credentials_version != claims.credentials_version
         ):
             raise InvalidAccessTokenError
 

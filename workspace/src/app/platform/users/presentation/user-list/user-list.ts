@@ -102,6 +102,11 @@ export class UserListComponent implements OnInit {
   })
   currentUserRole!: UserRole;
 
+  @Input({
+    required: true,
+  })
+  currentUserId!: string;
+
   @Input()
   organizations: readonly UserOrganizationOption[] = [];
 
@@ -193,6 +198,16 @@ export class UserListComponent implements OnInit {
 
   readonly moduleAccessFormVisible =
     signal(false);
+
+  readonly passwordUser = signal<User | null>(null);
+
+  readonly passwordFormVisible = signal(false);
+
+  readonly savingPassword = signal(false);
+
+  newPassword = '';
+
+  confirmPassword = '';
 
   readonly loadingModuleAccesses =
     signal(false);
@@ -421,6 +436,11 @@ export class UserListComponent implements OnInit {
   }
 
   openCreate(): void {
+    this.passwordFormVisible.set(false);
+    this.passwordUser.set(null);
+    this.newPassword = '';
+    this.confirmPassword = '';
+
     this.editingUserId.set(null);
     this.operationError.set(null);
     this.operationMessage.set(null);
@@ -437,6 +457,11 @@ export class UserListComponent implements OnInit {
   async openEdit(
     user: User,
   ): Promise<void> {
+    this.passwordFormVisible.set(false);
+    this.passwordUser.set(null);
+    this.newPassword = '';
+    this.confirmPassword = '';
+
     this.editingUserId.set(user.id);
     this.operationError.set(null);
     this.operationMessage.set(null);
@@ -493,6 +518,11 @@ export class UserListComponent implements OnInit {
   async openModuleAccess(
     user: User,
   ): Promise<void> {
+    this.passwordFormVisible.set(false);
+    this.passwordUser.set(null);
+    this.newPassword = '';
+    this.confirmPassword = '';
+
     this.moduleAccessUser.set(user);
     this.moduleAccesses.set([]);
     this.moduleAccessFormVisible.set(true);
@@ -527,6 +557,107 @@ export class UserListComponent implements OnInit {
     this.moduleAccessUser.set(null);
     this.moduleAccesses.set([]);
     this.operationError.set(null);
+  }
+
+  canSetPassword(user: User): boolean {
+    if (user.role === 'platform_admin' || user.id === this.currentUserId) {
+      return false;
+    }
+
+    if (this.currentUserRole === 'platform_admin') {
+      return true;
+    }
+
+    if (
+      this.defaultOrganizationId === null ||
+      user.organizationId !== this.defaultOrganizationId
+    ) {
+      return false;
+    }
+
+    if (this.currentUserRole === 'organization_admin') {
+      return user.role !== 'organization_admin';
+    }
+
+    if (this.currentUserRole === 'tenant_admin') {
+      return (
+        this.defaultTenantId !== null &&
+        user.tenantId === this.defaultTenantId &&
+        user.role !== 'organization_admin' &&
+        user.role !== 'tenant_admin'
+      );
+    }
+
+    return false;
+  }
+
+  openPasswordForm(user: User): void {
+    if (!this.canSetPassword(user)) {
+      return;
+    }
+
+    this.passwordUser.set(user);
+    this.passwordFormVisible.set(true);
+    this.newPassword = '';
+    this.confirmPassword = '';
+
+    this.formVisible.set(false);
+    this.editingUserId.set(null);
+    this.moduleAccessFormVisible.set(false);
+    this.moduleAccessUser.set(null);
+
+    this.operationError.set(null);
+    this.operationMessage.set(null);
+  }
+
+  cancelPasswordForm(): void {
+    if (this.savingPassword()) {
+      return;
+    }
+
+    this.passwordFormVisible.set(false);
+    this.passwordUser.set(null);
+    this.newPassword = '';
+    this.confirmPassword = '';
+    this.operationError.set(null);
+  }
+
+  async savePassword(): Promise<void> {
+    const user = this.passwordUser();
+
+    if (!user || !this.canSetPassword(user) || this.savingPassword()) {
+      return;
+    }
+
+    if (this.newPassword.length < 8 || this.newPassword.length > 128) {
+      this.operationError.set(
+        'A senha deve possuir entre 8 e 128 caracteres.',
+      );
+      return;
+    }
+
+    if (this.newPassword !== this.confirmPassword) {
+      this.operationError.set('As senhas informadas não coincidem.');
+      return;
+    }
+
+    this.savingPassword.set(true);
+    this.operationError.set(null);
+    this.operationMessage.set(null);
+
+    try {
+      await this.service.setPassword(user.id, this.newPassword);
+
+      this.operationMessage.set('Senha definida com sucesso.');
+      this.passwordFormVisible.set(false);
+      this.passwordUser.set(null);
+    } catch (error: unknown) {
+      this.operationError.set(this.resolveErrorMessage(error));
+    } finally {
+      this.newPassword = '';
+      this.confirmPassword = '';
+      this.savingPassword.set(false);
+    }
   }
 
   canManageModuleAccess(

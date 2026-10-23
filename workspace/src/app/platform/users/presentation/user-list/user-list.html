@@ -26,6 +26,7 @@
     @if (
       !formVisible()
       && !moduleAccessFormVisible()
+      && !passwordFormVisible()
     ) {
       <button
         class="user-list__primary-button"
@@ -530,6 +531,73 @@
     </section>
   }
 
+  @if (passwordFormVisible() && passwordUser(); as user) {
+    <form
+      class="user-list__form"
+      #passwordForm="ngForm"
+      (ngSubmit)="savePassword()"
+    >
+      <div class="user-list__form-header">
+        <h3>Definir / Redefinir senha</h3>
+        <p>
+          Usuário: {{ user.name }} — {{ user.email }}
+        </p>
+      </div>
+
+      <div class="user-list__form-grid">
+        <label class="user-list__field">
+          <span>Nova senha</span>
+          <input
+            name="newPassword"
+            type="password"
+            minlength="8"
+            maxlength="128"
+            required
+            autocomplete="new-password"
+            [(ngModel)]="newPassword"
+          />
+        </label>
+
+        <label class="user-list__field">
+          <span>Confirmar senha</span>
+          <input
+            name="confirmPassword"
+            type="password"
+            minlength="8"
+            maxlength="128"
+            required
+            autocomplete="new-password"
+            [(ngModel)]="confirmPassword"
+          />
+        </label>
+      </div>
+
+      <p class="user-list__description">
+        A senha deve possuir entre 8 e 128 caracteres.
+        Esta operação substitui a senha anterior do usuário.
+      </p>
+
+      <div class="user-list__form-actions">
+        <button
+          class="user-list__action"
+          type="button"
+          [disabled]="savingPassword()"
+          (click)="cancelPasswordForm()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          class="user-list__primary-button"
+          type="submit"
+          [disabled]="passwordForm.invalid || savingPassword() || newPassword !== confirmPassword"
+        >
+          {{ savingPassword() ? 'Salvando...' : 'Definir senha' }}
+        </button>
+      </div>
+    </form>
+  }
+
   <form
     class="user-list__filters"
     (ngSubmit)="applyFilters()"
@@ -781,6 +849,16 @@
                       (click)="openModuleAccess(user)"
                     >
                       Acessos
+                    </button>
+                  }
+
+                  @if (canSetPassword(user)) {
+                    <button
+                      class="user-list__action"
+                      type="button"
+                      (click)="openPasswordForm(user)"
+                    >
+                      Definir senha
                     </button>
                   }
 

@@ -3,6 +3,7 @@ from uuid import uuid4
 from deja_platform_api.authentication.authorization import (
     AuthorizationService,
 )
+from deja_platform_api.authentication.exceptions import AuthorizationError
 from deja_platform_api.authentication.schemas import AuthenticatedUser
 from deja_platform_api.core.security import PasswordService
 from deja_platform_api.module_management.exceptions import (
@@ -89,13 +90,9 @@ class UserService:
         authorization_service: AuthorizationService,
     ) -> None:
         self._user_repository = user_repository
-        self._user_module_access_repository = (
-            user_module_access_repository
-        )
+        self._user_module_access_repository = user_module_access_repository
         self._module_repository = module_repository
-        self._organization_module_repository = (
-            organization_module_repository
-        )
+        self._organization_module_repository = organization_module_repository
         self._organization_repository = organization_repository
         self._tenant_repository = tenant_repository
         self._environment_repository = environment_repository
@@ -156,11 +153,9 @@ class UserService:
         self._require_input_scope(current_user, input_data)
         self._validate_institutional_scope(input_data)
 
-        existing_user = (
-            self._user_repository.find_by_organization_and_email(
-                input_data.organization_id,
-                str(input_data.email),
-            )
+        existing_user = self._user_repository.find_by_organization_and_email(
+            input_data.organization_id,
+            str(input_data.email),
         )
 
         if existing_user is not None:
@@ -190,11 +185,9 @@ class UserService:
         self._require_input_scope(current_user, input_data)
         self._validate_institutional_scope(input_data)
 
-        email_owner = (
-            self._user_repository.find_by_organization_and_email(
-                input_data.organization_id,
-                str(input_data.email),
-            )
+        email_owner = self._user_repository.find_by_organization_and_email(
+            input_data.organization_id,
+            str(input_data.email),
         )
 
         if email_owner is not None and email_owner.id != user_id:
@@ -219,11 +212,31 @@ class UserService:
         self._require_user_administrator(current_user)
         user = self._find_by_id(user_id)
         self._require_user_scope(current_user, user)
-        user.password_hash = self._password_service.hash(
-            input_data.password
-        )
 
-        return self._user_repository.update(user)
+        if user.id == current_user.id:
+            raise AuthorizationError
+
+        if (
+            current_user.role == UserRole.ORGANIZATION_ADMIN
+            and user.role == UserRole.ORGANIZATION_ADMIN
+        ):
+            raise AuthorizationError
+
+        if current_user.role == UserRole.TENANT_ADMIN and user.role in (
+            UserRole.ORGANIZATION_ADMIN,
+            UserRole.TENANT_ADMIN,
+        ):
+            raise AuthorizationError
+
+        if user.role == UserRole.PLATFORM_ADMIN:
+            raise AuthorizationError
+
+        password_hash = self._password_service.hash(input_data.password)
+
+        return self._user_repository.update_password(
+            user.id,
+            password_hash,
+        )
 
     def get_module_accesses(
         self,
@@ -255,42 +268,28 @@ class UserService:
         organization_id = user.organization_id
 
         if organization_id is None:
-            raise UserModuleAccessNotApplicableError(
-                user.role.value
-            )
+            raise UserModuleAccessNotApplicableError(user.role.value)
 
         catalog = self._module_repository.list()
-        catalog_keys = {
-            module.key
-            for module in catalog
-        }
-        requested_keys = {
-            module.module_key
-            for module in input_data.modules
-        }
+        catalog_keys = {module.key for module in catalog}
+        requested_keys = {module.module_key for module in input_data.modules}
         unknown_keys = requested_keys - catalog_keys
 
         if unknown_keys:
             raise UnknownModuleKeysError(unknown_keys)
 
         enabled_keys = set(
-            self._organization_module_repository
-            .list_enabled_module_keys(organization_id)
+            self._organization_module_repository.list_enabled_module_keys(organization_id)
         )
 
-        for module_key in sorted(
-            requested_keys - enabled_keys
-        ):
+        for module_key in sorted(requested_keys - enabled_keys):
             raise UserModuleNotEnabledForOrganizationError(
                 organization_id,
                 module_key,
             )
 
         for module in input_data.modules:
-            if (
-                module.module_key == "fotos"
-                and module.role == UserModuleRole.ANALYST
-            ):
+            if module.module_key == "fotos" and module.role == UserModuleRole.ANALYST:
                 raise UserModuleRoleNotAllowedError(
                     module.module_key,
                     module.role.value,
@@ -318,16 +317,11 @@ class UserService:
         organization_id = user.organization_id
 
         if organization_id is None:
-            raise UserModuleAccessNotApplicableError(
-                user.role.value
-            )
+            raise UserModuleAccessNotApplicableError(user.role.value)
 
         accesses_by_module = {
             access.module_key: access
-            for access in (
-                self._user_module_access_repository
-                .list_for_user(user.id)
-            )
+            for access in (self._user_module_access_repository.list_for_user(user.id))
         }
 
         modules = [
@@ -337,22 +331,15 @@ class UserService:
                 description=module.description,
                 display_order=module.display_order,
                 organization_enabled=organization_enabled,
-                has_access=(
-                    organization_enabled
-                    and module.key in accesses_by_module
-                ),
+                has_access=(organization_enabled and module.key in accesses_by_module),
                 role=(
                     accesses_by_module[module.key].role
-                    if (
-                        organization_enabled
-                        and module.key in accesses_by_module
-                    )
+                    if (organization_enabled and module.key in accesses_by_module)
                     else None
                 ),
             )
             for module, organization_enabled in (
-                self._organization_module_repository
-                .list_for_organization(organization_id)
+                self._organization_module_repository.list_for_organization(organization_id)
             )
         ]
 
@@ -420,9 +407,7 @@ class UserService:
         """Garante que o papel utilize acesso funcional por módulo."""
 
         if user.role in USER_MODULE_ACCESS_EXCLUDED_ROLES:
-            raise UserModuleAccessNotApplicableError(
-                user.role.value
-            )
+            raise UserModuleAccessNotApplicableError(user.role.value)
 
     def _validate_institutional_scope(
         self,
@@ -448,9 +433,7 @@ class UserService:
                 "exige organização",
             )
 
-        organization = self._require_organization(
-            input_data.organization_id
-        )
+        organization = self._require_organization(input_data.organization_id)
         tenant = self._resolve_tenant(
             input_data.tenant_id,
             organization,
@@ -472,14 +455,10 @@ class UserService:
     ) -> OrganizationModel:
         """Exige a existência da organização informada."""
 
-        organization = self._organization_repository.find_by_id(
-            organization_id
-        )
+        organization = self._organization_repository.find_by_id(organization_id)
 
         if organization is None:
-            raise OrganizationNotFoundError(
-                organization_id
-            )
+            raise OrganizationNotFoundError(organization_id)
 
         return organization
 
@@ -493,14 +472,10 @@ class UserService:
         if tenant_id is None:
             return None
 
-        tenant = self._tenant_repository.find_by_id(
-            tenant_id
-        )
+        tenant = self._tenant_repository.find_by_id(tenant_id)
 
         if tenant is None:
-            raise TenantNotFoundError(
-                tenant_id
-            )
+            raise TenantNotFoundError(tenant_id)
 
         if tenant.organization_id != organization.id:
             raise TenantDoesNotBelongToOrganizationError(
@@ -521,18 +496,12 @@ class UserService:
             return None
 
         if tenant is None:
-            raise EnvironmentRequiresTenantError(
-                environment_id
-            )
+            raise EnvironmentRequiresTenantError(environment_id)
 
-        environment = self._environment_repository.find_by_id(
-            environment_id
-        )
+        environment = self._environment_repository.find_by_id(environment_id)
 
         if environment is None:
-            raise EnvironmentNotFoundError(
-                environment_id
-            )
+            raise EnvironmentNotFoundError(environment_id)
 
         if environment.tenant_id != tenant.id:
             raise EnvironmentDoesNotBelongToTenantError(

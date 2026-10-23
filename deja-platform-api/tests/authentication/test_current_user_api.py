@@ -129,6 +129,46 @@ def test_me_returns_authenticated_user_and_institutional_scope(
     "module_access": [],
 }
 
+
+def test_me_rejects_token_after_credentials_version_change(
+    client: TestClient,
+    test_settings: Settings,
+    test_session_factory: sessionmaker[Session],
+) -> None:
+    """Invalida token anterior a mudanca da versao de credenciais."""
+
+    from deja_platform_api.user_management.models import UserModel
+
+    organization = create_organization(client)
+    user = create_user(
+        client,
+        str(organization["id"]),
+        email="revogacao@deja.com",
+    )
+
+    token = create_signed_token(test_settings, user)
+
+    first_response = client.get(
+        ME_URL,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert first_response.status_code == 200
+
+    with test_session_factory() as session:
+        stored_user = session.get(UserModel, str(user["id"]))
+        assert stored_user is not None
+        stored_user.credentials_version += 1
+        session.commit()
+
+    second_response = client.get(
+        ME_URL,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert_invalid_access_token(second_response)
+
+
 def test_me_rejects_missing_bearer_token(
     client: TestClient,
 ) -> None:
