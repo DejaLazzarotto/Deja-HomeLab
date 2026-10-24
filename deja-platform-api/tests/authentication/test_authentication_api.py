@@ -529,16 +529,24 @@ def test_login_rejects_invalid_organization_code(
 ) -> None:
     """Rejeita código de organização fora do formato permitido."""
 
-    response = client.post(
-        LOGIN_URL,
-        json={
-            "organization_code": "codigo invalido",
-            "email": "usuario@deja.com",
-            "password": "SenhaSegura123!",
-        },
-    )
+    invalid_codes = [
+        "codigo invalido",
+        "FAMILIA@LAZZAROTTO",
+        "FAMILIA--LAZZAROTTO",
+        "FAMILIA_LAZZAROTTO",
+    ]
 
-    assert response.status_code == 422
+    for code in invalid_codes:
+        response = client.post(
+            LOGIN_URL,
+            json={
+                "organization_code": code,
+                "email": "usuario@deja.com",
+                "password": "SenhaSegura123!",
+            },
+        )
+
+        assert response.status_code == 422
 
 
 def test_login_rejects_invalid_email(
@@ -556,3 +564,33 @@ def test_login_rejects_invalid_email(
     )
 
     assert response.status_code == 422
+
+
+def test_login_accepts_accented_organization_code(
+    client: TestClient,
+) -> None:
+    """Aceita acentos e letras minúsculas no código institucional."""
+
+    organization = create_organization(
+        client,
+        name="Organização São José",
+        code="ORGANIZACAO-SAO-JOSE",
+    )
+    user = create_user(
+        client,
+        str(organization["id"]),
+        email="teste.normalizacao@deja.com",
+    )
+    set_password(client, str(user["id"]))
+
+    response = client.post(
+        LOGIN_URL,
+        json={
+            "organization_code": " organização-são-josé ",
+            "email": "teste.normalizacao@deja.com",
+            "password": "SenhaSegura123!",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["access_token"]

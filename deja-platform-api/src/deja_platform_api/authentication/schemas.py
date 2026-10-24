@@ -1,3 +1,4 @@
+import unicodedata
 from typing import Literal
 from uuid import UUID
 
@@ -34,7 +35,14 @@ class LoginRequest(BaseModel):
         """Normaliza o código amigável da organização."""
 
         if isinstance(value, str):
-            normalized_value = value.strip().upper()
+            normalized_value = unicodedata.normalize(
+                "NFD", value.strip().upper()
+            )
+            normalized_value = "".join(
+                character
+                for character in normalized_value
+                if unicodedata.category(character) != "Mn"
+            )
             return normalized_value or None
 
         return value
