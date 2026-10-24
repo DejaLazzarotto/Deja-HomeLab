@@ -15,6 +15,7 @@ import { finalize } from 'rxjs';
 import { Router } from '@angular/router';
 
 import { AuthenticationService } from '../../application/authentication.service';
+import { canAccessWorkspace } from '../../application/workspace-access-policy';
 
 @Component({
   selector: 'deja-login',
@@ -97,6 +98,14 @@ export class LoginComponent {
             return;
           }
 
+          if (!canAccessWorkspace(user)) {
+            this.errorMessage.set(
+              'Seu usuário não possui permissão para acessar o Workspace Administrativo. Utilize o aplicativo correspondente ao seu perfil.',
+            );
+            this.authentication.logout();
+            return;
+          }
+
           void this.router.navigateByUrl('/');
         },
         error: error => {
@@ -131,4 +140,5 @@ export class LoginComponent {
     return 'Não foi possível entrar no sistema.';
   }
 }
+
 
