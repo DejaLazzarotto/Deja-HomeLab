@@ -62,6 +62,62 @@ describe('AlbumMediaViewerPageComponent', () => {
     httpTestingController.verify();
   });
 
+  it('should load the original animated image in albums', async () => {
+    const animatedMedia = {
+      id: 'album-animation-1',
+      media_type: 'image' as const,
+      is_animated: true,
+      original_date: '2017-04-01T00:00:00',
+      original_name: 'animacao.webp',
+    };
+
+    component.albumId.set('album-1');
+    component.year.set(2017);
+    component.month.set(4);
+    component.mediaId.set(animatedMedia.id);
+    component.monthMedia.set([animatedMedia]);
+    component.currentIndex.set(0);
+    component.total.set(1);
+
+    const loadPromise = component['loadCurrentMedia']();
+
+    httpTestingController.expectOne(
+      '/api/fotos/media/album-animation-1',
+    ).flush(animatedMedia);
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+
+    httpTestingController.expectOne(
+      '/api/fotos/favorites/album-animation-1',
+    ).flush({
+      media_id: animatedMedia.id,
+      is_favorite: false,
+    });
+
+    const originalRequest = httpTestingController.expectOne(
+      '/api/fotos/media/album-animation-1/original',
+    );
+
+    expect(originalRequest.request.responseType).toBe('blob');
+
+    expect(
+      httpTestingController.match(
+        '/api/fotos/media/album-animation-1/preview',
+      ),
+    ).toHaveLength(0);
+
+    originalRequest.flush(
+      new Blob(['animated-webp'], { type: 'image/webp' }),
+    );
+
+    await loadPromise;
+
+    expect(component.mediaUrl()).toBeTruthy();
+    expect(component.media()?.is_animated).toBe(true);
+    expect(component.isFavorite()).toBe(false);
+  });
   it('should add and remove favorites without duplicate requests', async () => {
     const mediaId = 'media-album-1';
     const favoriteUrl = `/api/fotos/favorites/${mediaId}`;
@@ -113,12 +169,14 @@ describe('AlbumMediaViewerPageComponent', () => {
       {
         id: 'album-media-1',
         media_type: 'image' as const,
+        is_animated: false,
         original_date: '2017-04-01T00:00:00',
         original_name: 'foto-1.jpg',
       },
       {
         id: 'album-media-2',
         media_type: 'image' as const,
+        is_animated: false,
         original_date: '2017-04-02T00:00:00',
         original_name: 'foto-2.jpg',
       },

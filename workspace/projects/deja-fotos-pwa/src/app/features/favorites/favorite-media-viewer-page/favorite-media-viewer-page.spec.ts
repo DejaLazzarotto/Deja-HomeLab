@@ -59,6 +59,59 @@ describe('FavoriteMediaViewerPageComponent', () => {
     httpTestingController.verify();
   });
 
+  it('should load the original animated image in favorites', async () => {
+    const animatedMedia = {
+      id: 'favorite-animation-1',
+      media_type: 'image' as const,
+      is_animated: true,
+      original_date: '2026-10-12T10:00:00',
+      original_name: 'animacao.webp',
+    };
+
+    component.mediaId.set(animatedMedia.id);
+    component.monthMedia.set([animatedMedia]);
+    component.currentIndex.set(0);
+    component.total.set(1);
+
+    const loadPromise = component['loadCurrentMedia']();
+
+    httpTestingController.expectOne(
+      '/api/fotos/media/favorite-animation-1',
+    ).flush(animatedMedia);
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+
+    httpTestingController.expectOne(
+      '/api/fotos/favorites/favorite-animation-1',
+    ).flush({
+      media_id: animatedMedia.id,
+      is_favorite: true,
+    });
+
+    const originalRequest = httpTestingController.expectOne(
+      '/api/fotos/media/favorite-animation-1/original',
+    );
+
+    expect(originalRequest.request.responseType).toBe('blob');
+
+    expect(
+      httpTestingController.match(
+        '/api/fotos/media/favorite-animation-1/preview',
+      ),
+    ).toHaveLength(0);
+
+    originalRequest.flush(
+      new Blob(['animated-webp'], { type: 'image/webp' }),
+    );
+
+    await loadPromise;
+
+    expect(component.mediaUrl()).toBeTruthy();
+    expect(component.media()?.is_animated).toBe(true);
+    expect(component.isFavorite()).toBe(true);
+  });
   it('should add and remove favorites without duplicate requests', async () => {
     const mediaId = 'recent-media-1';
     const favoriteUrl = `/api/fotos/favorites/${mediaId}`;
@@ -109,12 +162,14 @@ describe('FavoriteMediaViewerPageComponent', () => {
       {
         id: 'favorite-photo-1',
         media_type: 'image' as const,
+        is_animated: false,
         original_date: '2026-10-12T10:00:00',
         original_name: 'foto.jpg',
       },
       {
         id: 'favorite-video-2',
         media_type: 'video' as const,
+        is_animated: false,
         original_date: '2026-10-12T11:00:00',
         original_name: 'video.mp4',
       },

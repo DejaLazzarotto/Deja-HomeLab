@@ -18,6 +18,7 @@ import { FavoritesService } from '../../../core/favorites/favorites.service';
 interface MediaResponse {
   id: string;
   media_type: 'image' | 'video';
+  is_animated: boolean;
   original_date: string | null;
   original_name: string;
 }
@@ -350,9 +351,14 @@ export class RecentMediaViewerPageComponent implements OnInit, OnDestroy {
   private async loadMediaBlob(
     media: MediaResponse,
   ): Promise<void> {
+    const derivative =
+      media.media_type === 'image' && media.is_animated
+        ? 'original'
+        : 'preview';
+
     const blob = await firstValueFrom(
       this.http.get(
-        `/api/fotos/media/${media.id}/preview`,
+        `/api/fotos/media/${media.id}/${derivative}`,
         {
           responseType: 'blob',
         },

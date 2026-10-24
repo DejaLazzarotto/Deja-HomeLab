@@ -13,6 +13,7 @@ class FotosImageInspection:
     width: int
     height: int
     original_date: datetime | None
+    is_animated: bool
 
 
 class FotosImageInspectionError(Exception):
@@ -30,6 +31,7 @@ def inspect_image(
 
         with Image.open(file_path) as image:
             width, height = image.size
+            is_animated = getattr(image, "n_frames", 1) > 1
             image_format = (
                 image.format or ""
             ).upper()
@@ -60,6 +62,7 @@ def inspect_image(
         width=width,
         height=height,
         original_date=original_date,
+        is_animated=is_animated,
     )
 
 

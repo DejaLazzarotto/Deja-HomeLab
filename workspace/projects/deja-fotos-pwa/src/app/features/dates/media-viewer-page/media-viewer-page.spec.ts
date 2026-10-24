@@ -227,6 +227,76 @@ describe('MediaViewerPageComponent', () => {
     expect(component.total()).toBe(40);
   });
 
+  it('should request the original file for animated images', async () => {
+    fixture.detectChanges();
+
+    const listRequest = httpTestingController.expectOne(
+      (request) =>
+        request.url === '/api/fotos/media' &&
+        request.params.get('original_year') === '2017' &&
+        request.params.get('original_month') === '4',
+    );
+
+    const animatedMedia = {
+      id: 'media-30',
+      media_type: 'image' as const,
+      is_animated: true,
+      original_date: '2017-04-01T00:00:00',
+      original_name: 'animacao.webp',
+    };
+
+    listRequest.flush({
+      items: [animatedMedia],
+      page: 1,
+      page_size: 30,
+      total: 1,
+      total_pages: 1,
+    });
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+
+    const mediaRequest = httpTestingController.expectOne(
+      '/api/fotos/media/media-30',
+    );
+
+    mediaRequest.flush(animatedMedia);
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+
+    const favoriteRequest = httpTestingController.expectOne(
+      '/api/fotos/favorites/media-30',
+    );
+
+    favoriteRequest.flush({
+      media_id: 'media-30',
+      is_favorite: false,
+    });
+
+    const originalRequest = httpTestingController.expectOne(
+      '/api/fotos/media/media-30/original',
+    );
+
+    expect(originalRequest.request.responseType).toBe('blob');
+
+    expect(
+      httpTestingController.match(
+        '/api/fotos/media/media-30/preview',
+      ),
+    ).toHaveLength(0);
+
+    originalRequest.flush(
+      new Blob(['animated-webp'], { type: 'image/webp' }),
+    );
+
+    await fixture.whenStable();
+
+    expect(component.mediaUrl()).toBeTruthy();
+    expect(component.media()?.is_animated).toBe(true);
+  });
   it('should add and remove a favorite without duplicate requests', async () => {
     const mediaId = 'media-30';
     const favoriteUrl = `/api/fotos/favorites/${mediaId}`;

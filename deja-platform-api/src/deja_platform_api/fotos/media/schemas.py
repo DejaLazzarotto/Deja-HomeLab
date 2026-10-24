@@ -98,6 +98,7 @@ class FotosMediaResponse(BaseModel):
     file_size: int
     checksum_sha256: str
     was_converted: bool
+    is_animated: bool
 
     processing_status: FotosMediaProcessingStatus
     processing_error: str | None

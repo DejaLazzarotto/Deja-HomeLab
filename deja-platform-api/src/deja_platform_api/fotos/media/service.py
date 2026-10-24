@@ -482,6 +482,7 @@ class FotosMediaService:
             managed_file_size = total_size
             managed_checksum = source_checksum
             was_converted = False
+            is_animated = False
 
             if media_type == "image":
                 try:
@@ -506,6 +507,7 @@ class FotosMediaService:
                 managed_file_size = normalized.file_size
                 managed_checksum = normalized.checksum_sha256
                 was_converted = normalized.was_converted
+                is_animated = inspection.is_animated
                 width = normalized.width
                 height = normalized.height
                 original_date = inspection.original_date
@@ -595,6 +597,7 @@ class FotosMediaService:
             file_size=managed_file_size,
             checksum_sha256=managed_checksum,
             was_converted=was_converted,
+            is_animated=is_animated,
             original_storage_key=storage_key.as_posix(),
             processing_status="received",
             processing_error=None,

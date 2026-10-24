@@ -2,6 +2,7 @@ import subprocess
 import tempfile
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from io import BytesIO
 from pathlib import Path
 from uuid import uuid4
@@ -426,6 +427,7 @@ def test_upload_media_derives_scope_and_stores_original(
     assert len(body["checksum_sha256"]) == 64
     assert body["source_checksum_sha256"] == body["checksum_sha256"]
     assert body["was_converted"] is False
+    assert body["is_animated"] is False
     assert body["processing_status"] == "received"
     assert body["width"] == 16
     assert body["height"] == 12
@@ -579,11 +581,11 @@ def test_upload_gif_preserves_animated_original(
     assert body["source_content_type"] == "image/gif"
     assert body["source_file_extension"] == ".gif"
     assert body["source_file_size"] == len(content)
-    assert body["content_type"] == "image/gif"
-    assert body["file_extension"] == ".gif"
-    assert body["file_size"] == len(content)
-    assert body["source_checksum_sha256"] == body["checksum_sha256"]
-    assert body["was_converted"] is False
+    assert body["content_type"] == "image/webp"
+    assert body["file_extension"] == ".webp"
+    assert body["file_size"] > 0
+    assert body["was_converted"] is True
+    assert body["is_animated"] is True
     assert body["original_date"] is None
 
     original_path = (
@@ -595,17 +597,109 @@ def test_upload_gif_preserves_animated_original(
         / "originals"
         / "sem-data"
         / body["id"]
-        / "original.gif"
+        / "original.webp"
     )
 
     assert original_path.is_file()
-    assert original_path.read_bytes() == content
+    assert original_path.stat().st_size == body["file_size"]
+    assert sha256(original_path.read_bytes()).hexdigest() == body["checksum_sha256"]
+    assert sha256(content).hexdigest() == body["source_checksum_sha256"]
 
     with Image.open(original_path) as stored:
-        assert stored.format == "GIF"
+        assert stored.format == "WEBP"
         assert stored.size == (20, 15)
         assert stored.n_frames == 2
+        assert stored.is_animated is True
 
+
+def test_process_animated_gif_creates_static_derivatives(
+    client: TestClient,
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+    test_settings: Settings,
+) -> None:
+    """Preserva o WebP animado e gera derivados estáticos."""
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    content = create_test_gif(width=40, height=30)
+
+    upload_response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="animacao.gif",
+        content=content,
+        content_type="image/gif",
+    )
+
+    assert upload_response.status_code == 201
+    created = upload_response.json()
+    assert created["is_animated"] is True
+
+    base_path = (
+        test_settings.uploads_dir
+        / "fotos"
+        / organization_id
+        / tenant_id
+        / environment_id
+    )
+
+    original_path = (
+        base_path
+        / "originals"
+        / "sem-data"
+        / created["id"]
+        / "original.webp"
+    )
+
+    original_content = original_path.read_bytes()
+
+    response = client.post(
+        f"{MEDIA_URL}/{created['id']}/process",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+
+    assert body["processing_status"] == "ready"
+    assert body["is_animated"] is True
+
+    assert original_path.read_bytes() == original_content
+
+    with Image.open(original_path) as original:
+        assert original.format == "WEBP"
+        assert original.n_frames == 2
+        assert original.is_animated is True
+
+    for derivative_type in ("thumbnail", "preview"):
+        derivative_path = (
+            base_path
+            / "derivatives"
+            / "sem-data"
+            / created["id"]
+            / f"{derivative_type}.webp"
+        )
+
+        assert derivative_path.is_file()
+
+        with Image.open(derivative_path) as derivative:
+            assert derivative.format == "WEBP"
+            assert derivative.n_frames == 1
+            assert not getattr(derivative, "is_animated", False)
 
 def test_upload_bmp_converts_managed_original_to_png(
     client: TestClient,
@@ -800,6 +894,7 @@ def test_upload_video_extracts_metadata(
     assert body["album_id"] == album_id
     assert body["original_name"] == "video.mp4"
     assert body["media_type"] == "video"
+    assert body["is_animated"] is False
     assert body["content_type"] == "video/mp4"
     assert body["file_extension"] == ".mp4"
     assert body["file_size"] == len(content)

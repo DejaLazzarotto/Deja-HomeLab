@@ -139,6 +139,11 @@ class FotosMediaModel(Base):
         index=True,
     )
 
+    is_animated: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
     was_converted: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,

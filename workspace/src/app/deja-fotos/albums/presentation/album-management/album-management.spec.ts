@@ -105,6 +105,7 @@ describe('AlbumManagementComponent', () => {
 
   let listAlbumsMock: ReturnType<typeof vi.fn>;
   let listPeriodsMock: ReturnType<typeof vi.fn>;
+  let updatePeriodDescriptionMock: ReturnType<typeof vi.fn>;
   let listMediaMock: ReturnType<typeof vi.fn>;
   let bulkUpdateMock: ReturnType<typeof vi.fn>;
 
@@ -154,11 +155,22 @@ describe('AlbumManagementComponent', () => {
       ),
     );
 
+    updatePeriodDescriptionMock = vi.fn().mockImplementation(
+      (_albumId: string, year: number, month: number, description: string | null) =>
+        Promise.resolve({
+          year,
+          month,
+          mediaCount: 2,
+          description: description?.trim() || null,
+        }),
+    );
+
     bulkUpdateMock = vi.fn();
 
     const albumService = {
       list: listAlbumsMock,
       listPeriods: listPeriodsMock,
+      updatePeriodDescription: updatePeriodDescriptionMock,
     } as unknown as AlbumService;
 
     const mediaService = {
@@ -208,6 +220,110 @@ describe('AlbumManagementComponent', () => {
     await fixture.whenStable();
   }
 
+  it('creates a description for a month without one', async () => {
+    listPeriodsMock.mockResolvedValueOnce([
+      {
+        ...septemberPeriod,
+        description: null,
+      },
+    ]);
+
+    await loadSourcePeriod();
+
+    const initialPeriod = component.albumMediaPeriods()[0];
+    expect(initialPeriod.description).toBeNull();
+
+    component.beginPeriodDescriptionEdit('2026-09');
+    component.updatePeriodDescriptionDraft(
+      '2026-09',
+      'Primeira descricao do mes',
+    );
+
+    await component.savePeriodDescription('2026-09');
+
+    expect(updatePeriodDescriptionMock).toHaveBeenCalledWith(
+      sourceAlbum.id,
+      2026,
+      9,
+      'Primeira descricao do mes',
+    );
+
+    const updatedPeriod = component.albumMediaPeriods()[0];
+    expect(updatedPeriod.description).toBe(
+      'Primeira descricao do mes',
+    );
+    expect(updatedPeriod.editingDescription).toBe(false);
+  });
+  it('removes a monthly description without removing its media', async () => {
+    await loadSourcePeriod();
+
+    const originalPeriod = component.albumMediaPeriods()[0];
+    expect(originalPeriod.description).toBe('September');
+    expect(originalPeriod.mediaCount).toBe(2);
+
+    component.beginPeriodDescriptionEdit('2026-09');
+    component.updatePeriodDescriptionDraft('2026-09', '');
+
+    await component.savePeriodDescription('2026-09');
+
+    expect(updatePeriodDescriptionMock).toHaveBeenCalledWith(
+      sourceAlbum.id,
+      2026,
+      9,
+      '',
+    );
+
+    const updatedPeriod = component.albumMediaPeriods()[0];
+    expect(updatedPeriod.description).toBeNull();
+    expect(updatedPeriod.mediaCount).toBe(2);
+    expect(updatedPeriod.editingDescription).toBe(false);
+    expect(bulkUpdateMock).not.toHaveBeenCalled();
+  });
+  it('prevents viewers from editing monthly descriptions', async () => {
+    fixture.componentRef.setInput('canEdit', false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    await loadSourcePeriod();
+
+    component.beginPeriodDescriptionEdit('2026-09');
+    component.updatePeriodDescriptionDraft(
+      '2026-09',
+      'Alteracao nao autorizada',
+    );
+    await component.savePeriodDescription('2026-09');
+
+    const period = component.albumMediaPeriods()[0];
+
+    expect(period.editingDescription).toBe(false);
+    expect(period.description).toBe('September');
+    expect(updatePeriodDescriptionMock).not.toHaveBeenCalled();
+  });
+  it('updates an existing monthly description', async () => {
+    await loadSourcePeriod();
+
+    component.beginPeriodDescriptionEdit('2026-09');
+    component.updatePeriodDescriptionDraft(
+      '2026-09',
+      'Momentos especiais de setembro',
+    );
+
+    await component.savePeriodDescription('2026-09');
+
+    expect(updatePeriodDescriptionMock).toHaveBeenCalledWith(
+      sourceAlbum.id,
+      2026,
+      9,
+      'Momentos especiais de setembro',
+    );
+
+    const period = component.albumMediaPeriods()[0];
+
+    expect(period.description).toBe(
+      'Momentos especiais de setembro',
+    );
+    expect(period.editingDescription).toBe(false);
+  });
   it('offers only compatible destination albums', () => {
     component.selectDashboardAlbum(sourceAlbum.id);
 

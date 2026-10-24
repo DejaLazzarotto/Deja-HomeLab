@@ -82,6 +82,7 @@ describe('PersonMediaViewerPageComponent', () => {
       (_, index) => ({
         id: `media-${index + 1}`,
         media_type: 'image' as const,
+        is_animated: false,
         original_date: '2017-04-01T00:00:00',
         original_name: `foto-${index + 1}.jpg`,
       }),
@@ -92,6 +93,7 @@ describe('PersonMediaViewerPageComponent', () => {
       (_, index) => ({
         id: `media-${index + 31}`,
         media_type: 'image' as const,
+        is_animated: false,
         original_date: '2017-04-01T00:00:00',
         original_name: `foto-${index + 31}.jpg`,
       }),
@@ -216,6 +218,81 @@ describe('PersonMediaViewerPageComponent', () => {
     expect(component.mediaId()).toBe('media-31');
     expect(component.personMedia().length).toBe(40);
     expect(component.total()).toBe(40);
+  });
+
+  it('should request the original animated image for a person', async () => {
+    const animatedMedia = {
+      id: 'media-30',
+      media_type: 'image' as const,
+      is_animated: true,
+      original_date: '2017-04-01T00:00:00',
+      original_name: 'animacao.webp',
+    };
+
+    fixture.detectChanges();
+
+    const listRequest = httpTestingController.expectOne(
+      (request) =>
+        request.url === '/api/fotos/people/person-1/media' &&
+        request.params.get('page') === '1' &&
+        request.params.get('page_size') === '30',
+    );
+
+    listRequest.flush({
+      items: [animatedMedia],
+      page: 1,
+      page_size: 30,
+      total: 1,
+      total_pages: 1,
+    });
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+
+    httpTestingController.expectOne(
+      '/api/fotos/media/media-30',
+    ).flush(animatedMedia);
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+
+    httpTestingController.expectOne(
+      '/api/fotos/favorites/media-30',
+    ).flush({
+      media_id: animatedMedia.id,
+      is_favorite: true,
+    });
+
+    const originalRequest = httpTestingController.expectOne(
+      '/api/fotos/media/media-30/original',
+    );
+
+    expect(originalRequest.request.responseType).toBe('blob');
+
+    expect(
+      httpTestingController.match(
+        '/api/fotos/media/media-30/preview',
+      ),
+    ).toHaveLength(0);
+
+    originalRequest.flush(
+      new Blob(['animated-webp'], { type: 'image/webp' }),
+    );
+
+    await fixture.whenStable();
+
+    for (let attempt = 0; attempt < 10 && component.favoriteLoading(); attempt++) {
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 0);
+      });
+    }
+
+    expect(component.favoriteLoading()).toBe(false);
+    expect(component.mediaUrl()).toBeTruthy();
+    expect(component.media()?.is_animated).toBe(true);
+    expect(component.isFavorite()).toBe(true);
   });
 
   it('should add and remove favorites without duplicate requests', async () => {
