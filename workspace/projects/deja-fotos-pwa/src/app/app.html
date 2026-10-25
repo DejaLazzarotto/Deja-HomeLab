@@ -1,1 +1,5 @@
 <router-outlet />
+
+@if (albumMusic.activeAlbumId()) {
+  <app-album-music-button class="album-music-control" />
+}

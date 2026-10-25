@@ -48,6 +48,9 @@ from deja_platform_api.fotos.media.favorite_router import (
 from deja_platform_api.fotos.media.router import (
     router as fotos_media_router,
 )
+from deja_platform_api.fotos.music.router import (
+    router as fotos_music_router,
+)
 from deja_platform_api.fotos.people.router import (
     router as fotos_people_router,
 )
@@ -91,6 +94,7 @@ api_router.include_router(fotos_authentication_router)
 api_router.include_router(fotos_media_router)
 api_router.include_router(fotos_favorites_router)
 api_router.include_router(fotos_people_router)
+api_router.include_router(fotos_music_router)
 api_router.include_router(fotos_curation_router)
 
 api_router.include_router(indicators_router)

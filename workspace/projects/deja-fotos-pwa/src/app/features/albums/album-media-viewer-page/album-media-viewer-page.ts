@@ -14,6 +14,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { FavoritesService } from '../../../core/favorites/favorites.service';
+import { MusicPlayerService } from '../../../core/music/music-player.service';
 
 interface MediaResponse {
   id: string;
@@ -45,6 +46,8 @@ export class AlbumMediaViewerPageComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
 
   private readonly favoritesService = inject(FavoritesService);
+
+  private readonly music = inject(MusicPlayerService);
 
   private readonly route = inject(ActivatedRoute);
 
@@ -145,7 +148,52 @@ export class AlbumMediaViewerPageComponent implements OnInit, OnDestroy {
     }
   }
 
+  onVideoPlay(event?: Event): void {
+    if (this.loading()) {
+      return;
+    }
+
+    if (event) {
+      const video = event.target;
+
+      if (
+        !(video instanceof HTMLVideoElement) ||
+        !video.isConnected ||
+        video !== document.querySelector('.album-media-viewer-page .viewer-video')
+      ) {
+        return;
+      }
+    }
+
+    this.music.pauseForVideo();
+  }
+
+  onVideoStop(event?: Event): void {
+    if (this.loading()) {
+      return;
+    }
+
+    if (event) {
+      const video = event.target;
+
+      if (
+        !(video instanceof HTMLVideoElement) ||
+        !video.isConnected ||
+        video !== document.querySelector('.album-media-viewer-page .viewer-video')
+      ) {
+        return;
+      }
+    }
+
+    this.music.resumeFromVideo();
+  }
+
   ngOnDestroy(): void {
+    const destination = this.router.getCurrentNavigation()?.finalUrl?.toString() ?? this.router.url;
+    const albumId = this.albumId();
+    if (albumId && destination.startsWith('/albums/' + encodeURIComponent(albumId) + '/')) {
+      this.music.resumeFromVideo();
+    }
     this.revokeObjectUrl();
   }
 
@@ -373,6 +421,10 @@ export class AlbumMediaViewerPageComponent implements OnInit, OnDestroy {
 
     if (!item) {
       return;
+    }
+
+    if (item.media_type !== 'video') {
+      this.music.resumeFromVideo();
     }
 
     this.loading.set(true);

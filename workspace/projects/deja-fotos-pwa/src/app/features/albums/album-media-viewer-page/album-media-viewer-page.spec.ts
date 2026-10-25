@@ -14,6 +14,8 @@ import {
   it,
 } from 'vitest';
 
+import { MusicPlayerService } from '../../../core/music/music-player.service';
+import { vi } from 'vitest';
 import { AlbumMediaViewerPageComponent } from './album-media-viewer-page';
 
 describe('AlbumMediaViewerPageComponent', () => {
@@ -42,6 +44,9 @@ describe('AlbumMediaViewerPageComponent', () => {
           useValue: {
             navigate: () => Promise.resolve(true),
             navigateByUrl: () => Promise.resolve(true),
+            getCurrentNavigation: () => null,
+            parseUrl: (url: string) => ({ toString: () => url }),
+            url: '/albums',
           },
         },
       ],
@@ -62,6 +67,213 @@ describe('AlbumMediaViewerPageComponent', () => {
     httpTestingController.verify();
   });
 
+  it('pausa a música quando o vídeo inicia e solicita retomada ao parar', () => {
+    const music = TestBed.inject(MusicPlayerService);
+
+    const pauseForVideo = vi.spyOn(music, 'pauseForVideo')
+      .mockImplementation(() => undefined);
+
+    const resumeFromVideo = vi.spyOn(music, 'resumeFromVideo')
+      .mockImplementation(() => undefined);
+    component.loading.set(false);
+
+    component.onVideoPlay();
+    expect(pauseForVideo).toHaveBeenCalledOnce();
+
+    component.onVideoStop();
+    expect(resumeFromVideo).toHaveBeenCalledOnce();
+  });
+  it('não retoma a música durante a transição entre vídeos', async () => {
+    const music = TestBed.inject(MusicPlayerService);
+    const resume = vi.spyOn(music, 'resumeFromVideo')
+      .mockImplementation(() => undefined);
+
+    const videos = [
+      {
+        id: 'video-1',
+        media_type: 'video' as const,
+        is_animated: false,
+        original_date: '2026-10-01T00:00:00',
+        original_name: 'video-1.mp4',
+      },
+      {
+        id: 'video-2',
+        media_type: 'video' as const,
+        is_animated: false,
+        original_date: '2026-10-02T00:00:00',
+        original_name: 'video-2.mp4',
+      },
+    ];
+
+    component.monthMedia.set(videos);
+    component.currentIndex.set(0);
+    component.mediaId.set(videos[0].id);
+    component.loading.set(false);
+
+    const change = component['changeMedia'](1);
+
+    expect(resume).not.toHaveBeenCalled();
+
+    httpTestingController.expectOne(
+      '/api/fotos/media/video-2',
+    ).flush(videos[1]);
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+    httpTestingController.expectOne(
+      '/api/fotos/favorites/video-2',
+    ).flush({ media_id: 'video-2', is_favorite: false });
+
+    httpTestingController.expectOne(
+      '/api/fotos/media/video-2/preview',
+    ).flush(new Blob(['video'], { type: 'video/mp4' }));
+
+    await change;
+
+    expect(resume).not.toHaveBeenCalled();
+  });
+  it('ignora a pausa do vídeo anterior durante o carregamento', () => {
+    const music = TestBed.inject(MusicPlayerService);
+    const resume = vi.spyOn(music, 'resumeFromVideo')
+      .mockImplementation(() => undefined);
+
+    component.loading.set(true);
+    component.onVideoStop();
+
+    expect(resume).not.toHaveBeenCalled();
+
+    component.loading.set(false);
+    component.onVideoStop();
+
+    expect(resume).toHaveBeenCalledOnce();
+  });
+  it('solicita retomada musical ao trocar vídeo por fotografia', async () => {
+    const music = TestBed.inject(MusicPlayerService);
+    const resume = vi.spyOn(music, 'resumeFromVideo')
+      .mockImplementation(() => undefined);
+
+    const photo = {
+      id: 'foto-apos-video',
+      media_type: 'image' as const,
+      is_animated: false,
+      original_date: '2026-10-02T00:00:00',
+      original_name: 'foto.jpg',
+    };
+
+    component.monthMedia.set([photo]);
+    component.loading.set(false);
+
+    const change = component['changeMedia'](0);
+
+    expect(resume).toHaveBeenCalledOnce();
+
+    httpTestingController.expectOne(
+      '/api/fotos/media/foto-apos-video',
+    ).flush(photo);
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+    httpTestingController.expectOne(
+      '/api/fotos/favorites/foto-apos-video',
+    ).flush({ media_id: photo.id, is_favorite: false });
+
+    httpTestingController.expectOne(
+      '/api/fotos/media/foto-apos-video/preview',
+    ).flush(new Blob(['foto'], { type: 'image/jpeg' }));
+
+    await change;
+  });
+  it('ignora eventos de pausa de vídeos removidos da página', () => {
+    const music = TestBed.inject(MusicPlayerService);
+    const resume = vi.spyOn(music, 'resumeFromVideo')
+      .mockImplementation(() => undefined);
+
+    component.loading.set(false);
+
+    const video = document.createElement('video');
+    const event = new Event('pause');
+
+    Object.defineProperty(event, 'target', {
+      value: video,
+    });
+
+    component.onVideoStop(event);
+
+    expect(resume).not.toHaveBeenCalled();
+  });
+  it('ignora eventos de vídeos conectados que não são a mídia ativa', () => {
+    const music = TestBed.inject(MusicPlayerService);
+    const resume = vi.spyOn(music, 'resumeFromVideo')
+      .mockImplementation(() => undefined);
+
+    component.loading.set(false);
+
+    const antigo = document.createElement('video');
+    antigo.className = 'viewer-video';
+
+    document.body.appendChild(antigo);
+
+    try {
+      antigo.dispatchEvent(new Event('pause'));
+
+      expect(antigo.isConnected).toBe(true);
+      expect(resume).not.toHaveBeenCalled();
+    } finally {
+      antigo.remove();
+    }
+  });
+  it('ignora Play de vídeos antigos que não são a mídia ativa', () => {
+    const music = TestBed.inject(MusicPlayerService);
+    const pause = vi.spyOn(music, 'pauseForVideo')
+      .mockImplementation(() => undefined);
+
+    component.loading.set(false);
+
+    const antigo = document.createElement('video');
+    antigo.className = 'viewer-video';
+    document.body.appendChild(antigo);
+
+    try {
+      antigo.addEventListener('play', (event) => {
+        component.onVideoPlay(event);
+      });
+
+      antigo.dispatchEvent(new Event('play'));
+
+      expect(antigo.isConnected).toBe(true);
+      expect(pause).not.toHaveBeenCalled();
+    } finally {
+      antigo.remove();
+    }
+  });
+  it('solicita retomada musical ao encerrar o visualizador', () => {
+    const music = TestBed.inject(MusicPlayerService);
+    const resume = vi.spyOn(music, 'resumeFromVideo')
+      .mockImplementation(() => undefined);
+
+    component.albumId.set('album-1');
+    vi.spyOn(TestBed.inject(Router), 'getCurrentNavigation').mockReturnValue({ finalUrl: { toString: () => '/albums/album-1/2026/10' } } as ReturnType<Router['getCurrentNavigation']>);
+
+    component.ngOnDestroy();
+
+    expect(resume).toHaveBeenCalledOnce();
+  });
+  it('não retoma música ao sair completamente do álbum', () => {
+    const music = TestBed.inject(MusicPlayerService);
+    const resume = vi.spyOn(music, 'resumeFromVideo')
+      .mockImplementation(() => undefined);
+
+    component.albumId.set('album-1');
+
+    vi.spyOn(TestBed.inject(Router), 'getCurrentNavigation')
+      .mockReturnValue({
+        finalUrl: { toString: () => '/explore' },
+      } as ReturnType<Router['getCurrentNavigation']>);
+
+    component.ngOnDestroy();
+
+    expect(resume).not.toHaveBeenCalled();
+  });
   it('should load the original animated image in albums', async () => {
     const animatedMedia = {
       id: 'album-animation-1',
