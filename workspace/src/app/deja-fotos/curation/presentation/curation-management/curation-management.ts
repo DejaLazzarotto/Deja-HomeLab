@@ -87,6 +87,7 @@ export class CurationManagementComponent implements OnDestroy {
   readonly selectedMedia = signal<MediaItem | null>(null);
   readonly selectedMediaSupportsFaces = computed(() => this.selectedMedia()?.media_type === 'image');
   readonly mediaDescription = signal('');
+  readonly mediaOriginalDate = signal('');
   readonly imageUrl = signal<string | null>(null);
   readonly faces = signal<readonly FaceItem[]>([]);
   readonly faceTotal = signal(0);
@@ -256,6 +257,7 @@ export class CurationManagementComponent implements OnDestroy {
     this.releaseImage();
     this.selectedMedia.set(item);
     this.mediaDescription.set('');
+    this.mediaOriginalDate.set(item?.original_date?.slice(0, 10) ?? '');
     this.faces.set([]);
     this.facePage.set(0);
     this.faceTotal.set(0);
@@ -297,6 +299,32 @@ export class CurationManagementComponent implements OnDestroy {
     } catch (error) {
       if (request === this.faceSequence) this.error.set(this.errorMessage(error));
     }
+  }
+
+  async saveOriginalDate(): Promise<void> {
+    const item = this.selectedMedia();
+    if (!item || !this.canManage()) return;
+
+    const date = this.mediaOriginalDate();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)
+      || Number.isNaN(Date.parse(`${date}T12:00:00Z`))
+      || new Date(`${date}T12:00:00Z`).toISOString().slice(0, 10) !== date) {
+      this.error.set('Informe uma data válida (dia, mês e ano).');
+      return;
+    }
+
+    await this.mutate(async () => {
+      const updated = await firstValueFrom(this.http.patch<MediaItem>(
+        `/api/fotos/media/${item.id}/original-date`,
+        { original_date: `${date}T12:00:00Z` },
+      ));
+      const updatedItem = { ...item, original_date: updated.original_date };
+      this.selectedMedia.set(updatedItem);
+      this.media.update(items => items.map(media =>
+        media.id === item.id ? updatedItem : media,
+      ));
+      this.mediaOriginalDate.set(updated.original_date?.slice(0, 10) ?? '');
+    }, 'Data original da mídia salva.');
   }
 
   async saveDescription(): Promise<void> {

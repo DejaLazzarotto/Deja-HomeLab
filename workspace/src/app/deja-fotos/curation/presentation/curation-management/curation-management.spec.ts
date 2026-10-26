@@ -38,6 +38,72 @@ describe('CurationManagementComponent', () => {
     );
   });
 
+  it('saves a missing original date for an image', async () => {
+    fixture.componentRef.setInput('canManage', true);
+    fixture.detectChanges();
+
+    const media = {
+      id: 'image-date-1',
+      original_name: 'foto.jpg',
+      media_type: 'image' as const,
+      original_date: null,
+    };
+    component.selectedMedia.set(media);
+    component.media.set([media]);
+    component.mediaOriginalDate.set('2008-04-15');
+
+    const saving = component.saveOriginalDate();
+    const request = http.expectOne('/api/fotos/media/image-date-1/original-date');
+
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({
+      original_date: '2008-04-15T12:00:00Z',
+    });
+
+    request.flush({ ...media, original_date: '2008-04-15T12:00:00' });
+    await saving;
+
+    expect(component.selectedMedia()?.original_date).toBe('2008-04-15T12:00:00');
+    expect(component.media()[0].original_date).toBe('2008-04-15T12:00:00');
+    expect(component.mediaOriginalDate()).toBe('2008-04-15');
+    expect(component.message()).toContain('salva');
+
+    http.expectOne('/api/fotos/curation/summary')
+      .flush({ pending: 0, unknown: 0 });
+  });
+
+  it('corrects an existing original date for a video', async () => {
+    fixture.componentRef.setInput('canManage', true);
+    fixture.detectChanges();
+
+    const media = {
+      id: 'video-date-1',
+      original_name: 'video.mp4',
+      media_type: 'video' as const,
+      original_date: '2007-01-01T12:00:00',
+    };
+    component.selectedMedia.set(media);
+    component.media.set([media]);
+    component.mediaOriginalDate.set('2008-04-15');
+
+    const saving = component.saveOriginalDate();
+    const request = http.expectOne('/api/fotos/media/video-date-1/original-date');
+
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({
+      original_date: '2008-04-15T12:00:00Z',
+    });
+
+    request.flush({ ...media, original_date: '2008-04-15T12:00:00' });
+    await saving;
+
+    expect(component.selectedMedia()?.original_date).toBe('2008-04-15T12:00:00');
+    expect(component.media()[0].original_date).toBe('2008-04-15T12:00:00');
+    expect(component.mediaOriginalDate()).toBe('2008-04-15');
+
+    http.expectOne('/api/fotos/curation/summary')
+      .flush({ pending: 0, unknown: 0 });
+  });
   it('saves a manual box with normalized coordinates and a person ID', async () => {
     fixture.componentRef.setInput('canManage', true);
     fixture.detectChanges();

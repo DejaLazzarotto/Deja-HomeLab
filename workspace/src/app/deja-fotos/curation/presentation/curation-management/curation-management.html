@@ -94,6 +94,18 @@
           </header>
           @if (selectedMedia(); as item) {
             <p class="media-caption">{{ item.original_name }}</p>
+            <div class="media-original-date">
+              <label>Data original
+                <input type="date" [ngModel]="mediaOriginalDate()"
+                  (ngModelChange)="mediaOriginalDate.set($event)"
+                  [disabled]="busy() || !canManage()" />
+              </label>
+              @if (canManage()) {
+                <button type="button" class="primary-button"
+                  [disabled]="busy() || !mediaOriginalDate()"
+                  (click)="saveOriginalDate()">Salvar alteração</button>
+              }
+            </div>
             @if (imageUrl()) {
               <div class="image-stage" [class.drawing]="drawing()"
                 (pointerdown)="pointerDown($event)" (pointermove)="pointerMove($event)"
