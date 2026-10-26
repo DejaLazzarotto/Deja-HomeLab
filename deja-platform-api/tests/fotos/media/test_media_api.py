@@ -649,21 +649,9 @@ def test_process_animated_gif_creates_static_derivatives(
     created = upload_response.json()
     assert created["is_animated"] is True
 
-    base_path = (
-        test_settings.uploads_dir
-        / "fotos"
-        / organization_id
-        / tenant_id
-        / environment_id
-    )
+    base_path = test_settings.uploads_dir / "fotos" / organization_id / tenant_id / environment_id
 
-    original_path = (
-        base_path
-        / "originals"
-        / "sem-data"
-        / created["id"]
-        / "original.webp"
-    )
+    original_path = base_path / "originals" / "sem-data" / created["id"] / "original.webp"
 
     original_content = original_path.read_bytes()
 
@@ -687,11 +675,7 @@ def test_process_animated_gif_creates_static_derivatives(
 
     for derivative_type in ("thumbnail", "preview"):
         derivative_path = (
-            base_path
-            / "derivatives"
-            / "sem-data"
-            / created["id"]
-            / f"{derivative_type}.webp"
+            base_path / "derivatives" / "sem-data" / created["id"] / f"{derivative_type}.webp"
         )
 
         assert derivative_path.is_file()
@@ -700,6 +684,7 @@ def test_process_animated_gif_creates_static_derivatives(
             assert derivative.format == "WEBP"
             assert derivative.n_frames == 1
             assert not getattr(derivative, "is_animated", False)
+
 
 def test_upload_bmp_converts_managed_original_to_png(
     client: TestClient,
@@ -5041,3 +5026,94 @@ def test_list_media_recent_days_filters_upload_date(
     )
 
     assert invalid.status_code == 422
+
+
+def test_upload_image_creates_pending_face_job(
+    client,
+    media_context,
+    test_session_factory,
+) -> None:
+    """Upload HTTP de fotografia cria automaticamente um trabalho facial."""
+    from sqlalchemy import select
+
+    from deja_platform_api.fotos.curation.job_models import FotosFaceJobModel
+    from deja_platform_api.fotos.media.models import FotosMediaModel
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+    )
+
+    assert response.status_code == 201, response.text
+
+    media_id = response.json()["id"]
+
+    with test_session_factory() as session:
+        media = session.get(FotosMediaModel, media_id)
+        assert media is not None
+
+        jobs = session.scalars(
+            select(FotosFaceJobModel).where(FotosFaceJobModel.media_id == media_id)
+        ).all()
+
+        assert len(jobs) == 1
+
+        job = jobs[0]
+        assert job.status == "pending"
+        assert job.attempts == 0
+        assert job.organization_id == organization_id
+        assert job.tenant_id == tenant_id
+        assert job.environment_id == environment_id
+
+
+def test_upload_video_does_not_create_face_job(
+    client,
+    media_context,
+    test_session_factory,
+) -> None:
+    """Upload HTTP de vídeo não cria trabalho de reconhecimento facial."""
+    from sqlalchemy import select
+
+    from deja_platform_api.fotos.curation.job_models import FotosFaceJobModel
+    from deja_platform_api.fotos.media.models import FotosMediaModel
+
+    (
+        organization_id,
+        tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    response = upload_video(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+    )
+
+    assert response.status_code == 201, response.text
+
+    media_id = response.json()["id"]
+
+    with test_session_factory() as session:
+        media = session.get(FotosMediaModel, media_id)
+
+        assert media is not None
+        assert media.media_type == "video"
+
+        jobs = session.scalars(
+            select(FotosFaceJobModel).where(FotosFaceJobModel.media_id == media_id)
+        ).all()
+
+        assert jobs == []

@@ -614,9 +614,10 @@ class FotosMediaService:
         )
 
         try:
-            return self._repository.add(
-                media,
-            )
+            if media.media_type == "image":
+                return self._repository.add_with_face_job(media)
+
+            return self._repository.add(media)
         except Exception:
             if file_path.exists():
                 file_path.unlink()

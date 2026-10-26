@@ -316,6 +316,40 @@ class FotosMediaRepository:
 
         return media
 
+    def add_with_face_job(
+        self,
+        media: FotosMediaModel,
+    ) -> FotosMediaModel:
+        """Registra uma fotografia e seu trabalho facial atomicamente."""
+        from uuid import uuid4
+
+        from deja_platform_api.fotos.curation.job_models import (
+            FotosFaceJobModel,
+        )
+
+        if media.media_type != "image":
+            raise ValueError("O enfileiramento facial inicial exige uma fotografia.")
+
+        job = FotosFaceJobModel(
+            id=str(uuid4()),
+            media_id=media.id,
+            organization_id=media.organization_id,
+            tenant_id=media.tenant_id,
+            environment_id=media.environment_id,
+        )
+
+        try:
+            self._session.add(media)
+            self._session.flush()
+            self._session.add(job)
+            self._session.commit()
+            self._session.refresh(media)
+        except Exception:
+            self._session.rollback()
+            raise
+
+        return media
+
     def update(
         self,
         media: FotosMediaModel,

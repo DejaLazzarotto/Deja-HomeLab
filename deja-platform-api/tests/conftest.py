@@ -31,6 +31,7 @@ from deja_platform_api.fotos.albums.models import (
     FotosAlbumModel,
     FotosAlbumPeriodDescriptionModel,
 )
+from deja_platform_api.fotos.curation.job_models import FotosFaceJobModel
 from deja_platform_api.fotos.curation.models import FotosFaceModel, FotosFaceReferenceModel
 from deja_platform_api.fotos.media.dependencies import (
     get_fotos_media_session_factory,
@@ -204,6 +205,7 @@ def test_app(
         yield app
     finally:
         app.dependency_overrides.clear()
+
 
 @pytest.fixture()
 def client(

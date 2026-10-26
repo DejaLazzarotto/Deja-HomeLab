@@ -96,3 +96,8 @@ class FotosFaceRepository:
     def delete(self, item: FotosFaceModel | FotosFaceReferenceModel) -> None:
         self.session.delete(item)
         self.session.commit()
+
+    def stage(self, item: FotosFaceModel | FotosFaceReferenceModel) -> None:
+        """Prepara a gravação sem confirmar a transação."""
+        self.session.add(item)
+        self.session.flush()

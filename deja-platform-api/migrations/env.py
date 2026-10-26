@@ -18,6 +18,7 @@ from deja_platform_api.chamados.tickets.timeline.models import (
 from deja_platform_api.companies.models import CompanyModel
 from deja_platform_api.core.config import get_settings
 from deja_platform_api.core.database import Base
+from deja_platform_api.fotos.curation.job_models import FotosFaceJobModel
 from deja_platform_api.indicators.models import IndicatorModel
 from deja_platform_api.measurements.models import MeasurementModel
 from deja_platform_api.tenant_management.models import (
@@ -30,9 +31,13 @@ from deja_platform_api.user_management.models import UserModel
 config = context.config
 settings = get_settings()
 
+# A configuração explícita do Alembic tem prioridade.
+# Na execução normal, utiliza a conexão configurada na API.
+explicit_url = config.attributes.get("database_url_override")
+
 config.set_main_option(
     "sqlalchemy.url",
-    settings.database_url,
+    explicit_url or settings.database_url,
 )
 
 if config.config_file_name is not None:
@@ -46,6 +51,7 @@ _registered_models = (
     ChamadosTicketModel,
     ChamadosTicketTimelineModel,
     CompanyModel,
+    FotosFaceJobModel,
     IndicatorModel,
     MeasurementModel,
     OrganizationModel,
