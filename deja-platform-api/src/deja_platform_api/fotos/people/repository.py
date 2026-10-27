@@ -178,6 +178,86 @@ class FotosPersonRepository:
         self._session.delete(link)
         self._session.commit()
 
+    def get_confirmed_face_for_person(
+        self,
+        person: FotosPersonModel,
+        face_id: str,
+    ) -> FotosFaceModel | None:
+        """Recupera um rosto confirmado dentro do escopo da pessoa."""
+
+        statement = (
+            select(FotosFaceModel)
+            .join(
+                FotosMediaModel,
+                FotosMediaModel.id == FotosFaceModel.media_id,
+            )
+            .where(
+                FotosFaceModel.id == face_id,
+                FotosFaceModel.person_id == person.id,
+                FotosFaceModel.status == "confirmed",
+                FotosFaceModel.organization_id == person.organization_id,
+                FotosFaceModel.tenant_id == person.tenant_id,
+                FotosFaceModel.environment_id == person.environment_id,
+                FotosMediaModel.organization_id == person.organization_id,
+                FotosMediaModel.tenant_id == person.tenant_id,
+                FotosMediaModel.environment_id == person.environment_id,
+                FotosMediaModel.media_type == "image",
+                FotosMediaModel.deleted_at.is_(None),
+            )
+        )
+
+        return self._session.scalar(statement)
+
+    def list_confirmed_faces_for_person(
+        self,
+        person: FotosPersonModel,
+        *,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> tuple[list[FotosFaceModel], int]:
+        """Lista rostos confirmados para seleção de avatar."""
+
+        conditions = (
+            FotosFaceModel.person_id == person.id,
+            FotosFaceModel.status == "confirmed",
+            FotosFaceModel.organization_id == person.organization_id,
+            FotosFaceModel.tenant_id == person.tenant_id,
+            FotosFaceModel.environment_id == person.environment_id,
+            FotosMediaModel.organization_id == person.organization_id,
+            FotosMediaModel.tenant_id == person.tenant_id,
+            FotosMediaModel.environment_id == person.environment_id,
+            FotosMediaModel.deleted_at.is_(None),
+        )
+
+        total = int(
+            self._session.scalar(
+                select(func.count(FotosFaceModel.id))
+                .join(
+                    FotosMediaModel,
+                    FotosMediaModel.id == FotosFaceModel.media_id,
+                )
+                .where(*conditions)
+            )
+            or 0
+        )
+
+        statement = (
+            select(FotosFaceModel)
+            .join(
+                FotosMediaModel,
+                FotosMediaModel.id == FotosFaceModel.media_id,
+            )
+            .where(*conditions)
+            .order_by(
+                FotosFaceModel.created_at.desc(),
+                FotosFaceModel.id.asc(),
+            )
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+
+        return list(self._session.scalars(statement).all()), total
+
     def has_confirmed_face(self, person_id: str, media_id: str) -> bool:
         return (
             self._session.scalar(

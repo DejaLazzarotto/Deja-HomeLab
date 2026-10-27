@@ -23,6 +23,175 @@ describe('CurationManagementComponent', () => {
 
   afterEach(() => http.verify());
 
+  it('clears previous avatar faces when selecting another person', async () => {
+    component.selectedAvatarPersonId.set('person-a');
+    component.avatarFaces.set([
+      {
+        id: 'face-a',
+        media_id: 'media-a',
+        x: 0.1,
+        y: 0.1,
+        width: 0.3,
+        height: 0.3,
+      },
+    ]);
+    component.avatarFacePage.set(1);
+    component.avatarFaceTotal.set(1);
+
+    const selecting = component.selectAvatarPerson('person-b');
+
+    expect(component.selectedAvatarPersonId()).toBe('person-b');
+    expect(component.avatarFaces()).toEqual([]);
+    expect(component.avatarFacePage()).toBe(0);
+    expect(component.avatarFaceTotal()).toBe(0);
+
+
+    let facesRequest: ReturnType<HttpTestingController['expectOne']> | undefined;
+
+    await vi.waitFor(() => {
+      const pending = http.match(
+        '/api/fotos/people/person-b/avatar/faces?page=1&page_size=50',
+      );
+      expect(pending.length).toBe(1);
+      facesRequest = pending[0];
+    });
+
+    if (!facesRequest) {
+      throw new Error('Requisição de rostos não encontrada.');
+    }
+
+    facesRequest.flush({
+      items: [],
+      page: 1,
+      total: 0,
+      total_pages: 0,
+    });
+
+    await selecting;
+  });
+  it('ignores avatar faces returned for a previously selected person', async () => {
+    const selectingA = component.selectAvatarPerson('person-a');
+
+
+    let facesA: ReturnType<HttpTestingController['expectOne']> | undefined;
+
+    await vi.waitFor(() => {
+      const requests = http.match(
+        '/api/fotos/people/person-a/avatar/faces?page=1&page_size=50',
+      );
+      expect(requests.length).toBe(1);
+      facesA = requests[0];
+    });
+
+    const selectingB = component.selectAvatarPerson('person-b');
+
+
+    if (!facesA) {
+      throw new Error('Requisição da pessoa A não encontrada.');
+    }
+
+    facesA.flush({
+      items: [
+        { id: 'face-a', media_id: 'media-a',
+          x: 0.1, y: 0.1, width: 0.3, height: 0.3 },
+      ],
+      page: 1,
+      total: 1,
+      total_pages: 1,
+    });
+
+    await selectingA;
+
+    let facesB: ReturnType<HttpTestingController['expectOne']> | undefined;
+
+    await vi.waitFor(() => {
+      const requests = http.match(
+        '/api/fotos/people/person-b/avatar/faces?page=1&page_size=50',
+      );
+      expect(requests.length).toBe(1);
+      facesB = requests[0];
+    });
+
+    if (!facesB) {
+      throw new Error('Requisição da pessoa B não encontrada.');
+    }
+
+    facesB.flush({
+      items: [
+        { id: 'face-b', media_id: 'media-b',
+          x: 0.2, y: 0.2, width: 0.4, height: 0.4 },
+      ],
+      page: 1,
+      total: 1,
+      total_pages: 1,
+    });
+
+    let previewB: ReturnType<HttpTestingController['expectOne']> | undefined;
+
+    await vi.waitFor(() => {
+      const requests = http.match(
+        '/api/fotos/people/person-b/avatar/faces/face-b/preview',
+      );
+      expect(requests.length).toBe(1);
+      previewB = requests[0];
+    });
+
+    if (!previewB) {
+      throw new Error('Miniatura da pessoa B não encontrada.');
+    }
+
+    previewB.flush(new Blob(['imagem-b'], { type: 'image/webp' }));
+
+    await selectingB;
+
+    expect(component.selectedAvatarPersonId()).toBe('person-b');
+    expect(component.avatarFaces().map(face => face.id)).toEqual(['face-b']);
+    expect(component.avatarFaces().some(face => face.id === 'face-a')).toBe(false);
+  });
+  it('keeps the current avatar loading state when an old request finishes', async () => {
+    const loadingA = component.selectAvatarPerson('person-a');
+
+
+    let facesA: ReturnType<HttpTestingController['expectOne']> | undefined;
+
+    await vi.waitFor(() => {
+      const requests = http.match(
+        '/api/fotos/people/person-a/avatar/faces?page=1&page_size=50',
+      );
+      expect(requests.length).toBe(1);
+      facesA = requests[0];
+    });
+
+    const loadingB = component.selectAvatarPerson('person-b');
+
+
+    let facesB: ReturnType<HttpTestingController['expectOne']> | undefined;
+
+    await vi.waitFor(() => {
+      const requests = http.match(
+        '/api/fotos/people/person-b/avatar/faces?page=1&page_size=50',
+      );
+      expect(requests.length).toBe(1);
+      facesB = requests[0];
+    });
+
+    expect(component.avatarFaceLoading()).toBe(true);
+
+    if (!facesA || !facesB) {
+      throw new Error('Requisições esperadas não encontradas.');
+    }
+
+    facesA.flush({ items: [], page: 1, total: 0, total_pages: 0 });
+    await loadingA;
+
+    expect(component.avatarFaceLoading()).toBe(true);
+    expect(component.selectedAvatarPersonId()).toBe('person-b');
+
+    facesB.flush({ items: [], page: 1, total: 0, total_pages: 0 });
+    await loadingB;
+
+    expect(component.avatarFaceLoading()).toBe(false);
+  });
   it('shows live counters and the existing tabs without false empty claims', () => {
     expect(component.activeTab()).toBe('recognition');
     component.summary.set({ pending: 3, unknown: 2 });

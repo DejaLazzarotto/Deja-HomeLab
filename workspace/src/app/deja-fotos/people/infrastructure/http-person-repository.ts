@@ -154,23 +154,6 @@ export class HttpPersonRepository
     );
   }
 
-  async uploadAvatar(
-    id: string,
-    file: File,
-  ): Promise<Person> {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await firstValueFrom(
-      this.http.put<PersonResponse>(
-        `/api/fotos/people/${id}/avatar`,
-        formData,
-      ),
-    );
-
-    return this.mapPerson(response);
-  }
-
   async removeAvatar(
     id: string,
   ): Promise<Person> {

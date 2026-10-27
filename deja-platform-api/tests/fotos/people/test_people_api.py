@@ -360,81 +360,30 @@ def test_person_media_link_and_scope(
         headers=headers,
     ).json()["total"] == 0
 
-def test_avatar_upload_read_remove_and_delete(
+def test_avatar_manual_upload_unavailable(
     client: TestClient,
-    test_settings: Settings,
     media_context: tuple,
 ) -> None:
     _, _, environment_id, _, headers = media_context
     person = create_person(client, environment_id, headers)
     url = f"{PEOPLE_URL}/{person['id']}/avatar"
 
-    uploaded = client.put(
-        url,
-        files={
-            "file": (
-                "perfil.jpg",
-                create_test_jpeg(width=640, height=480),
-                "image/jpeg",
-            )
-        },
-        headers=headers,
-    )
-    assert uploaded.status_code == 200, uploaded.text
-    assert uploaded.json()["avatar_content_type"] == "image/webp"
-
-    avatar = client.get(url, headers=headers)
-    assert avatar.status_code == 200
-    with Image.open(BytesIO(avatar.content)) as image:
-        assert image.format == "WEBP"
-        assert image.width <= 512
-        assert image.height <= 512
-
-    avatar_files = list(
-        test_settings.uploads_dir.rglob(
-            f"{person['id']}/avatars/*.webp"
-        )
-    )
-    assert len(avatar_files) == 1
-
-    invalid = client.put(
-        url,
-        files={
-            "file": (
-                "perfil.jpg",
-                b"arquivo invalido",
-                "image/jpeg",
-            )
-        },
-        headers=headers,
-    )
-    assert invalid.status_code == 422
-    assert client.get(url, headers=headers).status_code == 200
-
-    removed = client.delete(url, headers=headers)
-    assert removed.status_code == 200
-    assert removed.json()["avatar_content_type"] is None
     assert client.get(url, headers=headers).status_code == 404
-    assert not avatar_files[0].exists()
 
-    again = client.put(
+    response = client.put(
         url,
         files={
             "file": (
-                "novo.jpg",
+                "perfil.jpg",
                 create_test_jpeg(width=24),
                 "image/jpeg",
             )
         },
         headers=headers,
     )
-    assert again.status_code == 200
+    assert response.status_code == 405
+
     assert client.delete(
         f"{PEOPLE_URL}/{person['id']}",
         headers=headers,
     ).status_code == 204
-    assert not list(
-        test_settings.uploads_dir.rglob(
-            f"{person['id']}/avatars/*.webp"
-        )
-    )

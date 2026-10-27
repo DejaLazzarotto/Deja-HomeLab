@@ -98,3 +98,24 @@ class FotosPersonMediaListResponse(BaseModel):
     page_size: int
     total: int
     total_pages: int
+
+class FotosAvatarFaceResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    """Rosto confirmado disponível para seleção de avatar."""
+
+    id: str
+    media_id: str
+    x: float
+    y: float
+    width: float
+    height: float
+
+
+class FotosAvatarFaceListResponse(BaseModel):
+    """Lista paginada dos rostos candidatos a avatar."""
+
+    items: list[FotosAvatarFaceResponse]
+    page: int
+    page_size: int
+    total: int
+    total_pages: int

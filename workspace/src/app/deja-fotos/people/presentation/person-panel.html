@@ -156,17 +156,6 @@
 
     @if (canEdit()) {
       <div class="person-panel__avatar-actions">
-        <label>
-          <span>Alterar avatar</span>
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            (change)="uploadAvatar(
-              $any($event.target).files?.[0] ?? null
-            )"
-            [disabled]="busy()"
-          />
-        </label>
 
         @if (current.avatarContentType) {
           <button

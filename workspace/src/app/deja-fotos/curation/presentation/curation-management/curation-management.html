@@ -125,8 +125,20 @@
               <p>Carregando imagem de revisão...</p>
             }
               <aside class="curation-media-actions">
+            <div class="media-original-date">
+              <label>Data original
+                <input type="date" [ngModel]="mediaOriginalDate()"
+                  (ngModelChange)="mediaOriginalDate.set($event)"
+                  [disabled]="busy() || !canManage()" />
+              </label>
+              @if (canManage()) {
+                <button type="button" class="primary-button"
+                  [disabled]="busy() || !mediaOriginalDate()"
+                  (click)="saveOriginalDate()">Salvar alteração</button>
+              }
+            </div>
             @if (canManage()) {
-              <div class="curation-completion-actions">
+            <div class="curation-completion-actions">
                 @if (selectedMediaSupportsFaces() && completionFilter() === "pending") {
                   <button type="button" (click)="detect()" [disabled]="busy()">Analisar rostos</button>
                 }
@@ -143,18 +155,6 @@
                 }
               </div>
             }
-            <div class="media-original-date">
-              <label>Data original
-                <input type="date" [ngModel]="mediaOriginalDate()"
-                  (ngModelChange)="mediaOriginalDate.set($event)"
-                  [disabled]="busy() || !canManage()" />
-              </label>
-              @if (canManage()) {
-                <button type="button" class="primary-button"
-                  [disabled]="busy() || !mediaOriginalDate()"
-                  (click)="saveOriginalDate()">Salvar alteração</button>
-              }
-            </div>
               </aside>
             </div>
             @if (selectedMediaSupportsFaces() && canManage()) {
@@ -362,15 +362,6 @@
 
               @if (canManage()) {
                 <div class="avatar-person-actions">
-                  <label class="avatar-upload">
-                    Enviar foto
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      [disabled]="busy()"
-                      (change)="uploadAvatar(person.id, $any($event.target).files?.[0] ?? null)"
-                    />
-                  </label>
 
                   @if (person.avatar_content_type) {
                     <button
@@ -393,62 +384,55 @@
         </div>
 
         @if (selectedAvatarPersonId()) {
-          <section class="avatar-photo-picker">
+          <section class="panel">
             <header class="panel-header">
               <div>
-                <h2>
-                  Fotos de {{ personName(selectedAvatarPersonId()) }}
-                </h2>
+                <h2>Rostos reconhecidos de {{ personName(selectedAvatarPersonId()) }}</h2>
                 <p>
-                  Escolha uma foto já vinculada à pessoa para usá-la como avatar.
+                  Escolha um rosto confirmado para gerar automaticamente
+                  o avatar da pessoa.
                 </p>
               </div>
-              <small>{{ avatarMediaTotal() }} mídia(s)</small>
+              <small>{{ avatarFaceTotal() }} rosto(s)</small>
             </header>
 
-            @if (avatarLoading() && !avatarMedia().length) {
-              <p class="panel-empty">
-                Carregando fotos...
-              </p>
+            @if (avatarFaceLoading() && !avatarFaces().length) {
+              <p class="panel-empty">Carregando rostos...</p>
             } @else {
               <div class="avatar-photo-grid">
-                @for (item of avatarMedia(); track item.id) {
+                @for (face of avatarFaces(); track face.id) {
                   <button
                     type="button"
                     class="avatar-photo-card"
-                    [disabled]="busy() || !canManage()"
-                    (click)="useMediaAsAvatar(selectedAvatarPersonId(), item.id)"
+                    [disabled]="busy() || !canManage() || !avatarFaceUrls().has(face.id)"
+                    (click)="useFaceAsAvatar(selectedAvatarPersonId(), face.id)"
                   >
-                    @if (avatarMediaUrls().get(item.id); as url) {
+                    @if (avatarFaceUrls().get(face.id); as url) {
                       <img
                         [src]="url"
-                        [alt]="item.original_name"
+                        [alt]="'Rosto reconhecido de ' + personName(selectedAvatarPersonId())"
                       />
                     } @else {
-                      <span>Sem miniatura</span>
+                      <span>Miniatura indisponível</span>
                     }
 
-                    <strong>Usar como avatar</strong>
+                    <strong>Definir como avatar</strong>
                   </button>
                 } @empty {
                   <p class="panel-empty">
-                    Essa pessoa ainda não possui fotos vinculadas.
+                    Essa pessoa ainda não possui rostos confirmados.
                   </p>
                 }
               </div>
 
-              @if (avatarMediaPage() * 50 < avatarMediaTotal()) {
+              @if (avatarFacePage() * 50 < avatarFaceTotal()) {
                 <button
                   type="button"
                   class="text-button"
-                  [disabled]="avatarLoading()"
-                  (click)="loadAvatarMedia(true)"
+                  [disabled]="avatarFaceLoading()"
+                  (click)="loadAvatarFaces(true)"
                 >
-                  {{
-                    avatarLoading()
-                      ? 'Carregando...'
-                      : 'Carregar mais fotos'
-                  }}
+                  {{ avatarFaceLoading() ? 'Carregando...' : 'Carregar mais rostos' }}
                 </button>
               }
             }

@@ -144,38 +144,6 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
   justify-content: center;
 }
 
-.avatar-upload {
-  display: inline-flex;
-  width: auto;
-  cursor: pointer;
-  border: 1px solid var(--workspace-color-border, #cbd5e1);
-  border-radius: 8px;
-  padding: .5rem .8rem;
-  font-size: inherit;
-  font-weight: 400;
-}
-
-.avatar-upload input {
-  display: none;
-}
-
-.avatar-photo-picker {
-  display: grid;
-  gap: .8rem;
-  margin-top: .5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--workspace-color-border, #dbe3ee);
-}
-
-.avatar-photo-picker .panel-header {
-  margin-bottom: 0;
-}
-
-.avatar-photo-picker .panel-header p {
-  margin: .35rem 0 0;
-  color: var(--workspace-color-text-secondary, #64748b);
-}
-
 .avatar-photo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));

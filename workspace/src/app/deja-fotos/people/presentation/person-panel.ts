@@ -207,36 +207,6 @@ export class PersonPanelComponent implements OnDestroy {
     }
   }
 
-  async uploadAvatar(file: File | null): Promise<void> {
-    const person = this.person();
-    if (
-      !person
-      || !file
-      || !this.canEdit()
-      || this.busy()
-    ) {
-      return;
-    }
-
-    this.busy.set(true);
-    this.error.set(null);
-
-    try {
-      const updated =
-        await this.service().uploadAvatar(
-          person.id,
-          file,
-        );
-      this.saved.emit(updated);
-      await this.loadAvatar(updated);
-      this.message.set('Avatar atualizado.');
-    } catch (error: unknown) {
-      this.error.set(this.errorMessage(error));
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
   async removeAvatar(): Promise<void> {
     const person = this.person();
     if (

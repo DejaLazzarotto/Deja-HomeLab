@@ -87,32 +87,6 @@
   border-top: 1px solid var(--workspace-color-border);
 }
 
-.person-panel__avatar-actions label {
-  display: grid;
-  gap: 0.35rem;
-  color: var(--workspace-color-text-secondary);
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.person-panel__avatar-actions input {
-  max-width: 100%;
-  color: var(--workspace-color-text);
-  font-size: 0.78rem;
-}
-
-.person-panel__avatar-actions input::file-selector-button {
-  margin-right: 0.65rem;
-  padding: 0.5rem 0.7rem;
-  color: var(--workspace-color-text);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  background: var(--workspace-color-surface);
-  border: 1px solid var(--workspace-color-border);
-  border-radius: var(--workspace-radius-md);
-}
-
 .person-panel__primary,
 .person-panel__secondary,
 .person-panel__danger {

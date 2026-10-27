@@ -56,11 +56,6 @@ export interface PersonRepository {
 
   loadAvatar(id: string): Promise<Blob>;
 
-  uploadAvatar(
-    id: string,
-    file: File,
-  ): Promise<Person>;
-
   removeAvatar(id: string): Promise<Person>;
 
   linkMedia(

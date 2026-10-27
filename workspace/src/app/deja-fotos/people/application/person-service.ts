@@ -12,15 +12,6 @@ import {
   PersonRepository,
 } from '../domain/person';
 
-const MAX_AVATAR_SIZE_BYTES =
-  10 * 1024 * 1024;
-
-const AVATAR_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]);
-
 export class PersonService {
   constructor(
     private readonly repository: PersonRepository,
@@ -54,31 +45,6 @@ export class PersonService {
 
   loadAvatar(id: string): Promise<Blob> {
     return this.repository.loadAvatar(id);
-  }
-
-  uploadAvatar(
-    id: string,
-    file: File,
-  ): Promise<Person> {
-    if (
-      file.size === 0
-      || !AVATAR_TYPES.has(file.type)
-    ) {
-      throw new Error(
-        'Selecione uma imagem JPEG, PNG ou WebP.',
-      );
-    }
-
-    if (file.size > MAX_AVATAR_SIZE_BYTES) {
-      throw new Error(
-        'O avatar deve ter no máximo 10 MB.',
-      );
-    }
-
-    return this.repository.uploadAvatar(
-      id,
-      file,
-    );
   }
 
   removeAvatar(id: string): Promise<Person> {

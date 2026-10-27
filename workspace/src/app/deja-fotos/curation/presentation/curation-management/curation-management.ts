@@ -39,17 +39,15 @@ interface ReferenceItem {
   readonly face_id: string;
   readonly person_id: string;
 }
-interface PersonMediaItem {
+interface AvatarFaceItem {
   readonly id: string;
-  readonly original_name: string;
-  readonly media_type: 'image' | 'video';
+  readonly media_id: string;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
 }
-interface PersonMediaPage {
-  readonly items: readonly PersonMediaItem[];
-  readonly page: number;
-  readonly total: number;
-  readonly total_pages: number;
-}
+interface AvatarFacePage extends Page<AvatarFaceItem> {}
 interface Box {
   readonly x: number;
   readonly y: number;
@@ -105,11 +103,11 @@ export class CurationManagementComponent implements OnDestroy {
   readonly referenceTotal = signal(0);
   readonly avatarUrls = signal<ReadonlyMap<string, string>>(new Map());
   readonly selectedAvatarPersonId = signal('');
-  readonly avatarMedia = signal<readonly PersonMediaItem[]>([]);
-  readonly avatarMediaUrls = signal<ReadonlyMap<string, string>>(new Map());
-  readonly avatarMediaPage = signal(0);
-  readonly avatarMediaTotal = signal(0);
-  readonly avatarLoading = signal(false);
+  readonly avatarFaces = signal<readonly AvatarFaceItem[]>([]);
+  readonly avatarFaceUrls = signal<ReadonlyMap<string, string>>(new Map());
+  readonly avatarFacePage = signal(0);
+  readonly avatarFaceTotal = signal(0);
+  readonly avatarFaceLoading = signal(false);
   readonly summary = signal({ pending: 0, unknown: 0 });
   readonly loading = signal(false);
   readonly busy = signal(false);
@@ -120,6 +118,7 @@ export class CurationManagementComponent implements OnDestroy {
 
   private readonly http = inject(HttpClient);
   private mediaSequence = 0;
+  private avatarFaceSequence = 0;
   private faceSequence = 0;
   private referenceSequence = 0;
   private destroyed = false;
@@ -151,7 +150,7 @@ export class CurationManagementComponent implements OnDestroy {
     this.releaseImage();
     this.releaseReferences();
     this.releaseAvatarUrls();
-    this.releaseAvatarMediaUrls();
+    this.releaseAvatarFaceUrls();
   }
 
   selectTab(tab: CurationTab): void {
@@ -170,11 +169,13 @@ export class CurationManagementComponent implements OnDestroy {
     this.referenceSequence++;
     this.releaseReferences();
     this.releaseAvatarUrls();
-    this.releaseAvatarMediaUrls();
+    this.releaseAvatarFaceUrls();
     this.selectedAvatarPersonId.set('');
-    this.avatarMedia.set([]);
-    this.avatarMediaPage.set(0);
-    this.avatarMediaTotal.set(0);
+    this.avatarFaceSequence++;
+    this.avatarFaceLoading.set(false);
+    this.avatarFaces.set([]);
+    this.avatarFacePage.set(0);
+    this.avatarFaceTotal.set(0);
     this.references.set([]);
     this.people.set([]);
     this.albums.set([]);
@@ -609,36 +610,42 @@ export class CurationManagementComponent implements OnDestroy {
     }
 
     this.selectedAvatarPersonId.set(personId);
-    this.avatarMedia.set([]);
-    this.avatarMediaPage.set(0);
-    this.avatarMediaTotal.set(0);
-    this.releaseAvatarMediaUrls();
 
-    await this.loadAvatarMedia();
+    this.releaseAvatarFaceUrls();
+    this.avatarFaces.set([]);
+    this.avatarFacePage.set(0);
+    this.avatarFaceTotal.set(0);
+    this.avatarFaceSequence++;
+    this.avatarFaceLoading.set(false);
+
+    await this.loadAvatarFaces();
   }
 
-  async loadAvatarMedia(more = false): Promise<void> {
+  async loadAvatarFaces(more = false): Promise<void> {
     const personId = this.selectedAvatarPersonId();
 
-    if (
-      !personId
-      || this.avatarLoading()
-    ) {
+    if (!personId || this.avatarFaceLoading()) {
       return;
     }
 
-    const page =
-      more
-        ? this.avatarMediaPage() + 1
-        : 1;
+    const page = more ? this.avatarFacePage() + 1 : 1;
 
-    this.avatarLoading.set(true);
+    if (more && this.avatarFacePage() === 0) {
+      return;
+    }
+
+    if (more && this.avatarFaces().length >= this.avatarFaceTotal()) {
+      return;
+    }
+
+    const sequence = ++this.avatarFaceSequence;
+    this.avatarFaceLoading.set(true);
     this.error.set(null);
 
     try {
       const result = await firstValueFrom(
-        this.http.get<PersonMediaPage>(
-          `/api/fotos/people/${personId}/media`,
+        this.http.get<AvatarFacePage>(
+          `/api/fotos/people/${personId}/avatar/faces`,
           {
             params: {
               page,
@@ -648,96 +655,58 @@ export class CurationManagementComponent implements OnDestroy {
         ),
       );
 
-      if (
-        this.destroyed
-        || personId !== this.selectedAvatarPersonId()
-      ) {
+      if (this.destroyed || personId !== this.selectedAvatarPersonId() || sequence !== this.avatarFaceSequence) {
         return;
       }
 
-      const images = result.items.filter(
-        item => item.media_type === 'image',
-      );
-
-      this.avatarMedia.set(
+      this.avatarFaces.set(
         more
-          ? [
-              ...this.avatarMedia(),
-              ...images,
-            ]
-          : images,
+          ? [...this.avatarFaces(), ...result.items]
+          : result.items,
       );
+      this.avatarFacePage.set(result.page);
+      this.avatarFaceTotal.set(result.total);
 
-      this.avatarMediaPage.set(result.page);
-      this.avatarMediaTotal.set(result.total);
-
-      for (const item of images) {
+      for (const face of result.items) {
         try {
           const blob = await firstValueFrom(
             this.http.get(
-              `/api/fotos/media/${item.id}/thumbnail`,
-              {
-                responseType: 'blob',
-              },
+              `/api/fotos/people/${personId}/avatar/faces/${face.id}/preview`,
+              { responseType: 'blob' },
             ),
           );
 
-          if (
-            this.destroyed
-            || personId !== this.selectedAvatarPersonId()
-          ) {
+          if (this.destroyed || personId !== this.selectedAvatarPersonId() || sequence !== this.avatarFaceSequence) {
             return;
           }
 
           const url = URL.createObjectURL(blob);
 
-          this.avatarMediaUrls.update(current => {
+          this.avatarFaceUrls.update(current => {
             const next = new Map(current);
-            next.set(item.id, url);
+            const previous = next.get(face.id);
+
+            if (previous) {
+              URL.revokeObjectURL(previous);
+            }
+
+            next.set(face.id, url);
             return next;
           });
         } catch {
-          // A foto continua disponível mesmo sem miniatura.
+          // O candidato permanece listado caso a miniatura falhe.
         }
       }
     } catch (error) {
-      this.error.set(this.errorMessage(error));
+      if (!this.destroyed && personId === this.selectedAvatarPersonId() && sequence === this.avatarFaceSequence) {
+        this.error.set(this.errorMessage(error));
+      }
     } finally {
-      this.avatarLoading.set(false);
+      if (sequence === this.avatarFaceSequence) {
+        this.avatarFaceLoading.set(false);
+      }
     }
   }
-
-  async uploadAvatar(
-    personId: string,
-    file: File | null,
-  ): Promise<void> {
-    if (
-      !file
-      || !this.canManage()
-      || this.busy()
-    ) {
-      return;
-    }
-
-    await this.mutate(
-      async () => {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const updated = await firstValueFrom(
-          this.http.put<PersonItem>(
-            `/api/fotos/people/${personId}/avatar`,
-            formData,
-          ),
-        );
-
-        this.replacePerson(updated);
-        await this.refreshAvatar(updated);
-      },
-      'Avatar atualizado.',
-    );
-  }
-
   async removeAvatar(
     personId: string,
   ): Promise<void> {
@@ -766,12 +735,15 @@ export class CurationManagementComponent implements OnDestroy {
     );
   }
 
-  async useMediaAsAvatar(
+  async useFaceAsAvatar(
     personId: string,
-    mediaId: string,
+    faceId: string,
   ): Promise<void> {
     if (
-      !this.canManage()
+      !personId
+      || !faceId
+      || personId !== this.selectedAvatarPersonId()
+      || !this.canManage()
       || this.busy()
     ) {
       return;
@@ -779,42 +751,19 @@ export class CurationManagementComponent implements OnDestroy {
 
     await this.mutate(
       async () => {
-        const blob = await firstValueFrom(
-          this.http.get(
-            `/api/fotos/media/${mediaId}/preview`,
-            {
-              responseType: 'blob',
-            },
-          ),
-        );
-
-        const file = new File(
-          [blob],
-          'avatar.webp',
-          {
-            type:
-              blob.type
-              || 'image/webp',
-          },
-        );
-
-        const formData = new FormData();
-        formData.append('file', file);
-
         const updated = await firstValueFrom(
           this.http.put<PersonItem>(
-            `/api/fotos/people/${personId}/avatar`,
-            formData,
+            `/api/fotos/people/${personId}/avatar/faces/${faceId}`,
+            {},
           ),
         );
 
         this.replacePerson(updated);
         await this.refreshAvatar(updated);
       },
-      'Foto definida como avatar.',
+      'Rosto definido como avatar.',
     );
   }
-
   private replacePerson(
     person: PersonItem,
   ): void {
@@ -882,17 +831,12 @@ export class CurationManagementComponent implements OnDestroy {
     });
   }
 
-  private releaseAvatarMediaUrls(): void {
-    for (
-      const url
-      of this.avatarMediaUrls().values()
-    ) {
+  private releaseAvatarFaceUrls(): void {
+    for (const url of this.avatarFaceUrls().values()) {
       URL.revokeObjectURL(url);
     }
 
-    this.avatarMediaUrls.set(
-      new Map(),
-    );
+    this.avatarFaceUrls.set(new Map());
   }
 
   private replaceFace(face: FaceItem): void {

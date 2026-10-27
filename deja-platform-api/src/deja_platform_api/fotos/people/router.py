@@ -5,13 +5,11 @@ from typing import Annotated
 from fastapi import (
     APIRouter,
     Depends,
-    File,
     Path,
     Query,
-    UploadFile,
     status,
 )
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 from deja_platform_api.authentication.schemas import (
     AuthenticatedUser,
@@ -21,6 +19,7 @@ from deja_platform_api.fotos.people.dependencies import (
     FotosPersonServiceDependency,
 )
 from deja_platform_api.fotos.people.schemas import (
+    FotosAvatarFaceListResponse,
     FotosPersonCreate,
     FotosPersonListResponse,
     FotosPersonMediaLink,
@@ -198,6 +197,73 @@ def unlink_person_media(
     )
 
 
+@router.get(
+    "/{person_id}/avatar/faces",
+    response_model=FotosAvatarFaceListResponse,
+)
+def list_person_avatar_faces(
+    person_id: PersonId,
+    avatar_service: FotosPersonAvatarServiceDependency,
+    current_user: PersonReader,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200),
+) -> FotosAvatarFaceListResponse:
+    """Lista rostos confirmados disponíveis para avatar."""
+
+    faces, total = avatar_service.list_avatar_faces(
+        person_id,
+        current_user,
+        page=page,
+        page_size=page_size,
+    )
+
+    return FotosAvatarFaceListResponse(
+        items=faces,
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=(total + page_size - 1) // page_size,
+    )
+
+@router.get(
+    "/{person_id}/avatar/faces/{face_id}/preview",
+)
+def get_person_avatar_face_preview(
+    person_id: PersonId,
+    face_id: Annotated[str, Path(min_length=36, max_length=36)],
+    avatar_service: FotosPersonAvatarServiceDependency,
+    current_user: PersonReader,
+) -> Response:
+    """Retorna o recorte facial confirmado para pré-visualização."""
+    content = avatar_service.get_face_avatar_preview(
+        person_id,
+        face_id,
+        current_user,
+    )
+    return Response(
+        content=content,
+        media_type="image/webp",
+        headers={"Cache-Control": "no-store"},
+    )
+
+@router.put(
+    "/{person_id}/avatar/faces/{face_id}",
+    response_model=FotosPersonResponse,
+)
+def set_person_avatar_from_face(
+    person_id: PersonId,
+    face_id: Annotated[str, Path(min_length=36, max_length=36)],
+    avatar_service: FotosPersonAvatarServiceDependency,
+    current_user: PersonEditor,
+) -> FotosPersonResponse:
+    """Define um rosto confirmado como avatar da pessoa."""
+
+    return avatar_service.use_face_as_avatar(
+        person_id,
+        face_id,
+        current_user,
+    )
+
 @router.get("/{person_id}/avatar")
 def get_person_avatar(
     person_id: PersonId,
@@ -209,25 +275,6 @@ def get_person_avatar(
     return FileResponse(
         avatar_service.get_file(person_id, current_user),
         media_type="image/webp",
-    )
-
-
-@router.put(
-    "/{person_id}/avatar",
-    response_model=FotosPersonResponse,
-)
-async def upload_person_avatar(
-    person_id: PersonId,
-    file: Annotated[UploadFile, File()],
-    avatar_service: FotosPersonAvatarServiceDependency,
-    current_user: PersonEditor,
-) -> FotosPersonResponse:
-    """Substitui o avatar da pessoa por uma imagem válida."""
-
-    return await avatar_service.upload(
-        person_id,
-        file,
-        current_user,
     )
 
 

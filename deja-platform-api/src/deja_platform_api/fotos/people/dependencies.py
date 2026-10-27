@@ -10,6 +10,10 @@ from deja_platform_api.authentication.authorization import (
 )
 from deja_platform_api.core.config import Settings, get_settings
 from deja_platform_api.core.database import get_db_session
+from deja_platform_api.fotos.media.dependencies import (
+    FotosMediaDerivativeServiceDependency,
+    FotosMediaServiceDependency,
+)
 from deja_platform_api.fotos.media.repository import (
     FotosMediaRepository,
 )
@@ -62,6 +66,8 @@ def get_fotos_person_avatar_service(
     session: DatabaseSession,
     settings: SettingsDependency,
     person_service: FotosPersonServiceDependency,
+    media_service: FotosMediaServiceDependency,
+    derivative_service: FotosMediaDerivativeServiceDependency,
 ) -> FotosPersonAvatarService:
     """Monta o serviço de avatar no armazenamento existente."""
 
@@ -70,6 +76,8 @@ def get_fotos_person_avatar_service(
         repository=FotosPersonRepository(session),
         authorization_service=AuthorizationService(),
         settings=settings,
+        media_service=media_service,
+        derivative_service=derivative_service,
     )
 
 
