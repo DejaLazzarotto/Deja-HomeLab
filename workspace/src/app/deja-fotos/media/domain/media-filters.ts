@@ -14,6 +14,7 @@ export interface MediaFilters {
   readonly tenantId?: string;
   readonly environmentId?: string;
   readonly albumId?: string;
+  readonly withoutAlbum?: boolean;
 
   readonly mediaType?: MediaType;
   readonly processingStatus?: MediaProcessingStatus;

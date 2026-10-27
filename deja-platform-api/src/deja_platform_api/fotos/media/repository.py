@@ -36,6 +36,7 @@ class FotosMediaRepository:
         tenant_id: str | None = None,
         environment_id: str | None = None,
         album_id: str | None = None,
+        without_album: bool = False,
         media_type: str | None = None,
         processing_status: str | None = None,
         original_date_from: datetime | None = None,
@@ -71,6 +72,8 @@ class FotosMediaRepository:
 
         if album_id is not None:
             conditions.append(FotosMediaModel.album_id == album_id)
+        elif without_album:
+            conditions.append(FotosMediaModel.album_id.is_(None))
 
         if media_type is not None:
             conditions.append(FotosMediaModel.media_type == media_type)

@@ -21,6 +21,12 @@
         }
       </select>
     </label>
+    <label>Estado da curadoria
+      <select [ngModel]="completionFilter()" (ngModelChange)="completionFilter.set($event); applyFilters(1)">
+        <option value="pending">Pendentes</option>
+        <option value="completed">Concluídas</option>
+      </select>
+    </label>
     <label>Situação
       <select [ngModel]="situationFilter()" (ngModelChange)="situationFilter.set($event)">
         <option value="all">Todas as mídias</option>
@@ -88,12 +94,27 @@
                   : 'Revisão de reconhecimento'
               }}
             </h2>
-            @if (selectedMedia() && selectedMediaSupportsFaces() && canManage()) {
-              <button type="button" (click)="detect()" [disabled]="busy()">Analisar rostos</button>
-            }
           </header>
           @if (selectedMedia(); as item) {
             <p class="media-caption">{{ item.original_name }}</p>
+            @if (canManage()) {
+              <div class="curation-completion-actions">
+                @if (selectedMediaSupportsFaces() && completionFilter() === "pending") {
+                  <button type="button" (click)="detect()" [disabled]="busy()">Analisar rostos</button>
+                }
+                @if (completionFilter() === "pending") {
+                  <button type="button" class="primary-button"
+                    [disabled]="busy()" (click)="setCurationCompleted(true)">
+                    Concluir curadoria
+                  </button>
+                } @else {
+                  <button type="button"
+                    [disabled]="busy()" (click)="setCurationCompleted(false)">
+                    Reabrir curadoria
+                  </button>
+                }
+              </div>
+            }
             <div class="media-original-date">
               <label>Data original
                 <input type="date" [ngModel]="mediaOriginalDate()"
@@ -106,11 +127,14 @@
                   (click)="saveOriginalDate()">Salvar alteração</button>
               }
             </div>
-            @if (imageUrl()) {
+            @if (item.media_type === 'video' && videoUrl()) {
+              <video class="curation-video-player" [src]="videoUrl()" controls playsinline preload="metadata" [attr.aria-label]="'Reproduzir ' + item.original_name"></video>
+            }
+            @if (imageUrl() && item.media_type === 'image') {
               <div class="image-stage" [class.drawing]="drawing()"
                 (pointerdown)="pointerDown($event)" (pointermove)="pointerMove($event)"
                 (pointerup)="pointerUp($event)" (pointercancel)="pointerUp($event)">
-                <img [src]="imageUrl()" [alt]="item.original_name" draggable="false" />
+                <img [src]="imageUrl()" [alt]="item.original_name" draggable="false" (click)="!drawing() && expandedImage.set(true)" [style.cursor]="drawing() ? null : 'zoom-in'" />
                 @for (face of faces(); track face.id) {
                   <button type="button" class="face-box"
                     [class.selected]="selectedFaceId() === face.id"
@@ -429,4 +453,12 @@
       </section>
     }
   }
+@if (expandedImage() && imageUrl() && selectedMedia()?.media_type === 'image') {
+  <div class="curation-lightbox" role="presentation" (click)="expandedImage.set(false)">
+    <div class="curation-lightbox__content" role="dialog" aria-modal="true" aria-label="Fotografia ampliada" (click)="$event.stopPropagation()">
+      <button type="button" class="curation-lightbox__close" aria-label="Fechar fotografia ampliada" (click)="expandedImage.set(false)">×</button>
+      <img [src]="imageUrl()" [alt]="selectedMedia()?.original_name || 'Fotografia ampliada'" (click)="expandedImage.set(false)" title="Clique para fechar" />
+    </div>
+  </div>
+}
 </section>

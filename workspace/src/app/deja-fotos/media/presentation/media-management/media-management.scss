@@ -477,6 +477,16 @@ button:disabled {
   place-content: center;
 }
 
+.upload__dropzone--dragging {
+  border: 2px dashed var(--workspace-color-primary);
+  background: color-mix(in srgb, var(--workspace-color-primary) 16%, var(--workspace-color-surface));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--workspace-color-primary) 15%, transparent);
+}
+
+.upload__dropzone--dragging strong {
+  color: var(--workspace-color-primary);
+}
+
 .upload__dropzone strong {
   color: var(--workspace-color-text);
   font-size: 0.78rem;
@@ -488,6 +498,7 @@ button:disabled {
 }
 
 .upload__dropzone input {
+  display: none;
   position: absolute;
   inset: 0;
   width: 100%;

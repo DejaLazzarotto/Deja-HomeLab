@@ -130,6 +130,7 @@ def list_media(
     tenant_id: str | None = Query(default=None),
     environment_id: str | None = Query(default=None),
     album_id: str | None = Query(default=None),
+    without_album: bool = Query(default=False),
     media_type: Annotated[FotosMediaType | None, Query()] = None,
     processing_status: Annotated[
         FotosMediaProcessingStatus | None,
@@ -179,6 +180,7 @@ def list_media(
         tenant_id=tenant_id,
         environment_id=environment_id,
         album_id=album_id,
+        without_album=without_album,
         media_type=media_type,
         processing_status=processing_status,
         original_date_from=original_date_from,

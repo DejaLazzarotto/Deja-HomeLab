@@ -68,6 +68,7 @@ def list_curation_media(
         "all",
         pattern="^(all|suggested|unknown|confirmed)$",
     ),
+    completion_status: str = Query("pending", pattern="^(pending|completed|all)$"),
     year: int | None = Query(None, ge=1900, le=2200),
     month: int | None = Query(None, ge=1, le=12),
     page: int = Query(1, ge=1),
@@ -79,6 +80,7 @@ def list_curation_media(
         album_id=album_id,
         person_id=person_id,
         situation=situation,
+        completion_status=completion_status,
         year=year,
         month=month,
         page=page,
@@ -91,6 +93,21 @@ def list_curation_media(
         total=total,
         total_pages=(total + page_size - 1) // page_size,
     )
+
+
+@router.post("/media/{media_id}/completion")
+def set_media_curation_completion(
+    media_id: ResourceId,
+    completed: bool,
+    service: CurationServiceDependency,
+    user: Manager,
+) -> dict[str, bool]:
+    media = service.set_curation_completed(
+        media_id,
+        user,
+        completed=completed,
+    )
+    return {"curation_completed": media.curation_completed}
 
 
 @router.get("/summary", response_model=dict[str, int])

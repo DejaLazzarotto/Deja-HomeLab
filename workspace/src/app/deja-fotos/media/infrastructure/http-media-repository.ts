@@ -388,6 +388,13 @@ export class HttpMediaRepository implements MediaRepository {
       );
     }
 
+    if (filters.withoutAlbum !== undefined) {
+      params = params.set(
+        'without_album',
+        String(filters.withoutAlbum),
+      );
+    }
+
     if (filters.wasConverted !== undefined) {
       params = params.set(
         'was_converted',

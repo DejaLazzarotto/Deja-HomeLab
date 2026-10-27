@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnDestroy, computed, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { FotosEnvironmentOption } from '../../../fotos-environment-option';
@@ -82,6 +82,7 @@ export class CurationManagementComponent implements OnDestroy {
   readonly peoplePage = signal(0);
   readonly albums = signal<readonly AlbumItem[]>([]);
   readonly media = signal<readonly MediaItem[]>([]);
+  readonly completionFilter = signal<"pending" | "completed">("pending");
   readonly mediaTotal = signal(0);
   readonly mediaPage = signal(0);
   readonly selectedMedia = signal<MediaItem | null>(null);
@@ -89,6 +90,8 @@ export class CurationManagementComponent implements OnDestroy {
   readonly mediaDescription = signal('');
   readonly mediaOriginalDate = signal('');
   readonly imageUrl = signal<string | null>(null);
+  readonly videoUrl = signal<string | null>(null);
+  readonly expandedImage = signal(false);
   readonly faces = signal<readonly FaceItem[]>([]);
   readonly faceTotal = signal(0);
   readonly facePage = signal(0);
@@ -133,6 +136,11 @@ export class CurationManagementComponent implements OnDestroy {
         );
       }
     });
+  }
+
+  @HostListener("document:keydown.escape")
+  closeExpandedImage(): void {
+    this.expandedImage.set(false);
   }
 
   ngOnDestroy(): void {
@@ -208,13 +216,34 @@ export class CurationManagementComponent implements OnDestroy {
     }
   }
 
+  async setCurationCompleted(completed: boolean): Promise<void> {
+    const item = this.selectedMedia();
+    if (!item || !this.canManage() || this.busy()) return;
+
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      await firstValueFrom(this.http.post(
+        `/api/fotos/curation/media/${item.id}/completion`,
+        null,
+        { params: new HttpParams().set("completed", completed) },
+      ));
+      await this.applyFilters(this.mediaPage() || 1);
+    } catch (error: unknown) {
+      this.error.set(error instanceof HttpErrorResponse && typeof error.error?.detail === 'string' ? error.error.detail : 'Não foi possível atualizar a situação da curadoria.');
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
   async applyFilters(page = 1): Promise<void> {
     const request = ++this.mediaSequence;
     this.loading.set(true);
     this.error.set(null);
     this.selectMedia(null);
     let params = new HttpParams().set('page', page).set('page_size', 24)
-      .set('situation', this.situationFilter());
+      .set('situation', this.situationFilter())
+      .set('completion_status', this.completionFilter());
     if (this.environmentId()) params = params.set('environment_id', this.environmentId());
     if (this.personFilter()) params = params.set('person_id', this.personFilter());
     if (this.albumFilter()) params = params.set('album_id', this.albumFilter());
@@ -255,6 +284,8 @@ export class CurationManagementComponent implements OnDestroy {
   async selectMedia(item: MediaItem | null): Promise<void> {
     const request = ++this.faceSequence;
     this.releaseImage();
+    this.releaseVideo();
+    this.expandedImage.set(false);
     this.selectedMedia.set(item);
     this.mediaDescription.set('');
     this.mediaOriginalDate.set(item?.original_date?.slice(0, 10) ?? '');
@@ -279,6 +310,13 @@ export class CurationManagementComponent implements OnDestroy {
         if (request !== this.faceSequence || this.destroyed) return;
         this.imageUrl.set(URL.createObjectURL(blob));
         this.mediaDescription.set(mediaDetail.description ?? item.description ?? '');
+        try {
+          const videoBlob = await firstValueFrom(this.http.get(`/api/fotos/media/${item.id}/preview`, { responseType: 'blob' }));
+          if (request !== this.faceSequence || this.destroyed) return;
+          this.videoUrl.set(URL.createObjectURL(videoBlob));
+        } catch {
+          if (request === this.faceSequence && !this.destroyed) this.error.set('Não foi possível carregar o vídeo para reprodução.');
+        }
         return;
       }
 
@@ -872,6 +910,12 @@ export class CurationManagementComponent implements OnDestroy {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  private releaseVideo(): void {
+    const url = this.videoUrl();
+    if (url) URL.revokeObjectURL(url);
+    this.videoUrl.set(null);
   }
 
   private releaseImage(): void {

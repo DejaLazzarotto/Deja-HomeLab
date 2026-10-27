@@ -1,5 +1,6 @@
 """Revisão de rostos e ensino de referências com isolamento institucional."""
 
+from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
 from uuid import uuid4
@@ -132,6 +133,21 @@ class FotosCurationService:
         path, _ = self.derivatives.get_derivative_file(media.id, kind)
         return path
 
+    def set_curation_completed(
+        self,
+        media_id: str,
+        user: AuthenticatedUser,
+        *,
+        completed: bool,
+    ) -> FotosMediaModel:
+        self._manager(user)
+        media = self._media(media_id, user)
+        media.curation_completed = completed
+        media.curation_completed_at = datetime.now(UTC).replace(tzinfo=None) if completed else None
+        self.session.commit()
+        self.session.refresh(media)
+        return media
+
     def list_faces(
         self, media_id: str, user: AuthenticatedUser, *, page: int, page_size: int
     ) -> tuple[list[FotosFaceModel], int]:
@@ -150,6 +166,7 @@ class FotosCurationService:
         month: int | None,
         page: int,
         page_size: int,
+        completion_status: str = "pending",
     ) -> tuple[list[FotosMediaModel], int]:
         org, tenant, environment = self.authorization.resolve_list_scope(
             user, organization_id=None, tenant_id=None, environment_id=environment_id
@@ -158,6 +175,12 @@ class FotosCurationService:
             FotosMediaModel.deleted_at.is_(None),
             FotosMediaModel.processing_status == "ready",
         ]
+        if completion_status == "pending":
+            where.append(FotosMediaModel.curation_completed.is_(False))
+        elif completion_status == "completed":
+            where.append(FotosMediaModel.curation_completed.is_(True))
+        elif completion_status != "all":
+            raise ValueError("Estado de curadoria inválido.")
         if org:
             where.append(FotosMediaModel.organization_id == org)
         if tenant:

@@ -30,12 +30,6 @@ export type MediaBulkActionRequest =
       readonly originalDate: string;
     }
   | {
-      readonly operation: 'verify_original_date';
-    }
-  | {
-      readonly operation: 'clear_original_date_conflict';
-    }
-  | {
       readonly operation: 'set_album';
       readonly albumId: string | null;
     };
@@ -122,23 +116,7 @@ export class MediaBulkActionsComponent {
 
     this.actionRequested.emit({
       operation: 'set_original_date',
-      originalDate: `${value}:00`,
-    });
-  }
-
-  protected verifyOriginalDate(): void {
-    this.validationMessage.set(null);
-
-    this.actionRequested.emit({
-      operation: 'verify_original_date',
-    });
-  }
-
-  protected clearOriginalDateConflict(): void {
-    this.validationMessage.set(null);
-
-    this.actionRequested.emit({
-      operation: 'clear_original_date_conflict',
+      originalDate: `${value}T12:00:00`,
     });
   }
 

@@ -17,8 +17,7 @@ import {
   OnInit,
   computed,
   input,
-  signal,
-} from '@angular/core';
+  signal, HostListener } from '@angular/core';
 
 import {
   FormsModule,
@@ -137,6 +136,8 @@ export class MediaManagementComponent implements OnInit, OnDestroy {
   readonly uploadFiles =
     signal<readonly File[]>([]);
 
+  readonly uploadDragging = signal(false);
+
   readonly uploadEnvironmentId = signal('');
 
   readonly uploadAlbumId = signal('');
@@ -176,6 +177,7 @@ export class MediaManagementComponent implements OnInit, OnDestroy {
   readonly environmentFilter = signal('');
 
   readonly albumFilter = signal('');
+
 
   readonly mediaTypeFilter =
     signal<MediaTypeFilter>('all');
@@ -329,6 +331,55 @@ export class MediaManagementComponent implements OnInit, OnDestroy {
     }
   }
 
+  @HostListener("document:dragover", ["$event"])
+  preventExternalFileDrag(event: DragEvent): void {
+    if (Array.from(event.dataTransfer?.types ?? []).includes("Files")) {
+      event.preventDefault();
+    }
+  }
+
+  @HostListener("document:drop", ["$event"])
+  preventExternalFileDrop(event: DragEvent): void {
+    if (Array.from(event.dataTransfer?.types ?? []).includes("Files")) {
+      event.preventDefault();
+      this.uploadDragging.set(false);
+    }
+  }
+
+  onUploadDragOver(event: DragEvent): void {
+    event.preventDefault();
+    if (!this.uploadBusy() && this.canUpload()) {
+      this.uploadDragging.set(true);
+    }
+  }
+
+  onUploadDragLeave(event: DragEvent): void {
+    const zone = event.currentTarget as HTMLElement;
+    if (!zone.contains(event.relatedTarget as Node | null)) {
+      this.uploadDragging.set(false);
+    }
+  }
+
+  onUploadDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.uploadDragging.set(false);
+
+    if (this.uploadBusy() || !this.canUpload()) return;
+
+    const files = Array.from(event.dataTransfer?.files ?? []);
+    this.clearUploadResult();
+
+    const combined = [...this.uploadFiles(), ...files].filter((file, index, all) => all.findIndex(other => other.name === file.name && other.size === file.size && other.lastModified === file.lastModified) === index);
+
+    if (combined.length > MAX_UPLOAD_FILES) {
+      this.uploadFiles.set([]);
+      this.uploadError.set(`Selecione no máximo ${MAX_UPLOAD_FILES} arquivos por envio.`);
+      return;
+    }
+
+    this.uploadFiles.set(combined);
+  }
+
   selectUploadFiles(
     event: Event,
   ): void {
@@ -343,7 +394,9 @@ export class MediaManagementComponent implements OnInit, OnDestroy {
 
     this.clearUploadResult();
 
-    if (files.length > MAX_UPLOAD_FILES) {
+    const combined = [...this.uploadFiles(), ...files].filter((file, index, all) => all.findIndex(other => other.name === file.name && other.size === file.size && other.lastModified === file.lastModified) === index);
+
+    if (combined.length > MAX_UPLOAD_FILES) {
       this.uploadFiles.set([]);
 
       this.uploadError.set(
@@ -353,7 +406,7 @@ export class MediaManagementComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.uploadFiles.set(files);
+    this.uploadFiles.set(combined);
   }
 
   removeUploadFile(
@@ -890,6 +943,8 @@ export class MediaManagementComponent implements OnInit, OnDestroy {
         this.environmentFilter() || undefined,
       albumId:
         this.albumFilter() || undefined,
+      withoutAlbum:
+        !this.albumFilter(),
       mediaType:
         mediaType === 'all'
           ? undefined
@@ -953,13 +1008,6 @@ export class MediaManagementComponent implements OnInit, OnDestroy {
           operation: action.operation,
           mediaIds,
           originalDate: action.originalDate,
-        };
-
-      case 'verify_original_date':
-      case 'clear_original_date_conflict':
-        return {
-          operation: action.operation,
-          mediaIds,
         };
 
       case 'set_album':

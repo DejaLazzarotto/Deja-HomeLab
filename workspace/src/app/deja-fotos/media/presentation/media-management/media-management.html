@@ -147,13 +147,15 @@
         <label class="upload__file-picker">
           <span>Arquivos</span>
 
-          <span class="upload__dropzone">
+          <span class="upload__dropzone" [class.upload__dropzone--dragging]="uploadDragging()" (dragover)="onUploadDragOver($event)" (dragleave)="onUploadDragLeave($event)" (drop)="onUploadDrop($event)">
             <input
               type="file"
+              hidden
               multiple
               aria-label="Selecionar imagens ou vídeos"
               accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.mp4,.mov,.mpeg,.mpg,image/jpeg,image/png,image/webp,image/gif,image/bmp,video/mp4,video/quicktime,video/mpeg"
               (change)="selectUploadFiles($event)"
+              (drop)="onUploadDrop($event); $event.stopPropagation()"
               [disabled]="uploadBusy()"
             />
 

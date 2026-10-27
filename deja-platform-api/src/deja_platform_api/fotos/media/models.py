@@ -211,6 +211,17 @@ class FotosMediaModel(Base):
         nullable=True,
     )
 
+    curation_completed: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+
+    curation_completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
     view_count: Mapped[int] = mapped_column(
         BigInteger,
         nullable=False,
