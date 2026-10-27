@@ -48,7 +48,8 @@
                   "maximumError": "12kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "baseHref": "/plataforma/"
             },
             "development": {
               "optimization": false,
