@@ -108,7 +108,7 @@
           <dl>
             <div>
               <dt>Data</dt>
-              <dd>
+              <dd [style.color]="!media.originalDate ? '#ef4444' : null">
                 {{
                   formatDate(
                     media.originalDate,

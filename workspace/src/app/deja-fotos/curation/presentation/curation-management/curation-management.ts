@@ -192,7 +192,10 @@ export class CurationManagementComponent implements OnDestroy {
           .set('environment_id', environment).set('page', page).set('page_size', 200) },
       ));
       if (this.destroyed || environment !== this.environmentId()) return;
-      this.people.set(more ? [...this.people(), ...result.items] : result.items);
+      this.people.set(
+        (more ? [...this.people(), ...result.items] : [...result.items])
+          .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }))
+      );
       this.peopleTotal.set(result.total);
       this.peoplePage.set(result.page);
 
@@ -500,7 +503,7 @@ export class CurationManagementComponent implements OnDestroy {
         '/api/fotos/people', { environment_id: environment, name },
       ));
       if (this.destroyed || environment !== this.environmentId()) return;
-      this.people.update(items => [person, ...items]);
+      this.people.update(items => [...items, person].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })));
       this.peopleTotal.update(total => total + 1);
       this.chosenPersonId.set(person.id);
       this.newPersonName.set('');

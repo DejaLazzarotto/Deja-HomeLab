@@ -97,6 +97,34 @@
           </header>
           @if (selectedMedia(); as item) {
             <p class="media-caption">{{ item.original_name }}</p>
+            <div class="curation-media-layout">
+@if (item.media_type === 'video' && videoUrl()) {
+              <video class="curation-video-player" [src]="videoUrl()" controls playsinline preload="metadata" [attr.aria-label]="'Reproduzir ' + item.original_name"></video>
+            }
+            @if (imageUrl() && item.media_type === 'image') {
+              <div class="image-stage" [class.drawing]="drawing()"
+                (pointerdown)="pointerDown($event)" (pointermove)="pointerMove($event)"
+                (pointerup)="pointerUp($event)" (pointercancel)="pointerUp($event)">
+                <img [src]="imageUrl()" [alt]="item.original_name" draggable="false" (click)="!drawing() && expandedImage.set(true)" [style.cursor]="drawing() ? null : 'zoom-in'" />
+                @for (face of faces(); track face.id) {
+                  <button type="button" class="face-box"
+                    [class.selected]="selectedFaceId() === face.id"
+                    [style.left.%]="face.x * 100" [style.top.%]="face.y * 100"
+                    [style.width.%]="face.width * 100" [style.height.%]="face.height * 100"
+                    [attr.aria-label]="'Selecionar rosto de ' + personName(face.person_id)"
+                    (pointerdown)="$event.stopPropagation()"
+                    (click)="selectFace(face); $event.stopPropagation()"></button>
+                }
+                @if (draft(); as box) {
+                  <div class="face-box face-box--draft"
+                    [style.left.%]="box.x * 100" [style.top.%]="box.y * 100"
+                    [style.width.%]="box.width * 100" [style.height.%]="box.height * 100"></div>
+                }
+              </div>
+            } @else {
+              <p>Carregando imagem de revisão...</p>
+            }
+              <aside class="curation-media-actions">
             @if (canManage()) {
               <div class="curation-completion-actions">
                 @if (selectedMediaSupportsFaces() && completionFilter() === "pending") {
@@ -127,32 +155,8 @@
                   (click)="saveOriginalDate()">Salvar alteração</button>
               }
             </div>
-            @if (item.media_type === 'video' && videoUrl()) {
-              <video class="curation-video-player" [src]="videoUrl()" controls playsinline preload="metadata" [attr.aria-label]="'Reproduzir ' + item.original_name"></video>
-            }
-            @if (imageUrl() && item.media_type === 'image') {
-              <div class="image-stage" [class.drawing]="drawing()"
-                (pointerdown)="pointerDown($event)" (pointermove)="pointerMove($event)"
-                (pointerup)="pointerUp($event)" (pointercancel)="pointerUp($event)">
-                <img [src]="imageUrl()" [alt]="item.original_name" draggable="false" (click)="!drawing() && expandedImage.set(true)" [style.cursor]="drawing() ? null : 'zoom-in'" />
-                @for (face of faces(); track face.id) {
-                  <button type="button" class="face-box"
-                    [class.selected]="selectedFaceId() === face.id"
-                    [style.left.%]="face.x * 100" [style.top.%]="face.y * 100"
-                    [style.width.%]="face.width * 100" [style.height.%]="face.height * 100"
-                    [attr.aria-label]="'Selecionar rosto de ' + personName(face.person_id)"
-                    (pointerdown)="$event.stopPropagation()"
-                    (click)="selectFace(face); $event.stopPropagation()"></button>
-                }
-                @if (draft(); as box) {
-                  <div class="face-box face-box--draft"
-                    [style.left.%]="box.x * 100" [style.top.%]="box.y * 100"
-                    [style.width.%]="box.width * 100" [style.height.%]="box.height * 100"></div>
-                }
-              </div>
-            } @else {
-              <p>Carregando imagem de revisão...</p>
-            }
+              </aside>
+            </div>
             @if (selectedMediaSupportsFaces() && canManage()) {
               <div class="marking-actions">
                 <button type="button" (click)="drawing.set(!drawing()); draft.set(null)">

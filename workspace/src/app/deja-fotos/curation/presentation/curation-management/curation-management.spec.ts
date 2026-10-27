@@ -181,6 +181,21 @@ describe('CurationManagementComponent', () => {
     expect(descriptionRequest.request.method).toBe('GET');
     descriptionRequest.flush({ ...media, description: 'Vídeo de teste' });
 
+    let previewRequest;
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const requests = http.match('/api/fotos/media/video-1/preview');
+      if (requests.length) {
+        previewRequest = requests[0];
+        break;
+      }
+      await Promise.resolve();
+    }
+    if (!previewRequest) {
+      throw new Error('Requisição de pré-visualização do vídeo não foi iniciada.');
+    }
+    expect(previewRequest.request.method).toBe('GET');
+    previewRequest.flush(new Blob(['video'], { type: 'video/mp4' }));
+
     await selecting;
 
     expect(component.faces()).toEqual([]);

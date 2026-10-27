@@ -252,3 +252,62 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
   font-weight: 700;
   cursor: pointer;
 }
+
+/* Controles de curadoria ao lado da fotografia */
+.curation-media-layout {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.curation-media-layout .image-stage,
+.curation-media-layout .curation-video-player {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.curation-media-actions {
+  display: flex;
+  flex: 0 0 12.5rem;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.curation-media-actions .curation-completion-actions,
+.curation-media-actions .media-original-date {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0;
+}
+
+.curation-media-actions button,
+.curation-media-actions .media-original-date label,
+.curation-media-actions .media-original-date input[type='date'] {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+.curation-media-actions button {
+  min-height: 2.6rem;
+}
+
+@media (max-width: 700px) {
+  .curation-media-layout {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .curation-media-actions {
+    flex: 0 1 auto;
+    width: min(100%, 12.5rem);
+    margin-left: auto;
+  }
+}
