@@ -58,7 +58,6 @@ Exemplos:
 * Album Admin
 * Album Mobile
 * BioQuest
-* Financeiro
 * Sistema de Chamados
 
 Cada aplicação deve possuir seu próprio diretório.
@@ -108,7 +107,6 @@ apps/
 ├── album-admin
 ├── album-mobile
 ├── bioquest-pwa
-├── financeiro-pwa
 └── chamados-pwa
 ```
 

@@ -42,8 +42,10 @@ Seu objetivo é facilitar a administração, documentação e evolução da plat
 | Tipo    | Progressive Web App                 |
 | Caminho | `/var/www/deja/apps/financeiro-pwa` |
 | URL     | `/financeiro-pwa`                   |
-| Status  | Produção                            |
+| Status  | Desativado em 28/10/2026            |
 
+
+**Desativação:** rotas e proxy Firebase removidos do Nginx. Arquivos retirados da produção e preservados em `/home/deja/aplicacoes-desativadas/financeiro-pwa`. Backup: `/home/deja/backup-financeiro-pwa-20261028.tar.gz`.
 ---
 
 ## Backend Album
