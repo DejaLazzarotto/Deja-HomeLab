@@ -3,3 +3,6 @@
 /workspace/projects/deja-fotos-pwa/src/app/features/welcome/welcome-page.scss.bak
 
 /deja-platform-api/music/
+/backups/
+/vivaro-deploy-*.tar.gz
+/workspace-deploy-*.tar.gz
