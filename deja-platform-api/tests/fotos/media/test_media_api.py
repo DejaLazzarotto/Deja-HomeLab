@@ -3051,6 +3051,108 @@ def test_bulk_set_album_handles_scope_and_removal(
     assert external_get.json()["album_id"] == other_album["id"]
 
 
+def test_bulk_return_to_curation_preserves_media(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+    media_context: tuple[
+        str,
+        str,
+        str,
+        str,
+        Mapping[str, str],
+    ],
+) -> None:
+    """Reabre curadoria, remove álbum e preserva a mídia."""
+
+    (
+        _organization_id,
+        _tenant_id,
+        environment_id,
+        album_id,
+        headers,
+    ) = media_context
+
+    response = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        file_name="retorno-curadoria.jpg",
+        content=create_test_jpeg(width=38, height=17),
+    )
+
+    assert response.status_code == 201
+
+    media_id = response.json()["id"]
+    original_name = response.json()["original_name"]
+    original_date = response.json()["original_date"]
+
+    with test_session_factory() as session:
+        media = session.get(FotosMediaModel, media_id)
+        assert media is not None
+        face_id = str(uuid4())
+        session.add(
+            FotosFaceModel(
+                id=face_id,
+                media_id=media_id,
+                organization_id=media.organization_id,
+                tenant_id=media.tenant_id,
+                environment_id=media.environment_id,
+                x=0.1,
+                y=0.1,
+                width=0.3,
+                height=0.3,
+                origin="manual",
+                status="unknown",
+            )
+        )
+        media.curation_completed = True
+        media.curation_completed_at = datetime.now(UTC).replace(tzinfo=None)
+        session.commit()
+
+    result = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={
+            "operation": "return_to_curation",
+            "media_ids": [media_id],
+        },
+        headers=headers,
+    )
+
+    assert result.status_code == 200
+    assert result.json()["succeeded_count"] == 1
+    assert result.json()["failed_count"] == 0
+
+    item = result.json()["results"][0]["media"]
+    assert item["album_id"] is None
+    assert item["original_name"] == original_name
+    assert item["original_date"] == original_date
+
+    persisted = client.get(
+        f"{MEDIA_URL}/{media_id}",
+        headers=headers,
+    )
+
+    assert persisted.status_code == 200
+    assert persisted.json()["album_id"] is None
+    assert persisted.json()["original_date"] == original_date
+
+    with test_session_factory() as session:
+        media = session.get(FotosMediaModel, media_id)
+        assert media is not None
+        assert media.album_id is None
+        assert media.curation_completed is False
+        assert media.curation_completed_at is None
+        face = session.get(FotosFaceModel, face_id)
+        assert face is not None
+        assert face.media_id == media_id
+        assert face.status == "unknown"
+        assert media.original_name == original_name
+        assert media.original_date == (
+            datetime.fromisoformat(original_date)
+            if original_date is not None else None
+        )
+
 def test_bulk_rejects_invalid_selection_contract(
     client: TestClient,
     media_context: tuple[

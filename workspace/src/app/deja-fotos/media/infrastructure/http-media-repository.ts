@@ -120,6 +120,10 @@ type MediaBulkRequest =
       readonly operation: 'set_album';
       readonly media_ids: readonly string[];
       readonly album_id: string | null;
+    }
+  | {
+      readonly operation: 'return_to_curation';
+      readonly media_ids: readonly string[];
     };
 
 export class HttpMediaRepository implements MediaRepository {
@@ -442,6 +446,11 @@ export class HttpMediaRepository implements MediaRepository {
           operation: operation.operation,
           media_ids: operation.mediaIds,
           album_id: operation.albumId,
+        };
+      case 'return_to_curation':
+        return {
+          operation: operation.operation,
+          media_ids: operation.mediaIds,
         };
     }
   }

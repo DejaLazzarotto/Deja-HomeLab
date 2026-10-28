@@ -1016,6 +1016,12 @@ export class MediaManagementComponent implements OnInit, OnDestroy {
           mediaIds,
           albumId: action.albumId,
         };
+
+      case 'return_to_curation':
+        return {
+          operation: action.operation,
+          mediaIds,
+        };
     }
   }
 

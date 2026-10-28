@@ -32,6 +32,9 @@ export type MediaBulkActionRequest =
   | {
       readonly operation: 'set_album';
       readonly albumId: string | null;
+    }
+  | {
+      readonly operation: 'return_to_curation';
     };
 
 @Component({
@@ -120,6 +123,35 @@ export class MediaBulkActionsComponent {
     });
   }
 
+  protected returnToCuration(): void {
+    const count = this.selectedCount();
+
+    if (count === 0 || this.busy()) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Devolver ${count} mídia(s) à curadoria?
+
+As mídias serão retiradas dos álbuns e voltarão à lista de curadoria.
+
+Os arquivos, datas e identificações faciais serão preservados.
+
+Deseja continuar?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.validationMessage.set(null);
+    this.dateEditorVisible.set(false);
+    this.albumEditorVisible.set(false);
+
+    this.actionRequested.emit({
+      operation: 'return_to_curation',
+    });
+  }
   protected setAlbum(): void {
     const value = this.albumSelection();
 

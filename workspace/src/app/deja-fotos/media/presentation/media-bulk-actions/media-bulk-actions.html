@@ -82,6 +82,30 @@
       Mover para álbum
     </button>
 
+    @if (mode() === 'album_organization') {
+    <button
+      type="button"
+      class="bulk-command"
+      (click)="returnToCuration()"
+      [disabled]="selectedCount() === 0 || busy()"
+      aria-label="Devolver mídias selecionadas à curadoria"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="1.8"
+        aria-hidden="true"
+      >
+        <path d="M3 12a9 9 0 1 0 3-6.7" />
+        <path d="M3 3v6h6" />
+      </svg>
+
+      Devolver à curadoria
+    </button>
+    }
     <button
       type="button"
       class="bulk-command bulk-command--clear"

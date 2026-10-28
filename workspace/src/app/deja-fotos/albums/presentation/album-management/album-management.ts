@@ -660,7 +660,7 @@ export class AlbumManagementComponent
     action: MediaBulkActionRequest,
   ): Promise<void> {
     if (
-      action.operation !== 'set_album'
+      (action.operation !== 'set_album' && action.operation !== 'return_to_curation')
       || !this.canOrganize()
       || this.bulkBusy()
     ) {
@@ -680,7 +680,8 @@ export class AlbumManagementComponent
     }
 
     if (
-      action.albumId === null
+      action.operation === 'set_album'
+      && action.albumId === null
       && !window.confirm(
         `Retirar ${
           mediaIds.length
@@ -701,17 +702,18 @@ export class AlbumManagementComponent
 
     try {
       const result =
-        await this.mediaService().bulkUpdate({
-          operation: 'set_album',
-          mediaIds,
-          albumId: action.albumId,
-        });
+        await this.mediaService().bulkUpdate(
+          action.operation === 'return_to_curation'
+            ? { operation: 'return_to_curation', mediaIds }
+            : { operation: 'set_album', mediaIds, albumId: action.albumId },
+        );
 
       this.bulkResult.set(result);
 
       if (result.failedCount === 0) {
         this.operationMessage.set(
-          action.albumId === null
+          action.operation === 'set_album'
+      && action.albumId === null
             ? `${
                 result.succeededCount
               } ${

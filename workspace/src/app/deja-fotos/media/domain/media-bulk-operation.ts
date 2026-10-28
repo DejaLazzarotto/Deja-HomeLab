@@ -12,7 +12,8 @@ export type MediaBulkOperationName =
   | 'set_original_date'
   | 'verify_original_date'
   | 'clear_original_date_conflict'
-  | 'set_album';
+  | 'set_album'
+  | 'return_to_curation';
 
 interface MediaBulkOperationBase {
   readonly mediaIds: readonly string[];
@@ -40,11 +41,17 @@ export interface SetMediaAlbumBulkOperation
   readonly albumId: string | null;
 }
 
+export interface ReturnMediaToCurationBulkOperation
+  extends MediaBulkOperationBase {
+  readonly operation: 'return_to_curation';
+}
+
 export type MediaBulkOperation =
   | SetMediaOriginalDateBulkOperation
   | VerifyMediaOriginalDateBulkOperation
   | ClearMediaOriginalDateConflictBulkOperation
-  | SetMediaAlbumBulkOperation;
+  | SetMediaAlbumBulkOperation
+  | ReturnMediaToCurationBulkOperation;
 
 export interface MediaBulkItemResult {
   readonly mediaId: string;

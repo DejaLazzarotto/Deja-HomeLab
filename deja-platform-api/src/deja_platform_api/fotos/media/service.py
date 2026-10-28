@@ -64,6 +64,7 @@ from deja_platform_api.fotos.media.schemas import (
     FotosMediaBulkClearOriginalDateConflict,
     FotosMediaBulkItemResult,
     FotosMediaBulkResponse,
+    FotosMediaBulkReturnToCuration,
     FotosMediaBulkSetAlbum,
     FotosMediaBulkSetOriginalDate,
     FotosMediaBulkUpdate,
@@ -969,6 +970,18 @@ class FotosMediaService:
             return self._set_album(
                 media,
                 payload.album_id,
+            )
+
+        if isinstance(
+            payload,
+            FotosMediaBulkReturnToCuration,
+        ):
+            media.album_id = None
+            media.curation_completed = False
+            media.curation_completed_at = None
+
+            return self._repository.update(
+                media,
             )
 
         raise ValueError("Operação em lote não suportada.")
