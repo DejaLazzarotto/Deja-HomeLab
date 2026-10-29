@@ -117,6 +117,8 @@ export class MediaManagementComponent implements OnInit, OnDestroy {
   readonly defaultEnvironmentId =
     input<string | null>(null);
 
+  readonly canSelectUploadEnvironment = input(false);
+
   readonly canUpload = input(false);
 
   readonly canCurate = input(false);
@@ -442,8 +444,11 @@ export class MediaManagementComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const environmentId =
-      this.uploadEnvironmentId().trim();
+    const environmentId = (
+      this.canSelectUploadEnvironment()
+        ? this.uploadEnvironmentId()
+        : this.defaultEnvironmentId() ?? ''
+    ).trim();
 
     const albumId =
       this.uploadAlbumId().trim() || null;
@@ -454,7 +459,9 @@ export class MediaManagementComponent implements OnInit, OnDestroy {
 
     if (!environmentId) {
       this.uploadError.set(
-        'Selecione o ambiente de destino.',
+        this.canSelectUploadEnvironment()
+          ? 'Selecione o ambiente de destino.'
+          : 'Nenhum ambiente autorizado foi definido para este usuário.',
       );
 
       return;

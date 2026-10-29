@@ -80,7 +80,13 @@ interface EnvironmentResponse {
         [mediaService]="mediaComposition.service"
         [albumService]="albumsComposition.service"
         [environments]="environments()"
-        [defaultEnvironmentId]="currentUser.environmentId"
+        [defaultEnvironmentId]="
+          currentUser.environmentId
+          ?? (environments().length === 1
+            ? environments()[0].id
+            : null)
+        "
+        [canSelectUploadEnvironment]="currentUser.role === 'platform_admin'"
         [canUpload]="canUpload"
         [canCurate]="canCurate"
       />

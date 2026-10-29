@@ -259,6 +259,45 @@
           <p>
             {{ album.description || 'Álbum sem descrição.' }}
           </p>
+
+          @if (canEdit() || canDelete()) {
+            <div class="album-details__actions">
+              @if (canEdit()) {
+                <button
+                  type="button"
+                  class="secondary-button"
+                  (click)="openEdit(album)"
+                  title="Editar nome e descrição"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16"
+                       fill="none" stroke="currentColor"
+                       stroke-width="1.8" aria-hidden="true">
+                    <path d="M4 20h4L19 9l-4-4L4 16v4Z" />
+                    <path d="m13.5 6.5 4 4" />
+                  </svg>
+                  Editar álbum
+                </button>
+              }
+
+              @if (canDelete()) {
+                <button
+                  type="button"
+                  class="secondary-button"
+                  (click)="deleteAlbum(album)"
+                  [disabled]="deletingAlbumId() !== null"
+                  title="Excluir álbum vazio"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16"
+                       fill="none" stroke="currentColor"
+                       stroke-width="1.8" aria-hidden="true">
+                    <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />
+                    <path d="M10 10v7M14 10v7" />
+                  </svg>
+                  Excluir álbum
+                </button>
+              }
+            </div>
+          }
         </div>
       </header>
 

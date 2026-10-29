@@ -107,24 +107,26 @@
         </div>
       </header>
 
-      <div class="upload__grid">
-        <label>
-          <span>Ambiente de destino</span>
+      <div class="upload__grid" [class.upload__grid--single-environment]="!canSelectUploadEnvironment()">
+        @if (canSelectUploadEnvironment()) {
+          <label>
+            <span>Ambiente de destino</span>
 
-          <select
-            [ngModel]="uploadEnvironmentId()"
-            (ngModelChange)="uploadEnvironmentId.set($event)"
-            [disabled]="uploadBusy()"
-          >
-            <option value="">Selecione o ambiente</option>
+            <select
+              [ngModel]="uploadEnvironmentId()"
+              (ngModelChange)="uploadEnvironmentId.set($event)"
+              [disabled]="uploadBusy()"
+            >
+              <option value="">Selecione o ambiente</option>
 
-            @for (environment of environments(); track environment.id) {
-              <option [value]="environment.id">
-                {{ environment.name }}
-              </option>
-            }
-          </select>
-        </label>
+              @for (environment of environments(); track environment.id) {
+                <option [value]="environment.id">
+                  {{ environment.name }}
+                </option>
+              }
+            </select>
+          </label>
+        }
 
         <label>
           <span>Álbum de destino</span>

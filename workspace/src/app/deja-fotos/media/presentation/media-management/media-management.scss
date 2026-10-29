@@ -691,3 +691,14 @@ button:disabled {
   align-items: center;
   justify-content: center;
 }
+
+/* Expande a área de arquivos quando o ambiente é automático. */
+.upload__grid--single-environment {
+  grid-template-columns: minmax(10rem, 0.75fr) minmax(0, 2.25fr);
+}
+
+@media (max-width: 40rem) {
+  .upload__grid--single-environment {
+    grid-template-columns: 1fr;
+  }
+}
