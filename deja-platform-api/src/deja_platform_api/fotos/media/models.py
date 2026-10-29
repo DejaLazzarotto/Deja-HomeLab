@@ -206,6 +206,13 @@ class FotosMediaModel(Base):
         nullable=True,
     )
 
+
+    rotation_degrees: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+    )
+
     duration_seconds: Mapped[float | None] = mapped_column(
         Float,
         nullable=True,

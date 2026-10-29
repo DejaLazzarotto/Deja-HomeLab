@@ -117,3 +117,69 @@ def test_identity_preserves_organization_scope():
 
     assert first.id == "usuario-001"
     assert second.id == "usuario-002"
+
+
+def test_platform_admin_identity_without_organization():
+    """Identifica somente o administrador global sem organizacao."""
+
+    from unittest.mock import Mock
+    from deja_platform_api.fotos.authentication.identity import (
+        FotosVerificationIdentityService,
+    )
+    from deja_platform_api.user_management.models import UserRole
+
+    session = Mock()
+    service = FotosVerificationIdentityService(session)
+
+    platform_admin = Mock()
+    platform_admin.role = UserRole.PLATFORM_ADMIN
+
+    service._user_repository = Mock()
+    service._organization_repository = Mock()
+    service._user_repository = Mock()
+    service._organization_repository = Mock()
+    service._user_repository.find_by_organization_and_email.return_value = (
+        platform_admin
+    )
+
+    result = service.find_user(
+        organization_code="",
+        email="admin@example.com",
+    )
+
+    assert result is platform_admin
+    service._organization_repository.find_by_code.assert_not_called()
+    service._user_repository.find_by_organization_and_email.assert_called_once_with(
+        None,
+        "admin@example.com",
+    )
+
+
+def test_empty_organization_rejects_non_platform_admin():
+    """Nao identifica outros perfis sem codigo de organizacao."""
+
+    from unittest.mock import Mock
+    from deja_platform_api.fotos.authentication.identity import (
+        FotosVerificationIdentityService,
+    )
+    from deja_platform_api.user_management.models import UserRole
+
+    session = Mock()
+    service = FotosVerificationIdentityService(session)
+
+    user = Mock()
+    user.role = UserRole.ORGANIZATION_ADMIN
+
+    service._user_repository = Mock()
+    service._organization_repository = Mock()
+    service._user_repository = Mock()
+    service._organization_repository = Mock()
+    service._user_repository.find_by_organization_and_email.return_value = user
+
+    result = service.find_user(
+        organization_code="",
+        email="usuario@example.com",
+    )
+
+    assert result is None
+    service._organization_repository.find_by_code.assert_not_called()

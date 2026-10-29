@@ -19,6 +19,7 @@ import { Router } from '@angular/router';
 
 import { AuthenticationService } from '../../application/authentication.service';
 import { canAccessWorkspace } from '../../application/workspace-access-policy';
+import { PasswordResetService } from '../../application/password-reset.service';
 
 function normalizeOrganizationCode(value: string): string {
   return value
@@ -65,6 +66,16 @@ export class LoginComponent {
 
   private readonly formBuilder = inject(NonNullableFormBuilder);
 
+  private readonly passwordReset = inject(PasswordResetService);
+
+  readonly resetStep = signal<'login' | 'request' | 'confirm' | 'completed'>('login');
+
+  readonly resetLoading = signal(false);
+
+  readonly resetError = signal('');
+
+  readonly resetInformation = signal('');
+
   readonly submitting = signal(false);
 
   readonly errorMessage = signal('');
@@ -91,6 +102,122 @@ export class LoginComponent {
     ],
   });
 
+  readonly resetIdentityForm = this.formBuilder.group({
+    organizationCode: ['', [organizationCodeValidator]],
+    email: ['', [Validators.required, Validators.email]],
+  });
+
+  readonly resetConfirmationForm = this.formBuilder.group({
+    code: ['', [Validators.required, Validators.pattern(/^[0-9]{6}$/)]],
+    newPassword: ['', [
+      Validators.required,
+      Validators.minLength(8),
+      Validators.maxLength(128),
+    ]],
+    confirmPassword: ['', Validators.required],
+  });
+
+  beginPasswordReset(): void {
+    if (this.submitting()) return;
+
+    this.resetIdentityForm.patchValue({
+      organizationCode: this.form.controls.organizationCode.value,
+      email: this.form.controls.email.value.trim().toLowerCase(),
+    });
+
+    this.resetError.set('');
+    this.resetInformation.set('');
+    this.resetStep.set('request');
+  }
+
+  requestPasswordReset(): void {
+    if (this.resetIdentityForm.invalid || this.resetLoading()) {
+      this.resetIdentityForm.markAllAsTouched();
+      return;
+    }
+
+    const identity = this.resetIdentityForm.getRawValue();
+
+    this.resetError.set('');
+    this.resetLoading.set(true);
+
+    this.passwordReset.requestCode({
+      organizationCode: normalizeOrganizationCode(identity.organizationCode),
+      email: identity.email.trim().toLowerCase(),
+    }).pipe(
+      finalize(() => this.resetLoading.set(false)),
+    ).subscribe({
+      next: () => {
+        this.resetInformation.set(
+          'Se a conta estiver cadastrada e habilitada, enviaremos um código para o e-mail informado.',
+        );
+        this.resetStep.set('confirm');
+      },
+      error: () => {
+        this.resetError.set(
+          'Não foi possível solicitar o código. Tente novamente.',
+        );
+      },
+    });
+  }
+
+  confirmPasswordReset(): void {
+    if (this.resetConfirmationForm.invalid || this.resetLoading()) {
+      this.resetConfirmationForm.markAllAsTouched();
+      return;
+    }
+
+    const { code, newPassword, confirmPassword } =
+      this.resetConfirmationForm.getRawValue();
+
+    if (newPassword !== confirmPassword) {
+      this.resetError.set('As senhas informadas não coincidem.');
+      return;
+    }
+
+    const identity = this.resetIdentityForm.getRawValue();
+
+    this.resetError.set('');
+    this.resetLoading.set(true);
+
+    this.passwordReset.confirm({
+      organizationCode: normalizeOrganizationCode(identity.organizationCode),
+      email: identity.email.trim().toLowerCase(),
+      code,
+      newPassword,
+    }).pipe(
+      finalize(() => this.resetLoading.set(false)),
+    ).subscribe({
+      next: () => {
+        this.resetConfirmationForm.reset();
+        this.resetInformation.set('Senha redefinida com sucesso.');
+        this.resetStep.set('completed');
+      },
+      error: () => {
+        this.resetError.set(
+          'Não foi possível redefinir a senha. Verifique o código ou solicite outro.',
+        );
+      },
+    });
+  }
+
+  requestAnotherCode(): void {
+    if (this.resetLoading()) return;
+
+    this.resetConfirmationForm.reset();
+    this.resetError.set('');
+    this.resetInformation.set('');
+    this.resetStep.set('request');
+  }
+
+  backToLogin(): void {
+    if (this.resetLoading()) return;
+
+    this.resetConfirmationForm.reset();
+    this.resetError.set('');
+    this.resetInformation.set('');
+    this.resetStep.set('login');
+  }
   submit(): void {
     if (this.form.invalid || this.submitting()) {
       this.form.markAllAsTouched();

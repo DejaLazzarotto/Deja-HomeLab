@@ -63,6 +63,11 @@ class FotosMediaDescriptionUpdate(BaseModel):
         return normalized or None
 
 
+class FotosMediaRotationUpdate(BaseModel):
+    """Rotação persistente de uma fotografia."""
+
+    rotation_degrees: Literal[0, 90, 180, 270]
+
 class FotosMediaOriginalDateUpdate(BaseModel):
     """Correção manual da data original de uma mídia."""
 
@@ -112,6 +117,7 @@ class FotosMediaResponse(BaseModel):
 
     width: int | None
     height: int | None
+    rotation_degrees: int
     duration_seconds: float | None
 
     view_count: int

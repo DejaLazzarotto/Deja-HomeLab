@@ -15,6 +15,7 @@ from deja_platform_api.tenant_management.repository import (
 from deja_platform_api.user_management.models import (
     UserModel,
     UserModuleRole,
+    UserRole,
     UserStatus,
 )
 from deja_platform_api.user_management.repository import (
@@ -47,12 +48,21 @@ class FotosVerificationEligibility:
             return False
 
         if user.organization_id is None:
-            return False
+            return (
+                purpose == FotosVerificationPurpose.PASSWORD_RESET
+                and user.role == UserRole.PLATFORM_ADMIN
+                and user.tenant_id is None
+                and user.environment_id is None
+                and bool(user.password_hash)
+            )
 
         organization = self._organization_repository.find_by_id(user.organization_id)
 
         if organization is None or organization.status != TenantManagementStatus.ACTIVE:
             return False
+
+        if purpose == FotosVerificationPurpose.PASSWORD_RESET:
+            return bool(user.password_hash)
 
         if not self._organization_module_repository.is_enabled(
             user.organization_id,
@@ -76,8 +86,5 @@ class FotosVerificationEligibility:
 
         if purpose == FotosVerificationPurpose.ACTIVATION:
             return not bool(user.password_hash)
-
-        if purpose == FotosVerificationPurpose.PASSWORD_RESET:
-            return bool(user.password_hash)
 
         return False

@@ -75,6 +75,10 @@ class FotosMediaDerivativeRepository:
 
         return derivative
 
+    def flush_changes(self) -> None:
+        """Envia alterações ao banco sem confirmar a transação."""
+
+        self._session.flush()
     def update(
         self,
         derivative: FotosMediaDerivativeModel,

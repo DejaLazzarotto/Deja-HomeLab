@@ -12,6 +12,7 @@ from deja_platform_api.core.database import (
     SessionLocal,
     get_db_session,
 )
+from deja_platform_api.fotos.curation.repository import FotosFaceRepository
 from deja_platform_api.fotos.albums.repository import (
     FotosAlbumRepository,
 )
@@ -71,6 +72,7 @@ def get_fotos_media_service(
         EnvironmentRepository(session),
         AuthorizationService(),
         settings,
+        FotosFaceRepository(session),
     )
 
 

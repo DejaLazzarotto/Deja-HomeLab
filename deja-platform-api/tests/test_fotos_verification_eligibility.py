@@ -78,6 +78,56 @@ def test_activation_allowed_for_fotos_user_without_password(role):
     )
 
 
+@pytest.mark.parametrize(
+    ("admin_role", "organization_id"),
+    [
+        ("platform_admin", None),
+        ("organization_admin", "organizacao-001"),
+        ("tenant_admin", "organizacao-001"),
+    ],
+)
+@pytest.mark.parametrize("password_hash", ["hash-existente", None])
+def test_admin_password_reset_eligibility(
+    admin_role,
+    organization_id,
+    password_hash,
+):
+    """Administradores ativos recuperam apenas senhas existentes."""
+
+    from deja_platform_api.user_management.models import UserRole
+
+    eligibility, user = build_eligibility(
+        organization_id=organization_id,
+        module_enabled=False,
+        password_hash=password_hash,
+    )
+
+    user.role = UserRole(admin_role)
+    user.tenant_id = None if organization_id is None else "tenant-001"
+    user.environment_id = None
+
+    assert eligibility.can_request(
+        user=user,
+        purpose=FotosVerificationPurpose.PASSWORD_RESET,
+    ) is bool(password_hash)
+
+def test_password_reset_without_fotos_access():
+    """Permite recuperar senha sem acesso ao modulo Fotos."""
+
+    eligibility, user = build_eligibility(
+        role=None,
+        module_enabled=False,
+        password_hash="hash-existente",
+    )
+
+    assert eligibility.can_request(
+        user=user,
+        purpose=FotosVerificationPurpose.PASSWORD_RESET,
+    )
+
+    eligibility._organization_module_repository.is_enabled.assert_not_called()
+    eligibility._module_access_repository.find.assert_not_called()
+
 def test_password_reset_allowed_for_user_with_password():
     """Permite recuperacao quando a senha ja existe."""
 

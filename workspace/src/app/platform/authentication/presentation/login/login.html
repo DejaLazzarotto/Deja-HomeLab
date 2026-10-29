@@ -9,6 +9,7 @@
       <p>Entre para acessar os módulos e recursos disponíveis para sua organização.</p>
     </header>
 
+    @if (resetStep() === 'login') {
     <form class="login__form" [formGroup]="form" (ngSubmit)="submit()" autocomplete="off">
       <label for="organizationCode">
         Código da organização
@@ -73,5 +74,80 @@
         {{ submitting() ? 'Entrando...' : 'Entrar' }}
       </button>
     </form>
+      <button
+        type="button"
+        class="login__text-button"
+        (click)="beginPasswordReset()"
+        [disabled]="submitting()"
+      >
+        Esqueci minha senha
+      </button>
+    }
+
+    @if (resetStep() === 'request') {
+      <form class="login__form" [formGroup]="resetIdentityForm" (ngSubmit)="requestPasswordReset()">
+        <p>Informe sua organização e seu e-mail para solicitar um código de recuperação.</p>
+
+        <label for="resetOrganization">Código da organização (opcional para Platform Admin)</label>
+        <input id="resetOrganization" formControlName="organizationCode" type="text"
+          autocapitalize="off" autocorrect="off" spellcheck="false" />
+
+        <label for="resetEmail">E-mail</label>
+        <input id="resetEmail" formControlName="email" type="email" autocomplete="email" />
+
+        @if (resetError()) {
+          <p class="login__error" role="alert">{{ resetError() }}</p>
+        }
+
+        <button type="submit" [disabled]="resetIdentityForm.invalid || resetLoading()">
+          {{ resetLoading() ? 'Solicitando...' : 'Receber código' }}
+        </button>
+      </form>
+    }
+
+    @if (resetStep() === 'confirm') {
+      <form class="login__form" [formGroup]="resetConfirmationForm" (ngSubmit)="confirmPasswordReset()">
+        <p role="status">{{ resetInformation() }}</p>
+
+        <label for="resetCode">Código de verificação</label>
+        <input id="resetCode" formControlName="code" type="text" inputmode="numeric"
+          maxlength="6" autocomplete="one-time-code" />
+
+        <label for="resetPassword">Nova senha</label>
+        <input id="resetPassword" formControlName="newPassword" type="password"
+          autocomplete="new-password" />
+
+        <label for="resetConfirmPassword">Confirmar nova senha</label>
+        <input id="resetConfirmPassword" formControlName="confirmPassword"
+          type="password" autocomplete="new-password" />
+
+        @if (resetError()) {
+          <p class="login__error" role="alert">{{ resetError() }}</p>
+        }
+
+        <button type="submit" [disabled]="resetConfirmationForm.invalid || resetLoading()">
+          {{ resetLoading() ? 'Confirmando...' : 'Redefinir senha' }}
+        </button>
+
+        <button type="button" class="login__text-button"
+          [disabled]="resetLoading()" (click)="requestAnotherCode()">
+          Solicitar outro código
+        </button>
+      </form>
+    }
+
+    @if (resetStep() === 'completed') {
+      <div class="login__form">
+        <p role="status">Sua senha foi redefinida com sucesso.</p>
+        <button type="button" (click)="backToLogin()">Ir para o login</button>
+      </div>
+    }
+
+    @if (resetStep() === 'request' || resetStep() === 'confirm') {
+      <button type="button" class="login__text-button"
+        [disabled]="resetLoading()" (click)="backToLogin()">
+        Voltar ao login
+      </button>
+    }
   </section>
 </main>

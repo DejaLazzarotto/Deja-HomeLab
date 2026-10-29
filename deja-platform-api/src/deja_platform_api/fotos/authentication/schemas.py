@@ -7,7 +7,7 @@ class FotosVerificationRequestSchema(BaseModel):
     """Identifica a conta sem exigir autenticacao previa."""
 
     organization_code: str = Field(
-        min_length=1,
+        min_length=0,
         max_length=100,
     )
     email: EmailStr
@@ -19,8 +19,6 @@ class FotosVerificationRequestSchema(BaseModel):
 
         normalized = value.strip()
 
-        if not normalized:
-            raise ValueError("O codigo da organizacao e obrigatorio.")
 
         return normalized
 

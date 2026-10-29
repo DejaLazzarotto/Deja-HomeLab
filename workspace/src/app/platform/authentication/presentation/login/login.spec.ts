@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { AuthenticationService } from '../../application/authentication.service';
 import type { AuthenticatedUser } from '../../domain/authenticated-user';
@@ -168,6 +168,137 @@ describe('LoginComponent', () => {
     expect(logout).not.toHaveBeenCalled();
   });
 
+  it('requests a password reset code', () => {
+    const requestCode = vi.fn().mockReturnValue(of({ message: 'OK' }));
+
+    (component as unknown as {
+      passwordReset: { requestCode: typeof requestCode };
+    }).passwordReset = { requestCode };
+
+    component.form.patchValue({
+      organizationCode: 'Família-Lazzarotto',
+      email: ' USUARIO@EXEMPLO.COM ',
+    });
+
+    component.beginPasswordReset();
+    component.requestPasswordReset();
+
+    expect(requestCode).toHaveBeenCalledWith({
+      organizationCode: 'FAMILIA-LAZZAROTTO',
+      email: 'usuario@exemplo.com',
+    });
+
+    expect(component.resetStep()).toBe('confirm');
+    expect(component.resetInformation()).toContain('código');
+  });
+  it('confirms password reset with verification code', () => {
+    const confirm = vi.fn().mockReturnValue(of({ message: 'OK' }));
+
+    (component as unknown as {
+      passwordReset: { confirm: typeof confirm };
+    }).passwordReset = { confirm };
+
+    component.resetIdentityForm.setValue({
+      organizationCode: 'Família-Lazzarotto',
+      email: 'usuario@exemplo.com',
+    });
+
+    component.resetConfirmationForm.setValue({
+      code: '123456',
+      newPassword: 'NovaSenhaSegura123!',
+      confirmPassword: 'NovaSenhaSegura123!',
+    });
+
+    component.resetStep.set('confirm');
+    component.confirmPasswordReset();
+
+    expect(confirm).toHaveBeenCalledWith({
+      organizationCode: 'FAMILIA-LAZZAROTTO',
+      email: 'usuario@exemplo.com',
+      code: '123456',
+      newPassword: 'NovaSenhaSegura123!',
+    });
+
+    expect(component.resetStep()).toBe('completed');
+    expect(component.resetInformation()).toContain('sucesso');
+  });
+  it('rejects mismatched passwords during reset', () => {
+    const confirm = vi.fn();
+
+    (component as unknown as {
+      passwordReset: { confirm: typeof confirm };
+    }).passwordReset = { confirm };
+
+    component.resetIdentityForm.setValue({
+      organizationCode: 'FAMILIA-LAZZAROTTO',
+      email: 'usuario@exemplo.com',
+    });
+
+    component.resetConfirmationForm.setValue({
+      code: '123456',
+      newPassword: 'NovaSenhaSegura123!',
+      confirmPassword: 'SenhaDiferente123!',
+    });
+
+    component.resetStep.set('confirm');
+    component.confirmPasswordReset();
+
+    expect(confirm).not.toHaveBeenCalled();
+    expect(component.resetStep()).toBe('confirm');
+    expect(component.resetError()).toContain('não coincidem');
+  });
+  it('handles an invalid password reset code', () => {
+    const confirm = vi.fn().mockReturnValue(
+      throwError(() => new Error('Código inválido')),
+    );
+
+    (component as unknown as {
+      passwordReset: { confirm: typeof confirm };
+    }).passwordReset = { confirm };
+
+    component.resetIdentityForm.setValue({
+      organizationCode: 'FAMILIA-LAZZAROTTO',
+      email: 'usuario@exemplo.com',
+    });
+
+    component.resetConfirmationForm.setValue({
+      code: '999999',
+      newPassword: 'NovaSenhaSegura123!',
+      confirmPassword: 'NovaSenhaSegura123!',
+    });
+
+    component.resetStep.set('confirm');
+    component.confirmPasswordReset();
+
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(component.resetStep()).toBe('confirm');
+    expect(component.resetError()).toContain('Verifique o código');
+    expect(component.resetLoading()).toBe(false);
+  });
+  it('handles password reset request failure', () => {
+    const requestCode = vi.fn().mockReturnValue(
+      throwError(() => new Error('API indisponível')),
+    );
+
+    (component as unknown as {
+      passwordReset: { requestCode: typeof requestCode };
+    }).passwordReset = { requestCode };
+
+    component.resetIdentityForm.setValue({
+      organizationCode: 'FAMILIA-LAZZAROTTO',
+      email: 'usuario@exemplo.com',
+    });
+
+    component.resetStep.set('request');
+    component.requestPasswordReset();
+
+    expect(requestCode).toHaveBeenCalledOnce();
+    expect(component.resetStep()).toBe('request');
+    expect(component.resetError()).toContain(
+      'Não foi possível solicitar o código',
+    );
+    expect(component.resetLoading()).toBe(false);
+  });
   it('redirects client to Chamados portal', () => {
     submitAs(createUser({
       role: 'client',

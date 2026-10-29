@@ -14,13 +14,15 @@
   </section>
 
   <section class="curation-filters" aria-label="Filtros da curadoria">
-    <label>Ambiente
-      <select [ngModel]="environmentId()" (ngModelChange)="changeEnvironment($event)">
-        @for (environment of environments(); track environment.id) {
-          <option [value]="environment.id">{{ environment.name }}</option>
-        }
-      </select>
-    </label>
+    @if (canSelectEnvironment()) {
+      <label>Ambiente
+        <select [ngModel]="environmentId()" (ngModelChange)="changeEnvironment($event)">
+          @for (environment of environments(); track environment.id) {
+            <option [value]="environment.id">{{ environment.name }}</option>
+          }
+        </select>
+      </label>
+    }
     <label>Estado da curadoria
       <select [ngModel]="completionFilter()" (ngModelChange)="completionFilter.set($event); applyFilters(1)">
         <option value="pending">Pendentes</option>
@@ -102,10 +104,11 @@
               <video class="curation-video-player" [src]="videoUrl()" controls playsinline preload="metadata" [attr.aria-label]="'Reproduzir ' + item.original_name"></video>
             }
             @if (imageUrl() && item.media_type === 'image') {
-              <div class="image-stage" [class.drawing]="drawing()"
+              <div class="image-stage" [class.drawing]="drawing()" [class.rotation-preview]="rotationChanged()"
                 (pointerdown)="pointerDown($event)" (pointermove)="pointerMove($event)"
                 (pointerup)="pointerUp($event)" (pointercancel)="pointerUp($event)">
-                <img [src]="imageUrl()" [alt]="item.original_name" draggable="false" (click)="!drawing() && expandedImage.set(true)" [style.cursor]="drawing() ? null : 'zoom-in'" />
+                <img [src]="imageUrl()" [alt]="item.original_name" draggable="false" [style.transform]="'rotate(' + ((rotationDegrees() - savedRotationDegrees() + 360) % 360) + 'deg) scale(' + rotationPreviewScale() + ')'" (load)="onReviewImageLoad($event)" (click)="!drawing() && expandedImage.set(true)" [style.cursor]="drawing() ? null : 'zoom-in'" />
+                @if (!rotationChanged()) {
                 @for (face of faces(); track face.id) {
                   <button type="button" class="face-box"
                     [class.selected]="selectedFaceId() === face.id"
@@ -114,6 +117,7 @@
                     [attr.aria-label]="'Selecionar rosto de ' + personName(face.person_id)"
                     (pointerdown)="$event.stopPropagation()"
                     (click)="selectFace(face); $event.stopPropagation()"></button>
+                }
                 }
                 @if (draft(); as box) {
                   <div class="face-box face-box--draft"
@@ -124,19 +128,26 @@
             } @else {
               <p>Carregando imagem de revisão...</p>
             }
-              <aside class="curation-media-actions">
-            <div class="media-original-date">
-              <label>Data original
-                <input type="date" [ngModel]="mediaOriginalDate()"
-                  (ngModelChange)="mediaOriginalDate.set($event)"
-                  [disabled]="busy() || !canManage()" />
-              </label>
-              @if (canManage()) {
-                <button type="button" class="primary-button"
-                  [disabled]="busy() || !mediaOriginalDate()"
-                  (click)="saveOriginalDate()">Salvar alteração</button>
-              }
-            </div>
+              <div class="rotation-controls">
+                @if (item.media_type === 'image' && canManage()) {
+                  <button type="button"
+                    [disabled]="busy() || drawing()"
+                    (click)="rotateImage(-90)">
+                    Girar à esquerda
+                  </button>
+                  <button type="button"
+                    [disabled]="busy() || drawing()"
+                    (click)="rotateImage(90)">
+                    Girar à direita
+                  </button>
+                  <button type="button" class="primary-button"
+                    [disabled]="busy() || !rotationChanged()"
+                    (click)="saveRotation()">
+                    Salvar orientação
+                  </button>
+                }
+              </div>              <aside class="curation-media-actions">
+
             @if (canManage()) {
             <div class="curation-completion-actions">
                 @if (selectedMediaSupportsFaces() && completionFilter() === "pending") {
@@ -159,7 +170,7 @@
             </div>
             @if (selectedMediaSupportsFaces() && canManage()) {
               <div class="marking-actions">
-                <button type="button" (click)="drawing.set(!drawing()); draft.set(null)">
+                <button type="button" [disabled]="busy() || rotationChanged()" (click)="drawing.set(!drawing()); draft.set(null)">
                   {{ drawing() ? 'Cancelar desenho' : 'Desenhar rosto manualmente' }}
                 </button>
                 @if (draft()) {
@@ -203,7 +214,7 @@
           <header class="panel-header"><h2>Rostos na mídia</h2><small>{{ faceTotal() }}</small></header>
           @if (faces().length) {
             <div class="faces-list">
-              @for (face of faces(); track face.id) {
+                @for (face of faces(); track face.id) {
                 <button type="button" [class.selected]="selectedFaceId() === face.id"
                   (click)="selectFace(face)">
                   <strong>{{ personName(face.person_id) }}</strong>

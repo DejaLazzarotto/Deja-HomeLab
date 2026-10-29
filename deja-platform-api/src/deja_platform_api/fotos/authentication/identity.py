@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from deja_platform_api.tenant_management.repository import (
     OrganizationRepository,
 )
-from deja_platform_api.user_management.models import UserModel
+from deja_platform_api.user_management.models import UserModel, UserRole
 from deja_platform_api.user_management.repository import UserRepository
 
 
@@ -23,6 +23,15 @@ class FotosVerificationIdentityService:
         email: str,
     ) -> UserModel | None:
         """Identifica o usuario exclusivamente em sua organizacao."""
+
+        if not organization_code.strip():
+            user = self._user_repository.find_by_organization_and_email(
+                None,
+                email,
+            )
+            if user is not None and user.role == UserRole.PLATFORM_ADMIN:
+                return user
+            return None
 
         organization = self._organization_repository.find_by_code(
             organization_code,

@@ -14,6 +14,48 @@ class FotosFaceRepository:
     def get(self, face_id: str) -> FotosFaceModel | None:
         return self.session.get(FotosFaceModel, face_id)
 
+    def rotate_faces(
+        self,
+        media_id: str,
+        environment_id: str,
+        degrees: int,
+    ) -> int:
+        """Reposiciona todas as faces sem confirmar a transação."""
+
+        from deja_platform_api.fotos.media.rotation_geometry import (
+            rotate_face_box,
+        )
+
+        faces = self.all_faces_for_rotation(
+            media_id,
+            environment_id,
+        )
+
+        for face in faces:
+            face.x, face.y, face.width, face.height = rotate_face_box(
+                face.x,
+                face.y,
+                face.width,
+                face.height,
+                degrees,
+            )
+
+        self.session.flush()
+
+        return len(faces)
+    def all_faces_for_rotation(
+        self,
+        media_id: str,
+        environment_id: str,
+    ) -> list[FotosFaceModel]:
+        """Retorna as faces da fotografia para atualização geométrica."""
+
+        statement = select(FotosFaceModel).where(
+            FotosFaceModel.media_id == media_id,
+            FotosFaceModel.environment_id == environment_id,
+        )
+
+        return list(self.session.scalars(statement).all())
     def list_faces(
         self, media_id: str, environment_id: str, *, page: int, page_size: int
     ) -> tuple[list[FotosFaceModel], int]:

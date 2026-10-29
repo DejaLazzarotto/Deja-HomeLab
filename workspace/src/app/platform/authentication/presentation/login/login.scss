@@ -149,3 +149,25 @@ button {
     padding: var(--workspace-spacing-xl);
   }
 }
+.login__text-button {
+  display: block;
+  width: fit-content;
+  min-height: auto;
+  margin: 0.75rem auto 0;
+  padding: 0.35rem;
+  background: transparent;
+  color: var(--workspace-color-primary);
+  font-size: var(--workspace-font-size-sm);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.login__text-button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--workspace-color-primary-hover);
+}
+
+.login__text-button:disabled {
+  opacity: 0.5;
+}

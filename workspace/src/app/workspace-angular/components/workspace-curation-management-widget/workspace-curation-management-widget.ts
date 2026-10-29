@@ -55,6 +55,7 @@ import {
       [environments]="environments()"
       [defaultEnvironmentId]="user?.environmentId ?? null"
       [canManage]="canManage"
+      [canSelectEnvironment]="user?.role === 'platform_admin'"
     />
   `,
   styles: `

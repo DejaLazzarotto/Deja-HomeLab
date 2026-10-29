@@ -375,6 +375,55 @@ describe('CurationManagementComponent', () => {
     createUrl.mockRestore();
   });
 
+  it('saves photo rotation and reloads its preview', async () => {
+    fixture.componentRef.setInput('canManage', true);
+    fixture.detectChanges();
+
+    const media = {
+      id: 'media-1',
+      original_name: 'foto.jpg',
+      media_type: 'image' as const,
+      original_date: null,
+    };
+
+    component.selectedMedia.set(media);
+    component.rotationDegrees.set(90);
+    component.savedRotationDegrees.set(0);
+
+    const createUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:rotated');
+
+    try {
+      const saving = component.saveRotation();
+
+      const request = http.expectOne('/api/fotos/media/media-1/rotation');
+      expect(request.request.method).toBe('PATCH');
+      expect(request.request.body).toEqual({ rotation_degrees: 90 });
+      request.flush({ rotation_degrees: 90 });
+
+      await Promise.resolve();
+
+      http.expectOne('/api/fotos/media/media-1/preview')
+        .flush(new Blob(['image'], { type: 'image/webp' }));
+
+      http.expectOne(request =>
+        request.url === '/api/fotos/curation/media/media-1/faces',
+      ).flush({ items: [], page: 1, total: 0, total_pages: 0 });
+
+      http.expectOne('/api/fotos/media/media-1')
+        .flush({ rotation_degrees: 90 });
+
+      await saving;
+
+      expect(component.savedRotationDegrees()).toBe(90);
+      expect(component.rotationDegrees()).toBe(90);
+      expect(component.rotationChanged()).toBe(false);
+
+      http.expectOne('/api/fotos/curation/summary')
+        .flush({ pending: 0, unknown: 0 });
+    } finally {
+      createUrl.mockRestore();
+    }
+  });
   it('refreshes an existing unidentified face after analysing again', async () => {
     fixture.componentRef.setInput('canManage', true);
     fixture.detectChanges();
@@ -399,6 +448,8 @@ describe('CurationManagementComponent', () => {
     http.expectOne(request => request.url === '/api/fotos/curation/media/media-1/faces')
       .flush({ items: [{ ...unknown, status: 'suggested', person_id: 'person-1',
         confidence: 0.82 }], page: 1, total: 1, total_pages: 1 });
+    http.expectOne('/api/fotos/media/media-1')
+      .flush({ rotation_degrees: 0 });
     await analysing;
     expect(component.faces()).toHaveLength(1);
     expect(component.faces()[0].status).toBe('suggested');

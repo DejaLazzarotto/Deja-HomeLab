@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 THUMBNAIL_MAX_SIZE = 320
 PREVIEW_MAX_SIZE = 1600
@@ -31,6 +31,7 @@ def generate_image_derivative(
     destination_path: Path,
     *,
     derivative_type: str,
+    rotation_degrees: int = 0,
 ) -> FotosImageDerivative:
     """Gera thumbnail ou preview preservando a proporção."""
 
@@ -47,9 +48,18 @@ def generate_image_derivative(
         with Image.open(source_path) as source:
             source.load()
 
-            image = source.convert(
+            image = ImageOps.exif_transpose(source).convert(
                 "RGB"
             )
+
+            if rotation_degrees not in (0, 90, 180, 270):
+                raise ValueError("Rotação inválida.")
+
+            if rotation_degrees:
+                image = image.rotate(
+                    -rotation_degrees,
+                    expand=True,
+                )
 
             image.thumbnail(
                 (

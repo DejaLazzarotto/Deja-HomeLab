@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from deja_platform_api.fotos.curation.repository import FotosFaceRepository
+
 import logging
 import re
 import shutil
@@ -186,6 +188,7 @@ class FotosMediaService:
         environment_repository: EnvironmentRepository,
         authorization_service: AuthorizationService,
         settings: Settings,
+        face_repository: FotosFaceRepository | None = None,
     ) -> None:
         self._repository = repository
         self._album_repository = album_repository
@@ -194,6 +197,7 @@ class FotosMediaService:
         self._environment_repository = environment_repository
         self._authorization_service = authorization_service
         self._settings = settings
+        self._face_repository = face_repository
 
     def list(
         self,
@@ -816,6 +820,162 @@ class FotosMediaService:
             self._repository.rollback()
             raise
 
+    def _prepare_rotated_derivatives(
+        self,
+        media: FotosMediaModel,
+        rotation_degrees: int,
+    ) -> list[tuple[FotosMediaDerivativeModel, Path, Path, object]]:
+        """Gera novos derivados sem modificar os registros existentes."""
+
+        from deja_platform_api.fotos.media.image_derivatives import (
+            generate_image_derivative,
+        )
+
+        original_path = (
+            self._settings.uploads_dir / Path(media.original_storage_key)
+        )
+
+        if not original_path.is_file():
+            raise FileNotFoundError(
+                "Arquivo original da fotografia não encontrado."
+            )
+
+        prepared = []
+
+        try:
+            for derivative_type in ("thumbnail", "preview"):
+                derivative = self._derivative_repository.find_by_media_and_type(
+                    media.id,
+                    derivative_type,
+                )
+
+                if derivative is None:
+                    raise RuntimeError(
+                        f"Derivado {derivative_type} não encontrado."
+                    )
+
+                old_path = self._settings.uploads_dir / Path(
+                    derivative.storage_key
+                )
+
+                new_path = old_path.with_name(
+                    f"{derivative_type}-{uuid4().hex}.webp"
+                )
+
+                try:
+                    generated = generate_image_derivative(
+                        original_path,
+                        new_path,
+                        derivative_type=derivative_type,
+                        rotation_degrees=rotation_degrees,
+                    )
+                except Exception:
+                    new_path.unlink(missing_ok=True)
+                    raise
+
+                prepared.append(
+                    (derivative, old_path, new_path, generated)
+                )
+
+        except Exception:
+            for _, _, new_path, _ in prepared:
+                new_path.unlink(missing_ok=True)
+            raise
+
+        return prepared
+    def update_rotation(
+        self,
+        media_id: str,
+        rotation_degrees: int,
+        current_user: AuthenticatedUser,
+    ) -> FotosMediaModel:
+        """Valida e registra a orientação de uma fotografia."""
+
+        self._require_roles(
+            current_user,
+            FOTOS_MEDIA_MANAGER_ROLES,
+        )
+
+        media = self._require_media_for_update(media_id)
+
+        try:
+            self._authorization_service.require_scope(
+                current_user,
+                organization_id=media.organization_id,
+                tenant_id=media.tenant_id,
+                environment_id=media.environment_id,
+            )
+
+            if media.media_type != "image":
+                raise ValueError(
+                    "A rotação está disponível apenas para fotografias."
+                )
+
+            if rotation_degrees not in (0, 90, 180, 270):
+                raise ValueError("Rotação inválida.")
+
+            if media.processing_status != "ready":
+                raise ValueError(
+                    "Aguarde a conclusão do processamento da fotografia."
+                )
+
+            from deja_platform_api.fotos.media.rotation_geometry import (
+                rotation_delta,
+            )
+
+            delta = rotation_delta(
+                media.rotation_degrees,
+                rotation_degrees,
+            )
+
+            if delta == 0:
+                self._repository.rollback()
+                return media
+
+            if self._face_repository is None:
+                raise RuntimeError(
+                    "Repositório de faces não configurado."
+                )
+
+            prepared = self._prepare_rotated_derivatives(
+                media,
+                rotation_degrees,
+            )
+
+            try:
+                self._face_repository.rotate_faces(
+                    media.id,
+                    media.environment_id,
+                    delta,
+                )
+
+                for derivative, old_path, new_path, generated in prepared:
+                    derivative.storage_key = str(
+                        new_path.relative_to(self._settings.uploads_dir)
+                    )
+                    derivative.file_size = generated.file_size
+                    derivative.width = generated.width
+                    derivative.height = generated.height
+
+                media.rotation_degrees = rotation_degrees
+                updated = self._repository.update(media)
+
+            except Exception:
+                self._repository.rollback()
+                for _, _, new_path, _ in prepared:
+                    try:
+                        new_path.unlink(missing_ok=True)
+                    except OSError:
+                        logger.exception(
+                            "Falha ao limpar derivado após erro na rotação: %s",
+                            new_path,
+                        )
+                raise
+
+            return updated
+        except Exception:
+            self._repository.rollback()
+            raise
     def update_description(
         self,
         media_id: str,

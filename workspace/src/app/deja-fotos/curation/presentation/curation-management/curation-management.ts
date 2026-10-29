@@ -68,6 +68,7 @@ export class CurationManagementComponent implements OnDestroy {
   readonly environments = input<readonly FotosEnvironmentOption[]>([]);
   readonly defaultEnvironmentId = input<string | null>(null);
   readonly canManage = input(false);
+  readonly canSelectEnvironment = input(false);
   readonly activeTab = signal<CurationTab>(this.restoreActiveTab());
   readonly environmentId = signal('');
   readonly situationFilter = signal('all');
@@ -90,6 +91,25 @@ export class CurationManagementComponent implements OnDestroy {
   readonly imageUrl = signal<string | null>(null);
   readonly videoUrl = signal<string | null>(null);
   readonly expandedImage = signal(false);
+  readonly rotationDegrees = signal(0);
+  readonly imageAspectRatio = signal(1);
+  readonly rotationPreviewScale = computed(() => {
+    const delta = (this.rotationDegrees() - this.savedRotationDegrees() + 360) % 360;
+    if (delta % 180 === 0) return 1;
+    const ratio = this.imageAspectRatio();
+    return Math.min(ratio, 1 / ratio);
+  });
+
+  onReviewImageLoad(event: Event): void {
+    const image = event.target as HTMLImageElement;
+    if (image.naturalWidth > 0 && image.naturalHeight > 0) {
+      this.imageAspectRatio.set(image.naturalWidth / image.naturalHeight);
+    }
+  }
+  readonly savedRotationDegrees = signal(0);
+  readonly rotationChanged = computed(
+    () => this.rotationDegrees() !== this.savedRotationDegrees()
+  );
   readonly faces = signal<readonly FaceItem[]>([]);
   readonly faceTotal = signal(0);
   readonly facePage = signal(0);
@@ -291,6 +311,8 @@ export class CurationManagementComponent implements OnDestroy {
     this.releaseVideo();
     this.expandedImage.set(false);
     this.selectedMedia.set(item);
+    this.rotationDegrees.set(0);
+    this.savedRotationDegrees.set(0);
     this.mediaDescription.set('');
     this.mediaOriginalDate.set(item?.original_date?.slice(0, 10) ?? '');
     this.faces.set([]);
@@ -324,7 +346,7 @@ export class CurationManagementComponent implements OnDestroy {
         return;
       }
 
-      const [blob, faces] = await Promise.all([
+      const [blob, faces, mediaDetail] = await Promise.all([
         firstValueFrom(this.http.get(`/api/fotos/media/${item.id}/${path}`, {
           responseType: 'blob',
         })),
@@ -332,9 +354,14 @@ export class CurationManagementComponent implements OnDestroy {
           `/api/fotos/curation/media/${item.id}/faces`,
           { params: { page: 1, page_size: 50 } },
         )),
+        firstValueFrom(this.http.get<{ rotation_degrees: number }>(
+          `/api/fotos/media/${item.id}`,
+        )),
       ]);
       if (request !== this.faceSequence || this.destroyed) return;
       this.imageUrl.set(URL.createObjectURL(blob));
+      this.savedRotationDegrees.set(mediaDetail.rotation_degrees ?? 0);
+      this.rotationDegrees.set(mediaDetail.rotation_degrees ?? 0);
       this.faces.set(faces.items);
       this.facePage.set(faces.page);
       this.faceTotal.set(faces.total);
@@ -369,6 +396,36 @@ export class CurationManagementComponent implements OnDestroy {
     }, 'Data original da mídia salva.');
   }
 
+  rotateImage(delta: number): void {
+    if (!this.selectedMediaSupportsFaces() || !this.canManage() || this.busy()) return;
+    this.rotationDegrees.update(angle => (angle + delta + 360) % 360);
+  }
+
+  async saveRotation(): Promise<void> {
+    const item = this.selectedMedia();
+    if (!item || item.media_type !== 'image' || !this.canManage()
+      || this.busy() || !this.rotationChanged()) return;
+
+    const requestedRotation = this.rotationDegrees();
+
+    await this.mutate(async () => {
+      await firstValueFrom(this.http.patch(
+        `/api/fotos/media/${item.id}/rotation`,
+        { rotation_degrees: requestedRotation },
+      ));
+
+      if (this.destroyed || this.selectedMedia()?.id !== item.id) return;
+
+      await this.selectMedia(item);
+
+      if (!this.imageUrl()) {
+        throw new Error('Não foi possível recarregar a fotografia após salvar a orientação.');
+      }
+
+      this.savedRotationDegrees.set(requestedRotation);
+      this.rotationDegrees.set(requestedRotation);
+    }, 'Orientação da fotografia salva.');
+  }
   async saveDescription(): Promise<void> {
     const item = this.selectedMedia();
     if (!item || item.media_type !== 'video' || !this.canManage()) return;
@@ -432,7 +489,7 @@ export class CurationManagementComponent implements OnDestroy {
   }
 
   pointerDown(event: PointerEvent): void {
-    if (!this.drawing() || !this.canManage()) return;
+    if (!this.drawing() || !this.canManage() || this.rotationChanged() || this.busy()) return;
     event.preventDefault();
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     this.dragStart = this.pointerPosition(event);

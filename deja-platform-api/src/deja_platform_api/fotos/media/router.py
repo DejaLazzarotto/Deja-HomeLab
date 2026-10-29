@@ -34,6 +34,7 @@ from deja_platform_api.fotos.media.schemas import (
     FotosMediaDescriptionUpdate,
     FotosMediaListResponse,
     FotosMediaOriginalDateUpdate,
+    FotosMediaRotationUpdate,
     FotosMediaPeriodResponse,
     FotosMediaProcessingStatus,
     FotosMediaResponse,
@@ -283,6 +284,24 @@ def update_media_original_date(
         current_user,
     )
 
+
+@router.patch(
+    "/{media_id}/rotation",
+    response_model=FotosMediaResponse,
+)
+def update_media_rotation(
+    media_id: MediaId,
+    payload: FotosMediaRotationUpdate,
+    service: FotosMediaServiceDependency,
+    current_user: FotosMediaManager,
+) -> FotosMediaResponse:
+    """Salva a orientação corrigida de uma fotografia."""
+
+    return service.update_rotation(
+        media_id,
+        payload.rotation_degrees,
+        current_user,
+    )
 
 @router.patch(
     "/{media_id}/description",
