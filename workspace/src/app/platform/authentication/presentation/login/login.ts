@@ -1,3 +1,4 @@
+
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -6,8 +7,10 @@ import {
   signal,
 } from '@angular/core';
 import {
+  AbstractControl,
   NonNullableFormBuilder,
   ReactiveFormsModule,
+  ValidationErrors,
   Validators,
 } from '@angular/forms';
 
@@ -16,6 +19,36 @@ import { Router } from '@angular/router';
 
 import { AuthenticationService } from '../../application/authentication.service';
 import { canAccessWorkspace } from '../../application/workspace-access-policy';
+
+function normalizeOrganizationCode(value: string): string {
+  return value
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+}
+
+function organizationCodeValidator(
+  control: AbstractControl,
+): ValidationErrors | null {
+  const value = normalizeOrganizationCode(
+    String(control.value ?? ''),
+  );
+
+  if (!value) {
+    return null;
+  }
+
+  if (
+    value.length < 3 ||
+    value.length > 32 ||
+    !/^[A-Z0-9]+(?:-[A-Z0-9]+)*$/.test(value)
+  ) {
+    return { organizationCodeInvalid: true };
+  }
+
+  return null;
+}
 
 @Component({
   selector: 'deja-login',
@@ -39,11 +72,7 @@ export class LoginComponent {
   readonly form = this.formBuilder.group({
     organizationCode: [
       '',
-      [
-        Validators.minLength(3),
-        Validators.maxLength(32),
-        Validators.pattern(/^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/),
-      ],
+      [organizationCodeValidator],
     ],
     email: [
       '',
@@ -73,10 +102,9 @@ export class LoginComponent {
 
     const credentials = this.form.getRawValue();
 
-    const organizationCode =
-      credentials.organizationCode
-        .trim()
-        .toUpperCase();
+    const organizationCode = normalizeOrganizationCode(
+      credentials.organizationCode,
+    );
 
     this.authentication
       .login({
@@ -140,5 +168,3 @@ export class LoginComponent {
     return 'Não foi possível entrar no sistema.';
   }
 }
-
-

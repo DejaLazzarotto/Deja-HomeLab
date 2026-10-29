@@ -1,3 +1,4 @@
+
 <main class="login">
   <section class="login__card">
     <header class="login__header">
@@ -20,13 +21,15 @@
         type="text"
         formControlName="organizationCode"
         autocomplete="off"
-        autocapitalize="characters"
-        placeholder="Ex.: EMPRESA-PRINCIPAL"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
+        placeholder="Ex.: familia-lazzarotto"
       />
 
       @if (form.controls.organizationCode.touched && form.controls.organizationCode.invalid) {
         <small class="login__field-error">
-          Use de 3 a 32 letras, números ou hífens, sem espaços.
+          Use de 3 a 32 letras, números ou hífens. Acentos são aceitos.
         </small>
       }
 

@@ -68,6 +68,70 @@ describe('LoginComponent', () => {
     component.submit();
   }
 
+  it.each([
+    'familia-lazzarotto',
+    'Família-Lazzarotto',
+    ' FAMÍLIA-LAZZAROTTO ',
+  ])('normalizes organization code %s', organizationCode => {
+    login.mockReturnValue(of(createUser({
+      role: 'platform_admin',
+    })));
+
+    component.form.setValue({
+      organizationCode,
+      email: 'usuario@example.com',
+      password: 'SenhaSegura123!',
+    });
+
+    expect(component.form.controls.organizationCode.valid).toBe(true);
+
+    component.submit();
+
+    expect(login).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organizationCode: 'FAMILIA-LAZZAROTTO',
+      }),
+    );
+  });
+
+  it.each([
+    'FAMILIA@LAZZAROTTO',
+    'FAMILIA LAZZAROTTO',
+    'FAMILIA--LAZZAROTTO',
+    'FAMILIA_LAZZAROTTO',
+    '-FAMILIA',
+    'FAMILIA-',
+    'AB',
+    'A'.repeat(33),
+  ])('rejects invalid organization code %s', organizationCode => {
+    component.form.patchValue({ organizationCode });
+
+    expect(component.form.controls.organizationCode.invalid).toBe(true);
+
+    component.submit();
+
+    expect(login).not.toHaveBeenCalled();
+  });
+
+  it('allows an empty organization code for platform admin', () => {
+    login.mockReturnValue(of(createUser({
+      role: 'platform_admin',
+    })));
+
+    component.form.setValue({
+      organizationCode: '',
+      email: 'usuario@example.com',
+      password: 'SenhaSegura123!',
+    });
+
+    component.submit();
+
+    expect(login).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organizationCode: null,
+      }),
+    );
+  });
   it('blocks Vivaro viewer from Workspace', () => {
     submitAs(createUser({
       enabledModules: ['fotos'],
