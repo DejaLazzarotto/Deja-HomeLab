@@ -85,6 +85,8 @@ export class CurationManagementComponent implements OnDestroy {
   readonly mediaTotal = signal(0);
   readonly mediaPage = signal(0);
   readonly selectedMedia = signal<MediaItem | null>(null);
+  readonly destinationAlbumId = signal<string | null>(null);
+  readonly originalAlbumId = signal<string | null>(null);
   readonly selectedMediaSupportsFaces = computed(() => this.selectedMedia()?.media_type === 'image');
   readonly mediaDescription = signal('');
   readonly mediaOriginalDate = signal('');
@@ -246,15 +248,111 @@ export class CurationManagementComponent implements OnDestroy {
 
     this.busy.set(true);
     this.error.set(null);
+    this.message.set(null);
+
     try {
-      await firstValueFrom(this.http.post(
-        `/api/fotos/curation/media/${item.id}/completion`,
-        null,
-        { params: new HttpParams().set("completed", completed) },
-      ));
+      if (completed && item.media_type === 'image') {
+        let page = 1;
+        let totalPages = 1;
+
+        do {
+          const result = await firstValueFrom(
+            this.http.get<Page<FaceItem>>(
+              `/api/fotos/curation/media/${item.id}/faces`,
+              { params: new HttpParams().set('page', page).set('page_size', 50) },
+            ),
+          );
+
+          for (const face of result.items) {
+            if (face.status !== 'suggested' || !face.person_id) continue;
+
+            await firstValueFrom(
+              this.http.post<FaceItem>(
+                `/api/fotos/curation/faces/${face.id}/confirm`,
+                { person_id: face.person_id },
+              ),
+            );
+          }
+
+          totalPages = result.total_pages;
+          page++;
+        } while (page <= totalPages);
+      }
+
+      if (completed && this.destinationAlbumId() !== this.originalAlbumId()) {
+        const result = await firstValueFrom(
+          this.http.patch<{
+            succeeded_count: number;
+            failed_count: number;
+          }>(
+            '/api/fotos/media/bulk',
+            {
+              operation: 'set_album',
+              media_ids: [item.id],
+              album_id: this.destinationAlbumId(),
+            },
+          ),
+        );
+
+        if (result.failed_count > 0 || result.succeeded_count !== 1) {
+          throw new Error('Não foi possível atualizar o álbum de destino.');
+        }
+
+        this.originalAlbumId.set(this.destinationAlbumId());
+      }
+
+      await firstValueFrom(
+        this.http.post(
+          `/api/fotos/curation/media/${item.id}/completion`,
+          null,
+          { params: new HttpParams().set('completed', completed) },
+        ),
+      );
+
       await this.applyFilters(this.mediaPage() || 1);
-    } catch (error: unknown) {
-      this.error.set(error instanceof HttpErrorResponse && typeof error.error?.detail === 'string' ? error.error.detail : 'Não foi possível atualizar a situação da curadoria.');
+      this.message.set(completed
+        ? 'Curadoria concluída e sugestões identificadas confirmadas.'
+        : 'Curadoria reaberta.');
+    } catch (error) {
+      this.error.set(
+        error instanceof HttpErrorResponse && typeof error.error?.detail === 'string'
+          ? error.error.detail
+          : error instanceof Error && error.message === 'Não foi possível atualizar o álbum de destino.'
+            ? error.message
+            : 'Não foi possível concluir a curadoria. Verifique as sugestões e tente novamente.',
+      );
+    } finally {
+      this.busy.set(false);
+    }
+  }
+  async deleteSelectedMedia(): Promise<void> {
+    const item = this.selectedMedia();
+
+    if (!item || !this.canManage() || this.busy()) return;
+
+    if (!window.confirm(
+      `Excluir permanentemente "${item.original_name}"? O arquivo e seus derivados serão removidos. Outras fotografias e pessoas serão preservadas.`,
+    )) {
+      return;
+    }
+
+    this.busy.set(true);
+    this.error.set(null);
+    this.message.set(null);
+
+    try {
+      await firstValueFrom(
+        this.http.delete<void>(`/api/fotos/media/${item.id}`),
+      );
+
+      const page = this.media().length === 1 && this.mediaPage() > 1
+        ? this.mediaPage() - 1
+        : Math.max(1, this.mediaPage());
+
+      await this.applyFilters(page);
+      this.message.set('Mídia excluída com sucesso.');
+    } catch (error) {
+      this.error.set(this.errorMessage(error));
     } finally {
       this.busy.set(false);
     }
@@ -311,6 +409,8 @@ export class CurationManagementComponent implements OnDestroy {
     this.releaseVideo();
     this.expandedImage.set(false);
     this.selectedMedia.set(item);
+    this.destinationAlbumId.set(null);
+    this.originalAlbumId.set(null);
     this.rotationDegrees.set(0);
     this.savedRotationDegrees.set(0);
     this.mediaDescription.set('');
@@ -329,13 +429,15 @@ export class CurationManagementComponent implements OnDestroy {
           firstValueFrom(this.http.get(`/api/fotos/media/${item.id}/poster`, {
             responseType: 'blob',
           })),
-          firstValueFrom(this.http.get<{ description: string | null }>(
+          firstValueFrom(this.http.get<{ description: string | null; album_id: string | null }>(
             `/api/fotos/media/${item.id}`,
           )),
         ]);
         if (request !== this.faceSequence || this.destroyed) return;
         this.imageUrl.set(URL.createObjectURL(blob));
         this.mediaDescription.set(mediaDetail.description ?? item.description ?? '');
+        this.originalAlbumId.set(mediaDetail.album_id ?? null);
+        this.destinationAlbumId.set(mediaDetail.album_id ?? null);
         try {
           const videoBlob = await firstValueFrom(this.http.get(`/api/fotos/media/${item.id}/preview`, { responseType: 'blob' }));
           if (request !== this.faceSequence || this.destroyed) return;
@@ -354,12 +456,14 @@ export class CurationManagementComponent implements OnDestroy {
           `/api/fotos/curation/media/${item.id}/faces`,
           { params: { page: 1, page_size: 50 } },
         )),
-        firstValueFrom(this.http.get<{ rotation_degrees: number }>(
+        firstValueFrom(this.http.get<{ rotation_degrees: number; album_id: string | null }>(
           `/api/fotos/media/${item.id}`,
         )),
       ]);
       if (request !== this.faceSequence || this.destroyed) return;
       this.imageUrl.set(URL.createObjectURL(blob));
+      this.originalAlbumId.set(mediaDetail.album_id ?? null);
+      this.destinationAlbumId.set(mediaDetail.album_id ?? null);
       this.savedRotationDegrees.set(mediaDetail.rotation_degrees ?? 0);
       this.rotationDegrees.set(mediaDetail.rotation_degrees ?? 0);
       this.faces.set(faces.items);
@@ -468,10 +572,24 @@ export class CurationManagementComponent implements OnDestroy {
   }
 
   selectFace(face: FaceItem): void {
-    this.selectedFaceId.set(face.id);
-    this.chosenPersonId.set(face.person_id ?? '');
+    if (this.selectedFaceId() === face.id) {
+      this.selectedFaceId.set(null);
+      this.chosenPersonId.set('');
+    } else {
+      this.selectedFaceId.set(face.id);
+      this.chosenPersonId.set(face.person_id ?? '');
+    }
+
+    this.creatingPerson.set(false);
+    this.newPersonName.set('');
   }
 
+  selectFaceForPerson(face: FaceItem, personId: string): void {
+    this.selectedFaceId.set(face.id);
+    this.chosenPersonId.set(personId);
+    this.creatingPerson.set(false);
+    this.newPersonName.set('');
+  }
   selectedFace(): FaceItem | undefined {
     return this.faces().find(face => face.id === this.selectedFaceId());
   }
@@ -591,6 +709,59 @@ export class CurationManagementComponent implements OnDestroy {
       this.replaceFace(updated);
       this.chosenPersonId.set('');
     }, 'Sugestão rejeitada.');
+  }
+
+  async removeAllFaces(): Promise<void> {
+    const item = this.selectedMedia();
+
+    if (!item || item.media_type !== 'image' || !this.canManage() || this.busy()) return;
+
+    if (!window.confirm(
+      'Remover todas as marcações de rostos desta fotografia? A fotografia e os cadastros das pessoas serão preservados.',
+    )) {
+      return;
+    }
+
+    await this.mutate(async () => {
+      const facesToRemove: FaceItem[] = [];
+      let page = 1;
+      let totalPages = 1;
+
+      do {
+        const result = await firstValueFrom(
+          this.http.get<Page<FaceItem>>(
+            `/api/fotos/curation/media/${item.id}/faces`,
+            { params: new HttpParams().set('page', page).set('page_size', 50) },
+          ),
+        );
+
+        facesToRemove.push(...result.items);
+        totalPages = result.total_pages;
+        page++;
+      } while (page <= totalPages);
+
+      for (const face of facesToRemove) {
+        await firstValueFrom(
+          this.http.delete(`/api/fotos/curation/faces/${face.id}`),
+        );
+
+        this.faces.update(items => items.filter(item => item.id !== face.id));
+        this.faceTotal.update(total => Math.max(0, total - 1));
+
+        if (this.selectedFaceId() === face.id) {
+          this.selectedFaceId.set(null);
+          this.chosenPersonId.set('');
+        }
+      }
+
+      this.faces.set([]);
+      this.faceTotal.set(0);
+      this.facePage.set(0);
+      this.selectedFaceId.set(null);
+      this.chosenPersonId.set('');
+      this.drawing.set(false);
+      this.draft.set(null);
+    }, 'Todas as marcações de rostos foram removidas.');
   }
 
   async removeFace(): Promise<void> {
@@ -908,10 +1079,10 @@ export class CurationManagementComponent implements OnDestroy {
     try {
       await action();
       if (success) this.message.set(success);
-      void this.loadSummary();
     } catch (error) {
       this.error.set(this.errorMessage(error));
     } finally {
+      void this.loadSummary();
       this.busy.set(false);
     }
   }

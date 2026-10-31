@@ -113,6 +113,8 @@ export class MediaGridComponent implements OnDestroy {
 
   private readonly pendingThumbnailIds = new Set<string>();
 
+  private readonly thumbnailVersions = new Map<string, string>();
+
   private destroyed = false;
 
   constructor() {
@@ -270,20 +272,14 @@ export class MediaGridComponent implements OnDestroy {
   private synchronizeThumbnails(
     items: readonly Media[],
   ): void {
-    const visibleIds = new Set(
-      items.map(item => item.id),
-    );
-
-    const currentUrls = new Map(
-      this.thumbnailUrls(),
-    );
+    const visibleIds = new Set(items.map(item => item.id));
+    const currentUrls = new Map(this.thumbnailUrls());
+    const currentFailures = new Set(this.thumbnailFailures());
 
     let urlsChanged = false;
+    let failuresChanged = false;
 
-    for (
-      const [mediaId, objectUrl]
-      of currentUrls.entries()
-    ) {
+    for (const [mediaId, objectUrl] of currentUrls.entries()) {
       if (!visibleIds.has(mediaId)) {
         URL.revokeObjectURL(objectUrl);
         currentUrls.delete(mediaId);
@@ -291,21 +287,45 @@ export class MediaGridComponent implements OnDestroy {
       }
     }
 
-    if (urlsChanged) {
-      this.thumbnailUrls.set(currentUrls);
-    }
-
-    const currentFailures = new Set(
-      this.thumbnailFailures(),
-    );
-
-    let failuresChanged = false;
-
     for (const mediaId of currentFailures) {
       if (!visibleIds.has(mediaId)) {
         currentFailures.delete(mediaId);
         failuresChanged = true;
       }
+    }
+
+    for (const mediaId of this.thumbnailVersions.keys()) {
+      if (!visibleIds.has(mediaId)) {
+        this.thumbnailVersions.delete(mediaId);
+      }
+    }
+
+    for (const media of items) {
+      const previousVersion = this.thumbnailVersions.get(media.id);
+      const currentVersion = media.updatedAt;
+
+      if (
+        previousVersion !== undefined
+        && previousVersion !== currentVersion
+      ) {
+        const previousUrl = currentUrls.get(media.id);
+
+        if (previousUrl) {
+          URL.revokeObjectURL(previousUrl);
+          currentUrls.delete(media.id);
+          urlsChanged = true;
+        }
+
+        if (currentFailures.delete(media.id)) {
+          failuresChanged = true;
+        }
+      }
+
+      this.thumbnailVersions.set(media.id, currentVersion);
+    }
+
+    if (urlsChanged) {
+      this.thumbnailUrls.set(currentUrls);
     }
 
     if (failuresChanged) {
@@ -328,6 +348,7 @@ export class MediaGridComponent implements OnDestroy {
     media: Media,
   ): Promise<void> {
     const mediaId = media.id;
+    const requestedVersion = media.updatedAt;
 
     this.pendingThumbnailIds.add(mediaId);
 
@@ -339,6 +360,7 @@ export class MediaGridComponent implements OnDestroy {
 
       if (
         this.destroyed
+        || this.thumbnailVersions.get(mediaId) !== requestedVersion
         || !this.items().some(item => item.id === mediaId)
       ) {
         return;
@@ -359,17 +381,33 @@ export class MediaGridComponent implements OnDestroy {
         return next;
       });
     } catch {
-      if (!this.destroyed) {
+      if (
+        !this.destroyed
+        && this.thumbnailVersions.get(mediaId) === requestedVersion
+      ) {
         this.thumbnailFailures.update(current => {
           const next = new Set(current);
-
           next.add(mediaId);
-
           return next;
         });
       }
     } finally {
       this.pendingThumbnailIds.delete(mediaId);
+
+      const currentMedia = this.items().find(
+        item => item.id === mediaId,
+      );
+
+      if (
+        !this.destroyed
+        && currentMedia
+        && this.thumbnailVersions.get(mediaId) !== requestedVersion
+        && currentMedia.updatedAt !== requestedVersion
+        && currentMedia.processingStatus === 'ready'
+        && !this.thumbnailUrls().has(mediaId)
+      ) {
+        void this.loadThumbnail(currentMedia);
+      }
     }
   }
 }

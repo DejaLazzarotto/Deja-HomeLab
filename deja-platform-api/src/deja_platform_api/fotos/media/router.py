@@ -422,6 +422,7 @@ def get_media_thumbnail(
     return FileResponse(
         path=file_path,
         media_type=derivative.content_type,
+        headers={"Cache-Control": "private, no-store"},
     )
 
 
@@ -449,6 +450,7 @@ def get_media_preview(
     return FileResponse(
         path=file_path,
         media_type=derivative.content_type,
+        headers={"Cache-Control": "private, no-store"},
     )
 
 
@@ -476,6 +478,7 @@ def get_media_poster(
     return FileResponse(
         path=file_path,
         media_type=derivative.content_type,
+        headers={"Cache-Control": "private, no-store"},
     )
 
 

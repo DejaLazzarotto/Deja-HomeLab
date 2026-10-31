@@ -40,9 +40,37 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
 .marking-actions, .face-actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: end; margin-top: 1rem; }
 .face-actions { flex-direction: column; align-items: stretch; }
 .faces-list { display: grid; gap: .45rem; }
-.faces-list button { display: flex; justify-content: space-between; gap: .4rem; text-align: left; }
-.faces-list button.selected, .media-list button.selected { border-color: var(--workspace-color-primary, #2057a6); background: var(--workspace-color-primary-soft, rgb(79 140 255 / 14%)); }
-.faces-list span { color: var(--workspace-color-text-secondary, #64748b); }
+.face-list-item {
+  display: grid;
+  gap: .5rem;
+  padding: .65rem;
+  border: 1px solid var(--workspace-color-border, #dbe3ee);
+  border-radius: 8px;
+}
+.face-list-item.selected, .media-list button.selected {
+  border-color: var(--workspace-color-primary, #2057a6);
+  background: var(--workspace-color-primary-soft, rgb(79 140 255 / 14%));
+}
+.face-list-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .4rem;
+  width: 100%;
+  min-width: 0;
+}
+.face-list-item__header select {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+}
+.face-list-item__header span {
+  color: var(--workspace-color-text-secondary, #64748b);
+}
+.face-list-item select {
+  width: 100%;
+  min-width: 0;
+}
 .panel-empty { padding: 2rem 1rem; text-align: center; color: var(--workspace-color-text-secondary, #64748b); }
 .media-list { display: flex; flex-wrap: wrap; gap: .5rem; }
 .media-list button { max-width: 17rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -278,4 +306,79 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
     width: min(100%, 12.5rem);
     margin-left: auto;
   }
+}
+/* Controles circulares de orientação da fotografia */
+.rotation-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 12px;
+}
+
+.rotation-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  padding: 0;
+  border: 1px solid #64748b;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 26px;
+  line-height: 1;
+  transition: background-color 150ms ease, opacity 150ms ease;
+}
+
+.rotation-icon-button:hover:not(:disabled) {
+  background: rgba(100, 116, 139, 0.15);
+}
+
+.rotation-icon-button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+
+.rotation-icon-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.rotation-icon-button--save {
+  border-color: #2563eb;
+}
+
+.rotation-icon-button--save:not(:disabled) {
+  background: #2563eb;
+  color: #fff;
+}
+/* Etiquetas com nomes sobre os rostos */
+.face-box__name {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: block;
+  max-width: 180px;
+  padding: 3px 7px;
+  border-radius: 5px 5px 0 0;
+  background: rgba(15, 23, 42, 0.88);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.face-box.selected .face-box__name {
+  background: #2563eb;
 }

@@ -174,4 +174,103 @@ describe('MediaGridComponent', () => {
       null,
     );
   });
+  it('reloads the thumbnail when the media version changes', async () => {
+    const media = createMedia({
+      id: 'photo-1',
+      mediaType: 'image',
+      originalName: 'photo.jpg',
+      processingStatus: 'ready',
+    });
+
+    const createObjectURL = vi.spyOn(URL, 'createObjectURL')
+      .mockReturnValueOnce('blob:photo-original')
+      .mockReturnValueOnce('blob:photo-updated');
+
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => {});
+
+    service.loadThumbnail.mockResolvedValue(
+      new Blob(['image'], { type: 'image/webp' }),
+    );
+
+    try {
+      const fixture = createFixture(media);
+
+      await fixture.whenStable();
+
+      expect(service.loadThumbnail).toHaveBeenCalledTimes(1);
+
+      fixture.componentRef.setInput('items', [{
+        ...media,
+        updatedAt: '2026-10-30T23:50:00.000Z',
+      }]);
+
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(service.loadThumbnail).toHaveBeenCalledTimes(2);
+      expect(revokeObjectURL).toHaveBeenCalledWith(
+        'blob:photo-original',
+      );
+
+      fixture.destroy();
+    } finally {
+      createObjectURL.mockRestore();
+      revokeObjectURL.mockRestore();
+    }
+  });
+  it('reloads the latest thumbnail after an in-flight update', async () => {
+    const media = createMedia({
+      id: 'photo-concurrent',
+      mediaType: 'image',
+      originalName: 'photo.jpg',
+      processingStatus: 'ready',
+    });
+
+    let resolveFirst!: (blob: Blob) => void;
+
+    const firstRequest = new Promise<Blob>(resolve => {
+      resolveFirst = resolve;
+    });
+
+    service.loadThumbnail
+      .mockReturnValueOnce(firstRequest)
+      .mockResolvedValue(
+        new Blob(['updated'], { type: 'image/webp' }),
+      );
+
+    const createUrl = vi.spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:updated');
+
+    const revokeUrl = vi.spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => {});
+
+    const fixture = createFixture(media);
+
+    try {
+      expect(service.loadThumbnail).toHaveBeenCalledTimes(1);
+
+      fixture.componentRef.setInput('items', [{
+        ...media,
+        updatedAt: '2026-10-30T23:55:00.000Z',
+      }]);
+
+      fixture.detectChanges();
+
+      resolveFirst(
+        new Blob(['old'], { type: 'image/webp' }),
+      );
+
+      await fixture.whenStable();
+      await Promise.resolve();
+      await fixture.whenStable();
+
+      expect(service.loadThumbnail).toHaveBeenCalledTimes(2);
+      expect(createUrl).toHaveBeenCalledTimes(1);
+    } finally {
+      fixture.destroy();
+      createUrl.mockRestore();
+      revokeUrl.mockRestore();
+    }
+  });
 });

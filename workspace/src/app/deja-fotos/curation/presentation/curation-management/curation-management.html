@@ -116,7 +116,7 @@
                     [style.width.%]="face.width * 100" [style.height.%]="face.height * 100"
                     [attr.aria-label]="'Selecionar rosto de ' + personName(face.person_id)"
                     (pointerdown)="$event.stopPropagation()"
-                    (click)="selectFace(face); $event.stopPropagation()"></button>
+                    (click)="selectFace(face); $event.stopPropagation()"><span class="face-box__name">{{ personName(face.person_id) }}</span></button>
                 }
                 }
                 @if (draft(); as box) {
@@ -130,26 +130,48 @@
             }
               <div class="rotation-controls">
                 @if (item.media_type === 'image' && canManage()) {
-                  <button type="button"
+                  <button type="button" class="rotation-icon-button"
+                    title="Girar à esquerda" aria-label="Girar à esquerda"
                     [disabled]="busy() || drawing()"
                     (click)="rotateImage(-90)">
-                    Girar à esquerda
+                    <span aria-hidden="true">↶</span>
                   </button>
-                  <button type="button"
+                  <button type="button" class="rotation-icon-button"
+                    title="Girar à direita" aria-label="Girar à direita"
                     [disabled]="busy() || drawing()"
                     (click)="rotateImage(90)">
-                    Girar à direita
+                    <span aria-hidden="true">↷</span>
                   </button>
-                  <button type="button" class="primary-button"
+                  <button type="button" class="rotation-icon-button rotation-icon-button--save"
+                    title="Salvar orientação" aria-label="Salvar orientação"
                     [disabled]="busy() || !rotationChanged()"
                     (click)="saveRotation()">
-                    Salvar orientação
+                    <span aria-hidden="true">💾</span>
                   </button>
                 }
-              </div>              <aside class="curation-media-actions">
+              </div>
+              <aside class="curation-media-actions">
 
             @if (canManage()) {
             <div class="curation-completion-actions">
+              <label>Álbum de destino
+                <select
+                  [ngModel]="destinationAlbumId() ?? ''"
+                  (ngModelChange)="destinationAlbumId.set($event || null)"
+                  [disabled]="busy()">
+                  <option value="">Sem álbum</option>
+                  @for (album of albums(); track album.id) {
+                    <option [value]="album.id">{{ album.name }}</option>
+                  }
+                </select>
+              </label>
+              @if (item.media_type === 'image') {
+                <button type="button" class="curation-delete-button"
+                  [disabled]="busy()"
+                  (click)="deleteSelectedMedia()">
+                  Excluir fotografia
+                </button>
+              }
                 @if (selectedMediaSupportsFaces() && completionFilter() === "pending") {
                   <button type="button" (click)="detect()" [disabled]="busy()">Analisar rostos</button>
                 }
@@ -170,6 +192,11 @@
             </div>
             @if (selectedMediaSupportsFaces() && canManage()) {
               <div class="marking-actions">
+                <button type="button" class="curation-remove-all-button"
+                  [disabled]="busy() || rotationChanged() || faceTotal() === 0"
+                  (click)="removeAllFaces()">
+                  Remover todas as marcações
+                </button>
                 <button type="button" [disabled]="busy() || rotationChanged()" (click)="drawing.set(!drawing()); draft.set(null)">
                   {{ drawing() ? 'Cancelar desenho' : 'Desenhar rosto manualmente' }}
                 </button>
@@ -215,13 +242,51 @@
           @if (faces().length) {
             <div class="faces-list">
                 @for (face of faces(); track face.id) {
-                <button type="button" [class.selected]="selectedFaceId() === face.id"
-                  (click)="selectFace(face)">
-                  <strong>{{ personName(face.person_id) }}</strong>
-                  <span>{{ face.status === 'suggested' ? 'Sugestão' :
-                    face.status === 'confirmed' ? 'Confirmado' :
-                    face.status === 'rejected' ? 'Sugestão rejeitada' : 'Não identificado' }}</span>
-                </button>
+                <div class="face-list-item" [class.selected]="selectedFaceId() === face.id">
+                  <div class="face-list-item__header">
+                    <select
+                      [attr.aria-label]="'Identificação do rosto ' + face.id"
+                      [ngModel]="selectedFaceId() === face.id ? chosenPersonId() : (face.person_id ?? '')"
+                      (ngModelChange)="selectFaceForPerson(face, $event)">
+                      <option value="">Sem identificação</option>
+                      @for (person of people(); track person.id) {
+                        <option [value]="person.id">{{ person.name }}</option>
+                      }
+                    </select>
+                    <span>{{ face.status === 'suggested' ? 'Sugestão' :
+                      face.status === 'confirmed' ? 'Confirmado' :
+                      face.status === 'rejected' ? 'Sugestão rejeitada' : 'Não identificado' }}</span>
+                  </div>
+                  @if (selectedFaceId() === face.id) {
+                  <div class="face-actions">
+                    @if (selectedMediaSupportsFaces() && canManage()) {
+                      <button type="button" class="text-button" [disabled]="busy()"
+                        (click)="creatingPerson.set(!creatingPerson()); newPersonName.set('')">
+                        {{ creatingPerson() ? 'Cancelar cadastro' : 'Cadastrar nova pessoa' }}
+                      </button>
+                      @if (creatingPerson()) {
+                        <form class="person-create" (submit)="$event.preventDefault(); createPerson()">
+                          <label>Nome da nova pessoa
+                            <input type="text" maxlength="150" autocomplete="off" required
+                              [ngModel]="newPersonName()" (ngModelChange)="newPersonName.set($event)"
+                              name="newPersonName" />
+                          </label>
+                          <button type="submit" [disabled]="busy() || !newPersonName().trim()">
+                            Salvar pessoa
+                          </button>
+                        </form>
+                      }
+                      <button type="button" [disabled]="busy() || !chosenPersonId()"
+                        (click)="confirm()">Confirmar ou corrigir</button>
+                      <button type="button" [disabled]="busy() || face.status !== 'suggested'"
+                        (click)="reject()">Rejeitar sugestão</button>
+                      <button type="button" [disabled]="busy() || face.status !== 'confirmed'"
+                        (click)="teach()">Ensinar IA</button>
+                      <button type="button" [disabled]="busy()" (click)="removeFace()">Remover marcação</button>
+                    }
+                  </div>
+                  }
+                </div>
               }
             </div>
             @if (faces().length < faceTotal()) {
@@ -229,43 +294,6 @@
             }
           } @else {
             <p class="panel-empty">Nenhum rosto marcado. Analise a mídia ou desenhe um quadrado no rosto.</p>
-          }
-          @if (selectedFace(); as face) {
-            <div class="face-actions">
-              <label>Pessoa
-                <select [ngModel]="chosenPersonId()" (ngModelChange)="chosenPersonId.set($event)">
-                  <option value="">Escolha uma pessoa</option>
-                  @for (person of people(); track person.id) {
-                    <option [value]="person.id">{{ person.name }}</option>
-                  }
-                </select>
-              </label>
-              @if (selectedMediaSupportsFaces() && canManage()) {
-                <button type="button" class="text-button" [disabled]="busy()"
-                  (click)="creatingPerson.set(!creatingPerson()); newPersonName.set('')">
-                  {{ creatingPerson() ? 'Cancelar cadastro' : 'Cadastrar nova pessoa' }}
-                </button>
-                @if (creatingPerson()) {
-                  <form class="person-create" (submit)="$event.preventDefault(); createPerson()">
-                    <label>Nome da nova pessoa
-                      <input type="text" maxlength="150" autocomplete="off" required
-                        [ngModel]="newPersonName()" (ngModelChange)="newPersonName.set($event)"
-                        name="newPersonName" />
-                    </label>
-                    <button type="submit" [disabled]="busy() || !newPersonName().trim()">
-                      Salvar pessoa
-                    </button>
-                  </form>
-                }
-                <button type="button" [disabled]="busy() || !chosenPersonId()"
-                  (click)="confirm()">Confirmar ou corrigir</button>
-                <button type="button" [disabled]="busy() || face.status !== 'suggested'"
-                  (click)="reject()">Rejeitar sugestão</button>
-                <button type="button" [disabled]="busy() || face.status !== 'confirmed'"
-                  (click)="teach()">Ensinar IA</button>
-                <button type="button" [disabled]="busy()" (click)="removeFace()">Remover marcação</button>
-              }
-            </div>
           }
         </article>
         }
