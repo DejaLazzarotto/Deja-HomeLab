@@ -429,6 +429,6 @@
 @media (orientation: landscape) {
   .favorite-button {
     top: max(12px, env(safe-area-inset-top));
-    right: max(12px, env(safe-area-inset-right));
+    right: calc(env(safe-area-inset-right, 0px) + 64px);
   }
 }

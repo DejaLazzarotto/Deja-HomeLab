@@ -27,6 +27,12 @@
   } @else if (error()) {
     <section class="state-card state-card-error">
       <p>{{ error() }}</p>
+      <button
+        type="button"
+        (click)="loadNextPage()"
+      >
+        Tentar novamente
+      </button>
     </section>
   } @else if (people().length === 0) {
     <section class="state-card">
@@ -72,5 +78,34 @@
         </button>
       }
     </section>
+
+    @if (loadingMore()) {
+      <section class="state-card" role="status">
+        <p>Carregando mais pessoas...</p>
+      </section>
+    }
+
+    @if (loadMoreError()) {
+      <section class="state-card state-card-error">
+        <p>{{ loadMoreError() }}</p>
+        <button
+          type="button"
+          (click)="loadNextPage()"
+        >
+          Tentar novamente
+        </button>
+      </section>
+    }
+
+    @if (hasMore() && !loadingMore() && !loadMoreError()) {
+      <section class="state-card">
+        <button
+          type="button"
+          (click)="loadNextPage()"
+        >
+          Carregar mais pessoas
+        </button>
+      </section>
+    }
   }
 </main>

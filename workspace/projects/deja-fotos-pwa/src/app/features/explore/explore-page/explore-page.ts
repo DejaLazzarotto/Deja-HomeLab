@@ -110,28 +110,28 @@ implements OnInit, OnDestroy {
             params: {
               active: true,
               page: 1,
-              page_size: 30,
+              page_size: 200,
             },
           },
         ),
       );
 
-      const selected = [...response.items]
-        .sort((left, right) => {
-          const avatarPriority =
-            Number(Boolean(right.avatar_content_type))
-            - Number(Boolean(left.avatar_content_type));
+      const candidates = response.items.filter(
+        person => Boolean(person.avatar_content_type),
+      );
 
-          if (avatarPriority !== 0) {
-            return avatarPriority;
-          }
+      const shuffled = [...candidates];
 
-          return left.name.localeCompare(
-            right.name,
-            'pt-BR',
-          );
-        })
-        .slice(0, 4);
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+
+        [shuffled[i], shuffled[j]] = [
+          shuffled[j],
+          shuffled[i],
+        ];
+      }
+
+      const selected = shuffled.slice(0, 4);
 
       const preview = await Promise.all(
         selected.map(

@@ -190,12 +190,7 @@
 
       <div class="people-preview">
         @for (person of peoplePreview(); track person.id) {
-          <button
-            class="person-item"
-            type="button"
-            (click)="openPerson(person.id)"
-            [attr.aria-label]="'Abrir fotos de ' + person.name"
-          >
+          <div class="person-item">
             @if (person.avatarUrl) {
               <img
                 class="person-avatar person-avatar-image"
@@ -214,7 +209,7 @@
             <span>
               {{ person.name }}
             </span>
-          </button>
+          </div>
         }
       </div>
     </article>
