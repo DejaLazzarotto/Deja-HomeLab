@@ -72,6 +72,7 @@ class FotosMediaOriginalDateUpdate(BaseModel):
     """Correção manual da data original de uma mídia."""
 
     original_date: datetime
+    original_date_precision: FotosMediaOriginalDatePrecision = "datetime"
 
 
 class FotosMediaResponse(BaseModel):
@@ -188,6 +189,7 @@ class FotosMediaBulkSetOriginalDate(
 
     operation: Literal["set_original_date"]
     original_date: datetime
+    original_date_precision: FotosMediaOriginalDatePrecision = "datetime"
 
 
 class FotosMediaBulkVerifyOriginalDate(
