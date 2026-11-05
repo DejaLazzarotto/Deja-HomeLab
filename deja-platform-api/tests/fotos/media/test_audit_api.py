@@ -104,3 +104,32 @@ def test_audit_includes_unconfirmed_suggestion_inside_album(
     assert response.json()["total"] == 1
     assert response.json()["items"][0]["id"] == media_id
     assert response.json()["items"][0]["album_id"] == album_id
+
+
+def test_audit_rejects_unknown_category(client, media_context):
+    _, _, environment_id, _, headers = media_context
+    response = client.get(
+        f"{MEDIA_URL}/audit/media",
+        params={"environment_id": environment_id, "category": "unknown_faces"},
+        headers=headers,
+    )
+    assert response.status_code == 422
+
+
+def test_audit_filters_out_unprocessed_photographs(client, media_context):
+    _, _, environment_id, album_id, headers = media_context
+    uploaded = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=create_test_jpeg(width=27, height=29),
+    )
+    assert uploaded.status_code == 201
+    response = client.get(
+        f"{MEDIA_URL}/audit/summary",
+        params={"environment_id": environment_id},
+        headers=headers,
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["without_date"] == 0
