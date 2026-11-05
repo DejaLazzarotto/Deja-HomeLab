@@ -117,7 +117,11 @@ def test_audit_rejects_unknown_category(client, media_context):
     assert response.status_code == 422
 
 
-def test_audit_filters_out_unprocessed_photographs(client, media_context):
+def test_audit_filters_out_unprocessed_photographs(
+    client, media_context, test_session_factory,
+):
+    from deja_platform_api.fotos.media.models import FotosMediaModel
+
     _, _, environment_id, album_id, headers = media_context
     uploaded = upload_image(
         client,
@@ -127,6 +131,15 @@ def test_audit_filters_out_unprocessed_photographs(client, media_context):
         content=create_test_jpeg(width=27, height=29),
     )
     assert uploaded.status_code == 201
+
+    # TestClient já executou o processamento em segundo plano.
+    # Simulamos explicitamente uma fotografia ainda não processada.
+    with test_session_factory() as session:
+        media = session.get(FotosMediaModel, uploaded.json()["id"])
+        assert media is not None
+        media.processing_status = "received"
+        session.commit()
+
     response = client.get(
         f"{MEDIA_URL}/audit/summary",
         params={"environment_id": environment_id},
