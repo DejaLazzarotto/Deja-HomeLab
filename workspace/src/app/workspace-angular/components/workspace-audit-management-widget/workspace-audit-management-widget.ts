@@ -23,6 +23,10 @@ interface AuditMedia {
   readonly original_date: string | null;
   readonly original_date_precision: string | null;
   readonly album_id: string | null;
+  readonly file_size: number;
+  readonly original_date_verified: boolean;
+  readonly original_date_conflict: boolean;
+  readonly was_converted: boolean;
 }
 interface AuditPage {
   readonly items: readonly AuditMedia[];
@@ -75,64 +79,96 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
         <button type="button" (click)="refresh()" [disabled]="loading() || busy()">Atualizar</button>
       </div>
       @if (canManage && media().length) {
-        <div class="bulk">
-          <label><input type="checkbox" [checked]="allVisibleSelected()" (change)="selectVisible()" />
-            Selecionar página (até 100 fotos)</label>
-          <span>{{ selectedIds().size }} selecionada(s)</span>
-          <button type="button" (click)="clearSelection()" [disabled]="busy()">Limpar seleção</button>
-          <label>Data original
-            <input type="date" [ngModel]="bulkDate()" (ngModelChange)="bulkDate.set($event)" [disabled]="busy()" />
-          </label>
-          <button type="button" (click)="applyDate()" [disabled]="busy() || !bulkDate() || !selectedIds().size">
-            Aplicar data (sem horário)
-          </button>
-          <label>Data e horário conhecidos
-            <input type="datetime-local" [ngModel]="bulkDateTime()" (ngModelChange)="bulkDateTime.set($event)" [disabled]="busy()" />
-          </label>
-          <button type="button" (click)="applyDateTime()" [disabled]="busy() || !bulkDateTime() || !selectedIds().size">
-            Aplicar data e horário
-          </button>
-          <label>Álbum de destino
-            <select [ngModel]="bulkAlbum()" (ngModelChange)="bulkAlbum.set($event)" [disabled]="busy()">
-              <option value="">Selecione</option>
-              @for (album of albums(); track album.id) {
-                <option [value]="album.id">{{ album.name }}</option>
-              }
-            </select>
-          </label>
-          <button type="button" (click)="applyAlbum()" [disabled]="busy() || !bulkAlbum() || !selectedIds().size">
-            Aplicar álbum
-          </button>
-          @if (selectedCategory() === 'unverified_dates') {
-            <button type="button" (click)="verifyDates()" [disabled]="busy() || !selectedIds().size">
-              Confirmar datas existentes
-            </button>
+        <section class="audit-actions" aria-label="Ações em lote">
+          <div class="audit-actions__heading">
+            <span class="audit-actions__icon" aria-hidden="true">▧</span>
+            <div><h3>Ações em lote</h3><small>{{ selectedIds().size }} selecionada(s)</small></div>
+          </div>
+          <div class="audit-actions__buttons">
+            <button type="button" [class.active-command]="editor() === 'date'"
+              [disabled]="busy() || !selectedIds().size" (click)="toggleEditor('date')">Corrigir data</button>
+            <button type="button" [class.active-command]="editor() === 'album'"
+              [disabled]="busy() || !selectedIds().size" (click)="toggleEditor('album')">Mover para álbum</button>
+            @if (selectedCategory() === 'unverified_dates') {
+              <button type="button" (click)="verifyDates()" [disabled]="busy() || !selectedIds().size">Confirmar datas existentes</button>
+            }
+            @if (selectedCategory() === 'conflicting_dates') {
+              <button type="button" (click)="clearDateConflicts()" [disabled]="busy() || !selectedIds().size">Limpar conflito após conferir</button>
+            }
+            <button type="button" class="clear-command" (click)="clearSelection()"
+              [disabled]="busy() || !selectedIds().size">Limpar seleção</button>
+          </div>
+          @if (editor() === 'date') {
+            <div class="audit-actions__editor">
+              <label for="audit-date">Nova data original</label>
+              <input id="audit-date" type="date" [ngModel]="bulkDate()"
+                (ngModelChange)="bulkDate.set($event)" [disabled]="busy()" />
+              <button type="button" class="apply-button" (click)="applyDate()"
+                [disabled]="busy() || !bulkDate() || !selectedIds().size">Aplicar data</button>
+            </div>
           }
-          @if (selectedCategory() === 'conflicting_dates') {
-            <button type="button" (click)="clearDateConflicts()" [disabled]="busy() || !selectedIds().size">
-              Limpar conflito após conferir
-            </button>
+          @if (editor() === 'album') {
+            <div class="audit-actions__editor">
+              <label for="audit-album">Álbum de destino</label>
+              <select id="audit-album" [ngModel]="bulkAlbum()"
+                (ngModelChange)="bulkAlbum.set($event)" [disabled]="busy()">
+                <option value="">Selecione uma opção</option>
+                @for (album of albums(); track album.id) {
+                  <option [value]="album.id">{{ album.name }}</option>
+                }
+              </select>
+              <button type="button" class="apply-button" (click)="applyAlbum()"
+                [disabled]="busy() || !bulkAlbum() || !selectedIds().size">Aplicar álbum</button>
+            </div>
           }
-        </div>
+        </section>
       }
       @if (loading()) { <p role="status">Carregando fotografias...</p> }
       @else if (!media().length) { <p>Nenhuma fotografia encontrada nesta categoria.</p> }
       @else {
+        @if (canManage) {
+          <div class="selection-bar">
+            <label><input type="checkbox" [checked]="allVisibleSelected()" (change)="selectVisible()" /> Selecionar página atual</label>
+            <span>{{ selectedIds().size }} mídia(s) selecionada(s)</span>
+          </div>
+        }
         <div class="photos">
           @for (item of media(); track item.id) {
-            <article>
-              @if (canManage) {
-                <label class="choose"><input type="checkbox" [checked]="selectedIds().has(item.id)"
-                  (change)="toggle(item.id)" /> Selecionar</label>
-              }
-              @if (thumbnailUrls().get(item.id); as thumb) {
-                <img [src]="thumb" [alt]="item.original_name" loading="lazy" />
-              } @else { <div class="placeholder">Fotografia</div> }
-              <h3 [title]="item.original_name">{{ item.original_name }}</h3>
-              <p>{{ item.original_date ? item.original_date.slice(0,10) : 'Sem data' }}</p>
-              @if (selectedCategory() === 'pending_faces') {
-                <button type="button" (click)="openCuration(item.id)">Corrigir face na Curadoria</button>
-              }
+            <article class="media-card" [class.media-card--selected]="selectedIds().has(item.id)"
+              [class.media-card--conflict]="item.original_date_conflict">
+              <div class="media-card__preview">
+                @if (thumbnailUrls().get(item.id); as thumb) {
+                  <img [src]="thumb" [alt]="item.original_name" loading="lazy" />
+                } @else { <div class="placeholder">Carregando miniatura...</div> }
+                @if (canManage) {
+                  <label class="media-card__selection" [title]="selectedIds().has(item.id) ? 'Remover da seleção' : 'Selecionar mídia'">
+                    <input type="checkbox" [checked]="selectedIds().has(item.id)"
+                      (change)="toggle(item.id)" [attr.aria-label]="'Selecionar ' + item.original_name" />
+                  </label>
+                }
+                <span class="media-card__type">Imagem</span>
+              </div>
+              <div class="media-card__content">
+                <header class="media-card__header">
+                  <h3 [title]="item.original_name">{{ item.original_name }}</h3>
+                  <span class="status-badge status-badge--ready">Pronta</span>
+                </header>
+                <dl>
+                  <div><dt>Data</dt><dd [class.missing]="!item.original_date">{{ formatDate(item) }}</dd></div>
+                  <div><dt>Álbum</dt><dd [title]="albumName(item.album_id)">{{ albumName(item.album_id) }}</dd></div>
+                  <div><dt>Arquivo</dt><dd>{{ formatFileSize(item.file_size) }}</dd></div>
+                </dl>
+                @if (item.original_date_verified || item.original_date_conflict || item.was_converted) {
+                  <div class="badges">
+                    @if (item.original_date_verified) { <span class="status-badge verified">Data confirmada</span> }
+                    @if (item.original_date_conflict) { <span class="status-badge conflict">Conflito de data</span> }
+                    @if (item.was_converted) { <span class="status-badge">Convertida</span> }
+                  </div>
+                }
+                @if (selectedCategory() === 'pending_faces') {
+                  <button type="button" class="curation-link" (click)="openCuration(item.id)">Corrigir face na Curadoria</button>
+                }
+              </div>
             </article>
           }
         </div>
@@ -186,8 +222,8 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
   readonly thumbnailUrls = signal<ReadonlyMap<string,string>>(new Map());
   readonly selectedIds = signal<ReadonlySet<string>>(new Set());
   readonly bulkDate = signal('');
-  readonly bulkDateTime = signal('');
   readonly bulkAlbum = signal('');
+  readonly editor = signal<'date' | 'album' | null>(null);
   readonly loading = signal(false);
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
@@ -215,7 +251,20 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
   }
   changeEnvironment(id: string): void { this.environmentId.set(id); void this.refresh(); }
   chooseCategory(id: AuditCategory): void { this.selectedCategory.set(id); this.clearSelection(); void this.loadPage(1); }
-  clearSelection(): void { this.selectedIds.set(new Set()); }
+  clearSelection(): void { this.selectedIds.set(new Set()); this.editor.set(null); }
+  toggleEditor(value: 'date' | 'album'): void { this.editor.update(current => current === value ? null : value); }
+  albumName(id: string | null): string { return id ? this.albums().find(a => a.id === id)?.name ?? 'Álbum não identificado' : 'Sem álbum'; }
+  formatDate(media: AuditMedia): string {
+    if (!media.original_date) return 'Sem data';
+    const date = media.original_date.slice(0,10).split('-');
+    const value = date.length === 3 ? date.reverse().join('/') : media.original_date.slice(0,10);
+    return media.original_date_precision === 'datetime' ? value + ' ' + media.original_date.slice(11,16) : value;
+  }
+  formatFileSize(bytes: number): string {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
   toggle(id: string): void {
     const next = new Set(this.selectedIds());
     if (next.has(id)) next.delete(id); else if (next.size < 100) next.add(id);
@@ -285,17 +334,8 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
   }
   async applyDate(): Promise<void> {
     if (!this.bulkDate() || !this.selectedIds().size || this.busy()) return;
-    if (!window.confirm('Alterar a data de '+this.selectedIds().size+' fotografia(s)?')) return;
+    if (!window.confirm('Corrigir a data de '+this.selectedIds().size+' fotografia(s)? O sistema armazenará 12:00 como horário técnico.')) return;
     await this.applyBulk({operation:'set_original_date',original_date:this.bulkDate()+'T12:00:00',original_date_precision:'date'});
-  }
-  async applyDateTime(): Promise<void> {
-    if (!this.bulkDateTime() || !this.selectedIds().size || this.busy()) return;
-    if (!window.confirm('Alterar a data e o horário de '+this.selectedIds().size+' fotografia(s)?')) return;
-    await this.applyBulk({
-      operation:'set_original_date',
-      original_date:this.bulkDateTime()+':00',
-      original_date_precision:'datetime',
-    });
   }
   async verifyDates(): Promise<void> {
     if (!this.selectedIds().size || this.busy()) return;
