@@ -1,11 +1,13 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthenticationService } from '../../../platform/authentication/application/authentication.service';
 import { getModuleRole } from '../../../platform/module-management/application/module-access';
+import { WorkspaceWidgetInstance } from '../../../core/workspace-sdk/runtime/workspace-widget';
+import { WorkspaceWidgetContext } from '../../../core/workspace-sdk/runtime/workspace-widget-context';
 
 type AuditCategory =
   | 'without_date'
@@ -167,6 +169,8 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
   `],
 })
 export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestroy {
+  @Input({ required: true }) widgetInstance!: WorkspaceWidgetInstance;
+  @Input({ required: true }) widgetContext!: WorkspaceWidgetContext;
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly user = inject(AuthenticationService).user();
