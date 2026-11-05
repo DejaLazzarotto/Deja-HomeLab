@@ -144,6 +144,8 @@ class FotosCurationService:
         media = self._media(media_id, user)
         media.curation_completed = completed
         media.curation_completed_at = datetime.now(UTC).replace(tzinfo=None) if completed else None
+        if completed:
+            media.audit_returned_to_curation = False
         self.session.commit()
         self.session.refresh(media)
         return media
