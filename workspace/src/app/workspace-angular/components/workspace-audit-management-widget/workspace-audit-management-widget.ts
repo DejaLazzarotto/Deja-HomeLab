@@ -1,7 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, Input, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthenticationService } from '../../../platform/authentication/application/authentication.service';
@@ -253,7 +252,6 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
   @Input({ required: true }) widgetInstance!: WorkspaceWidgetInstance;
   @Input({ required: true }) widgetContext!: WorkspaceWidgetContext;
   private readonly http = inject(HttpClient);
-  private readonly router = inject(Router);
   private readonly user = inject(AuthenticationService).user();
   readonly canManage = this.user?.role === 'platform_admin' || getModuleRole(this.user, 'fotos') === 'manager';
   readonly canSelectEnvironment = this.user?.role === 'platform_admin';
