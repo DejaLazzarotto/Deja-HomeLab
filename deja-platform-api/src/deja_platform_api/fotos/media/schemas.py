@@ -37,6 +37,7 @@ FotosMediaBulkOperation = Literal[
     "clear_original_date_conflict",
     "set_album",
     "return_to_curation",
+    "reopen_curation",
 ]
 
 FotosMediaIdentifier = Annotated[
@@ -225,12 +226,19 @@ class FotosMediaBulkReturnToCuration(
     operation: Literal["return_to_curation"]
 
 
+class FotosMediaBulkReopenCuration(FotosMediaBulkUpdateBase):
+    """Reabre a curadoria preservando o vínculo com o álbum."""
+
+    operation: Literal["reopen_curation"]
+
+
 FotosMediaBulkUpdate = Annotated[
     FotosMediaBulkSetOriginalDate
     | FotosMediaBulkVerifyOriginalDate
     | FotosMediaBulkClearOriginalDateConflict
     | FotosMediaBulkSetAlbum
-    | FotosMediaBulkReturnToCuration,
+    | FotosMediaBulkReturnToCuration
+    | FotosMediaBulkReopenCuration,
     Field(discriminator="operation"),
 ]
 
