@@ -36,7 +36,15 @@ interface AuditPage {
 }
 interface AuditAlbum { readonly id: string; readonly name: string; readonly environment_id: string; }
 interface AuditEnvironment { readonly id: string; readonly name: string; }
-interface BulkResult { readonly succeeded_count: number; readonly failed_count: number; }
+interface BulkResult {
+  readonly succeeded_count: number;
+  readonly failed_count: number;
+  readonly results: readonly {
+    readonly media_id: string;
+    readonly success: boolean;
+    readonly error_message: string | null;
+  }[];
+}
 
 const categories: readonly { id: AuditCategory; label: string }[] = [
   { id: 'without_date', label: 'Sem data' },
@@ -235,7 +243,7 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
     .media-card dd.missing { color:#ef4444; }
     .badges { display:flex; flex-wrap:wrap; gap:.35rem; }
     .curation-link { border:0; padding:0; text-align:left; color:var(--workspace-color-primary,#2563eb); background:transparent; }
-    .media-card__delete { margin-top:.3rem; padding:0; border:0; color:var(--workspace-color-danger,#ef4444); background:transparent; font-size:.82rem; font-weight:700; text-align:left; }
+    .media-card__delete { display:block; width:100%; margin-top:.3rem; padding:0; border:0; color:var(--workspace-color-danger,#ef4444); background:transparent; font-size:.82rem; font-weight:700; text-align:center; }
     .error { color:#b91c1c; }
     @media (max-width:72rem) { .audit-actions { grid-template-columns:1fr; } }
     @media (max-width:40rem) { .audit-actions__editor { grid-template-columns:1fr; } }
@@ -422,8 +430,15 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
       const result=await firstValueFrom(this.http.patch<BulkResult>('/api/fotos/media/bulk',{
         ...action,media_ids:[...this.selectedIds()],
       }));
+      const failed = result.results.filter(item => !item.success);
       await this.refresh();
-      this.notice.set(result.succeeded_count+' atualizada(s); '+result.failed_count+' falha(s).');
+      if (failed.length) {
+        this.error.set(result.failed_count + ' mídia(s) não atualizada(s): ' +
+          failed.slice(0, 3).map(item => item.error_message || 'Falha não identificada').join('; '));
+      }
+      if (result.succeeded_count) {
+        this.notice.set(result.succeeded_count + ' mídia(s) atualizada(s) com sucesso.');
+      }
     } catch { this.error.set('Não foi possível aplicar a operação em lote.'); }
     finally { this.busy.set(false); }
   }
