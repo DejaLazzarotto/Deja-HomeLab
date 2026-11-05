@@ -107,6 +107,66 @@ def test_audit_includes_unconfirmed_suggestion_inside_album(
     assert response.json()["items"][0]["album_id"] == album_id
 
 
+def test_audit_reopens_face_curation_preserving_albums_and_suggestions(
+    client, media_context, test_session_factory,
+):
+    """Reabrir curadoria pela auditoria não desvincula fotos nem apaga rostos."""
+    from deja_platform_api.fotos.media.models import FotosMediaModel
+
+    organization_id, tenant_id, environment_id, album_id, headers = media_context
+    ids = []
+    for selected_album in (album_id, None):
+        response = upload_image(
+            client,
+            environment_id=environment_id,
+            album_id=selected_album,
+            headers=headers,
+            content=create_test_jpeg(width=32 + len(ids), height=27),
+        )
+        assert response.status_code == 201, response.text
+        media_id = response.json()["id"]
+        ids.append(media_id)
+        assert client.post(
+            f"{MEDIA_URL}/{media_id}/process", headers=headers
+        ).status_code == 200
+
+    with test_session_factory() as session:
+        for media_id in ids:
+            media = session.get(FotosMediaModel, media_id)
+            assert media is not None
+            media.curation_completed = True
+            session.add(FotosFaceModel(
+                id=str(uuid4()),
+                media_id=media_id,
+                organization_id=organization_id,
+                tenant_id=tenant_id,
+                environment_id=environment_id,
+                x=0.1, y=0.1, width=0.3, height=0.3,
+                origin="detected", status="suggested",
+            ))
+        session.commit()
+
+    result = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={"operation": "reopen_curation", "media_ids": ids},
+        headers=headers,
+    )
+    assert result.status_code == 200, result.text
+    assert result.json()["succeeded_count"] == 2, result.text
+
+    with test_session_factory() as session:
+        media_with_album = session.get(FotosMediaModel, ids[0])
+        media_without_album = session.get(FotosMediaModel, ids[1])
+        assert media_with_album.album_id == album_id
+        assert media_without_album.album_id is None
+        assert media_with_album.curation_completed is False
+        assert media_without_album.curation_completed is False
+        assert session.query(FotosFaceModel).filter(
+            FotosFaceModel.media_id.in_(ids),
+            FotosFaceModel.status == "suggested",
+        ).count() == 2
+
+
 def test_audit_rejects_unknown_category(client, media_context):
     _, _, environment_id, _, headers = media_context
     response = client.get(
