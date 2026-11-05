@@ -215,6 +215,6 @@ def suggest_in_image(
             return None
         recognizer = cv2.FaceRecognizerSF.create(str(recognizer_path), "")
         candidate = recognizer.feature(recognizer.alignCrop(image, best_face))
-        return _best_match(candidate, references, cv2, detector_path, recognizer)
+        return _best_match(candidate, references, cv2, detector_path, recognizer, recognizer_path)
     except (cv2.error, OSError, ValueError) as exc:
         raise FaceEngineUnavailable("Não foi possível comparar os rostos.") from exc
