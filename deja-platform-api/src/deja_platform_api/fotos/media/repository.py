@@ -160,7 +160,7 @@ class FotosMediaRepository:
             "without_date": media.original_date.is_(None),
             "without_time": (
                 media.original_date.is_not(None)
-                & (media.original_date_precision != "datetime")
+                & or_(media.original_date_precision.is_(None), media.original_date_precision != "datetime")
             ),
             "pending_faces": exists(
                 select(FotosFaceModel.id).where(
