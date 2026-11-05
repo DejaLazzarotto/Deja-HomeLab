@@ -148,6 +148,93 @@ class FotosMediaRepository:
 
         return items, total
 
+    def audit_conditions(self, category: str):
+        """Condições comuns aos filtros de auditoria (somente fotografias prontas)."""
+        media = FotosMediaModel
+        base = [
+            media.deleted_at.is_(None),
+            media.processing_status == "ready",
+            media.media_type == "image",
+        ]
+        categories = {
+            "without_date": media.original_date.is_(None),
+            "without_time": (
+                media.original_date.is_not(None)
+                & (media.original_date_precision != "datetime")
+            ),
+            "pending_faces": exists(
+                select(FotosFaceModel.id).where(
+                    FotosFaceModel.media_id == media.id,
+                    FotosFaceModel.environment_id == media.environment_id,
+                    FotosFaceModel.status == "suggested",
+                )
+            ),
+            "conflicting_dates": media.original_date_conflict.is_(True),
+            "unverified_dates": (
+                media.original_date.is_not(None)
+                & media.original_date_verified.is_(False)
+            ),
+            "without_album": media.album_id.is_(None),
+        }
+        if category not in categories:
+            raise ValueError("Categoria de auditoria inválida.")
+        return [*base, categories[category]]
+
+    def audit_list(
+        self,
+        *,
+        category: str,
+        organization_id: str | None,
+        tenant_id: str | None,
+        environment_id: str | None,
+        page: int,
+        page_size: int,
+    ) -> tuple[list[FotosMediaModel], int]:
+        """Lista mídias com pendências, sem alterar álbuns ou metadados."""
+        conditions = self.audit_conditions(category)
+        if organization_id is not None:
+            conditions.append(FotosMediaModel.organization_id == organization_id)
+        if tenant_id is not None:
+            conditions.append(FotosMediaModel.tenant_id == tenant_id)
+        if environment_id is not None:
+            conditions.append(FotosMediaModel.environment_id == environment_id)
+        total = int(self._session.scalar(
+            select(func.count(FotosMediaModel.id)).where(*conditions)
+        ) or 0)
+        items = self._session.scalars(
+            select(FotosMediaModel)
+            .where(*conditions)
+            .order_by(FotosMediaModel.created_at.desc(), FotosMediaModel.id.asc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        ).all()
+        return list(items), total
+
+    def audit_summary(
+        self,
+        *,
+        organization_id: str | None,
+        tenant_id: str | None,
+        environment_id: str | None,
+    ) -> dict[str, int]:
+        """Conta cada categoria no banco, sem carregar a coleção inteira."""
+        result: dict[str, int] = {}
+        for category in (
+            "without_date", "without_time", "pending_faces",
+            "conflicting_dates", "unverified_dates", "without_album",
+        ):
+            conditions = self.audit_conditions(category)
+            if organization_id is not None:
+                conditions.append(FotosMediaModel.organization_id == organization_id)
+            if tenant_id is not None:
+                conditions.append(FotosMediaModel.tenant_id == tenant_id)
+            if environment_id is not None:
+                conditions.append(FotosMediaModel.environment_id == environment_id)
+            result[category] = int(self._session.scalar(
+                select(func.count(FotosMediaModel.id)).where(*conditions)
+            ) or 0)
+        return result
+
     def list_periods(
         self,
         *,
