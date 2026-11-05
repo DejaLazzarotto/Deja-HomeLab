@@ -82,16 +82,20 @@ def process_next_face_job(
                 (person_id, uploads_dir / storage_key) for person_id, storage_key in references
             ]
 
-            image_path = resolve_image_path(media)
-
-            analysis: FaceAnalysisResult = analyze_faces(
-                media,
-                image_path,
-                reference_files,
-                models_dir,
-            )
-
+            # A análise facial pode ser demorada. Desvinculamos a mídia da
+            # sessão depois de ler os dados necessários e encerramos a
+            # transação antes de acessar o preview ou executar a IA.
+            session.expunge(media)
             session.rollback()
+
+        image_path = resolve_image_path(media)
+
+        analysis: FaceAnalysisResult = analyze_faces(
+            media,
+            image_path,
+            reference_files,
+            models_dir,
+        )
 
         with session_factory() as session:
             persist_face_analysis(
