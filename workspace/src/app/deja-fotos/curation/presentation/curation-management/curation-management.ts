@@ -1,4 +1,5 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
 import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -139,6 +140,7 @@ export class CurationManagementComponent implements OnDestroy {
   readonly draft = signal<Box | null>(null);
 
   private readonly http = inject(HttpClient);
+  private readonly route = inject(ActivatedRoute);
   private mediaSequence = 0;
   private avatarFaceSequence = 0;
   private faceSequence = 0;
@@ -379,12 +381,32 @@ export class CurationManagementComponent implements OnDestroy {
       this.media.set(result.items);
       this.mediaTotal.set(result.total);
       this.mediaPage.set(result.page);
-      if (result.items.length) void this.selectMedia(result.items[0]);
+      const requestedMediaId = this.route.snapshot.queryParamMap.get('media_id');
+      if (requestedMediaId) {
+        void this.openRequestedMedia(requestedMediaId, request);
+      } else if (result.items.length) {
+        void this.selectMedia(result.items[0]);
+      }
       void this.loadSummary();
     } catch (error) {
       if (request === this.mediaSequence) this.error.set(this.errorMessage(error));
     } finally {
       if (request === this.mediaSequence) this.loading.set(false);
+    }
+  }
+
+  private async openRequestedMedia(mediaId: string, request: number): Promise<void> {
+    try {
+      const item = await firstValueFrom(this.http.get<MediaItem>(
+        `/api/fotos/media/${encodeURIComponent(mediaId)}`,
+      ));
+      if (this.destroyed || request !== this.mediaSequence) return;
+      if (item.media_type !== 'image') return;
+      await this.selectMedia(item);
+    } catch (error) {
+      if (!this.destroyed && request === this.mediaSequence) {
+        this.error.set(this.errorMessage(error));
+      }
     }
   }
 
