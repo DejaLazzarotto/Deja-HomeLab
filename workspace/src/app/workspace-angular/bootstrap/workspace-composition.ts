@@ -75,6 +75,7 @@ import { WorkspaceMediaManagementWidgetComponent } from '../components/workspace
 import { WorkspaceAlbumManagementWidgetComponent } from '../components/workspace-album-management-widget/workspace-album-management-widget';
 
 import { WorkspaceCurationManagementWidgetComponent } from '../components/workspace-curation-management-widget/workspace-curation-management-widget';
+import { WorkspaceAuditManagementWidgetComponent } from '../components/workspace-audit-management-widget/workspace-audit-management-widget';
 
 /**
  * Composition Root oficial do Workspace.
@@ -110,6 +111,7 @@ export class WorkspaceComposition {
   private static readonly FOTOS_ALBUMS_DASHBOARD_ID = 'deja.workspace.dashboard.fotos.albums';
 
   private static readonly FOTOS_CURATION_DASHBOARD_ID = 'deja.workspace.dashboard.fotos.curation';
+  private static readonly FOTOS_AUDIT_DASHBOARD_ID = 'deja.workspace.dashboard.fotos.audit';
 
   private static readonly ACTIVITY_DASHBOARD_ID = 'deja.workspace.dashboard.activity';
 
@@ -144,6 +146,7 @@ export class WorkspaceComposition {
   private static readonly FOTOS_ALBUMS_NAVIGATION_ID = 'deja.workspace.navigation.fotos.albums';
 
   private static readonly FOTOS_CURATION_NAVIGATION_ID = 'deja.workspace.navigation.fotos.curation';
+  private static readonly FOTOS_AUDIT_NAVIGATION_ID = 'deja.workspace.navigation.fotos.audit';
 
   private static readonly ACTIVITY_NAVIGATION_ID = 'deja.workspace.navigation.activity';
 
@@ -182,6 +185,7 @@ export class WorkspaceComposition {
   private static readonly ALBUM_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.fotos-album-management';
 
   private static readonly CURATION_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.fotos-curation-management';
+  private static readonly AUDIT_MANAGEMENT_WIDGET_ID = 'deja.workspace.widget.fotos-audit-management';
 
   private static readonly MANAGEMENT_REPORT_WIDGET_ID = 'deja.workspace.widget.management-report';
 
@@ -526,6 +530,18 @@ export class WorkspaceComposition {
           section: 'fotos',
           moduleKey: 'fotos',
         },
+      },
+
+      {
+        id: this.FOTOS_AUDIT_NAVIGATION_ID,
+        ownerId: this.CORE_OWNER,
+        dashboardId: this.FOTOS_AUDIT_DASHBOARD_ID,
+        title: 'Auditoria',
+        description: 'Verificação de datas, faces e álbuns.',
+        icon: 'reports',
+        order: 40,
+        enabled: true,
+        metadata: { section: 'fotos', moduleKey: 'fotos' },
       },
 
       {
@@ -969,6 +985,26 @@ export class WorkspaceComposition {
       },
     };
 
+    const auditManagementWidget: WorkspaceWidget = {
+      id: this.AUDIT_MANAGEMENT_WIDGET_ID,
+      owner: this.CORE_OWNER,
+      title: 'Auditoria',
+      description: 'Verificação e correção de pendências do acervo fotográfico.',
+      category: 'management',
+      widgetType: 'fotos-audit-management',
+      supportedSurfaces: ['dashboard'],
+      capabilities: ['resizable'],
+      size: {
+        default: { columns: 12, rows: 16 },
+        minimum: { columns: 8, rows: 10 },
+      },
+      component: WorkspaceAuditManagementWidgetComponent,
+      priority: 47,
+      enabled: true,
+      tags: ['deja-fotos','audit','management'],
+      metadata: { moduleKey: 'fotos', hideChrome: true },
+    };
+
     const managementReportWidget: WorkspaceWidget = {
       id: this.MANAGEMENT_REPORT_WIDGET_ID,
       owner: this.CORE_OWNER,
@@ -1028,6 +1064,7 @@ export class WorkspaceComposition {
     registries.widgets.register(albumManagementWidget);
 
     registries.widgets.register(curationManagementWidget);
+    registries.widgets.register(auditManagementWidget);
 
     registries.widgets.register(managementReportWidget);
 
@@ -1465,6 +1502,26 @@ export class WorkspaceComposition {
             enabled: true,
           },
         ],
+      },
+
+      {
+        id: this.FOTOS_AUDIT_DASHBOARD_ID,
+        owner: this.CORE_OWNER,
+        title: 'Auditoria',
+        description: 'Auditoria do acervo fotográfico.',
+        route: '/fotos/auditoria',
+        layoutId: initialLayout.id,
+        priority: 58,
+        enabled: true,
+        tags: ['deja-fotos','audit','management'],
+        metadata: { type: 'management', section: 'audit', moduleKey: 'fotos', hideChrome: true },
+        widgets: [{
+          id: 'deja.workspace.widget-instance.fotos-audit-management',
+          widgetId: auditManagementWidget.id,
+          regionId: mainRegion.id,
+          position: { column: 1, row: 1, columnSpan: 12, rowSpan: 16 },
+          enabled: true,
+        }],
       },
 
       {
