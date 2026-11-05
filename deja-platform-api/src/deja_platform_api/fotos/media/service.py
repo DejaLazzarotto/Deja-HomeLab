@@ -67,6 +67,7 @@ from deja_platform_api.fotos.media.schemas import (
     FotosMediaBulkItemResult,
     FotosMediaBulkResponse,
     FotosMediaBulkReturnToCuration,
+    FotosMediaBulkReopenCuration,
     FotosMediaBulkSetAlbum,
     FotosMediaBulkSetOriginalDate,
     FotosMediaBulkUpdate,
@@ -1183,6 +1184,19 @@ class FotosMediaService:
             return self._set_album(
                 media,
                 payload.album_id,
+            )
+
+        if isinstance(
+            payload,
+            FotosMediaBulkReopenCuration,
+        ):
+            # A auditoria apenas reabre a revisão facial: álbum, rostos,
+            # datas e arquivos permanecem associados e intactos.
+            media.curation_completed = False
+            media.curation_completed_at = None
+
+            return self._repository.update(
+                media,
             )
 
         if isinstance(
