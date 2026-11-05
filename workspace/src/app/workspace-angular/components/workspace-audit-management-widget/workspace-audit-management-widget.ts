@@ -263,14 +263,14 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
   async applyDate(): Promise<void> {
     if (!this.bulkDate() || !this.selectedIds().size || this.busy()) return;
     if (!window.confirm('Alterar a data de '+this.selectedIds().size+' fotografia(s)?')) return;
-    await this.applyBulk({operation:'set_original_date',original_date:this.bulkDate()+'T12:00:00'});
+    await this.applyBulk({operation:'set_original_date',original_date:this.bulkDate()+'T12:00:00',original_date_precision:'date'});
   }
   async applyAlbum(): Promise<void> {
     if (!this.bulkAlbum() || !this.selectedIds().size || this.busy()) return;
     if (!window.confirm('Associar '+this.selectedIds().size+' fotografia(s) ao álbum selecionado?')) return;
     await this.applyBulk({operation:'set_album',album_id:this.bulkAlbum()});
   }
-  private async applyBulk(action: {operation:'set_original_date';original_date:string}|{operation:'set_album';album_id:string}):Promise<void> {
+  private async applyBulk(action: {operation:'set_original_date';original_date:string;original_date_precision:'date'}|{operation:'set_album';album_id:string}):Promise<void> {
     this.busy.set(true); this.error.set(null); this.notice.set(null);
     try {
       const result=await firstValueFrom(this.http.patch<BulkResult>('/api/fotos/media/bulk',{
