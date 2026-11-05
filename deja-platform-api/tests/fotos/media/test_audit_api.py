@@ -149,6 +149,63 @@ def test_audit_filters_out_unprocessed_photographs(
     assert response.json()["without_date"] == 0
 
 
+def test_audit_corrects_time_without_moving_existing_derivatives(
+    client, media_context,
+):
+    """Data no mesmo mês: atualiza metadados sem renomear os derivados."""
+    _, _, environment_id, album_id, headers = media_context
+    uploaded = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=create_test_jpeg(
+            width=36,
+            height=28,
+            original_date=datetime(2020, 4, 26, 0, 0),
+        ),
+    )
+    assert uploaded.status_code == 201, uploaded.text
+    media_id = uploaded.json()["id"]
+    assert client.post(
+        f"{MEDIA_URL}/{media_id}/process", headers=headers
+    ).status_code == 200
+    assert client.get(
+        f"{MEDIA_URL}/{media_id}/thumbnail", headers=headers
+    ).status_code == 200
+
+    response = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={
+            "operation": "set_original_date",
+            "media_ids": [media_id],
+            "original_date": "2020-04-26T12:00:00",
+            "original_date_precision": "datetime",
+        },
+        headers=headers,
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["succeeded_count"] == 1, response.text
+    media = response.json()["results"][0]["media"]
+    assert media["original_date"] == "2020-04-26T12:00:00"
+    assert media["original_date_precision"] == "datetime"
+    assert media["album_id"] == album_id
+    assert client.get(
+        f"{MEDIA_URL}/{media_id}/thumbnail", headers=headers
+    ).status_code == 200
+    assert client.get(
+        f"{MEDIA_URL}/{media_id}/preview", headers=headers
+    ).status_code == 200
+
+    summary = client.get(
+        f"{MEDIA_URL}/audit/summary",
+        params={"environment_id": environment_id},
+        headers=headers,
+    )
+    assert summary.status_code == 200
+    assert summary.json()["without_time"] == 0
+
+
 def test_audit_can_complete_known_time_without_removing_album(
     client, media_context
 ):
