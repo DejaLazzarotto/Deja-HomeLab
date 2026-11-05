@@ -1,5 +1,6 @@
 """Detecção YuNet e comparação SFace; sugestões sempre exigem revisão humana."""
 
+from functools import lru_cache
 from pathlib import Path
 
 from PIL import Image
@@ -103,13 +104,42 @@ def validate_reference(crop: Image.Image, models_dir: Path) -> bool:
         raise FaceEngineUnavailable("Não foi possível carregar os modelos faciais.") from exc
 
 
-def _best_match(candidate, references, cv2, detector_path, recognizer):
+@lru_cache(maxsize=1024)
+def _reference_feature(
+    reference_path: str,
+    reference_mtime_ns: int,
+    reference_size: int,
+    detector_path: str,
+    recognizer_path: str,
+    detector_mtime_ns: int,
+    recognizer_mtime_ns: int,
+):
+    """Extrai uma referência uma vez por versão do arquivo e dos modelos.
+
+    O cache é limitado e pertence apenas ao processo Python atual.
+    """
+    cv2 = _cv2()
+    recognizer = cv2.FaceRecognizerSF.create(recognizer_path, "")
+    with Image.open(reference_path) as image:
+        return _feature(image, cv2, Path(detector_path), recognizer)
+
+
+def _best_match(candidate, references, cv2, detector_path, recognizer, recognizer_path):
     scores: dict[str, float] = {}
     for person_id, path in references:
-        if not path.is_file():
+        try:
+            reference_stat = path.stat()
+        except FileNotFoundError:
             continue
-        with Image.open(path) as image:
-            known = _feature(image, cv2, detector_path, recognizer)
+        known = _reference_feature(
+            str(path.resolve()),
+            reference_stat.st_mtime_ns,
+            reference_stat.st_size,
+            str(detector_path.resolve()),
+            str(recognizer_path.resolve()),
+            detector_path.stat().st_mtime_ns,
+            recognizer_path.stat().st_mtime_ns,
+        )
         if known is None:
             continue
         score = float(recognizer.match(candidate, known, cv2.FaceRecognizerSF_FR_COSINE))
@@ -138,7 +168,7 @@ def suggest(
         candidate = _feature(crop, cv2, detector_path, recognizer)
         if candidate is None:
             return None
-        return _best_match(candidate, references, cv2, detector_path, recognizer)
+        return _best_match(candidate, references, cv2, detector_path, recognizer, recognizer_path)
     except (cv2.error, OSError, ValueError) as exc:
         raise FaceEngineUnavailable("Não foi possível comparar os rostos.") from exc
 
