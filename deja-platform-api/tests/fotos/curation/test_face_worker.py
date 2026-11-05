@@ -262,3 +262,65 @@ def test_worker_cannot_persist_after_claim_is_recovered(
         )
 
         assert total_faces == 0
+
+
+def test_worker_releases_database_transaction_before_image_analysis(
+    favorite_media_context,
+) -> None:
+    """A análise de imagem nunca deve ocorrer com transações abertas."""
+
+    from deja_platform_api.fotos.curation.analysis_models import FaceAnalysisResult
+    from deja_platform_api.fotos.curation.job_repository import FotosFaceJobRepository
+    from deja_platform_api.fotos.media.models import FotosMediaModel
+
+    media_id = favorite_media_context["media_id"]
+    original_session_factory = favorite_media_context["session_factory"]
+
+    with original_session_factory() as session:
+        media = session.get(FotosMediaModel, media_id)
+        assert media is not None
+        media.processing_status = "ready"
+        session.commit()
+        assert FotosFaceJobRepository(session).enqueue(media) is not None
+        session.commit()
+
+    opened_sessions = []
+
+    def tracked_session_factory():
+        session = original_session_factory()
+        opened_sessions.append(session)
+        return session
+
+    def assert_no_open_transaction():
+        assert opened_sessions, "O worker deve consultar a fila antes da análise."
+        assert all(
+            not session.in_transaction() for session in opened_sessions
+        ), "Transação MySQL aberta durante a análise facial."
+
+    def resolve_path(media):
+        assert media.id == media_id
+        assert_no_open_transaction()
+        return Path("foto-teste.jpg")
+
+    def analyze(media, image_path, references, models_dir):
+        assert_no_open_transaction()
+        return FaceAnalysisResult(
+            media_id=media.id,
+            organization_id=media.organization_id,
+            tenant_id=media.tenant_id,
+            environment_id=media.environment_id,
+            detections=(),
+        )
+
+    with patch(
+        "deja_platform_api.fotos.curation.worker.analyze_faces",
+        side_effect=analyze,
+    ) as analyzer:
+        assert process_next_face_job(
+            session_factory=tracked_session_factory,
+            resolve_image_path=resolve_path,
+            uploads_dir=Path("uploads"),
+            models_dir=Path("models"),
+        ) is True
+
+    analyzer.assert_called_once()
