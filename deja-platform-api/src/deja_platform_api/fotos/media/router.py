@@ -249,6 +249,54 @@ def bulk_update_media(
     )
 
 
+AuditCategory = Literal[
+    "without_date",
+    "without_time",
+    "pending_faces",
+    "conflicting_dates",
+    "unverified_dates",
+    "without_album",
+]
+
+
+@router.get("/audit/summary", response_model=dict[str, int])
+def audit_summary(
+    service: FotosMediaServiceDependency,
+    current_user: FotosMediaReader,
+    environment_id: str | None = Query(default=None),
+) -> dict[str, int]:
+    """Totais das seis categorias de auditoria."""
+    return service.audit_summary(
+        current_user, environment_id=environment_id,
+    )
+
+
+@router.get("/audit/media", response_model=FotosMediaListResponse)
+def audit_media(
+    service: FotosMediaServiceDependency,
+    current_user: FotosMediaReader,
+    category: AuditCategory = Query(...),
+    environment_id: str | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=24, ge=1, le=100),
+) -> FotosMediaListResponse:
+    """Fotografias pendentes, paginadas e limitadas ao ambiente autorizado."""
+    items, total = service.audit_list(
+        current_user,
+        category=category,
+        environment_id=environment_id,
+        page=page,
+        page_size=page_size,
+    )
+    return FotosMediaListResponse(
+        items=items,
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=(total + page_size - 1) // page_size,
+    )
+
+
 @router.get(
     "/{media_id}",
     response_model=FotosMediaResponse,
