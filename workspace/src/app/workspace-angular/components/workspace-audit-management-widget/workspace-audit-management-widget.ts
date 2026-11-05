@@ -113,7 +113,7 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
               <h3 [title]="item.original_name">{{ item.original_name }}</h3>
               <p>{{ item.original_date ? item.original_date.slice(0,10) : 'Sem data' }}</p>
               @if (selectedCategory() === 'pending_faces') {
-                <button type="button" (click)="openCuration()">Abrir Curadoria</button>
+                <button type="button" (click)="openCuration(item.id)">Corrigir face na Curadoria</button>
               }
             </article>
           }
@@ -259,7 +259,9 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
     this.thumbnailUrls().forEach(url=>URL.revokeObjectURL(url));
     this.thumbnailUrls.set(new Map());
   }
-  async openCuration(): Promise<void> { await this.router.navigateByUrl('/fotos/curadoria'); }
+  async openCuration(mediaId: string): Promise<void> {
+    await this.router.navigate(['/fotos/curadoria'], { queryParams: { media_id: mediaId } });
+  }
   async applyDate(): Promise<void> {
     if (!this.bulkDate() || !this.selectedIds().size || this.busy()) return;
     if (!window.confirm('Alterar a data de '+this.selectedIds().size+' fotografia(s)?')) return;
