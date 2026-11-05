@@ -1,6 +1,7 @@
 """Testes da auditoria do acervo e da precisão de datas em lote."""
 
 from uuid import uuid4
+from datetime import datetime
 
 from deja_platform_api.fotos.curation.models import FotosFaceModel
 from tests.fotos.media.test_media_api import (
@@ -133,3 +134,90 @@ def test_audit_filters_out_unprocessed_photographs(client, media_context):
     )
     assert response.status_code == 200, response.text
     assert response.json()["without_date"] == 0
+
+
+def test_audit_can_complete_known_time_without_removing_album(
+    client, media_context
+):
+    _, _, environment_id, album_id, headers = media_context
+    uploaded = upload_image(
+        client, environment_id=environment_id,
+        album_id=album_id, headers=headers,
+        content=create_test_jpeg(width=37, height=23),
+    )
+    assert uploaded.status_code == 201, uploaded.text
+    media_id = uploaded.json()["id"]
+    assert client.post(f"{MEDIA_URL}/{media_id}/process", headers=headers).status_code == 200
+
+    first = client.patch(
+        f"{MEDIA_URL}/{media_id}/original-date",
+        json={
+            "original_date": "1992-05-19T12:00:00",
+            "original_date_precision": "date",
+        },
+        headers=headers,
+    )
+    assert first.status_code == 200, first.text
+    assert first.json()["original_date_precision"] == "date"
+
+    second = client.patch(
+        f"{MEDIA_URL}/{media_id}/original-date",
+        json={
+            "original_date": "1992-05-19T14:30:00",
+            "original_date_precision": "datetime",
+        },
+        headers=headers,
+    )
+    assert second.status_code == 200, second.text
+    assert second.json()["original_date_precision"] == "datetime"
+    assert second.json()["album_id"] == album_id
+
+    summary = client.get(
+        f"{MEDIA_URL}/audit/summary",
+        params={"environment_id": environment_id},
+        headers=headers,
+    )
+    assert summary.status_code == 200, summary.text
+    assert summary.json()["without_time"] == 0
+    assert summary.json()["without_album"] == 0
+
+
+def test_audit_verify_date_clears_unverified_category(
+    client, media_context
+):
+    _, _, environment_id, album_id, headers = media_context
+    uploaded = upload_image(
+        client, environment_id=environment_id,
+        album_id=album_id, headers=headers,
+        content=create_test_jpeg(
+            width=39, height=26,
+            original_date=datetime(2006, 2, 12, 11, 15),
+        ),
+    )
+    assert uploaded.status_code == 201, uploaded.text
+    media_id = uploaded.json()["id"]
+    assert client.post(f"{MEDIA_URL}/{media_id}/process", headers=headers).status_code == 200
+
+    before = client.get(
+        f"{MEDIA_URL}/audit/summary",
+        params={"environment_id": environment_id},
+        headers=headers,
+    )
+    assert before.status_code == 200
+    assert before.json()["unverified_dates"] == 1
+
+    result = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={"operation": "verify_original_date", "media_ids": [media_id]},
+        headers=headers,
+    )
+    assert result.status_code == 200, result.text
+    assert result.json()["succeeded_count"] == 1
+
+    after = client.get(
+        f"{MEDIA_URL}/audit/summary",
+        params={"environment_id": environment_id},
+        headers=headers,
+    )
+    assert after.status_code == 200
+    assert after.json()["unverified_dates"] == 0
