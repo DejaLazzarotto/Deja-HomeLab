@@ -380,7 +380,6 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
   }
   async applyDate(): Promise<void> {
     if (!this.bulkDate() || !this.selectedIds().size || this.busy()) return;
-    if (!window.confirm('Corrigir a data de '+this.selectedIds().size+' fotografia(s)? O sistema armazenará 12:00 como horário técnico.')) return;
     await this.applyBulk({operation:'set_original_date',original_date:this.bulkDate()+'T12:00:00',original_date_precision:'datetime'});
   }
   async deleteMedia(media: AuditMedia): Promise<void> {
