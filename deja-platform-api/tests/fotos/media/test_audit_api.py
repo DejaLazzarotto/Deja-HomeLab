@@ -184,6 +184,8 @@ def test_audit_reopens_face_curation_preserving_albums_and_suggestions(
         assert media_without_album.album_id is None
         assert media_with_album.curation_completed is False
         assert media_without_album.curation_completed is False
+        assert media_with_album.audit_returned_to_curation is True
+        assert media_without_album.audit_returned_to_curation is True
         assert session.query(FotosFaceModel).filter(
             FotosFaceModel.media_id.in_(ids),
             FotosFaceModel.status == "suggested",
@@ -209,15 +211,15 @@ def test_audit_reopens_face_curation_preserving_albums_and_suggestions(
     })
 
 
-def test_audit_excludes_photographs_still_in_curation(
+def test_audit_excludes_uncataloged_photographs_still_in_curation(
     client, media_context,
 ):
-    """Fotos prontas mas ainda em Curadoria não entram na Auditoria."""
+    """Foto sem álbum e sem curadoria concluída não é catalogada."""
     _, _, environment_id, album_id, headers = media_context
     uploaded = upload_image(
         client,
         environment_id=environment_id,
-        album_id=album_id,
+        album_id=None,
         headers=headers,
         content=create_test_jpeg(width=41, height=28),
     )
@@ -234,6 +236,82 @@ def test_audit_excludes_photographs_still_in_curation(
     )
     assert summary.status_code == 200
     assert summary.json()["without_date"] == 0
+
+
+def test_audit_finds_legacy_album_face_suggestions_and_hides_after_requeue(
+    client, media_context, test_session_factory,
+):
+    """Foto legada no álbum, sem marcador de conclusão, ainda é auditável."""
+    from deja_platform_api.fotos.media.models import FotosMediaModel
+
+    org_id, tenant_id, environment_id, album_id, headers = media_context
+    uploaded = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=create_test_jpeg(width=43, height=31),
+    )
+    assert uploaded.status_code == 201, uploaded.text
+    media_id = uploaded.json()["id"]
+    assert client.post(
+        f"{MEDIA_URL}/{media_id}/process", headers=headers
+    ).status_code == 200
+    with test_session_factory() as session:
+        media = session.get(FotosMediaModel, media_id)
+        assert media.curation_completed is False
+        session.add(FotosFaceModel(
+            id=str(uuid4()),
+            media_id=media_id,
+            organization_id=org_id,
+            tenant_id=tenant_id,
+            environment_id=environment_id,
+            x=0.1, y=0.1, width=0.3, height=0.3,
+            origin="detected", status="suggested",
+        ))
+        session.commit()
+
+    params = {"environment_id": environment_id}
+    before = client.get(
+        f"{MEDIA_URL}/audit/summary", params=params, headers=headers
+    )
+    assert before.status_code == 200, before.text
+    assert before.json()["pending_faces"] == 1
+
+    moved = client.patch(
+        f"{MEDIA_URL}/bulk",
+        json={"operation": "reopen_curation", "media_ids": [media_id]},
+        headers=headers,
+    )
+    assert moved.status_code == 200, moved.text
+    assert moved.json()["succeeded_count"] == 1, moved.text
+
+    after = client.get(
+        f"{MEDIA_URL}/audit/summary", params=params, headers=headers
+    )
+    assert after.status_code == 200
+    assert after.json()["pending_faces"] == 0
+    with test_session_factory() as session:
+        media = session.get(FotosMediaModel, media_id)
+        assert media.album_id == album_id
+        assert media.audit_returned_to_curation is True
+
+    complete = client.post(
+        f"/api/fotos/curation/media/{media_id}/completion",
+        params={"completed": "true"},
+        headers=headers,
+    )
+    assert complete.status_code == 200, complete.text
+    restored = client.get(
+        f"{MEDIA_URL}/audit/summary", params=params, headers=headers
+    )
+    assert restored.status_code == 200
+    # Sugestões remanescentes ainda são encontradas pela Auditoria
+    # caso não tenham sido confirmadas durante a revisão.
+    assert restored.json()["pending_faces"] == 1
+    with test_session_factory() as session:
+        media = session.get(FotosMediaModel, media_id)
+        assert media.audit_returned_to_curation is False
 
 
 def test_audit_rejects_unknown_category(client, media_context):
