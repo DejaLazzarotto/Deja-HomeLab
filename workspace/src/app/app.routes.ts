@@ -191,6 +191,16 @@ export const routes: Routes = [
     loadComponent: workspacePage,
   },
   {
+    path: 'fotos/auditoria',
+    title: 'Auditoria | Deja Fotos',
+    canActivate: [
+      authenticationGuard,
+      workspaceAccessGuard,
+      moduleGuard('fotos', ['manager']),
+    ],
+    loadComponent: workspacePage,
+  },
+  {
     path: 'fotos/curadoria',
     title: 'Curadoria | Deja Fotos',
     canActivate: [
