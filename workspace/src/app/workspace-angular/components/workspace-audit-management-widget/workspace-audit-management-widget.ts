@@ -82,7 +82,13 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
             <input type="date" [ngModel]="bulkDate()" (ngModelChange)="bulkDate.set($event)" [disabled]="busy()" />
           </label>
           <button type="button" (click)="applyDate()" [disabled]="busy() || !bulkDate() || !selectedIds().size">
-            Aplicar data
+            Aplicar data (sem horário)
+          </button>
+          <label>Data e horário conhecidos
+            <input type="datetime-local" [ngModel]="bulkDateTime()" (ngModelChange)="bulkDateTime.set($event)" [disabled]="busy()" />
+          </label>
+          <button type="button" (click)="applyDateTime()" [disabled]="busy() || !bulkDateTime() || !selectedIds().size">
+            Aplicar data e horário
           </button>
           <label>Álbum de destino
             <select [ngModel]="bulkAlbum()" (ngModelChange)="bulkAlbum.set($event)" [disabled]="busy()">
@@ -95,6 +101,16 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
           <button type="button" (click)="applyAlbum()" [disabled]="busy() || !bulkAlbum() || !selectedIds().size">
             Aplicar álbum
           </button>
+          @if (selectedCategory() === 'unverified_dates') {
+            <button type="button" (click)="verifyDates()" [disabled]="busy() || !selectedIds().size">
+              Confirmar datas existentes
+            </button>
+          }
+          @if (selectedCategory() === 'conflicting_dates') {
+            <button type="button" (click)="clearDateConflicts()" [disabled]="busy() || !selectedIds().size">
+              Limpar conflito após conferir
+            </button>
+          }
         </div>
       }
       @if (loading()) { <p role="status">Carregando fotografias...</p> }
@@ -166,6 +182,7 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
   readonly thumbnailUrls = signal<ReadonlyMap<string,string>>(new Map());
   readonly selectedIds = signal<ReadonlySet<string>>(new Set());
   readonly bulkDate = signal('');
+  readonly bulkDateTime = signal('');
   readonly bulkAlbum = signal('');
   readonly loading = signal(false);
   readonly busy = signal(false);
@@ -267,19 +284,43 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
     if (!window.confirm('Alterar a data de '+this.selectedIds().size+' fotografia(s)?')) return;
     await this.applyBulk({operation:'set_original_date',original_date:this.bulkDate()+'T12:00:00',original_date_precision:'date'});
   }
+  async applyDateTime(): Promise<void> {
+    if (!this.bulkDateTime() || !this.selectedIds().size || this.busy()) return;
+    if (!window.confirm('Alterar a data e o horário de '+this.selectedIds().size+' fotografia(s)?')) return;
+    await this.applyBulk({
+      operation:'set_original_date',
+      original_date:this.bulkDateTime()+':00',
+      original_date_precision:'datetime',
+    });
+  }
+  async verifyDates(): Promise<void> {
+    if (!this.selectedIds().size || this.busy()) return;
+    if (!window.confirm('Você conferiu as datas de '+this.selectedIds().size+' fotografia(s)? Confirma que estão corretas?')) return;
+    await this.applyBulk({operation:'verify_original_date'});
+  }
+  async clearDateConflicts(): Promise<void> {
+    if (!this.selectedIds().size || this.busy()) return;
+    if (!window.confirm('O conflito de data foi realmente resolvido para '+this.selectedIds().size+' fotografia(s)?')) return;
+    await this.applyBulk({operation:'clear_original_date_conflict'});
+  }
   async applyAlbum(): Promise<void> {
     if (!this.bulkAlbum() || !this.selectedIds().size || this.busy()) return;
     if (!window.confirm('Associar '+this.selectedIds().size+' fotografia(s) ao álbum selecionado?')) return;
     await this.applyBulk({operation:'set_album',album_id:this.bulkAlbum()});
   }
-  private async applyBulk(action: {operation:'set_original_date';original_date:string;original_date_precision:'date'}|{operation:'set_album';album_id:string}):Promise<void> {
+  private async applyBulk(action:
+    | {operation:'set_original_date';original_date:string;original_date_precision:'date'|'datetime'}
+    | {operation:'set_album';album_id:string}
+    | {operation:'verify_original_date'}
+    | {operation:'clear_original_date_conflict'}
+  ):Promise<void> {
     this.busy.set(true); this.error.set(null); this.notice.set(null);
     try {
       const result=await firstValueFrom(this.http.patch<BulkResult>('/api/fotos/media/bulk',{
         ...action,media_ids:[...this.selectedIds()],
       }));
-      this.notice.set(result.succeeded_count+' atualizada(s); '+result.failed_count+' falha(s).');
       await this.refresh();
+      this.notice.set(result.succeeded_count+' atualizada(s); '+result.failed_count+' falha(s).');
     } catch { this.error.set('Não foi possível aplicar a operação em lote.'); }
     finally { this.busy.set(false); }
   }
