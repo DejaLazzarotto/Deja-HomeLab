@@ -1270,7 +1270,7 @@ class FotosMediaService:
             )
 
         if target_path != current_path:
-            if target_path.exists() or target_path.parent.exists():
+            if target_path.exists():
                 raise FotosMediaStorageConflictError(
                     media.id,
                 )
@@ -1297,7 +1297,7 @@ class FotosMediaService:
             if target_path != current_path:
                 target_path.parent.mkdir(
                     parents=True,
-                    exist_ok=False,
+                    exist_ok=True,
                 )
                 current_path.replace(
                     target_path,
