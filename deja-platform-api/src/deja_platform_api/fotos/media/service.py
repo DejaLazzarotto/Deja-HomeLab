@@ -1194,6 +1194,7 @@ class FotosMediaService:
             # datas e arquivos permanecem associados e intactos.
             media.curation_completed = False
             media.curation_completed_at = None
+            media.audit_returned_to_curation = True
 
             return self._repository.update(
                 media,
