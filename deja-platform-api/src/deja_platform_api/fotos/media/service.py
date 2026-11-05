@@ -283,6 +283,55 @@ class FotosMediaService:
             page_size=page_size,
         )
 
+    def audit_list(
+        self,
+        current_user: AuthenticatedUser,
+        *,
+        category: str,
+        environment_id: str | None = None,
+        page: int = 1,
+        page_size: int = 24,
+    ) -> tuple[list[FotosMediaModel], int]:
+        """Consulta autorizada da auditoria, reutilizando o escopo de mídias."""
+        self._require_roles(current_user, FOTOS_MEDIA_READER_ROLES)
+        organization_id, tenant_id, resolved_environment_id = (
+            self._authorization_service.resolve_list_scope(
+                current_user,
+                organization_id=None,
+                tenant_id=None,
+                environment_id=environment_id,
+            )
+        )
+        return self._repository.audit_list(
+            category=category,
+            organization_id=organization_id,
+            tenant_id=tenant_id,
+            environment_id=resolved_environment_id,
+            page=page,
+            page_size=page_size,
+        )
+
+    def audit_summary(
+        self,
+        current_user: AuthenticatedUser,
+        *,
+        environment_id: str | None = None,
+    ) -> dict[str, int]:
+        self._require_roles(current_user, FOTOS_MEDIA_READER_ROLES)
+        organization_id, tenant_id, resolved_environment_id = (
+            self._authorization_service.resolve_list_scope(
+                current_user,
+                organization_id=None,
+                tenant_id=None,
+                environment_id=environment_id,
+            )
+        )
+        return self._repository.audit_summary(
+            organization_id=organization_id,
+            tenant_id=tenant_id,
+            environment_id=resolved_environment_id,
+        )
+
     def list_periods(
         self,
         current_user: AuthenticatedUser,
