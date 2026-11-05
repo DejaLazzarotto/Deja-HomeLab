@@ -168,6 +168,12 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
                 @if (selectedCategory() === 'pending_faces') {
                   <button type="button" class="curation-link" (click)="openCuration(item.id)">Corrigir face na Curadoria</button>
                 }
+                @if (canManage) {
+                  <button type="button" class="media-card__delete" [disabled]="deletingId() !== null || busy()"
+                    (click)="deleteMedia(item)" [attr.aria-label]="'Excluir ' + item.original_name">
+                    {{ deletingId() === item.id ? 'Excluindo...' : 'Excluir mídia' }}
+                  </button>
+                }
               </div>
             </article>
           }
@@ -229,6 +235,7 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
     .media-card dd.missing { color:#ef4444; }
     .badges { display:flex; flex-wrap:wrap; gap:.35rem; }
     .curation-link { border:0; padding:0; text-align:left; color:var(--workspace-color-primary,#2563eb); background:transparent; }
+    .media-card__delete { margin-top:.3rem; padding:0; border:0; color:var(--workspace-color-danger,#ef4444); background:transparent; font-size:.82rem; font-weight:700; text-align:left; }
     .error { color:#b91c1c; }
     @media (max-width:72rem) { .audit-actions { grid-template-columns:1fr; } }
     @media (max-width:40rem) { .audit-actions__editor { grid-template-columns:1fr; } }
@@ -256,6 +263,7 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
   readonly editor = signal<'date' | 'album' | null>(null);
   readonly loading = signal(false);
   readonly busy = signal(false);
+  readonly deletingId = signal<string | null>(null);
   readonly error = signal<string | null>(null);
   readonly notice = signal<string | null>(null);
   readonly page = signal(1);
@@ -288,7 +296,7 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
     if (!media.original_date) return 'Sem data';
     const date = media.original_date.slice(0,10).split('-');
     const value = date.length === 3 ? date.reverse().join('/') : media.original_date.slice(0,10);
-    return media.original_date_precision === 'datetime' ? value + ' ' + media.original_date.slice(11,16) : value;
+    return media.original_date_precision === 'datetime' || media.original_date.slice(11,16) === '12:00' ? value + ' ' + media.original_date.slice(11,16) : value;
   }
   formatFileSize(bytes: number): string {
     if (bytes < 1024) return bytes + ' B';
@@ -365,7 +373,28 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
   async applyDate(): Promise<void> {
     if (!this.bulkDate() || !this.selectedIds().size || this.busy()) return;
     if (!window.confirm('Corrigir a data de '+this.selectedIds().size+' fotografia(s)? O sistema armazenará 12:00 como horário técnico.')) return;
-    await this.applyBulk({operation:'set_original_date',original_date:this.bulkDate()+'T12:00:00',original_date_precision:'date'});
+    await this.applyBulk({operation:'set_original_date',original_date:this.bulkDate()+'T12:00:00',original_date_precision:'datetime'});
+  }
+  async deleteMedia(media: AuditMedia): Promise<void> {
+    if (!this.canManage || this.deletingId() || this.busy()) return;
+    if (!window.confirm(
+      'Excluir permanentemente "' + media.original_name +
+      '"? O arquivo e seus derivados serão removidos. Outras fotos e pessoas continuarão cadastradas.'
+    )) return;
+    this.deletingId.set(media.id);
+    this.error.set(null);
+    this.notice.set(null);
+    try {
+      await firstValueFrom(this.http.delete<void>('/api/fotos/media/' + media.id));
+      const targetPage = this.media().length === 1 && this.page() > 1 ? this.page() - 1 : this.page();
+      await this.refresh();
+      if (targetPage > 1) await this.loadPage(targetPage);
+      this.notice.set('Mídia excluída com sucesso.');
+    } catch {
+      this.error.set('Não foi possível excluir a mídia.');
+    } finally {
+      this.deletingId.set(null);
+    }
   }
   async verifyDates(): Promise<void> {
     if (!this.selectedIds().size || this.busy()) return;
