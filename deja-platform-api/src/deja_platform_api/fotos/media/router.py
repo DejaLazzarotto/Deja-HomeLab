@@ -330,6 +330,7 @@ def update_media_original_date(
         media_id,
         payload.original_date,
         current_user,
+        original_date_precision=payload.original_date_precision,
     )
 
 
