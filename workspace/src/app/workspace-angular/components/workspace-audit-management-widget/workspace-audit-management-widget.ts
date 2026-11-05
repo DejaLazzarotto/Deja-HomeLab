@@ -97,6 +97,9 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
               [disabled]="busy() || !selectedIds().size" (click)="toggleEditor('date')">Corrigir data</button>
             <button type="button" [class.active-command]="editor() === 'album'"
               [disabled]="busy() || !selectedIds().size" (click)="toggleEditor('album')">Mover para álbum</button>
+            @if (selectedCategory() === 'pending_faces') {
+              <button type="button" (click)="reopenCuration()" [disabled]="busy() || !selectedIds().size">Enviar à Curadoria</button>
+            }
             @if (selectedCategory() === 'unverified_dates') {
               <button type="button" (click)="verifyDates()" [disabled]="busy() || !selectedIds().size">Confirmar datas existentes</button>
             }
@@ -172,9 +175,6 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
                     @if (item.original_date_conflict) { <span class="status-badge conflict">Conflito de data</span> }
                     @if (item.was_converted) { <span class="status-badge">Convertida</span> }
                   </div>
-                }
-                @if (selectedCategory() === 'pending_faces') {
-                  <button type="button" class="curation-link" (click)="openCuration(item.id)">Corrigir face na Curadoria</button>
                 }
                 @if (canManage) {
                   <button type="button" class="media-card__delete" [disabled]="deletingId() !== null || busy()"
@@ -375,8 +375,13 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
     this.thumbnailUrls().forEach(url=>URL.revokeObjectURL(url));
     this.thumbnailUrls.set(new Map());
   }
-  async openCuration(mediaId: string): Promise<void> {
-    await this.router.navigate(['/fotos/curadoria'], { queryParams: { media_id: mediaId } });
+  async reopenCuration(): Promise<void> {
+    if (!this.canManage || !this.selectedIds().size || this.busy()) return;
+    const count = this.selectedIds().size;
+    await this.applyBulk({operation:'reopen_curation'});
+    if (!this.error()) {
+      this.notice.set(count + ' fotografia(s) encaminhada(s) à Curadoria, com os álbuns preservados.');
+    }
   }
   async applyDate(): Promise<void> {
     if (!this.bulkDate() || !this.selectedIds().size || this.busy()) return;
@@ -423,6 +428,7 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
     | {operation:'set_album';album_id:string}
     | {operation:'verify_original_date'}
     | {operation:'clear_original_date_conflict'}
+    | {operation:'reopen_curation'}
   ):Promise<void> {
     this.busy.set(true); this.error.set(null); this.notice.set(null);
     try {
