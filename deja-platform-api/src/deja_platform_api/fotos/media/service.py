@@ -841,6 +841,8 @@ class FotosMediaService:
         media_id: str,
         original_date: datetime,
         current_user: AuthenticatedUser,
+        *,
+        original_date_precision: str = "datetime",
     ) -> FotosMediaModel:
         """Corrige a data e reorganiza o original gerenciado."""
 
@@ -864,6 +866,7 @@ class FotosMediaService:
             return self._set_original_date(
                 media,
                 original_date,
+                original_date_precision,
             )
         except Exception:
             self._repository.rollback()
@@ -1154,6 +1157,7 @@ class FotosMediaService:
             return self._set_original_date(
                 media,
                 payload.original_date,
+                payload.original_date_precision,
             )
 
         if isinstance(
@@ -1199,6 +1203,7 @@ class FotosMediaService:
         self,
         media: FotosMediaModel,
         original_date: datetime,
+        precision: str = "datetime",
     ) -> FotosMediaModel:
         """Aplica a data manual e reorganiza todos os arquivos da mídia."""
 
@@ -1357,7 +1362,9 @@ class FotosMediaService:
 
         media.original_date = normalized_date
         media.original_date_source = "manual"
-        media.original_date_precision = "datetime"
+        if precision not in ("date", "datetime"):
+            raise ValueError("Precisão de data inválida.")
+        media.original_date_precision = precision
         media.original_date_verified = True
         media.original_date_conflict = False
         media.original_storage_key = target_storage_key.as_posix()
