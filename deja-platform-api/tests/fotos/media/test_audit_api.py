@@ -12,6 +12,18 @@ from tests.fotos.media.test_media_api import (
 )
 
 
+def mark_audit_ready(test_session_factory, *media_ids):
+    """Conclui a curadoria para incluir fotografias no escopo da Auditoria."""
+    from deja_platform_api.fotos.media.models import FotosMediaModel
+
+    with test_session_factory() as session:
+        for media_id in media_ids:
+            media = session.get(FotosMediaModel, media_id)
+            assert media is not None
+            media.curation_completed = True
+        session.commit()
+
+
 def test_audit_filters_and_bulk_date_preserve_album(
     client,
     media_context,
@@ -30,6 +42,7 @@ def test_audit_filters_and_bulk_date_preserve_album(
     media_id = uploaded.json()["id"]
     processed = client.post(f"{MEDIA_URL}/{media_id}/process", headers=headers)
     assert processed.status_code == 200, processed.text
+    mark_audit_ready(test_session_factory, media_id)
 
     params = {"environment_id": environment_id}
     summary = client.get(f"{MEDIA_URL}/audit/summary", params=params, headers=headers)
@@ -84,6 +97,7 @@ def test_audit_includes_unconfirmed_suggestion_inside_album(
     assert uploaded.status_code == 201
     media_id = uploaded.json()["id"]
     assert client.post(f"{MEDIA_URL}/{media_id}/process", headers=headers).status_code == 200
+    mark_audit_ready(test_session_factory, media_id)
     with test_session_factory() as session:
         session.add(FotosFaceModel(
             id=str(uuid4()),
@@ -146,6 +160,15 @@ def test_audit_reopens_face_curation_preserving_albums_and_suggestions(
             ))
         session.commit()
 
+    summary_before = client.get(
+        f"{MEDIA_URL}/audit/summary",
+        params={"environment_id": environment_id},
+        headers=headers,
+    )
+    assert summary_before.status_code == 200
+    assert summary_before.json()["pending_faces"] == 2
+    assert summary_before.json()["without_date"] == 2
+
     result = client.patch(
         f"{MEDIA_URL}/bulk",
         json={"operation": "reopen_curation", "media_ids": ids},
@@ -165,6 +188,52 @@ def test_audit_reopens_face_curation_preserving_albums_and_suggestions(
             FotosFaceModel.media_id.in_(ids),
             FotosFaceModel.status == "suggested",
         ).count() == 2
+
+    summary_after = client.get(
+        f"{MEDIA_URL}/audit/summary",
+        params={"environment_id": environment_id},
+        headers=headers,
+    )
+    assert summary_after.status_code == 200
+    assert summary_after.json()["pending_faces"] == 0
+    assert summary_after.json()["without_date"] == 0
+
+    pending_curation = client.get(
+        "/api/fotos/curation/media",
+        params={"environment_id": environment_id, "completion_status": "pending"},
+        headers=headers,
+    )
+    assert pending_curation.status_code == 200, pending_curation.text
+    assert set(ids).issubset({
+        media["id"] for media in pending_curation.json()["items"]
+    })
+
+
+def test_audit_excludes_photographs_still_in_curation(
+    client, media_context,
+):
+    """Fotos prontas mas ainda em Curadoria não entram na Auditoria."""
+    _, _, environment_id, album_id, headers = media_context
+    uploaded = upload_image(
+        client,
+        environment_id=environment_id,
+        album_id=album_id,
+        headers=headers,
+        content=create_test_jpeg(width=41, height=28),
+    )
+    assert uploaded.status_code == 201, uploaded.text
+    media_id = uploaded.json()["id"]
+    assert client.post(
+        f"{MEDIA_URL}/{media_id}/process", headers=headers
+    ).status_code == 200
+
+    summary = client.get(
+        f"{MEDIA_URL}/audit/summary",
+        params={"environment_id": environment_id},
+        headers=headers,
+    )
+    assert summary.status_code == 200
+    assert summary.json()["without_date"] == 0
 
 
 def test_audit_rejects_unknown_category(client, media_context):
@@ -313,7 +382,7 @@ def test_audit_can_complete_known_time_without_removing_album(
 
 
 def test_audit_verify_date_clears_unverified_category(
-    client, media_context
+    client, media_context, test_session_factory
 ):
     _, _, environment_id, album_id, headers = media_context
     uploaded = upload_image(
@@ -327,6 +396,8 @@ def test_audit_verify_date_clears_unverified_category(
     assert uploaded.status_code == 201, uploaded.text
     media_id = uploaded.json()["id"]
     assert client.post(f"{MEDIA_URL}/{media_id}/process", headers=headers).status_code == 200
+
+    mark_audit_ready(test_session_factory, media_id)
 
     before = client.get(
         f"{MEDIA_URL}/audit/summary",
