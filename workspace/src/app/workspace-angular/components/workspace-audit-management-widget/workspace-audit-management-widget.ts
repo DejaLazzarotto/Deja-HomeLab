@@ -12,8 +12,6 @@ type AuditCategory =
   | 'without_date'
   | 'without_time'
   | 'pending_faces'
-  | 'conflicting_dates'
-  | 'unverified_dates'
   | 'without_album';
 
 interface AuditMedia {
@@ -34,7 +32,6 @@ interface AuditPage {
   readonly total_pages: number;
 }
 interface AuditAlbum { readonly id: string; readonly name: string; readonly environment_id: string; }
-interface AuditEnvironment { readonly id: string; readonly name: string; }
 interface BulkResult {
   readonly succeeded_count: number;
   readonly failed_count: number;
@@ -49,8 +46,6 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
   { id: 'without_date', label: 'Sem data' },
   { id: 'without_time', label: 'Sem horário' },
   { id: 'pending_faces', label: 'Faces pendentes' },
-  { id: 'conflicting_dates', label: 'Datas conflitantes' },
-  { id: 'unverified_dates', label: 'Datas não verificadas' },
   { id: 'without_album', label: 'Sem álbum' },
 ];
 
@@ -62,15 +57,6 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
   template: `
     <section class="audit">
       <header><h1>Auditoria</h1><p>Localize e corrija informações incompletas do acervo, sem remover as fotografias de seus álbuns.</p></header>
-      @if (canSelectEnvironment && environments().length) {
-        <label>Ambiente
-          <select [ngModel]="environmentId()" (ngModelChange)="changeEnvironment($event)">
-            @for (environment of environments(); track environment.id) {
-              <option [value]="environment.id">{{ environment.name }}</option>
-            }
-          </select>
-        </label>
-      }
       @if (error()) { <p role="alert" class="error">{{ error() }} <button type="button" (click)="refresh()">Tentar novamente</button></p> }
       @if (notice()) { <p role="status">{{ notice() }}</p> }
       <nav class="filters" aria-label="Categorias de auditoria">
@@ -98,12 +84,6 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
               [disabled]="busy() || !selectedIds().size" (click)="toggleEditor('album')">Mover para álbum</button>
             @if (selectedCategory() === 'pending_faces') {
               <button type="button" (click)="reopenCuration()" [disabled]="busy() || !selectedIds().size">Enviar à Curadoria</button>
-            }
-            @if (selectedCategory() === 'unverified_dates') {
-              <button type="button" (click)="verifyDates()" [disabled]="busy() || !selectedIds().size">Confirmar datas existentes</button>
-            }
-            @if (selectedCategory() === 'conflicting_dates') {
-              <button type="button" (click)="clearDateConflicts()" [disabled]="busy() || !selectedIds().size">Limpar conflito após conferir</button>
             }
             <button type="button" class="clear-command" (click)="clearSelection()"
               [disabled]="busy() || !selectedIds().size">Limpar seleção</button>
@@ -214,7 +194,8 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
     .audit-actions__buttons button { min-height:2.35rem; }
     .audit-actions__buttons .active-command { color:var(--workspace-color-primary,#2563eb); border-color:var(--workspace-color-primary,#2563eb); }
     .audit-actions__buttons .clear-command { border-color:transparent; color:var(--workspace-color-text-secondary,#64748b); }
-    .audit-actions__editor { grid-column:1/-1; display:grid; grid-template-columns:auto minmax(14rem,26rem) auto; gap:.65rem; align-items:center; padding-top:.75rem; border-top:1px solid var(--workspace-color-border,#cbd5e1); }
+    .audit-actions__editor { grid-column:1/-1; display:grid; grid-template-columns:auto minmax(0,12rem) auto; gap:.65rem; align-items:center; padding-top:.75rem; border-top:1px solid var(--workspace-color-border,#cbd5e1); }
+    .audit-actions__editor input[type=date] { width:100%; min-width:0; min-height:2.35rem; padding:.5rem .7rem; font-size:.72rem; }
     .audit-actions__editor label { font-size:.7rem; font-weight:800; color:var(--workspace-color-text-secondary,#64748b); }
     .audit-actions__editor .apply-button { background:var(--workspace-color-primary,#2563eb); color:#fff; }
     .selection-bar { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.6rem; font-size:.74rem; color:var(--workspace-color-text-secondary,#64748b); }
@@ -241,7 +222,6 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
     .media-card dd { min-width:0; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
     .media-card dd.missing { color:#ef4444; }
     .badges { display:flex; flex-wrap:wrap; gap:.35rem; }
-    .curation-link { border:0; padding:0; text-align:left; color:var(--workspace-color-primary,#2563eb); background:transparent; }
     .media-card__delete { display:block; width:100%; margin-top:.3rem; padding:0; border:0; color:var(--workspace-color-danger,#ef4444); background:transparent; font-size:.82rem; font-weight:700; text-align:center; }
     .error { color:#b91c1c; }
     @media (max-width:72rem) { .audit-actions { grid-template-columns:1fr; } }
@@ -254,9 +234,7 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
   private readonly http = inject(HttpClient);
   private readonly user = inject(AuthenticationService).user();
   readonly canManage = this.user?.role === 'platform_admin' || getModuleRole(this.user, 'fotos') === 'manager';
-  readonly canSelectEnvironment = this.user?.role === 'platform_admin';
   readonly categories = categories;
-  readonly environments = signal<readonly AuditEnvironment[]>([]);
   readonly environmentId = signal(this.user?.environmentId ?? '');
   readonly totals = signal<Partial<Record<AuditCategory, number>>>({});
   readonly selectedCategory = signal<AuditCategory>('without_date');
@@ -285,15 +263,8 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
     return this.media().length > 0 && this.media().every(item => this.selectedIds().has(item.id));
   }
   private async initialize(): Promise<void> {
-    try {
-      const environments = await firstValueFrom(this.http.get<readonly AuditEnvironment[]>('/api/v1/environments'));
-      if (this.destroyed) return;
-      this.environments.set(environments);
-      if (!this.environmentId() && environments.length === 1) this.environmentId.set(environments[0].id);
-    } catch { /* Escopo padrão do usuário continua utilizável. */ }
     await this.refresh();
   }
-  changeEnvironment(id: string): void { this.environmentId.set(id); void this.refresh(); }
   chooseCategory(id: AuditCategory): void { this.selectedCategory.set(id); this.clearSelection(); void this.loadPage(1); }
   clearSelection(): void { this.selectedIds.set(new Set()); this.editor.set(null); }
   toggleEditor(value: 'date' | 'album'): void { this.editor.update(current => current === value ? null : value); }
@@ -406,16 +377,6 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
       this.deletingId.set(null);
     }
   }
-  async verifyDates(): Promise<void> {
-    if (!this.selectedIds().size || this.busy()) return;
-    if (!window.confirm('Você conferiu as datas de '+this.selectedIds().size+' fotografia(s)? Confirma que estão corretas?')) return;
-    await this.applyBulk({operation:'verify_original_date'});
-  }
-  async clearDateConflicts(): Promise<void> {
-    if (!this.selectedIds().size || this.busy()) return;
-    if (!window.confirm('O conflito de data foi realmente resolvido para '+this.selectedIds().size+' fotografia(s)?')) return;
-    await this.applyBulk({operation:'clear_original_date_conflict'});
-  }
   async applyAlbum(): Promise<void> {
     if (!this.bulkAlbum() || !this.selectedIds().size || this.busy()) return;
     if (!window.confirm('Associar '+this.selectedIds().size+' fotografia(s) ao álbum selecionado?')) return;
@@ -424,8 +385,6 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
   private async applyBulk(action:
     | {operation:'set_original_date';original_date:string;original_date_precision:'date'|'datetime'}
     | {operation:'set_album';album_id:string}
-    | {operation:'verify_original_date'}
-    | {operation:'clear_original_date_conflict'}
     | {operation:'reopen_curation'}
   ):Promise<void> {
     this.busy.set(true); this.error.set(null); this.notice.set(null);
