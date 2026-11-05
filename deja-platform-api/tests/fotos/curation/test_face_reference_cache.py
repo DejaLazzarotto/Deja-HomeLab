@@ -86,3 +86,49 @@ def test_deleted_reference_is_not_matched_from_cache(tmp_path: Path) -> None:
         recognizer_model,
     ) is None
     recognizer.match.assert_not_called()
+
+
+def test_full_image_fallback_passes_recognizer_model_path(tmp_path: Path) -> None:
+    """O fallback deve fornecer o caminho do modelo ao cache facial."""
+    import numpy as np
+
+    detector_model = tmp_path / "detector.onnx"
+    recognizer_model = tmp_path / "recognizer.onnx"
+    recognizer = Mock()
+    recognizer.feature.return_value = object()
+    recognizer.alignCrop.return_value = object()
+
+    cv2 = Mock()
+    cv2.imread.return_value = np.zeros((100, 100, 3), dtype=np.uint8)
+    cv2.FaceRecognizerSF.create.return_value = recognizer
+
+    detector = Mock()
+    detector.detect.return_value = (
+        None,
+        np.array([[10, 10, 50, 50, 0.99]]),
+    )
+
+    with (
+        patch.object(engine, "_cv2", return_value=cv2),
+        patch.object(
+            engine,
+            "check_models",
+            return_value=(detector_model, recognizer_model),
+        ),
+        patch.object(engine, "_detector", return_value=detector),
+        patch.object(
+            engine,
+            "_best_match",
+            return_value=("person-1", 0.92),
+        ) as best_match,
+    ):
+        result = engine.suggest_in_image(
+            tmp_path / "media.jpg",
+            (0.1, 0.1, 0.5, 0.5),
+            [("person-1", tmp_path / "reference.jpg")],
+            tmp_path,
+        )
+
+    assert result == ("person-1", 0.92)
+    best_match.assert_called_once()
+    assert best_match.call_args.args[-1] == recognizer_model
