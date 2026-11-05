@@ -1257,6 +1257,11 @@ class FotosMediaService:
                 file_extension=(derivative_current_key.suffix),
                 original_date=normalized_date,
             )
+            # Se a data continua no mesmo mês/ano, os arquivos derivados
+            # já estão na pasta correta. Preservamos os nomes versionados,
+            # evitando renomeações e falsos conflitos de armazenamento.
+            if derivative_target_key.parent == derivative_current_key.parent:
+                derivative_target_key = derivative_current_key
             derivative_target_path = self._settings.uploads_dir / derivative_target_key
 
             derivative_targets.append(
