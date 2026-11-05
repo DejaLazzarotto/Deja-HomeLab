@@ -111,7 +111,7 @@ const categories: readonly { id: AuditCategory; label: string }[] = [
                 <img [src]="thumb" [alt]="item.original_name" loading="lazy" />
               } @else { <div class="placeholder">Fotografia</div> }
               <h3 [title]="item.original_name">{{ item.original_name }}</h3>
-              <p>{{ item.original_date ? (item.original_date | slice:0:10) : 'Sem data' }}</p>
+              <p>{{ item.original_date ? item.original_date.slice(0,10) : 'Sem data' }}</p>
               @if (selectedCategory() === 'pending_faces') {
                 <button type="button" (click)="openCuration()">Abrir Curadoria</button>
               }
@@ -214,7 +214,6 @@ export class WorkspaceAuditManagementWidgetComponent implements OnInit, OnDestro
   async refresh(): Promise<void> {
     this.clearSelection();
     const generation = ++this.generation;
-    this.notice.set(null);
     try {
       const [totals, albums] = await Promise.all([
         firstValueFrom(this.http.get<Record<AuditCategory,number>>('/api/fotos/media/audit/summary', { params:this.params() })),
