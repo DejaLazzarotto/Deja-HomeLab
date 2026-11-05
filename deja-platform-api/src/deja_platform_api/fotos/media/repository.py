@@ -155,7 +155,13 @@ class FotosMediaRepository:
             media.deleted_at.is_(None),
             media.processing_status == "ready",
             media.media_type == "image",
-            media.curation_completed.is_(True),
+            # O indicador formal de conclusão não foi atualizado em parte
+            # das fotografias legadas, embora já estejam em álbuns.
+            or_(
+                media.curation_completed.is_(True),
+                media.album_id.is_not(None),
+            ),
+            media.audit_returned_to_curation.is_(False),
         ]
         categories = {
             "without_date": media.original_date.is_(None),
