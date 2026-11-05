@@ -155,6 +155,7 @@ class FotosMediaRepository:
             media.deleted_at.is_(None),
             media.processing_status == "ready",
             media.media_type == "image",
+            media.curation_completed.is_(True),
         ]
         categories = {
             "without_date": media.original_date.is_(None),
