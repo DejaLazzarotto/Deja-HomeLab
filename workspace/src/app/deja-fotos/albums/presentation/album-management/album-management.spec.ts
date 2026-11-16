@@ -252,7 +252,7 @@ describe('AlbumManagementComponent', () => {
       updatedAt: '2026-09-01T10:00:00.000Z',
     }));
 
-    listPeopleMock.mockImplementation(({ page, pageSize }) =>
+    listPeopleMock.mockImplementation(({ page, pageSize }: { page: number; pageSize: number }) =>
       Promise.resolve({
         items: people.slice((page - 1) * pageSize, page * pageSize),
         page,
