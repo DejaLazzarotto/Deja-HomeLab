@@ -122,8 +122,6 @@ export class AlbumManagementComponent
 
   readonly peopleTotal = signal(0);
 
-  readonly peoplePage = signal(0);
-
   readonly peopleLoading = signal(false);
 
   readonly peopleError = signal<string | null>(null);
@@ -330,52 +328,56 @@ export class AlbumManagementComponent
   }
 
   async loadPeople(reset = false): Promise<void> {
-    if (
-      this.peopleLoading()
-      || (
-        !reset
-        && this.peoplePage() > 0
-        && this.people().length >= this.peopleTotal()
-      )
-    ) {
+    if (this.peopleLoading()) {
       return;
     }
 
     this.peopleLoading.set(true);
     this.peopleError.set(null);
 
+    if (reset) {
+      this.people.set([]);
+      this.peopleTotal.set(0);
+    }
+
     try {
-      const page = reset
-        ? 1
-        : this.peoplePage() + 1;
+      let page = 1;
+      let totalPages = 1;
+      const peopleById = new Map<string, Person>();
 
-      const result = await this.personService().list({
-        page,
-        pageSize: 50,
-      });
+      do {
+        const result = await this.personService().list({
+          page,
+          pageSize: 50,
+        });
 
-      if (this.destroyed) {
-        return;
-      }
+        if (this.destroyed) {
+          return;
+        }
 
-      this.people.update(current => (
-        reset
-          ? result.items
-          : [
-              ...current,
-              ...result.items.filter(
-                person => !current.some(
-                  item => item.id === person.id,
-                ),
-              ),
-            ]
-      ));
-      this.peoplePage.set(result.page);
-      this.peopleTotal.set(result.total);
+        for (const person of result.items) {
+          peopleById.set(person.id, person);
+        }
+
+        this.people.set(
+          [...peopleById.values()].sort(
+            (left, right) => left.name.localeCompare(
+              right.name,
+              'pt-BR',
+            ),
+          ),
+        );
+        this.peopleTotal.set(result.total);
+
+        totalPages = result.totalPages;
+        page += 1;
+      } while (page <= totalPages);
     } catch {
-      this.peopleError.set(
-        'Não foi possível carregar pessoas.',
-      );
+      if (!this.destroyed) {
+        this.peopleError.set(
+          'Não foi possível carregar todas as pessoas.',
+        );
+      }
     } finally {
       this.peopleLoading.set(false);
     }
