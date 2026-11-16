@@ -166,21 +166,6 @@
       </select>
     </label>
 
-    @if (people().length < peopleTotal()) {
-      <button
-        type="button"
-        class="secondary-button"
-        (click)="loadPeople()"
-        [disabled]="peopleLoading()"
-      >
-        {{
-          peopleLoading()
-            ? 'Carregando...'
-            : 'Carregar mais pessoas'
-        }}
-      </button>
-    }
-
     @if (peopleError()) {
       <button
         type="button"
