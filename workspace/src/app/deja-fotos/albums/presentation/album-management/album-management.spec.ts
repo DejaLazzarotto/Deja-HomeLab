@@ -11,6 +11,11 @@ import {
 } from '../../../media';
 
 import {
+  Person,
+  PersonService,
+} from '../../../people';
+
+import {
   AlbumService,
 } from '../../application';
 
@@ -106,6 +111,7 @@ describe('AlbumManagementComponent', () => {
   let listAlbumsMock: ReturnType<typeof vi.fn>;
   let listPeriodsMock: ReturnType<typeof vi.fn>;
   let updatePeriodDescriptionMock: ReturnType<typeof vi.fn>;
+  let listPeopleMock: ReturnType<typeof vi.fn>;
   let listMediaMock: ReturnType<typeof vi.fn>;
   let bulkUpdateMock: ReturnType<typeof vi.fn>;
 
@@ -167,6 +173,14 @@ describe('AlbumManagementComponent', () => {
 
     bulkUpdateMock = vi.fn();
 
+    listPeopleMock = vi.fn().mockResolvedValue({
+      items: [],
+      page: 1,
+      pageSize: 50,
+      total: 0,
+      totalPages: 0,
+    });
+
     const albumService = {
       list: listAlbumsMock,
       listPeriods: listPeriodsMock,
@@ -200,6 +214,10 @@ describe('AlbumManagementComponent', () => {
       mediaService,
     );
     fixture.componentRef.setInput(
+      'personService',
+      { list: listPeopleMock } as unknown as PersonService,
+    );
+    fixture.componentRef.setInput(
       'canEdit',
       true,
     );
@@ -219,6 +237,45 @@ describe('AlbumManagementComponent', () => {
     component.togglePeriod('2026-09');
     await fixture.whenStable();
   }
+
+  it('loads all person pages into the selector automatically', async () => {
+    const people: Person[] = Array.from({ length: 120 }, (_, index) => ({
+      id: `person-${index + 1}`,
+      organizationId: 'organization-1',
+      tenantId: 'tenant-1',
+      environmentId: 'environment-1',
+      name: `Person ${index + 1}`,
+      description: null,
+      active: true,
+      avatarContentType: null,
+      createdAt: '2026-09-01T10:00:00.000Z',
+      updatedAt: '2026-09-01T10:00:00.000Z',
+    }));
+
+    listPeopleMock.mockImplementation(({ page, pageSize }) =>
+      Promise.resolve({
+        items: people.slice((page - 1) * pageSize, page * pageSize),
+        page,
+        pageSize,
+        total: people.length,
+        totalPages: Math.ceil(people.length / pageSize),
+      }),
+    );
+
+    await component.loadPeople(true);
+    fixture.detectChanges();
+
+    expect(listPeopleMock).toHaveBeenCalledWith({ page: 1, pageSize: 50 });
+    expect(listPeopleMock).toHaveBeenCalledWith({ page: 2, pageSize: 50 });
+    expect(listPeopleMock).toHaveBeenCalledWith({ page: 3, pageSize: 50 });
+    expect(component.people().length).toBe(120);
+    expect(component.peopleTotal()).toBe(120);
+    expect(
+      fixture.nativeElement.querySelectorAll(
+        '.dashboard-controls select',
+      )[1].options.length,
+    ).toBe(121);
+  });
 
   it('creates a description for a month without one', async () => {
     listPeriodsMock.mockResolvedValueOnce([
