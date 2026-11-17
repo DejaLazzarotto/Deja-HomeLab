@@ -221,13 +221,30 @@ class FotosPersonService:
         *,
         page: int = 1,
         page_size: int = 50,
+        year: int | None = None,
+        month: int | None = None,
+        without_date: bool = False,
     ) -> tuple[list, int]:
         person = self.find_by_id(person_id, current_user)
         return self._repository.list_media(
             person,
             page=page,
             page_size=page_size,
+            year=year,
+            month=month,
+            without_date=without_date,
         )
+
+    def list_media_periods(
+        self,
+        person_id: str,
+        current_user: AuthenticatedUser,
+    ) -> list[tuple[int | None, int | None, int]]:
+        """Lista os períodos das mídias da pessoa autorizada."""
+
+        person = self.find_by_id(person_id, current_user)
+
+        return self._repository.list_media_periods(person)
 
     def link_media(
         self,

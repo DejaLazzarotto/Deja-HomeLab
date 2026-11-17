@@ -63,6 +63,11 @@ export class PersonMediaViewerPageComponent
 
   private loadingMore = false;
 
+  readonly selectedYear = signal<number | null>(null);
+
+  readonly selectedMonth = signal<number | null>(null);
+
+  readonly withoutDate = signal(false);
   readonly personId = signal<string | null>(null);
 
   readonly mediaId = signal<string | null>(null);
@@ -104,6 +109,29 @@ export class PersonMediaViewerPageComponent
     this.personId.set(personId);
     this.mediaId.set(mediaId);
 
+    const params = this.route.snapshot.queryParamMap;
+    const yearValue = params.get('year');
+    const monthValue = params.get('month');
+    const withoutDate = params.get('without_date') === 'true';
+
+    const year = yearValue === null ? null : Number(yearValue);
+    const month = monthValue === null ? null : Number(monthValue);
+
+    if (
+      (year !== null && (!Number.isInteger(year) || year < 1 || year > 9999)) ||
+      (month !== null && (!Number.isInteger(month) || month < 1 || month > 12)) ||
+      (withoutDate && (year !== null || month !== null)) ||
+      (!withoutDate && ((year === null) !== (month === null)))
+    ) {
+      this.error.set('Período inválido.');
+      this.loading.set(false);
+      return;
+    }
+
+    this.selectedYear.set(year);
+    this.selectedMonth.set(month);
+    this.withoutDate.set(withoutDate);
+
     try {
       await this.loadUntilMediaFound(mediaId);
 
@@ -130,10 +158,23 @@ export class PersonMediaViewerPageComponent
       return;
     }
 
-    void this.router.navigate([
-      '/people',
-      personId,
-    ]);
+    void this.router.navigate(
+      [
+        '/people',
+        personId,
+      ],
+      {
+        queryParams: this.withoutDate()
+          ? { without_date: true }
+          : this.selectedYear() !== null &&
+              this.selectedMonth() !== null
+            ? {
+                year: this.selectedYear(),
+                month: this.selectedMonth(),
+              }
+            : {},
+      },
+    );
   }
 
   async showPrevious(): Promise<void> {
@@ -303,6 +344,15 @@ export class PersonMediaViewerPageComponent
             params: {
               page,
               page_size: PAGE_SIZE,
+              ...(this.withoutDate()
+                ? { without_date: true }
+                : this.selectedYear() !== null &&
+                    this.selectedMonth() !== null
+                  ? {
+                      year: this.selectedYear()!,
+                      month: this.selectedMonth()!,
+                    }
+                  : {}),
             },
           },
         ),
@@ -360,6 +410,7 @@ export class PersonMediaViewerPageComponent
           ],
           {
             replaceUrl: true,
+            queryParamsHandling: 'preserve',
           },
         );
       }

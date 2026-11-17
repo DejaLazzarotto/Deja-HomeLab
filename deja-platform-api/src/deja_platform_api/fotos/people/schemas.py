@@ -99,6 +99,13 @@ class FotosPersonMediaListResponse(BaseModel):
     total: int
     total_pages: int
 
+class FotosPersonMediaPeriodResponse(BaseModel):
+    """Quantidade de mídias da pessoa por ano e mês."""
+
+    year: int | None = Field(default=None, ge=1, le=9999)
+    month: int | None = Field(default=None, ge=1, le=12)
+    media_count: int = Field(ge=1)
+
 class FotosAvatarFaceResponse(BaseModel):
     model_config = {"from_attributes": True}
     """Rosto confirmado disponível para seleção de avatar."""
