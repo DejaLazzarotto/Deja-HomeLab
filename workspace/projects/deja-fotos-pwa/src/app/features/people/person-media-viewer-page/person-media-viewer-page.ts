@@ -59,6 +59,10 @@ export class PersonMediaViewerPageComponent
 
   private currentPage = 0;
 
+  private periodYear: string | null = null;
+
+  private periodMonth: string | null = null;
+
   private totalPages = 0;
 
   private loadingMore = false;
@@ -103,6 +107,8 @@ export class PersonMediaViewerPageComponent
 
     this.personId.set(personId);
     this.mediaId.set(mediaId);
+    this.periodYear = this.route.snapshot.paramMap.get('year');
+    this.periodMonth = this.route.snapshot.paramMap.get('month');
 
     try {
       await this.loadUntilMediaFound(mediaId);
@@ -130,10 +136,11 @@ export class PersonMediaViewerPageComponent
       return;
     }
 
-    void this.router.navigate([
-      '/people',
-      personId,
-    ]);
+    void this.router.navigate(
+      this.periodYear !== null && this.periodMonth !== null
+        ? ['/people', personId, 'period', this.periodYear, this.periodMonth]
+        : ['/people', personId, 'all'],
+    );
   }
 
   async showPrevious(): Promise<void> {
@@ -295,16 +302,22 @@ export class PersonMediaViewerPageComponent
       throw new Error('Pessoa inválida.');
     }
 
+    const params: Record<string, string | number | boolean> = {
+      page,
+      page_size: PAGE_SIZE,
+    };
+    if (this.periodYear === 'undated' && this.periodMonth === 'undated') {
+      params['without_date'] = true;
+    } else if (this.periodYear !== null && this.periodMonth !== null) {
+      params['year'] = Number(this.periodYear);
+      params['month'] = Number(this.periodMonth);
+    }
+
     const response =
       await firstValueFrom(
         this.http.get<PersonMediaListResponse>(
           `/api/fotos/people/${personId}/media`,
-          {
-            params: {
-              page,
-              page_size: PAGE_SIZE,
-            },
-          },
+          { params },
         ),
       );
 
@@ -352,12 +365,9 @@ export class PersonMediaViewerPageComponent
 
       if (personId) {
         await this.router.navigate(
-          [
-            '/people',
-            personId,
-            'media',
-            item.id,
-          ],
+          this.periodYear !== null && this.periodMonth !== null
+            ? ['/people', personId, 'period', this.periodYear, this.periodMonth, 'media', item.id]
+            : ['/people', personId, 'media', item.id],
           {
             replaceUrl: true,
           },
