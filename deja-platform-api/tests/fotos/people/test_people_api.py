@@ -387,3 +387,65 @@ def test_avatar_manual_upload_unavailable(
         f"{PEOPLE_URL}/{person['id']}",
         headers=headers,
     ).status_code == 204
+
+
+def test_person_media_periods_filter_and_undated(
+    client: TestClient,
+    media_context: tuple,
+    test_session_factory,
+) -> None:
+    """Agregação SQL e paginação mantêm somente as mídias da pessoa."""
+    from datetime import datetime
+    from deja_platform_api.fotos.media.models import FotosMediaModel
+
+    _, _, environment_id, _, headers = media_context
+    person = create_person(client, environment_id, headers, name="Períodos")
+    stranger = create_person(client, environment_id, headers, name="Outra pessoa")
+    ids = []
+    for index in range(3):
+        response = upload_image(
+            client,
+            environment_id=environment_id,
+            album_id=None,
+            headers=headers,
+            content=create_test_jpeg(width=31 + index),
+        )
+        assert response.status_code == 201, response.text
+        ids.append(response.json()["id"])
+
+    for media_id, owner in ((ids[0], person), (ids[1], person), (ids[2], stranger)):
+        linked = client.post(
+            f"{PEOPLE_URL}/{owner['id']}/media",
+            json={"media_id": media_id},
+            headers=headers,
+        )
+        assert linked.status_code == 204, linked.text
+
+    with test_session_factory() as session:
+        for media_id, value in (
+            (ids[0], datetime(2025, 7, 12, 12, 0)),
+            (ids[2], datetime(2025, 7, 15, 12, 0)),
+        ):
+            media = session.get(FotosMediaModel, media_id)
+            assert media is not None
+            media.original_date = value
+        session.commit()
+
+    base = f"{PEOPLE_URL}/{person['id']}/media"
+    periods = client.get(f"{base}/periods", headers=headers)
+    assert periods.status_code == 200, periods.text
+    assert {(row["year"], row["month"], row["media_count"]) for row in periods.json()} == {
+        (2025, 7, 1), (None, None, 1),
+    }
+
+    july = client.get(base, params={"year": 2025, "month": 7, "page_size": 30}, headers=headers)
+    assert july.status_code == 200, july.text
+    assert july.json()["total"] == 1
+    assert [item["id"] for item in july.json()["items"]] == [ids[0]]
+
+    undated = client.get(base, params={"without_date": True}, headers=headers)
+    assert undated.status_code == 200, undated.text
+    assert [item["id"] for item in undated.json()["items"]] == [ids[1]]
+
+    assert client.get(base, params={"month": 7}, headers=headers).status_code == 422
+    assert client.get(base, params={"year": 2025, "without_date": True}, headers=headers).status_code == 422
