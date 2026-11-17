@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import delete, extract, func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from deja_platform_api.fotos.curation.models import FotosFaceModel, FotosFaceReferenceModel
@@ -106,79 +106,12 @@ class FotosPersonRepository:
         self._session.delete(person)
         self._session.commit()
 
-    def list_media_periods(
-        self,
-        person: FotosPersonModel,
-    ) -> list[tuple[int | None, int | None, int]]:
-        """Conta as mídias da pessoa por ano e mês, incluindo sem data."""
-
-        conditions = (
-            FotosPersonMediaModel.person_id == person.id,
-            FotosPersonMediaModel.organization_id == person.organization_id,
-            FotosPersonMediaModel.tenant_id == person.tenant_id,
-            FotosPersonMediaModel.environment_id == person.environment_id,
-            FotosMediaModel.organization_id == person.organization_id,
-            FotosMediaModel.tenant_id == person.tenant_id,
-            FotosMediaModel.environment_id == person.environment_id,
-            FotosMediaModel.deleted_at.is_(None),
-        )
-
-        year = extract("year", FotosMediaModel.original_date)
-        month = extract("month", FotosMediaModel.original_date)
-
-        statement = (
-            select(
-                year.label("year"),
-                month.label("month"),
-                func.count(FotosMediaModel.id).label("media_count"),
-            )
-            .join(
-                FotosPersonMediaModel,
-                FotosPersonMediaModel.media_id == FotosMediaModel.id,
-            )
-            .where(
-                *conditions,
-                FotosMediaModel.original_date.is_not(None),
-            )
-            .group_by(year, month)
-            .order_by(year.desc(), month.desc())
-        )
-
-        result = [
-            (int(row.year), int(row.month), int(row.media_count))
-            for row in self._session.execute(statement)
-        ]
-
-        undated_statement = (
-            select(func.count(FotosMediaModel.id))
-            .join(
-                FotosPersonMediaModel,
-                FotosPersonMediaModel.media_id == FotosMediaModel.id,
-            )
-            .where(
-                *conditions,
-                FotosMediaModel.original_date.is_(None),
-            )
-        )
-
-        undated_count = int(
-            self._session.scalar(undated_statement) or 0
-        )
-
-        if undated_count:
-            result.append((None, None, undated_count))
-
-        return result
-
     def list_media(
         self,
         person: FotosPersonModel,
         *,
         page: int,
         page_size: int,
-        year: int | None = None,
-        month: int | None = None,
-        without_date: bool = False,
     ) -> tuple[list[FotosMediaModel], int]:
         conditions = (
             FotosPersonMediaModel.person_id == person.id,
@@ -190,23 +123,6 @@ class FotosPersonRepository:
             FotosMediaModel.environment_id == person.environment_id,
             FotosMediaModel.deleted_at.is_(None),
         )
-
-        if without_date:
-            conditions = (
-                *conditions,
-                FotosMediaModel.original_date.is_(None),
-            )
-        else:
-            if year is not None:
-                conditions = (
-                    *conditions,
-                    extract("year", FotosMediaModel.original_date) == year,
-                )
-            if month is not None:
-                conditions = (
-                    *conditions,
-                    extract("month", FotosMediaModel.original_date) == month,
-                )
 
         total = int(
             self._session.scalar(

@@ -24,7 +24,6 @@ from deja_platform_api.fotos.people.schemas import (
     FotosPersonListResponse,
     FotosPersonMediaLink,
     FotosPersonMediaListResponse,
-    FotosPersonMediaPeriodResponse,
     FotosPersonResponse,
     FotosPersonUpdate,
 )
@@ -132,31 +131,6 @@ def create_person(
 
 
 @router.get(
-    "/{person_id}/media/periods",
-    response_model=list[FotosPersonMediaPeriodResponse],
-)
-def list_person_media_periods(
-    person_id: PersonId,
-    service: FotosPersonServiceDependency,
-    current_user: PersonReader,
-) -> list[FotosPersonMediaPeriodResponse]:
-    """Lista anos, meses e quantidades de mídias da pessoa."""
-
-    periods = service.list_media_periods(
-        person_id,
-        current_user,
-    )
-
-    return [
-        FotosPersonMediaPeriodResponse(
-            year=year,
-            month=month,
-            media_count=media_count,
-        )
-        for year, month, media_count in periods
-    ]
-
-@router.get(
     "/{person_id}/media",
     response_model=FotosPersonMediaListResponse,
 )
@@ -166,9 +140,6 @@ def list_person_media(
     current_user: PersonReader,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
-    year: int | None = Query(default=None, ge=1, le=9999),
-    month: int | None = Query(default=None, ge=1, le=12),
-    without_date: bool = Query(default=False),
 ) -> FotosPersonMediaListResponse:
     """Lista uma página das mídias da pessoa."""
 
@@ -177,9 +148,6 @@ def list_person_media(
         current_user,
         page=page,
         page_size=page_size,
-        year=year,
-        month=month,
-        without_date=without_date,
     )
 
     return FotosPersonMediaListResponse(

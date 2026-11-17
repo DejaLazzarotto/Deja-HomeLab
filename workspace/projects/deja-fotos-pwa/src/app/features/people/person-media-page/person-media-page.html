@@ -11,24 +11,14 @@
 
     <div>
       <p class="eyebrow">
-        @if (view() === 'years') {
-          Pessoas
-        } @else {
-          {{ person()?.name || 'Pessoa' }}
-        }
+        Pessoas
       </p>
 
       <h1>
-        @if (view() === 'years') {
-          {{ person()?.name || 'Pessoa' }}
-        } @else if (selectedYear() !== null) {
-          {{ selectedYear() }}
-        } @else {
-          Sem data
-        }
+        {{ person()?.name || 'Pessoa' }}
       </h1>
 
-      @if (view() === 'years' && !loading() && !error()) {
+      @if (!loading() && !error()) {
         <p class="subtitle">
           {{ total() }}
           @if (total() === 1) {
@@ -41,14 +31,6 @@
     </div>
   </header>
 
-  @if (view() === 'months') {
-    <section class="year-intro">
-      <p>
-        Escolha um mês para explorar seus momentos.
-      </p>
-    </section>
-  }
-
   @if (loading()) {
     <section class="state-card">
       <p>
@@ -60,54 +42,6 @@
       <p>
         {{ error() }}
       </p>
-    </section>
-  } @else if (view() === 'years') {
-    @if (years().length === 0 && undatedCount() === 0) {
-      <section class="state-card">
-        <p>Nenhuma mídia vinculada a esta pessoa.</p>
-      </section>
-    } @else {
-      <section class="period-list" aria-label="Anos disponíveis">
-        @for (year of years(); track year.year) {
-          <button
-            type="button"
-            class="period-card"
-            (click)="openYear(year.year)"
-          >
-            <span class="period-title">{{ year.year }}</span>
-            <span class="period-count">{{ year.mediaCount }} mídias</span>
-            <span class="period-arrow" aria-hidden="true">›</span>
-          </button>
-        }
-
-        @if (undatedCount() > 0) {
-          <button
-            type="button"
-            class="period-card"
-            (click)="openWithoutDate()"
-          >
-            <span class="period-title">Sem data</span>
-            <span class="period-count">{{ undatedCount() }} mídias</span>
-            <span class="period-arrow" aria-hidden="true">›</span>
-          </button>
-        }
-      </section>
-    }
-  } @else if (view() === 'months') {
-    <section class="month-list" aria-label="Meses disponíveis">
-      @for (month of months(); track month.month) {
-        <button
-          type="button"
-          class="month-card"
-          (click)="openMonth(month.month)"
-        >
-          <div>
-            <h2>{{ monthName(month.month) }}</h2>
-            <p>{{ month.mediaCount }} fotos e vídeos</p>
-          </div>
-          <span aria-hidden="true">›</span>
-        </button>
-      }
     </section>
   } @else if (media().length === 0) {
     <section class="state-card">

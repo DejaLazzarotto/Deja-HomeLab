@@ -110,32 +110,6 @@ describe('PersonMediaPageComponent', () => {
       setTimeout(resolve, 0);
     });
 
-    const periodsRequest =
-      httpTestingController.expectOne(
-        '/api/fotos/people/person-1/media/periods',
-      );
-
-    periodsRequest.flush([
-      {
-        year: 2017,
-        month: 4,
-        media_count: 40,
-      },
-    ]);
-
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 0);
-    });
-
-    expect(component.view()).toBe('years');
-    expect(component.years().length).toBe(1);
-
-    component.openYear(2017);
-
-    expect(component.view()).toBe('months');
-    expect(component.months().length).toBe(1);
-
-    void component.openMonth(4);
     const firstPageRequest =
       httpTestingController.expectOne(
         (request) =>

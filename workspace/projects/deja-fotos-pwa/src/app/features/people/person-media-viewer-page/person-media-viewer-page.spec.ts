@@ -48,9 +48,6 @@ describe('PersonMediaViewerPageComponent', () => {
                   return null;
                 },
               },
-              queryParamMap: {
-                get: () => null,
-              },
             },
           },
         },
@@ -223,81 +220,6 @@ describe('PersonMediaViewerPageComponent', () => {
     expect(component.total()).toBe(40);
   });
 
-  it.each([
-    {
-      description: 'ano e mês',
-      params: { year: '2017', month: '4' },
-    },
-    {
-      description: 'mídias sem data',
-      params: { without_date: 'true' },
-    },
-  ])('should filter the viewer by $description', async ({ params }) => {
-    const queryParamMap =
-      TestBed.inject(ActivatedRoute).snapshot.queryParamMap;
-
-    queryParamMap.get = (key: string) =>
-      params[key as keyof typeof params] ?? null;
-
-    const item = {
-      id: 'media-30',
-      media_type: 'image' as const,
-      is_animated: false,
-      original_date: null,
-      original_name: 'foto.jpg',
-    };
-
-    fixture.detectChanges();
-
-    const listRequest = httpTestingController.expectOne(
-      (request) =>
-        request.url === '/api/fotos/people/person-1/media' &&
-        request.params.get('page') === '1' &&
-        request.params.get('page_size') === '30',
-    );
-
-    expect(listRequest.request.params.get('year'))
-      .toBe('year' in params ? params.year : null);
-
-    expect(listRequest.request.params.get('month'))
-      .toBe('month' in params ? params.month : null);
-
-    expect(listRequest.request.params.get('without_date'))
-      .toBe('without_date' in params ? params.without_date : null);
-
-    listRequest.flush({
-      items: [item],
-      page: 1,
-      page_size: 30,
-      total: 1,
-      total_pages: 1,
-    });
-
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-
-    httpTestingController.expectOne(
-      '/api/fotos/media/media-30',
-    ).flush(item);
-
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-
-    httpTestingController.expectOne(
-      '/api/fotos/favorites/media-30',
-    ).flush({
-      media_id: 'media-30',
-      is_favorite: false,
-    });
-
-    httpTestingController.expectOne(
-      '/api/fotos/media/media-30/preview',
-    ).flush(new Blob(['image']));
-
-    await fixture.whenStable();
-
-    expect(component.currentIndex()).toBe(0);
-    expect(component.total()).toBe(1);
-    expect(component.error()).toBeNull();
-  });
   it('should request the original animated image for a person', async () => {
     const animatedMedia = {
       id: 'media-30',
