@@ -33,6 +33,7 @@ describe('PersonMediaPageComponent', () => {
           provide: ActivatedRoute,
           useValue: {
             snapshot: {
+              routeConfig: { path: 'people/:personId/all' },
               paramMap: {
                 get: (key: string) => {
                   if (key === 'personId') {
@@ -210,4 +211,39 @@ describe('PersonMediaPageComponent', () => {
 
     expect(component.hasMore()).toBe(false);
   });
+  it('shows year groups without requesting thumbnail grids', async () => {
+    const route = TestBed.inject(ActivatedRoute);
+    (route.snapshot as { routeConfig?: unknown }).routeConfig = {
+      path: 'people/:personId',
+    };
+
+    fixture.detectChanges();
+    httpTestingController.expectOne('/api/fotos/people/person-1').flush({
+      id: 'person-1',
+      name: 'Carol',
+      description: null,
+      active: true,
+      avatar_content_type: null,
+    });
+    await new Promise<void>(resolve => setTimeout(resolve, 0));
+
+    httpTestingController.expectOne(
+      '/api/fotos/people/person-1/media/periods',
+    ).flush([
+      { year: 2025, month: 1, media_count: 600 },
+      { year: 2025, month: 2, media_count: 450 },
+      { year: null, month: null, media_count: 10 },
+    ]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.mode()).toBe('years');
+    expect(component.total()).toBe(1060);
+    expect(component.choices()).toEqual([
+      { key: '2025', label: '2025', count: 1050 },
+      { key: 'undated', label: 'Sem data', count: 10 },
+    ]);
+    expect(httpTestingController.match(req => req.url.endsWith('/thumbnail'))).toEqual([]);
+  });
+
 });
