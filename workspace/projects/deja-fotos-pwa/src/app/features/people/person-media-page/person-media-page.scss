@@ -284,3 +284,48 @@ h1 {
     gap: 6px;
   }
 }
+.period-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+.period-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 17px;
+  border: 0;
+  border-radius: 18px;
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 8px 20px rgba(22,50,74,.07);
+  color: #17324a;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.period-card > span:first-child {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 800;
+}
+.period-card small {
+  font-size: 12px;
+  color: #6b8295;
+}
+.period-card > span:last-child {
+  font-size: 24px;
+  color: #336f99;
+}
+.all-photos-button {
+  margin-top: 18px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #c5ddeb;
+  border-radius: 14px;
+  background: #edf5fb;
+  color: #336f99;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
