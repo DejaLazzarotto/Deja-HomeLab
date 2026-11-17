@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, extract, func, select, update
 from sqlalchemy.orm import Session
 
 from deja_platform_api.fotos.curation.models import FotosFaceModel, FotosFaceReferenceModel
@@ -112,8 +112,11 @@ class FotosPersonRepository:
         *,
         page: int,
         page_size: int,
+        year: int | None = None,
+        month: int | None = None,
+        without_date: bool = False,
     ) -> tuple[list[FotosMediaModel], int]:
-        conditions = (
+        conditions = [
             FotosPersonMediaModel.person_id == person.id,
             FotosPersonMediaModel.organization_id == person.organization_id,
             FotosPersonMediaModel.tenant_id == person.tenant_id,
@@ -122,7 +125,13 @@ class FotosPersonRepository:
             FotosMediaModel.tenant_id == person.tenant_id,
             FotosMediaModel.environment_id == person.environment_id,
             FotosMediaModel.deleted_at.is_(None),
-        )
+        ]
+        if without_date:
+            conditions.append(FotosMediaModel.original_date.is_(None))
+        elif year is not None:
+            conditions.append(extract('year', FotosMediaModel.original_date) == year)
+            if month is not None:
+                conditions.append(extract('month', FotosMediaModel.original_date) == month)
 
         total = int(
             self._session.scalar(
@@ -153,6 +162,40 @@ class FotosPersonRepository:
         )
 
         return list(self._session.scalars(statement).all()), total
+
+    def list_media_periods(self, person: FotosPersonModel) -> list[tuple[int | None, int | None, int]]:
+        """Agrupa mídias da pessoa por ano e mês no banco, sem carregar imagens."""
+        statement = (
+            select(
+                extract("year", FotosMediaModel.original_date).label("year"),
+                extract("month", FotosMediaModel.original_date).label("month"),
+                func.count(FotosMediaModel.id),
+            )
+            .join(FotosPersonMediaModel, FotosPersonMediaModel.media_id == FotosMediaModel.id)
+            .where(
+                FotosPersonMediaModel.person_id == person.id,
+                FotosPersonMediaModel.organization_id == person.organization_id,
+                FotosPersonMediaModel.tenant_id == person.tenant_id,
+                FotosPersonMediaModel.environment_id == person.environment_id,
+                FotosMediaModel.organization_id == person.organization_id,
+                FotosMediaModel.tenant_id == person.tenant_id,
+                FotosMediaModel.environment_id == person.environment_id,
+                FotosMediaModel.deleted_at.is_(None),
+            )
+            .group_by(
+                extract("year", FotosMediaModel.original_date),
+                extract("month", FotosMediaModel.original_date),
+            )
+            .order_by(
+                extract("year", FotosMediaModel.original_date).desc(),
+                extract("month", FotosMediaModel.original_date).desc(),
+            )
+        )
+        return [
+            (int(year) if year is not None else None,
+             int(month) if month is not None else None, int(count))
+            for year, month, count in self._session.execute(statement).all()
+        ]
 
     def find_link(
         self,
