@@ -43,23 +43,6 @@
         {{ error() }}
       </p>
     </section>
-  } @else if (mode() !== 'grid') {
-    @if (mode() === 'years') {
-      <button type="button" class="all-photos-button" (click)="openAllPhotos()">Todas as fotos (grade contínua)</button>
-    }
-    @if (choices().length === 0) {
-      <section class="state-card"><p>Nenhuma mídia neste período.</p></section>
-    } @else {
-      <section class="period-list" aria-label="Períodos da pessoa">
-        @for (period of choices(); track period.key) {
-          <button type="button" class="period-card" (click)="openPeriod(period.key)">
-            <span>{{ period.label }}</span>
-            <small>{{ period.count }} {{ period.count === 1 ? 'mídia' : 'mídias' }}</small>
-            <span aria-hidden="true">›</span>
-          </button>
-        }
-      </section>
-    }
   } @else if (media().length === 0) {
     <section class="state-card">
       <p>
