@@ -2,6 +2,8 @@
 
 from typing import Annotated
 
+from pydantic import BaseModel
+
 from fastapi import (
     APIRouter,
     Depends,
@@ -130,6 +132,25 @@ def create_person(
     return service.create(payload, current_user)
 
 
+class PersonMediaPeriod(BaseModel):
+    year: int | None
+    month: int | None
+    media_count: int
+
+
+@router.get("/{person_id}/media/periods", response_model=list[PersonMediaPeriod])
+def list_person_media_periods(
+    person_id: PersonId,
+    service: FotosPersonServiceDependency,
+    current_user: PersonReader,
+) -> list[PersonMediaPeriod]:
+    """Contagem por período para a pessoa autorizada."""
+    return [
+        PersonMediaPeriod(year=year, month=month, media_count=count)
+        for year, month, count in service.list_media_periods(person_id, current_user)
+    ]
+
+
 @router.get(
     "/{person_id}/media",
     response_model=FotosPersonMediaListResponse,
@@ -140,14 +161,27 @@ def list_person_media(
     current_user: PersonReader,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
+    year: int | None = Query(default=None, ge=1, le=9999),
+    month: int | None = Query(default=None, ge=1, le=12),
+    without_date: bool = Query(default=False),
 ) -> FotosPersonMediaListResponse:
     """Lista uma página das mídias da pessoa."""
+
+    if month is not None and year is None:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=422, detail='O mês requer um ano.')
+    if without_date and (year is not None or month is not None):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=422, detail='Filtros de datas incompatíveis.')
 
     items, total = service.list_media(
         person_id,
         current_user,
         page=page,
         page_size=page_size,
+        year=year,
+        month=month,
+        without_date=without_date,
     )
 
     return FotosPersonMediaListResponse(
