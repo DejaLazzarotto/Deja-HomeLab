@@ -141,6 +141,38 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'people/:personId/period/:year/:month/media/:mediaId',
+    title: 'Visualizar mídia por período | VIVARO',
+    canActivate: [fotosAccessGuard],
+    loadComponent: () =>
+      import('./features/people/person-media-viewer-page/person-media-viewer-page')
+        .then(module => module.PersonMediaViewerPageComponent),
+  },
+  {
+    path: 'people/:personId/period/:year/:month',
+    title: 'Mídias da pessoa por período | VIVARO',
+    canActivate: [fotosAccessGuard],
+    loadComponent: () =>
+      import('./features/people/person-media-page/person-media-page')
+        .then(module => module.PersonMediaPageComponent),
+  },
+  {
+    path: 'people/:personId/period/:year',
+    title: 'Meses da pessoa | VIVARO',
+    canActivate: [fotosAccessGuard],
+    loadComponent: () =>
+      import('./features/people/person-media-page/person-media-page')
+        .then(module => module.PersonMediaPageComponent),
+  },
+  {
+    path: 'people/:personId/all',
+    title: 'Todas as fotos da pessoa | VIVARO',
+    canActivate: [fotosAccessGuard],
+    loadComponent: () =>
+      import('./features/people/person-media-page/person-media-page')
+        .then(module => module.PersonMediaPageComponent),
+  },
+  {
     path: 'people/:personId/media/:mediaId',
     title: 'Visualizar mídia | Fotos',
     canActivate: [
