@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioQuest: Consultor de Campo</title>
+    <meta property="og:title" content="BioQuest 1.0">
+    <meta property="og:description" content="Simulador de bioquímica agrícola. Resolva casos críticos no campo!">
+    <meta property="og:image" content="https://app.deja.com.br/bioquest/icons/android-chrome-512x512.png">
+    <meta property="og:url" content="https://app.deja.com.br/bioquest/">
+    <meta property="og:type" content="website">
+
+    <link rel="icon" href="icons/favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+    <link rel="shortcut icon" href="icons/favicon.ico">
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00E676">
+</head>
+
+<body>
+
+    <header id="main-header">
+        <h1>BIOQUEST 1.0</h1>
+        <div id="timer" class="hidden">40:00</div>
+    </header>
+
+    <main id="game-container">
+        <section id="welcome-screen">
+            <h2>Bem-vindo, Doutor!</h2>
+            <p>Sua missão é resolver 8 casos críticos no campo usando bioquímica metabólica avançada.</p>
+            <button id="btn-start">Iniciar Consultoria</button>
+        </section>
+    </main>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Registro do Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log("BioQuest: PWA Ativo"));
+        }
+    </script>
+</body>
+
+</html>

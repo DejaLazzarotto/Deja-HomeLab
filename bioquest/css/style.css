@@ -1,0 +1,225 @@
+/* Configurações Globais e Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+:root {
+    --primary-green: #00E676;
+    --dark-bg: #0a0a0a;
+    --card-bg: rgba(20, 20, 20, 0.95);
+    --accent-purple: #AA00FF;
+    --text-bright: #ffffff;
+    --text-gray: #b0b0b0;
+    --border-color: rgba(0, 230, 118, 0.3);
+}
+
+body {
+    background-color: var(--dark-bg);
+    color: var(--text-bright);
+    line-height: 1.4; /* Reduzido levemente de 1.6 */
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Header High-Tech */
+#main-header {
+    background-color: #000;
+    color: var(--text-bright);
+    padding: 0.8rem 1.2rem; /* Reduzido de 1rem 1.5rem */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--primary-green);
+    box-shadow: 0 0 15px rgba(0, 230, 118, 0.2);
+    z-index: 10;
+}
+
+#main-header h1 {
+    font-size: 1rem; /* Reduzido de 1.1 */
+    letter-spacing: 1px;
+}
+
+#main-header h1 span {
+    color: var(--primary-green);
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+#timer {
+    background: rgba(0, 230, 118, 0.1);
+    color: var(--primary-green);
+    padding: 3px 12px;
+    border: 1px solid var(--primary-green);
+    border-radius: 4px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    font-size: 1.1rem;
+    text-shadow: 0 0 5px var(--primary-green);
+}
+
+/* Container Principal */
+#game-container {
+    flex: 1;
+    padding: 15px; /* Reduzido de 20px */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* Impede que o container role, o card rolará */
+    background-image: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.9)),
+                      url('../images/vertical_farming.png');
+    background-size: cover;
+    background-position: center;
+    transition: background-image 0.8s ease-in-out;
+}
+
+/* Estilo Glassmorphism para os Cards */
+#welcome-screen, .caso-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 20px; /* Reduzido de 30px */
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    max-width: 450px;
+    width: 100%;
+    max-height: 85vh; /* GARANTE QUE NÃO ESTOURE A TELA */
+    overflow-y: auto; /* PERMITE SCROLL INTERNO SE NECESSÁRIO */
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+h2, h3 {
+    color: var(--primary-green);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 1.1rem;
+    font-weight: bold; /* Negrito mantido apenas em títulos */
+}
+
+p {
+    color: var(--text-bright);
+    margin-bottom: 15px;
+    font-size: 0.9rem; /* Reduzido de 1rem */
+    font-weight: 400; /* Sem negrito em parágrafos comuns */
+}
+
+/* Botões Estilo Interface Digital */
+button {
+    background: transparent;
+    color: var(--primary-green);
+    border: 1px solid var(--primary-green);
+    padding: 8px 12px; /* Reduzido */
+    border-radius: 4px;
+    font-size: 0.8rem; /* Reduzido */
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 6px;
+    width: 100%;
+}
+
+button:hover {
+    background: var(--primary-green);
+    color: #000;
+    box-shadow: 0 0 20px rgba(0, 230, 118, 0.4);
+}
+
+.descricao {
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+    color: var(--text-gray); /* Um pouco mais suave */
+}
+
+.pergunta {
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+/* Tags e Elementos */
+.setor-tag {
+    background: var(--accent-purple);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 2px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    display: inline-block;
+}
+
+.opcoes-container button {
+    text-align: left;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-bright);
+    font-weight: 400; /* Sem negrito nas opções para poupar espaço */
+}
+
+/* Botões de Ação Final (Voltar/Continuar) */
+.btn-acao {
+    background: var(--primary-green) !important;
+    color: #000 !important;
+    font-weight: 800 !important;
+    margin-top: 10px;
+}
+
+.btn-voltar {
+    background: transparent !important;
+    border: 1px solid #fff !important;
+    color: #fff !important;
+    font-weight: 400 !important;
+}
+
+/* Feedbacks */
+.feedback-msg {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.feedback-correto {
+    background: rgba(0, 230, 118, 0.15);
+    color: var(--primary-green);
+    border: 1px solid var(--primary-green);
+}
+
+.feedback-errado {
+    background: rgba(255, 23, 68, 0.15);
+    color: #ff1744;
+    border: 1px solid #ff1744;
+}
+
+.dica-box {
+    margin: 10px 0;
+    font-size: 0.8rem;
+    color: #ffeb3b;
+    border: 1px dashed rgba(255, 235, 59, 0.3);
+    padding: 8px;
+    background: rgba(255, 235, 59, 0.05);
+}
+
+/* Scrollbar Customizada (Fina) */
+#welcome-screen::-webkit-scrollbar, .caso-card::-webkit-scrollbar {
+    width: 4px;
+}
+#welcome-screen::-webkit-scrollbar-thumb, .caso-card::-webkit-scrollbar-thumb {
+    background: var(--primary-green);
+    border-radius: 10px;
+}
+
+.hidden { display: none !important; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

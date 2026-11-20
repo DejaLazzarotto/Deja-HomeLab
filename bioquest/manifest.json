@@ -1,0 +1,23 @@
+{
+  "id": "/bioquest/",
+  "short_name": "BioQuest",
+  "name": "BioQuest",
+  "description": "Jogo didático de bioquímica aplicada à agronomia.",
+  "icons": [
+    {
+      "src": "icons/android-chrome-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icons/android-chrome-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/bioquest/",
+  "background_color": "#0a0a0a",
+  "display": "standalone",
+  "scope": "/bioquest/",
+  "theme_color": "#00E676"
+}
