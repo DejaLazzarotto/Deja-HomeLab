@@ -12,6 +12,7 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest';
 
 import {
@@ -48,6 +49,9 @@ describe('PersonMediaViewerPageComponent', () => {
                   return null;
                 },
               },
+              queryParamMap: {
+                get: (_key: string): string | null => null,
+              },
             },
           },
         },
@@ -74,6 +78,7 @@ describe('PersonMediaViewerPageComponent', () => {
 
   afterEach(() => {
     httpTestingController.verify();
+    vi.restoreAllMocks();
   });
 
   it('should load the next page before moving from media 30 to media 31', async () => {
@@ -340,4 +345,99 @@ describe('PersonMediaViewerPageComponent', () => {
     expect(component.isFavorite()).toBe(false);
     expect(component.favoriteSaving()).toBe(false);
   });
+
+  it.each([
+    {
+      description: 'ano e mês',
+      query: { year: '2017', month: '4' },
+      expected: { year: 2017, month: 4 },
+    },
+    {
+      description: 'fotografias sem data',
+      query: { without_date: 'true' },
+      expected: { without_date: true },
+    },
+  ])(
+    'should preserve the selected period for $description',
+    async ({ query, expected }) => {
+      const route = TestBed.inject(ActivatedRoute);
+      const router = TestBed.inject(Router);
+
+      const queryParams = route.snapshot.queryParamMap;
+
+      vi.spyOn(queryParams, 'get').mockImplementation(
+        (key: string) =>
+          query[key as keyof typeof query] ?? null,
+      );
+
+      const navigate = vi.spyOn(router, 'navigate');
+
+      const item = {
+        id: 'media-30',
+        media_type: 'image' as const,
+        is_animated: false,
+        original_date: '2017-04-01T12:00:00',
+        original_name: 'foto.jpg',
+      };
+
+      fixture.detectChanges();
+
+      const listRequest = httpTestingController.expectOne(
+        (request) =>
+          request.url ===
+            '/api/fotos/people/person-1/media' &&
+          request.params.get('page') === '1' &&
+          request.params.get('page_size') === '30',
+      );
+
+      for (const [key, value] of Object.entries(expected)) {
+        expect(listRequest.request.params.get(key)).toBe(
+          String(value),
+        );
+      }
+
+      listRequest.flush({
+        items: [item],
+        page: 1,
+        page_size: 30,
+        total: 1,
+        total_pages: 1,
+      });
+
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 0);
+      });
+
+      httpTestingController.expectOne(
+        '/api/fotos/media/media-30',
+      ).flush(item);
+
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 0);
+      });
+
+      httpTestingController.expectOne(
+        '/api/fotos/favorites/media-30',
+      ).flush({
+        media_id: 'media-30',
+        is_favorite: false,
+      });
+
+      httpTestingController.expectOne(
+        '/api/fotos/media/media-30/preview',
+      ).flush(new Blob(['image']));
+
+      await fixture.whenStable();
+
+      expect(component.mediaId()).toBe('media-30');
+      expect(component.personMedia()).toHaveLength(1);
+
+      component.goBack();
+
+      expect(navigate).toHaveBeenCalledWith(
+        ['/people', 'person-1'],
+        { queryParams: expected },
+      );
+    },
+  );
 });

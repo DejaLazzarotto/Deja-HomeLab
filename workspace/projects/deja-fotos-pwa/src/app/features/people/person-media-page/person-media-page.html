@@ -11,20 +11,36 @@
 
     <div>
       <p class="eyebrow">
-        Pessoas
+        @if (view() === 'years') {
+          Pessoas
+        } @else {
+          {{ person()?.name || 'Pessoa' }}
+        }
       </p>
 
       <h1>
-        {{ person()?.name || 'Pessoa' }}
+        @if (view() === 'years') {
+          {{ person()?.name || 'Pessoa' }}
+        } @else if (view() === 'months') {
+          {{ selectedYear() }}
+        } @else if (withoutDate()) {
+          Sem data
+        } @else {
+          @for (month of months(); track month.month) {
+            @if (month.month === selectedMonth()) {
+              {{ month.name }} de {{ selectedYear() }}
+            }
+          }
+        }
       </h1>
 
-      @if (!loading() && !error()) {
+      @if (view() === 'years' && !loading() && !error()) {
         <p class="subtitle">
           {{ total() }}
           @if (total() === 1) {
-            mídia
+            mídia vinculada
           } @else {
-            mídias
+            mídias vinculadas
           }
         </p>
       }
@@ -33,67 +49,147 @@
 
   @if (loading()) {
     <section class="state-card">
-      <p>
-        Carregando mídias...
-      </p>
+      <p>Carregando...</p>
     </section>
   } @else if (error()) {
     <section class="state-card state-card-error">
-      <p>
-        {{ error() }}
-      </p>
+      <p>{{ error() }}</p>
     </section>
-  } @else if (media().length === 0) {
-    <section class="state-card">
-      <p>
-        Nenhuma mídia vinculada a esta pessoa.
-      </p>
+  } @else if (view() === 'years') {
+    <section class="year-intro">
+      <p>Escolha um ano para explorar seus momentos.</p>
     </section>
-  } @else {
-    <section class="media-grid">
-      @for (item of media(); track item.id) {
-        <button
-          type="button"
-          class="media-card"
-          (click)="openMedia(item.id)"
-        >
-          @if (item.thumbnailUrl) {
-            <img
-              class="media-thumbnail"
-              [src]="item.thumbnailUrl"
-              [alt]="item.original_name"
-            />
-          } @else {
-            <div class="media-placeholder">
-              Sem prévia
-            </div>
-          }
 
-          @if (item.media_type === 'video') {
-            <span
-              class="video-badge"
-              aria-label="Vídeo"
-            >
-              ▶
+    @if (years().length === 0 && undatedCount() === 0) {
+      <section class="state-card">
+        <p>Nenhuma mídia vinculada a esta pessoa.</p>
+      </section>
+    } @else {
+      <section class="period-list" aria-label="Anos disponíveis">
+        @for (item of years(); track item.year) {
+          <button
+            type="button"
+            class="period-card"
+            (click)="openYear(item.year)"
+          >
+            <span class="period-title">{{ item.year }}</span>
+
+            <span class="period-count">
+              {{ item.mediaCount }}
+              @if (item.mediaCount === 1) {
+                mídia
+              } @else {
+                mídias
+              }
             </span>
-          }
-        </button>
-      }
+
+            <span class="period-arrow" aria-hidden="true">›</span>
+          </button>
+        }
+
+        @if (undatedCount() > 0) {
+          <button
+            type="button"
+            class="period-card"
+            (click)="openUndated()"
+          >
+            <span class="period-title">Sem data</span>
+            <span class="period-count">
+              {{ undatedCount() }}
+              @if (undatedCount() === 1) {
+                mídia
+              } @else {
+                mídias
+              }
+            </span>
+            <span class="period-arrow" aria-hidden="true">›</span>
+          </button>
+        }
+      </section>
+    }
+  } @else if (view() === 'months') {
+    <section class="year-intro">
+      <p>Escolha um mês para explorar seus momentos.</p>
     </section>
+
+    @if (months().length === 0) {
+      <section class="state-card">
+        <p>Nenhuma mídia disponível para este ano.</p>
+      </section>
+    } @else {
+      <section class="month-list" aria-label="Meses disponíveis">
+        @for (item of months(); track item.month) {
+          <button
+            type="button"
+            class="month-card"
+            (click)="openMonth(item.month)"
+          >
+            <div>
+              <h2>{{ item.name }}</h2>
+              <p>
+                {{ item.mediaCount }}
+                @if (item.mediaCount === 1) {
+                  mídia
+                } @else {
+                  mídias
+                }
+              </p>
+            </div>
+
+            <span aria-hidden="true">›</span>
+          </button>
+        }
+      </section>
+    }
+  } @else {
+    @if (media().length === 0) {
+      <section class="state-card">
+        <p>Nenhuma mídia disponível para este período.</p>
+      </section>
+    } @else {
+      <section class="media-grid">
+        @for (item of media(); track item.id) {
+          <button
+            type="button"
+            class="media-card"
+            [attr.aria-label]="'Abrir ' + item.original_name"
+            (click)="openMedia(item.id)"
+          >
+            @if (item.thumbnailUrl) {
+              <img
+                class="media-thumbnail"
+                [src]="item.thumbnailUrl"
+                [alt]="item.original_name"
+                loading="lazy"
+              />
+            } @else {
+              <div class="media-placeholder">
+                Sem prévia
+              </div>
+            }
+
+            @if (item.media_type === 'video') {
+              <span
+                class="video-badge"
+                aria-label="Vídeo"
+              >
+                ▶
+              </span>
+            }
+          </button>
+        }
+      </section>
+    }
 
     @if (loadingMore()) {
       <section class="load-more-state">
-        <p>
-          Carregando mais mídias...
-        </p>
+        <p>Carregando mais mídias...</p>
       </section>
     }
 
     @if (loadMoreError()) {
       <section class="load-more-state load-more-error">
-        <p>
-          {{ loadMoreError() }}
-        </p>
+        <p>{{ loadMoreError() }}</p>
 
         <button
           type="button"

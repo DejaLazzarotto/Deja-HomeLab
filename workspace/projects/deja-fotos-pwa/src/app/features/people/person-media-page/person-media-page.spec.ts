@@ -12,6 +12,7 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest';
 
 import { PersonMediaPageComponent } from './person-media-page';
@@ -68,6 +69,7 @@ describe('PersonMediaPageComponent', () => {
 
   afterEach(() => {
     httpTestingController.verify();
+    vi.restoreAllMocks();
   });
 
   it('should load the first 30 media items and append the next page', async () => {
@@ -91,6 +93,8 @@ describe('PersonMediaPageComponent', () => {
       }),
     );
 
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
     fixture.detectChanges();
 
     const personRequest =
@@ -110,13 +114,47 @@ describe('PersonMediaPageComponent', () => {
       setTimeout(resolve, 0);
     });
 
+    const periodsRequest =
+      httpTestingController.expectOne(
+        '/api/fotos/people/person-1/media/periods',
+      );
+
+    periodsRequest.flush([
+      {
+        year: 2017,
+        month: 4,
+        media_count: 40,
+      },
+    ]);
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+
+    expect(component.view()).toBe('years');
+    expect(component.years()).toEqual([
+      { year: 2017, mediaCount: 40 },
+    ]);
+
+    component.openYear(2017);
+
+    expect(component.view()).toBe('months');
+    expect(component.months().length).toBe(1);
+    expect(component.months()[0]?.name).toBe('Abril');
+
+    void component.openMonth(4);
+
+    expect(component.view()).toBe('media');
+
     const firstPageRequest =
       httpTestingController.expectOne(
         (request) =>
           request.url ===
             '/api/fotos/people/person-1/media' &&
           request.params.get('page') === '1' &&
-          request.params.get('page_size') === '30',
+          request.params.get('page_size') === '30' &&
+          request.params.get('year') === '2017' &&
+          request.params.get('month') === '4',
       );
 
     firstPageRequest.flush({
@@ -164,7 +202,9 @@ describe('PersonMediaPageComponent', () => {
           request.url ===
             '/api/fotos/people/person-1/media' &&
           request.params.get('page') === '2' &&
-          request.params.get('page_size') === '30',
+          request.params.get('page_size') === '30' &&
+          request.params.get('year') === '2017' &&
+          request.params.get('month') === '4',
       );
 
     secondPageRequest.flush({

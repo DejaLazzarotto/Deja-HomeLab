@@ -63,6 +63,10 @@ export class PersonMediaViewerPageComponent
 
   private loadingMore = false;
 
+  readonly selectedYear = signal<number | null>(null);
+  readonly selectedMonth = signal<number | null>(null);
+  readonly withoutDate = signal(false);
+
   readonly personId = signal<string | null>(null);
 
   readonly mediaId = signal<string | null>(null);
@@ -101,8 +105,32 @@ export class PersonMediaViewerPageComponent
       return;
     }
 
+    const params = this.route.snapshot.queryParamMap;
+    const yearValue = params?.get('year') ?? null;
+    const monthValue = params?.get('month') ?? null;
+    const withoutDate = params?.get('without_date') === 'true';
+
+    const year = yearValue === null ? null : Number(yearValue);
+    const month = monthValue === null ? null : Number(monthValue);
+
+    if (
+      (year !== null &&
+        (!Number.isInteger(year) || year < 1 || year > 9999)) ||
+      (month !== null &&
+        (!Number.isInteger(month) || month < 1 || month > 12)) ||
+      (month !== null && year === null) ||
+      (withoutDate && (year !== null || month !== null))
+    ) {
+      this.error.set('Período inválido.');
+      this.loading.set(false);
+      return;
+    }
+
     this.personId.set(personId);
     this.mediaId.set(mediaId);
+    this.selectedYear.set(year);
+    this.selectedMonth.set(month);
+    this.withoutDate.set(withoutDate);
 
     try {
       await this.loadUntilMediaFound(mediaId);
@@ -130,10 +158,10 @@ export class PersonMediaViewerPageComponent
       return;
     }
 
-    void this.router.navigate([
-      '/people',
-      personId,
-    ]);
+    void this.router.navigate(
+      ['/people', personId],
+      { queryParams: this.periodParams() },
+    );
   }
 
   async showPrevious(): Promise<void> {
@@ -303,6 +331,7 @@ export class PersonMediaViewerPageComponent
             params: {
               page,
               page_size: PAGE_SIZE,
+              ...this.periodParams(),
             },
           },
         ),
@@ -360,6 +389,7 @@ export class PersonMediaViewerPageComponent
           ],
           {
             replaceUrl: true,
+            queryParams: this.periodParams(),
           },
         );
       }
@@ -499,6 +529,19 @@ export class PersonMediaViewerPageComponent
         this.favoriteSavingMediaIds.has(this.mediaId() ?? ''),
       );
     }
+  }
+  private periodParams(): Record<string, string | number | boolean> {
+    if (this.withoutDate()) {
+      return { without_date: true };
+    }
+
+    const year = this.selectedYear();
+    const month = this.selectedMonth();
+
+    if (year === null) return {};
+    if (month === null) return { year };
+
+    return { year, month };
   }
   private resetTouch(): void {
     this.touchStartX = null;

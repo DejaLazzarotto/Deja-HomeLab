@@ -284,3 +284,112 @@ h1 {
     gap: 6px;
   }
 }
+/* VIVARO PEOPLE PERIODOS */
+
+.year-intro {
+  margin-top: 26px;
+  padding: 0 6px;
+}
+
+.year-intro p {
+  margin: 0;
+  color: #6b8295;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.period-list,
+.month-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.period-card,
+.month-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+
+  width: 100%;
+  min-height: 72px;
+  padding: 18px;
+
+  border: 0;
+  border-radius: 20px;
+
+  background: rgba(255, 255, 255, 0.97);
+  color: #17324a;
+
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  box-shadow:
+    0 12px 28px rgba(22, 50, 74, 0.07),
+    0 2px 8px rgba(22, 50, 74, 0.04);
+}
+
+.period-card:focus-visible,
+.month-card:focus-visible {
+  outline: 3px solid #336f99;
+  outline-offset: 2px;
+}
+
+.period-title {
+  flex: 1;
+  min-width: 0;
+
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.period-count {
+  color: #6b8295;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.period-arrow {
+  color: #336f99;
+  font-size: 27px;
+  line-height: 1;
+}
+
+.month-card h2 {
+  margin: 0;
+
+  color: #17324a;
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+.month-card p {
+  margin: 6px 0 0;
+
+  color: #74889a;
+  font-size: 12px;
+}
+
+.month-card > span {
+  color: #336f99;
+  font-size: 27px;
+  line-height: 1;
+}
+
+@media (max-width: 340px) {
+  .period-card,
+  .month-card {
+    padding: 14px;
+    gap: 9px;
+  }
+
+  .period-title,
+  .month-card h2 {
+    font-size: 19px;
+  }
+}

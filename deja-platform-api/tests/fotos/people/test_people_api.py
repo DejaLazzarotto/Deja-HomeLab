@@ -387,3 +387,117 @@ def test_avatar_manual_upload_unavailable(
         f"{PEOPLE_URL}/{person['id']}",
         headers=headers,
     ).status_code == 204
+
+
+def test_person_media_periods_and_filters(
+    client: TestClient,
+    media_context: tuple,
+) -> None:
+    """Valida periodos, filtros, paginacao e isolamento por pessoa."""
+
+    _, _, environment_id, _, headers = media_context
+
+    person = create_person(
+        client, environment_id, headers, name="Periodo"
+    )
+    other_person = create_person(
+        client, environment_id, headers, name="Outra"
+    )
+
+    media_ids = []
+
+    for width in (31, 32, 33, 34):
+        uploaded = upload_image(
+            client,
+            environment_id=environment_id,
+            album_id=None,
+            headers=headers,
+            content=create_test_jpeg(width=width),
+        )
+        assert uploaded.status_code == 201, uploaded.text
+        media_ids.append(uploaded.json()["id"])
+
+    for media_id, date in (
+        (media_ids[0], "2020-04-26T12:00:00"),
+        (media_ids[1], "2021-10-15T12:00:00"),
+        (media_ids[3], "2020-04-27T12:00:00"),
+    ):
+        updated = client.patch(
+            f"/api/fotos/media/{media_id}/original-date",
+            json={
+                "original_date": date,
+                "original_date_precision": "date",
+            },
+            headers=headers,
+        )
+        assert updated.status_code == 200, updated.text
+
+    for media_id in media_ids[:3]:
+        linked = client.post(
+            f"{PEOPLE_URL}/{person['id']}/media",
+            json={"media_id": media_id},
+            headers=headers,
+        )
+        assert linked.status_code == 204, linked.text
+
+    other_link = client.post(
+        f"{PEOPLE_URL}/{other_person['id']}/media",
+        json={"media_id": media_ids[3]},
+        headers=headers,
+    )
+    assert other_link.status_code == 204, other_link.text
+
+    periods = client.get(
+        f"{PEOPLE_URL}/{person['id']}/media/periods",
+        headers=headers,
+    )
+    assert periods.status_code == 200, periods.text
+
+    counts = {
+        (item["year"], item["month"]): item["media_count"]
+        for item in periods.json()
+    }
+    assert counts == {
+        (2020, 4): 1,
+        (2021, 10): 1,
+        (None, None): 1,
+    }
+
+    april = client.get(
+        f"{PEOPLE_URL}/{person['id']}/media",
+        params={"year": 2020, "month": 4},
+        headers=headers,
+    )
+    assert april.status_code == 200, april.text
+    assert april.json()["total"] == 1
+    assert [item["id"] for item in april.json()["items"]] == [
+        media_ids[0]
+    ]
+
+    undated = client.get(
+        f"{PEOPLE_URL}/{person['id']}/media",
+        params={"without_date": "true"},
+        headers=headers,
+    )
+    assert undated.status_code == 200, undated.text
+    assert [item["id"] for item in undated.json()["items"]] == [
+        media_ids[2]
+    ]
+
+    first_page = client.get(
+        f"{PEOPLE_URL}/{person['id']}/media",
+        params={"page": 1, "page_size": 1},
+        headers=headers,
+    )
+    assert first_page.status_code == 200, first_page.text
+    assert first_page.json()["total"] == 3
+    assert first_page.json()["total_pages"] == 3
+
+    other_periods = client.get(
+        f"{PEOPLE_URL}/{other_person['id']}/media/periods",
+        headers=headers,
+    )
+    assert other_periods.status_code == 200, other_periods.text
+    assert other_periods.json() == [
+        {"year": 2020, "month": 4, "media_count": 1}
+    ]
