@@ -1,5 +1,7 @@
 """Regras de cadastro e associação de Pessoas do Deja Fotos."""
 
+from __future__ import annotations
+
 from uuid import uuid4
 
 from deja_platform_api.authentication.authorization import (
