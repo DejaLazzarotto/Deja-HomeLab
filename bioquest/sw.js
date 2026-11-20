@@ -2,7 +2,7 @@
 // sw.js - Service Worker do BioQuest PWA
 // ==========================================
 
-const cacheName = 'bioquest-v2';
+const cacheName = 'bioquest-v3';
 const assets = [
   '/bioquest/',
   '/bioquest/index.html',
